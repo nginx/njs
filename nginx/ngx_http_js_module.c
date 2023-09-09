@@ -1075,6 +1075,9 @@ ngx_http_js_header_filter(ngx_http_request_t *r)
         return ngx_http_next_header_filter(r);
     }
 
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "http js header filter");
+
     rc = ngx_http_js_init_vm(r, ngx_http_js_request_proto_id);
 
     if (rc == NGX_ERROR || rc == NGX_DECLINED) {
@@ -1085,6 +1088,9 @@ ngx_http_js_header_filter(ngx_http_request_t *r)
 
     ctx->filter = 1;
     pending = njs_vm_pending(ctx->vm);
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "http js header call \"%V\"", &jlcf->header_filter);
 
     rc = ngx_js_call(ctx->vm, &jlcf->header_filter, r->connection->log,
                      &ctx->request, 1);
@@ -1126,6 +1132,9 @@ ngx_http_js_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
     if (jlcf->body_filter.len == 0) {
         return ngx_http_next_body_filter(r, in);
     }
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "http js body filter");
 
     rc = ngx_http_js_init_vm(r, ngx_http_js_request_proto_id);
 
@@ -1182,6 +1191,9 @@ ngx_http_js_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
             }
 
             pending = njs_vm_pending(ctx->vm);
+
+            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                           "http js body call \"%V\"", &jlcf->body_filter);
 
             rc = ngx_js_call(ctx->vm, &jlcf->body_filter, c->log, &arguments[0],
                              3);

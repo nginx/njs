@@ -722,15 +722,15 @@ ngx_stream_js_phase_handler(ngx_stream_session_t *s, ngx_str_t *name)
         return NGX_DECLINED;
     }
 
+    ngx_log_debug0(NGX_LOG_DEBUG_STREAM, s->connection->log, 0,
+                   "stream js phase handler");
+
     rc = ngx_stream_js_init_vm(s, ngx_stream_js_session_proto_id);
     if (rc != NGX_OK) {
         return rc;
     }
 
     c = s->connection;
-
-    ngx_log_debug1(NGX_LOG_DEBUG_STREAM, c->log, 0,
-                   "stream js phase call \"%V\"", name);
 
     ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
 
@@ -741,6 +741,9 @@ ngx_stream_js_phase_handler(ngx_stream_session_t *s, ngx_str_t *name)
          */
 
         ctx->status = NGX_ERROR;
+
+        ngx_log_debug1(NGX_LOG_DEBUG_STREAM, c->log, 0,
+                       "stream js phase call \"%V\"", name);
 
         rc = ngx_js_call(ctx->vm, name, c->log, &ctx->args[0], 1);
 
@@ -816,6 +819,9 @@ ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
     ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
 
     if (!ctx->filter) {
+        ngx_log_debug1(NGX_LOG_DEBUG_STREAM, c->log, 0,
+                       "stream js filter call \"%V\"" , &jscf->filter);
+
         rc = ngx_js_call(ctx->vm, &jscf->filter, c->log, &ctx->args[0], 1);
 
         if (rc == NGX_ERROR) {
@@ -1899,8 +1905,8 @@ ngx_stream_js_periodic_handler(ngx_event_t *ev)
 
     if (c != NULL) {
         ngx_log_error(NGX_LOG_ERR, c->log, 0,
-                      "js periodic \"%V\" is already running, killing previous "
-                      "instance", &periodic->method);
+                      "stream js periodic \"%V\" is already running, killing "
+                      "previous instance", &periodic->method);
 
         ngx_stream_js_periodic_finalize(c->data, NGX_ERROR);
     }
