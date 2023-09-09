@@ -1308,7 +1308,7 @@ ngx_js_http_alloc(njs_vm_t *vm, ngx_pool_t *pool, ngx_log_t *log)
 
     http->vm_event = vm_event;
 
-    ngx_log_debug1(NGX_LOG_DEBUG_EVENT, log, 0, "js http alloc:%p", http);
+    ngx_log_debug1(NGX_LOG_DEBUG_EVENT, log, 0, "js fetch alloc:%p", http);
 
     return http;
 
@@ -1408,7 +1408,7 @@ static void
 ngx_js_http_close_connection(ngx_connection_t *c)
 {
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, c->log, 0,
-                   "close js http connection: %d", c->fd);
+                   "js fetch close connection: %d", c->fd);
 
 #if (NGX_SSL)
     if (c->ssl) {
@@ -1434,7 +1434,7 @@ njs_js_http_destructor(njs_external_ptr_t external, njs_host_event_t host)
 
     http = host;
 
-    ngx_log_debug1(NGX_LOG_DEBUG_EVENT, http->log, 0, "js http destructor:%p",
+    ngx_log_debug1(NGX_LOG_DEBUG_EVENT, http->log, 0, "js fetch destructor:%p",
                    http);
 
     if (http->ctx != NULL) {
@@ -1549,7 +1549,7 @@ ngx_js_http_connect(ngx_js_http_t *http)
     addr = &http->addrs[http->naddr];
 
     ngx_log_debug2(NGX_LOG_DEBUG_EVENT, http->log, 0,
-                   "js http connect %ui/%ui", http->naddr, http->naddrs);
+                   "js fetch connect %ui/%ui", http->naddr, http->naddrs);
 
     http->peer.sockaddr = addr->sockaddr;
     http->peer.socklen = addr->socklen;
@@ -1605,7 +1605,8 @@ ngx_js_http_ssl_init_connection(ngx_js_http_t *http)
     c = http->peer.connection;
 
     ngx_log_debug2(NGX_LOG_DEBUG_EVENT, http->log, 0,
-                   "js http secure connect %ui/%ui", http->naddr, http->naddrs);
+                   "js fetch secure connect %ui/%ui", http->naddr,
+                   http->naddrs);
 
     if (ngx_ssl_create_connection(http->ssl, c, NGX_SSL_BUFFER|NGX_SSL_CLIENT)
         != NGX_OK)
@@ -1663,15 +1664,14 @@ ngx_js_http_ssl_handshake(ngx_js_http_t *http)
 
             if (rc != X509_V_OK) {
                 ngx_log_error(NGX_LOG_ERR, c->log, 0,
-                              "js http fetch SSL certificate verify "
-                              "error: (%l:%s)", rc,
-                              X509_verify_cert_error_string(rc));
+                              "js fetch SSL certificate verify error: (%l:%s)",
+                              rc, X509_verify_cert_error_string(rc));
                 goto failed;
             }
 
             if (ngx_ssl_check_host(c, &http->tls_name) != NGX_OK) {
                 ngx_log_error(NGX_LOG_ERR, c->log, 0,
-                              "js http SSL certificate does not match \"%V\"",
+                              "js fetch SSL certificate does not match \"%V\"",
                               &http->tls_name);
                 goto failed;
             }
@@ -1728,7 +1728,7 @@ ngx_js_http_ssl_name(ngx_js_http_t *http)
     name->data = p;
 
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, http->log, 0,
-                   "js http SSL server name: \"%s\"", name->data);
+                   "js fetch SSL server name: \"%s\"", name->data);
 
     if (SSL_set_tlsext_host_name(http->peer.connection->ssl->connection,
                                  (char *) name->data)
@@ -1751,7 +1751,7 @@ done:
 static void
 ngx_js_http_next(ngx_js_http_t *http)
 {
-    ngx_log_debug0(NGX_LOG_DEBUG_EVENT, http->log, 0, "js http next");
+    ngx_log_debug0(NGX_LOG_DEBUG_EVENT, http->log, 0, "js fetch next addr");
 
     if (++http->naddr >= http->naddrs) {
         ngx_js_http_error(http, 0, "connect failed");
@@ -1780,7 +1780,7 @@ ngx_js_http_write_handler(ngx_event_t *wev)
     c = wev->data;
     http = c->data;
 
-    ngx_log_debug0(NGX_LOG_DEBUG_EVENT, wev->log, 0, "js http write handler");
+    ngx_log_debug0(NGX_LOG_DEBUG_EVENT, wev->log, 0, "js fetch write handler");
 
     if (wev->timedout) {
         ngx_js_http_error(http, NGX_ETIMEDOUT, "write timed out");
@@ -1862,7 +1862,7 @@ ngx_js_http_read_handler(ngx_event_t *rev)
     c = rev->data;
     http = c->data;
 
-    ngx_log_debug0(NGX_LOG_DEBUG_EVENT, rev->log, 0, "js http read handler");
+    ngx_log_debug0(NGX_LOG_DEBUG_EVENT, rev->log, 0, "js fetch read handler");
 
     if (rev->timedout) {
         ngx_js_http_error(http, NGX_ETIMEDOUT, "read timed out");
@@ -2340,7 +2340,7 @@ ngx_js_http_process_status_line(ngx_js_http_t *http)
     rc = ngx_js_http_parse_status_line(hp, http->buffer);
 
     if (rc == NGX_OK) {
-        ngx_log_debug1(NGX_LOG_DEBUG_EVENT, http->log, 0, "js http status %ui",
+        ngx_log_debug1(NGX_LOG_DEBUG_EVENT, http->log, 0, "js fetch status %ui",
                        hp->code);
 
         http->response.code = hp->code;
@@ -2373,7 +2373,7 @@ ngx_js_http_process_headers(ngx_js_http_t *http)
     ngx_js_http_parse_t  *hp;
 
     ngx_log_debug0(NGX_LOG_DEBUG_EVENT, http->log, 0,
-                   "js http process headers");
+                   "js fetch process headers");
 
     hp = &http->http_parse;
 
@@ -2403,7 +2403,7 @@ ngx_js_http_process_headers(ngx_js_http_t *http)
             }
 
             ngx_log_debug4(NGX_LOG_DEBUG_EVENT, http->log, 0,
-                           "js http header \"%*s: %*s\"",
+                           "js fetch header \"%*s: %*s\"",
                            len, hp->header_name_start, vlen, hp->header_start);
 
             if (len == njs_strlen("Transfer-Encoding")
@@ -2473,7 +2473,7 @@ ngx_js_http_process_body(ngx_js_http_t *http)
     ngx_buf_t  *b;
 
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, http->log, 0,
-                   "js http process body done:%ui", (ngx_uint_t) http->done);
+                   "js fetch process body done:%ui", (ngx_uint_t) http->done);
 
     if (http->done) {
         size = njs_chb_size(&http->response.chain);
@@ -3156,7 +3156,7 @@ ngx_js_http_parse_chunked(ngx_js_http_chunk_parse_t *hcp,
 static void
 ngx_js_http_dummy_handler(ngx_event_t *ev)
 {
-    ngx_log_debug0(NGX_LOG_DEBUG_EVENT, ev->log, 0, "js http dummy handler");
+    ngx_log_debug0(NGX_LOG_DEBUG_EVENT, ev->log, 0, "js fetch dummy handler");
 }
 
 
