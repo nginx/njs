@@ -250,6 +250,7 @@ interface NgxFetchOptions {
 declare class SharedMemoryError extends Error {}
 
 type NgxSharedDictValue = string | number;
+type NgxKeyValuePair<V> = { key: string, value: V };
 
 /**
  * Interface of a dictionary shared among the working processes.
@@ -314,6 +315,11 @@ interface NgxSharedDict<V extends string | number = string | number> {
     incr: V extends number
       ? (key: string, delta: V, init?: number) => number
       : never;
+    /**
+     * @param maxCount The maximum number of pairs to retrieve (default is 1024).
+     * @returns An array of the key-value pairs.
+     */
+    items(maxCount?: number): NgxKeyValuePair<V>[];
     /**
      * @returns The free page size in bytes.
      *   Note that even if the free page is zero the dictionary may still accept

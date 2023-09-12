@@ -321,3 +321,8 @@ function ngx_object() {
     ngx.log(ngx.WARN, Buffer.from(ngx.error_log_path));
     ngx.log(ngx.ERR, ngx.version);
 }
+
+function ngx_shared(dict: NgxSharedDict<string>, numeric: NgxSharedDict<number>) {
+    var s:NgxKeyValuePair<string> = dict.items()[0];
+    var v:number = numeric.incr('foo', 1);
+}
