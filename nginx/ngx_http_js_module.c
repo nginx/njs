@@ -1129,7 +1129,7 @@ ngx_http_js_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
 
     jlcf = ngx_http_get_module_loc_conf(r, ngx_http_js_module);
 
-    if (jlcf->body_filter.len == 0) {
+    if (jlcf->body_filter.len == 0 || in == NULL) {
         return ngx_http_next_body_filter(r, in);
     }
 
