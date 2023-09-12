@@ -1,3 +1,23 @@
+Changes with njs 0.8.1                                       12 Sep 2023
+
+    nginx modules:
+
+    *) Feature: introduced js_periodic directive.
+        The directive specifies a JS handler to run at regular intervals.
+
+    *) Feature: implemented items() method for a shared dictionary.
+       The method returns all the non-expired key-value pairs.
+
+    *) Bugfix: fixed size() and keys() methods of a shared dictionary.
+
+    *) Bugfix: fixed erroneous exception in r.internalRedirect()
+       introduced in 0.8.0.
+
+    Core:
+
+    *) Bugfix: fixed incorrect order of keys in
+       Object.getOwnPropertyNames().
+
 Changes with njs 0.8.0                                        6 Jul 2023
 
     nginx modules:
