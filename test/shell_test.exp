@@ -299,6 +299,8 @@ njs_test {
      "console.timeEnd()\r\nTimer \"default\" doesn’t exist."}
     {"console.timeEnd('abc')\r\n"
      "console.timeEnd('abc')\r\nTimer \"abc\" doesn’t exist."}
+    {"console.time('abc')\r\n"
+     "console.time('abc')\r\nundefined\r\n>> "}
 }
 
 njs_test {
