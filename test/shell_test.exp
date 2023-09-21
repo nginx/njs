@@ -252,9 +252,9 @@ njs_test {
     {"console.log(1)\r\n"
      "console.log(1)\r\n1\r\nundefined\r\n>> "}
     {"console.log(1, 'a')\r\n"
-     "console.log(1, 'a')\r\n1 a\r\nundefined\r\n>> "}
+     "console.log(1, 'a')\r\n1\r\na\r\nundefined\r\n>> "}
     {"print(1, 'a')\r\n"
-     "print(1, 'a')\r\n1 a\r\nundefined\r\n>> "}
+     "print(1, 'a')\r\n1\r\na\r\nundefined\r\n>> "}
     {"console.log('\\tабв\\nгд')\r\n"
      "console.log('\\\\tабв\\\\nгд')\r\n\tабв\r\nгд\r\nundefined\r\n>> "}
     {"console.dump()\r\n"
@@ -262,7 +262,13 @@ njs_test {
     {"console.dump(1)\r\n"
      "console.dump(1)\r\n1\r\nundefined\r\n>> "}
     {"console.dump(1, 'a')\r\n"
-     "console.dump(1, 'a')\r\n1 a\r\nundefined\r\n>> "}
+     "console.dump(1, 'a')\r\n1\r\na\r\nundefined\r\n>> "}
+    {"console.error(42)\r\n"
+     "console.error(42)\r\nE: 42\r\nundefined\r\n>> "}
+    {"console.info(23)\r\n"
+     "console.info(23)\r\n23\r\nundefined\r\n>> "}
+    {"console.warn(37)\r\n"
+     "console.warn(37)\r\nW: 37\r\nundefined\r\n>> "}
 }
 
 # console.time* functions
@@ -307,9 +313,9 @@ njs_test {
 
 njs_test {
     {"var print = console.log.bind(console); print(1, 'a', [1, 2])\r\n"
-     "1 a \\\[1,2]\r\nundefined\r\n>> "}
+     "1\r\na\r\n\\\[1,2]\r\nundefined\r\n>> "}
     {"var print = console.dump.bind(console); print(1, 'a', [1, 2])\r\n"
-     "1 a \\\[\r\n 1,\r\n 2\r\n]\r\nundefined\r\n>> "}
+     "1\r\na\r\n\\\[\r\n 1,\r\n 2\r\n]\r\nundefined\r\n>> "}
     {"var print = console.log.bind(console); print(console.a.a)\r\n"
      "TypeError: cannot get property \"a\" of undefined"}
     {"print(console.a.a)\r\n"
@@ -318,8 +324,8 @@ njs_test {
 
 # Backtraces for external objects
 njs_test {
-    {"console.log(console.a.a)\r\n"
-     "console.log(console.a.a)\r\nThrown:\r\nTypeError:*at console.log (native)"}
+    {"console.info(console.a.a)\r\n"
+     "console.info(console.a.a)\r\nThrown:\r\nTypeError:*at console.info (native)"}
 }
 
 # dumper
@@ -400,7 +406,7 @@ njs_test {
 
 njs_test {
     {"var t = setImmediate(console.log, 'a', 'aa')\r\n"
-     "undefined\r\na aa"}
+     "undefined\r\na\r\naa"}
 }
 
 njs_test {

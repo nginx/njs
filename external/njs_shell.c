@@ -122,7 +122,7 @@ static char *njs_completion_generator(const char *text, int state);
 #endif
 
 static njs_int_t njs_ext_console_log(njs_vm_t *vm, njs_value_t *args,
-    njs_uint_t nargs, njs_index_t indent, njs_value_t *retval);
+    njs_uint_t nargs, njs_index_t magic, njs_value_t *retval);
 static njs_int_t njs_ext_console_time(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t njs_ext_console_time_end(njs_vm_t *vm, njs_value_t *args,
@@ -156,7 +156,33 @@ static njs_external_t  njs_ext_console[] = {
         .enumerable = 1,
         .u.method = {
             .native = njs_ext_console_log,
-            .magic8 = 1,
+#define NJS_LOG_DUMP  16
+#define NJS_LOG_MASK  15
+            .magic8 = NJS_LOG_LEVEL_INFO | NJS_LOG_DUMP,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("error"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = njs_ext_console_log,
+            .magic8 = NJS_LOG_LEVEL_ERROR,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("info"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = njs_ext_console_log,
+            .magic8 = NJS_LOG_LEVEL_INFO,
         }
     },
 
@@ -168,6 +194,7 @@ static njs_external_t  njs_ext_console[] = {
         .enumerable = 1,
         .u.method = {
             .native = njs_ext_console_log,
+            .magic8 = NJS_LOG_LEVEL_INFO,
         }
     },
 
@@ -198,6 +225,18 @@ static njs_external_t  njs_ext_console[] = {
         .enumerable = 1,
         .u.method = {
             .native = njs_ext_console_time_end,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("warn"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = njs_ext_console_log,
+            .magic8 = NJS_LOG_LEVEL_WARN,
         }
     },
 
@@ -1337,28 +1376,26 @@ next:
 
 static njs_int_t
 njs_ext_console_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t indent, njs_value_t *retval)
+    njs_index_t magic, njs_value_t *retval)
 {
-    njs_str_t   msg;
-    njs_uint_t  n;
+    njs_str_t        msg;
+    njs_uint_t       n;
+    njs_log_level_t  level;
 
     n = 1;
+    level = (njs_log_level_t) magic & NJS_LOG_MASK;
 
     while (n < nargs) {
-        if (njs_vm_value_dump(vm, &msg, njs_argument(args, n), 1, indent)
+        if (njs_vm_value_dump(vm, &msg, njs_argument(args, n), 1,
+                              !!(magic & NJS_LOG_DUMP))
             == NJS_ERROR)
         {
             return NJS_ERROR;
         }
 
-        njs_vm_log(vm, "%s", (n != 1) ? " " : "");
-        njs_vm_log(vm, "%*s", msg.length, msg.start);
+        njs_vm_logger(vm, level, "%*s\n", msg.length, msg.start);
 
         n++;
-    }
-
-    if (nargs > 1) {
-        njs_vm_log(vm, "\n");
     }
 
     njs_value_undefined_set(retval);
@@ -1604,11 +1641,16 @@ static void
 njs_console_log(njs_vm_t *vm, njs_external_ptr_t external,
     njs_log_level_t level, const u_char *start, size_t length)
 {
-    if (level == NJS_LOG_LEVEL_ERROR) {
-        njs_stderror("%*s", length, start);
-
-    } else {
+    switch (level) {
+    case NJS_LOG_LEVEL_INFO:
         njs_printf("%*s", length, start);
+        break;
+    case NJS_LOG_LEVEL_WARN:
+        njs_printf("W: %*s", length, start);
+        break;
+    case NJS_LOG_LEVEL_ERROR:
+        njs_printf("E: %*s", length, start);
+        break;
     }
 }
 
