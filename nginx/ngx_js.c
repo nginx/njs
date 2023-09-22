@@ -11,6 +11,18 @@
 #include "ngx_js.h"
 
 
+typedef struct {
+    ngx_queue_t       labels;
+} ngx_js_console_t;
+
+
+typedef struct {
+    njs_str_t         name;
+    uint64_t          time;
+    ngx_queue_t       queue;
+} ngx_js_timelabel_t;
+
+
 static njs_int_t ngx_js_ext_build(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 static njs_int_t ngx_js_ext_conf_file_path(njs_vm_t *vm,
@@ -27,9 +39,14 @@ static njs_int_t ngx_js_ext_version(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 static njs_int_t ngx_js_ext_worker_id(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+static njs_int_t ngx_js_ext_console_time(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
+static njs_int_t ngx_js_ext_console_time_end(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static void ngx_js_cleanup_vm(void *data);
 
 static njs_int_t ngx_js_core_init(njs_vm_t *vm);
+static uint64_t ngx_js_monotonic_time(void);
 
 
 static njs_external_t  ngx_js_ext_global_shared[] = {
@@ -197,6 +214,103 @@ static njs_external_t  ngx_js_ext_core[] = {
 };
 
 
+static njs_external_t  ngx_js_ext_console[] = {
+
+    {
+        .flags = NJS_EXTERN_PROPERTY | NJS_EXTERN_SYMBOL,
+        .name.symbol = NJS_SYMBOL_TO_STRING_TAG,
+        .u.property = {
+            .value = "Console",
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("dump"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_js_ext_log,
+#define NGX_JS_LOG_DUMP  16
+#define NGX_JS_LOG_MASK  15
+            .magic8 = NGX_LOG_INFO | NGX_JS_LOG_DUMP,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("error"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_js_ext_log,
+            .magic8 = NGX_LOG_ERR,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("info"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_js_ext_log,
+            .magic8 = NGX_LOG_INFO,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("log"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_js_ext_log,
+            .magic8 = NGX_LOG_INFO,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("time"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_js_ext_console_time,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("timeEnd"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_js_ext_console_time_end,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("warn"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_js_ext_log,
+            .magic8 = NGX_LOG_WARN,
+        }
+    },
+
+};
+
+
 njs_module_t  ngx_js_ngx_module = {
     .name = njs_str("ngx"),
     .preinit = NULL,
@@ -208,6 +322,9 @@ njs_module_t *njs_js_addon_modules_shared[] = {
     &ngx_js_ngx_module,
     NULL,
 };
+
+
+static njs_int_t      ngx_js_console_proto_id;
 
 
 ngx_int_t
@@ -339,6 +456,26 @@ ngx_js_core_init(njs_vm_t *vm)
 
     name.length = 3;
     name.start = (u_char *) "ngx";
+
+    ret = njs_vm_bind(vm, &name, njs_value_arg(&value), 1);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    ngx_js_console_proto_id = njs_vm_external_prototype(vm, ngx_js_ext_console,
+                                               njs_nitems(ngx_js_ext_console));
+    if (ngx_js_console_proto_id < 0) {
+        return NJS_ERROR;
+    }
+
+    ret = njs_vm_external_create(vm, njs_value_arg(&value),
+                                 ngx_js_console_proto_id, NULL, 1);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    name.length = 7;
+    name.start = (u_char *) "console";
 
     ret = njs_vm_bind(vm, &name, njs_value_arg(&value), 1);
     if (njs_slow_path(ret != NJS_OK)) {
@@ -509,14 +646,13 @@ ngx_js_ext_worker_id(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
 
 njs_int_t
 ngx_js_ext_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t level, njs_value_t *retval)
+    njs_index_t magic, njs_value_t *retval)
 {
-    char                *p;
-    ngx_int_t            lvl;
-    njs_str_t            msg;
-    njs_value_t         *value;
-    ngx_connection_t    *c;
-    ngx_log_handler_pt   handler;
+    char             *p;
+    ngx_int_t        lvl;
+    njs_str_t        msg;
+    njs_uint_t       n;
+    njs_log_level_t  level;
 
     p = njs_vm_external(vm, NJS_PROTO_ID_ANY, njs_argument(args, 0));
     if (p == NULL) {
@@ -524,7 +660,7 @@ ngx_js_ext_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    value =  njs_arg(args, nargs, (level != 0) ? 1 : 2);
+    level = (njs_log_level_t) magic & NGX_JS_LOG_MASK;
 
     if (level == 0) {
         if (ngx_js_integer(vm, njs_arg(args, nargs, 1), &lvl) != NGX_OK) {
@@ -532,20 +668,196 @@ ngx_js_ext_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
 
         level = lvl;
+        n = 2;
+
+    } else {
+        n = 1;
     }
 
-    if (ngx_js_string(vm, value, &msg) != NGX_OK) {
+    for (; n < nargs; n++) {
+        if (njs_vm_value_dump(vm, &msg, njs_argument(args, n), 1,
+                              !!(magic & NGX_JS_LOG_DUMP))
+            == NJS_ERROR)
+        {
+            return NJS_ERROR;
+        }
+
+        ngx_js_logger(vm, p, level, msg.start, msg.length);
+    }
+
+    njs_value_undefined_set(retval);
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+ngx_js_ext_console_time(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused, njs_value_t *retval)
+{
+    njs_int_t           ret;
+    njs_str_t           name;
+    ngx_queue_t         *labels, *q;
+    njs_value_t         *value, *this;
+    ngx_js_console_t    *console;
+    ngx_js_timelabel_t  *label;
+
+    static const njs_str_t  default_label = njs_str("default");
+
+    this = njs_argument(args, 0);
+
+    if (njs_slow_path(!njs_value_is_external(this, ngx_js_console_proto_id))) {
+        njs_vm_type_error(vm, "\"this\" is not a console external");
         return NJS_ERROR;
     }
 
-    c = ngx_external_connection(vm, p);
-    handler = c->log->handler;
-    c->log->handler = NULL;
+    name = default_label;
 
-    ngx_log_error((ngx_uint_t) level, c->log, 0, "js: %*s",
-                  msg.length, msg.start);
+    value = njs_arg(args, nargs, 1);
 
-    c->log->handler = handler;
+    if (njs_slow_path(!njs_value_is_string(value))) {
+        if (!njs_value_is_undefined(value)) {
+            ret = njs_value_to_string(vm, value, value);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
+
+            njs_value_string_get(value, &name);
+        }
+
+    } else {
+        njs_value_string_get(value, &name);
+    }
+
+    console = njs_value_external(this);
+
+    if (console == NULL) {
+        console = njs_mp_alloc(njs_vm_memory_pool(vm),
+                               sizeof(ngx_js_console_t));
+        if (console == NULL) {
+            njs_vm_memory_error(vm);
+            return NJS_ERROR;
+        }
+
+        ngx_queue_init(&console->labels);
+
+        njs_value_external_set(this, console);
+    }
+
+    labels = &console->labels;
+
+    for (q = ngx_queue_head(labels);
+         q != ngx_queue_sentinel(labels);
+         q = ngx_queue_next(q))
+    {
+        label = ngx_queue_data(q, ngx_js_timelabel_t, queue);
+
+        if (njs_strstr_eq(&name, &label->name)) {
+            njs_vm_log(vm, "Timer \"%V\" already exists.\n", &name);
+            njs_value_undefined_set(retval);
+            return NJS_OK;
+        }
+    }
+
+    label = njs_mp_alloc(njs_vm_memory_pool(vm),
+                         sizeof(ngx_js_timelabel_t) + name.length);
+    if (njs_slow_path(label == NULL)) {
+        njs_vm_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    label->name.length = name.length;
+    label->name.start = (u_char *) label + sizeof(ngx_js_timelabel_t);
+    memcpy(label->name.start, name.start, name.length);
+
+    label->time = ngx_js_monotonic_time();
+
+    ngx_queue_insert_tail(&console->labels, &label->queue);
+
+    njs_value_undefined_set(retval);
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+ngx_js_ext_console_time_end(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused, njs_value_t *retval)
+{
+    uint64_t            ns, ms;
+    njs_int_t           ret;
+    njs_str_t           name;
+    ngx_queue_t         *labels, *q;
+    njs_value_t         *value, *this;
+    ngx_js_console_t    *console;
+    ngx_js_timelabel_t  *label;
+
+    static const njs_str_t  default_label = njs_str("default");
+
+    ns = ngx_js_monotonic_time();
+
+    this = njs_argument(args, 0);
+
+    if (njs_slow_path(!njs_value_is_external(this, ngx_js_console_proto_id))) {
+        njs_vm_type_error(vm, "\"this\" is not a console external");
+        return NJS_ERROR;
+    }
+
+    name = default_label;
+
+    value = njs_arg(args, nargs, 1);
+
+    if (njs_slow_path(!njs_value_is_string(value))) {
+        if (!njs_value_is_undefined(value)) {
+            ret = njs_value_to_string(vm, value, value);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
+
+            njs_value_string_get(value, &name);
+        }
+
+    } else {
+        njs_value_string_get(value, &name);
+    }
+
+    console = njs_value_external(this);
+    if (njs_slow_path(console == NULL)) {
+        goto not_found;
+    }
+
+    labels = &console->labels;
+    q = ngx_queue_head(labels);
+
+    for ( ;; ) {
+        if (q == ngx_queue_sentinel(labels)) {
+            goto not_found;
+        }
+
+        label = ngx_queue_data(q, ngx_js_timelabel_t, queue);
+
+        if (njs_strstr_eq(&name, &label->name)) {
+            ngx_queue_remove(&label->queue);
+            break;
+        }
+
+        q = ngx_queue_next(q);
+    }
+
+    ns = ns - label->time;
+
+    ms = ns / 1000000;
+    ns = ns % 1000000;
+
+    njs_vm_log(vm, "%V: %uL.%06uLms\n", &name, ms, ns);
+
+    njs_value_undefined_set(retval);
+
+    return NJS_OK;
+
+not_found:
+
+    njs_vm_log(vm, "Timer \"%V\" doesn't exist.\n", &name);
 
     njs_value_undefined_set(retval);
 
@@ -1306,5 +1618,28 @@ ngx_js_merge_conf(ngx_conf_t *cf, void *parent, void *child,
     return ngx_js_set_ssl(cf, conf);
 #else
     return NGX_CONF_OK;
+#endif
+}
+
+
+static uint64_t
+ngx_js_monotonic_time(void)
+{
+#if (NGX_HAVE_CLOCK_MONOTONIC)
+    struct timespec  ts;
+
+#if defined(CLOCK_MONOTONIC_FAST)
+    clock_gettime(CLOCK_MONOTONIC_FAST, &ts);
+#else
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+#endif
+
+    return (uint64_t) ts.tv_sec * 1000000000 + ts.tv_nsec;
+#else
+    struct timeval tv;
+
+    gettimeofday(&tv, NULL);
+
+    return (uint64_t) tv.tv_sec * 1000000000 + tv.tv_usec * 1000;
 #endif
 }
