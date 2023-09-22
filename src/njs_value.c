@@ -466,6 +466,15 @@ njs_value_function_set(njs_value_t *value, njs_function_t *function)
 }
 
 
+void
+njs_value_external_set(njs_value_t *value, njs_external_ptr_t external)
+{
+    njs_assert(njs_value_is_external(value, NJS_PROTO_ID_ANY));
+
+    njs_object_data(value) = external;
+}
+
+
 uint8_t
 njs_value_bool(const njs_value_t *value)
 {
@@ -501,6 +510,15 @@ njs_value_native_function(const njs_value_t *value)
     }
 
     return NULL;
+}
+
+
+njs_external_ptr_t
+njs_value_external(const njs_value_t *value)
+{
+    njs_assert(njs_value_is_external(value, NJS_PROTO_ID_ANY));
+
+    return njs_object_data(value);
 }
 
 
@@ -573,6 +591,13 @@ njs_int_t
 njs_value_is_error(const njs_value_t *value)
 {
     return njs_is_error(value);
+}
+
+
+njs_int_t
+njs_value_is_external(const njs_value_t *value, njs_int_t proto_id)
+{
+    return njs_is_object_data(value, njs_make_tag(proto_id));
 }
 
 

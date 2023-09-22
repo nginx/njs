@@ -532,12 +532,15 @@ NJS_EXPORT void njs_value_boolean_set(njs_value_t *value, int yn);
 NJS_EXPORT void njs_value_number_set(njs_value_t *value, double num);
 NJS_EXPORT void njs_value_function_set(njs_value_t *value,
     njs_function_t *function);
+NJS_EXPORT void njs_value_external_set(njs_value_t *value,
+    njs_external_ptr_t external);
 
 NJS_EXPORT uint8_t njs_value_bool(const njs_value_t *value);
 NJS_EXPORT double njs_value_number(const njs_value_t *value);
 NJS_EXPORT njs_function_t *njs_value_function(const njs_value_t *value);
 NJS_EXPORT njs_function_native_t njs_value_native_function(
     const njs_value_t *value);
+njs_external_ptr_t njs_value_external(const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_value_external_tag(const njs_value_t *value);
 
 NJS_EXPORT uint16_t njs_vm_prop_magic16(njs_object_prop_t *prop);
@@ -555,6 +558,8 @@ NJS_EXPORT njs_int_t njs_value_is_valid_number(const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_value_is_string(const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_value_is_object(const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_value_is_error(const njs_value_t *value);
+NJS_EXPORT njs_int_t njs_value_is_external(const njs_value_t *value,
+    njs_int_t proto_id);
 NJS_EXPORT njs_int_t njs_value_is_array(const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_value_is_function(const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_value_is_buffer(const njs_value_t *value);

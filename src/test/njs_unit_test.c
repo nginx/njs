@@ -22637,7 +22637,8 @@ static njs_unit_test_t  njs_externals_test[] =
 #endif
 
     { njs_str("Object.keys(this).sort()"),
-      njs_str("$262,$r,$r2,$r3,$shared,ExternalConstructor,ExternalError," NCRYPTO "global,njs,process") },
+      njs_str("$262,$r,$r2,$r3,$shared,ExternalConstructor,ExternalError,"
+              "ExternalNull," NCRYPTO "global,njs,process") },
 
     { njs_str("Object.getOwnPropertySymbols($r2)[0] == Symbol.toStringTag"),
       njs_str("true") },
@@ -22924,6 +22925,19 @@ static njs_unit_test_t  njs_shared_test[] =
     { njs_str("var sum = new Function('a, b', 'return a + b');"
               "sum(2, 4);"),
       njs_str("6") },
+
+    { njs_str("ExternalNull.get()"),
+      njs_str("undefined") },
+
+    { njs_str("ExternalNull.set(37); ExternalNull.get()"),
+      njs_str("37") },
+
+    { njs_str("ExternalNull.set(23); ExternalNull.set(37); ExternalNull.get()"),
+      njs_str("37") },
+
+    { njs_str("var v = Math.round(Math.random() * 1000); ExternalNull.set(v);"
+              "ExternalNull.get() == v"),
+      njs_str("true") },
 };
 
 

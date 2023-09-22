@@ -33,6 +33,7 @@ njs_int_t njs_array_buffer_detach(njs_vm_t *vm, njs_value_t *args,
 
 
 static njs_int_t    njs_external_r_proto_id;
+static njs_int_t    njs_external_null_proto_id;
 static njs_int_t    njs_external_error_ctor_id;
 
 
@@ -556,6 +557,67 @@ njs_unit_test_r_bind(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
+njs_unit_test_null_get(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
+{
+    double       *d;
+    njs_value_t  *this;
+
+    this = njs_argument(args, 0);
+
+    if (!njs_value_is_external(this, njs_external_null_proto_id)) {
+        njs_type_error(vm, "\"this\" is not a null external");
+        return NJS_ERROR;
+    }
+
+    d = njs_value_external(this);
+
+    if (d == NULL) {
+        njs_value_undefined_set(retval);
+
+    } else {
+        njs_value_number_set(retval, *d);
+    }
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+njs_unit_test_null_set(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
+{
+    double       *d;
+    njs_value_t  *this;
+
+    this = njs_argument(args, 0);
+
+    if (!njs_value_is_external(this, njs_external_null_proto_id)) {
+        njs_type_error(vm, "\"this\" is not a null external");
+        return NJS_ERROR;
+    }
+
+    d = njs_value_external(this);
+
+    if (d == NULL) {
+        d = njs_mp_alloc(vm->mem_pool, sizeof(double));
+        if (d == NULL) {
+            njs_memory_error(vm);
+            return NJS_ERROR;
+        }
+    }
+
+    *d = njs_value_number(njs_arg(args, nargs, 1));
+
+    njs_value_external_set(this, d);
+
+    njs_value_undefined_set(retval);
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
 njs_unit_test_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
 {
@@ -1043,6 +1105,40 @@ static njs_external_t  njs_unit_test_r_external[] = {
 
 };
 
+static njs_external_t  njs_unit_test_null_external[] = {
+
+    {
+        .flags = NJS_EXTERN_PROPERTY | NJS_EXTERN_SYMBOL,
+        .name.symbol = NJS_SYMBOL_TO_STRING_TAG,
+        .u.property = {
+            .value = "Null",
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("get"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = njs_unit_test_null_get,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("set"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = njs_unit_test_null_set,
+        }
+    },
+
+};
+
 
 static njs_external_t  njs_unit_test_ctor_props[] = {
 
@@ -1170,6 +1266,7 @@ njs_externals_init_internal(njs_vm_t *vm, njs_unit_test_req_init_t *init,
     njs_unit_test_prop_t  *prop;
 
     static const njs_str_t  external_ctor = njs_str("ExternalConstructor");
+    static const njs_str_t  external_null = njs_str("ExternalNull");
     static const njs_str_t  external_error = njs_str("ExternalError");
 
     if (shared) {
@@ -1190,6 +1287,26 @@ njs_externals_init_internal(njs_vm_t *vm, njs_unit_test_req_init_t *init,
         njs_value_function_set(njs_value_arg(&value), f);
 
         ret = njs_vm_bind(vm, &external_ctor, njs_value_arg(&value), 1);
+        if (njs_slow_path(ret != NJS_OK)) {
+            njs_printf("njs_vm_bind() failed\n");
+            return NJS_ERROR;
+        }
+
+        njs_external_null_proto_id = njs_vm_external_prototype(vm,
+                                       njs_unit_test_null_external,
+                                       njs_nitems(njs_unit_test_null_external));
+        if (njs_slow_path(njs_external_null_proto_id < 0)) {
+            njs_printf("njs_vm_external_prototype() failed\n");
+            return NJS_ERROR;
+        }
+
+        ret = njs_vm_external_create(vm, njs_value_arg(&value),
+                                     njs_external_null_proto_id, NULL, 1);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
+
+        ret = njs_vm_bind(vm, &external_null, njs_value_arg(&value), 1);
         if (njs_slow_path(ret != NJS_OK)) {
             njs_printf("njs_vm_bind() failed\n");
             return NJS_ERROR;
