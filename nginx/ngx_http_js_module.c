@@ -1366,6 +1366,9 @@ ngx_http_js_init_vm(ngx_http_request_t *r, njs_int_t proto_id)
         return NGX_ERROR;
     }
 
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "http js vm clone: %p from: %p", ctx->vm, jlcf->vm);
+
     cln = ngx_pool_cleanup_add(r->pool, 0);
     if (cln == NULL) {
         return NGX_ERROR;
@@ -1424,6 +1427,9 @@ ngx_http_js_cleanup_ctx(void *data)
     if (njs_vm_pending(ctx->vm)) {
         ngx_log_error(NGX_LOG_ERR, ctx->log, 0, "pending events");
     }
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ctx->log, 0, "http js vm destroy: %p",
+                   ctx->vm);
 
     njs_vm_destroy(ctx->vm);
 }

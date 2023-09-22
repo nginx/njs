@@ -1030,6 +1030,9 @@ ngx_stream_js_init_vm(ngx_stream_session_t *s, njs_int_t proto_id)
         return NGX_ERROR;
     }
 
+    ngx_log_debug2(NGX_LOG_DEBUG_STREAM, s->connection->log, 0,
+                   "stream js vm clone: %p from: %p", ctx->vm, jscf->vm);
+
     cln = ngx_pool_cleanup_add(s->connection->pool, 0);
     if (cln == NULL) {
         return NGX_ERROR;
@@ -1106,6 +1109,9 @@ ngx_stream_js_cleanup(void *data)
     if (njs_vm_pending(ctx->vm)) {
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0, "pending events");
     }
+
+    ngx_log_debug1(NGX_LOG_DEBUG_STREAM, s->connection->log, 0,
+                   "stream js vm destroy: %p", ctx->vm);
 
     njs_vm_destroy(ctx->vm);
 }
