@@ -46,6 +46,8 @@ http {
         listen       127.0.0.1:8080;
         server_name  localhost;
 
+        js_fetch_max_response_buffer_size 128k;
+
         location /njs {
             js_content test.njs;
         }
@@ -399,7 +401,7 @@ $t->write_file('test.js', <<EOF);
                      host_header, multi, loc, property};
 EOF
 
-$t->try_run('no njs.fetch')->plan(35);
+$t->try_run('no njs.fetch')->plan(36);
 
 $t->run_daemon(\&http_daemon, port(8082));
 $t->waitforsocket('127.0.0.1:' . port(8082));
@@ -491,6 +493,13 @@ local $TODO = 'not yet' unless has_version('0.8.0');
 
 like(http_get('/host_header?host=FOOBAR'), qr/200 OK.*FOOBAR$/s,
 	'fetch host header');
+}
+
+TODO: {
+local $TODO = 'not yet' unless has_version('0.8.2');
+
+like(http_get('/body_special?loc=head/large&method=HEAD'),
+	qr/200 OK.*<empty>$/s, 'fetch head method large content-length');
 }
 
 ###############################################################################
@@ -617,6 +626,13 @@ sub http_daemon {
 			print $client
 				"HTTP/1.1 200 OK" . CRLF .
 				"Content-Length: 100" . CRLF .
+				"Connection: close" . CRLF .
+				CRLF;
+
+		} elsif ($uri eq '/head/large') {
+			print $client
+				"HTTP/1.1 200 OK" . CRLF .
+				"Content-Length: 1000000" . CRLF .
 				"Connection: close" . CRLF .
 				CRLF;
 

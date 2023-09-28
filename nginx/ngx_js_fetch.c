@@ -2426,8 +2426,9 @@ ngx_js_http_process_headers(ngx_js_http_t *http)
                     return NGX_ERROR;
                 }
 
-                if (hp->content_length_n
-                    > (off_t) http->max_response_body_size)
+                if (!http->header_only
+                    && hp->content_length_n
+                       > (off_t) http->max_response_body_size)
                 {
                     ngx_js_http_error(http, 0,
                                       "fetch content length is too large");
