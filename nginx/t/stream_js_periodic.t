@@ -275,7 +275,7 @@ $t->waitforsocket('127.0.0.1:' . port(8090));
 
 ###############################################################################
 
-select undef, undef, undef, 0.1;
+select undef, undef, undef, 0.2;
 
 is(stream('127.0.0.1:' . port(8080))->io('affinity'), 'affinity',
 	'affinity test');
