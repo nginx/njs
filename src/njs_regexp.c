@@ -941,6 +941,9 @@ njs_regexp_builtin_exec(njs_vm_t *vm, njs_value_t *r, njs_value_t *s,
                            string.size, match_data);
     if (ret >= 0) {
         result = njs_regexp_exec_result(vm, r, utf8, &string, match_data);
+
+        njs_regex_match_data_free(match_data, vm->regex_generic_ctx);
+
         if (njs_slow_path(result == NULL)) {
             return NJS_ERROR;
         }
@@ -949,8 +952,9 @@ njs_regexp_builtin_exec(njs_vm_t *vm, njs_value_t *r, njs_value_t *s,
         return NJS_OK;
     }
 
+    njs_regex_match_data_free(match_data, vm->regex_generic_ctx);
+
     if (njs_slow_path(ret == NJS_ERROR)) {
-        njs_regex_match_data_free(match_data, vm->regex_generic_ctx);
         return NJS_ERROR;
     }
 
@@ -1153,8 +1157,6 @@ fail:
     ret = NJS_ERROR;
 
 done:
-
-    njs_regex_match_data_free(match_data, vm->regex_generic_ctx);
 
     return (ret == NJS_OK) ? array : NULL;
 }
