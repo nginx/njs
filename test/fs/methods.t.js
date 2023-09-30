@@ -359,6 +359,36 @@ let appendFileP_tsuite = {
     get tests() { return append_tests() },
 };
 
+async function exists_test(params) {
+    let res = await method("exists", params);
+
+    if (res !== params.expected) {
+        throw Error(`exists failed check`);
+    }
+
+    return 'SUCCESS';
+}
+
+let exists_tests = () => [
+    { args: ["test/fs/ascii"],
+      expected: true },
+    { args: ["test/fs"],
+      expected: true },
+    { args: ["test/fs_NONEXISTENT/ascii"],
+      expected: false },
+    { args: ["test/fs/ascii_NONEXISTENT"],
+      expected: false },
+];
+
+let existsSync_tsuite = {
+    name: "fs existsSync",
+    skip: () => (!has_fs() || !has_buffer()),
+    T: exists_test,
+    prepare_args: p,
+    opts: { type: "sync" },
+    get tests() { return exists_tests() },
+};
+
 async function realpath_test(params) {
     let data = await method("realpath", params);
 
@@ -1153,6 +1183,7 @@ run([
     appendFile_tsuite,
     appendFileSync_tsuite,
     appendFileP_tsuite,
+    existsSync_tsuite,
     realpath_tsuite,
     realpathSync_tsuite,
     realpathP_tsuite,

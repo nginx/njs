@@ -146,6 +146,8 @@ typedef njs_int_t (*njs_file_tree_walk_cb_t)(const char *, const struct stat *,
 
 static njs_int_t njs_fs_access(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t calltype, njs_value_t *retval);
+static njs_int_t njs_fs_exists_sync(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t calltype, njs_value_t *retval);
 static njs_int_t njs_fs_mkdir(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t calltype, njs_value_t *retval);
 static njs_int_t njs_fs_open(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
@@ -578,6 +580,16 @@ static njs_external_t  njs_ext_fs[] = {
         .u.method = {
             .native = njs_fs_dirent_constructor,
             .ctor = 1,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("existsSync"),
+        .writable = 1,
+        .configurable = 1,
+        .u.method = {
+            .native = njs_fs_exists_sync,
         }
     },
 
@@ -1466,6 +1478,24 @@ njs_fs_access(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     return NJS_ERROR;
+}
+
+
+static njs_int_t
+njs_fs_exists_sync(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t calltype, njs_value_t *retval)
+{
+    const char  *path;
+    char        path_buf[NJS_MAX_PATH + 1];
+
+    path = njs_fs_path(vm, path_buf, njs_arg(args, nargs, 1), "path");
+    if (njs_slow_path(path == NULL)) {
+        return NJS_ERROR;
+    }
+
+    njs_value_boolean_set(retval, access(path, F_OK) == 0);
+
+    return NJS_OK;
 }
 
 
