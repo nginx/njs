@@ -17,8 +17,6 @@ njs_regexp_pattern_t *njs_regexp_pattern_create(njs_vm_t *vm,
 njs_int_t njs_regexp_match(njs_vm_t *vm, njs_regex_t *regex,
     const u_char *subject, size_t off, size_t len, njs_regex_match_data_t *d);
 njs_regexp_t *njs_regexp_alloc(njs_vm_t *vm, njs_regexp_pattern_t *pattern);
-njs_int_t njs_regexp_exec(njs_vm_t *vm, njs_value_t *r, njs_value_t *s,
-    njs_value_t *retval);
 njs_int_t njs_regexp_prototype_exec(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 njs_int_t njs_regexp_prototype_symbol_replace(njs_vm_t *vm,
