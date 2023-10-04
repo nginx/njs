@@ -1773,6 +1773,10 @@ njs_regexp_prototype_symbol_split(njs_vm_t *vm, njs_value_t *args,
         e = njs_min(e, length);
 
         if (e == p) {
+            if (njs_object_slots(&z)) {
+                njs_regexp_exec_result_free(vm, njs_array(&z));
+            }
+
             q = q + 1;
             continue;
         }
@@ -1794,6 +1798,10 @@ njs_regexp_prototype_symbol_split(njs_vm_t *vm, njs_value_t *args,
         }
 
         if (array->length == limit) {
+            if (njs_object_slots(&z)) {
+                njs_regexp_exec_result_free(vm, njs_array(&z));
+            }
+
             goto done;
         }
 
@@ -1818,8 +1826,16 @@ njs_regexp_prototype_symbol_split(njs_vm_t *vm, njs_value_t *args,
             }
 
             if (array->length == limit) {
+                if (njs_object_slots(&z)) {
+                    njs_regexp_exec_result_free(vm, njs_array(&z));
+                }
+
                 goto done;
             }
+        }
+
+        if (njs_object_slots(&z)) {
+            njs_regexp_exec_result_free(vm, njs_array(&z));
         }
 
         q = p;
