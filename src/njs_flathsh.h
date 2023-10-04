@@ -130,6 +130,7 @@ NJS_EXPORT njs_flathsh_elt_t *njs_flathsh_add_elt(njs_flathsh_t *fh,
     njs_flathsh_query_t *fhq);
 
 NJS_EXPORT njs_flathsh_descr_t *njs_flathsh_new(njs_flathsh_query_t *fhq);
+NJS_EXPORT void njs_flathsh_destroy(njs_flathsh_t *fh, njs_flathsh_query_t *fhq);
 
 
 /* Temporary backward compatibility .*/

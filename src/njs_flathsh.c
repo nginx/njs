@@ -162,6 +162,15 @@ njs_flathsh_new(njs_flathsh_query_t *fhq)
 }
 
 
+void
+njs_flathsh_destroy(njs_flathsh_t *fh, njs_flathsh_query_t *fhq)
+{
+    njs_flathsh_free(fhq, njs_flathsh_chunk(fh->slot));
+
+    fh->slot = NULL;
+}
+
+
 static njs_flathsh_descr_t *
 njs_flathsh_alloc(njs_flathsh_query_t *fhq, size_t hash_size, size_t elts_size)
 {

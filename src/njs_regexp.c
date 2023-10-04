@@ -1182,6 +1182,50 @@ done:
 }
 
 
+static void
+njs_regexp_exec_result_free(njs_vm_t *vm, njs_array_t *result)
+{
+    njs_uint_t          n;
+    njs_value_t         *start;
+    njs_flathsh_t       *hash;
+    njs_object_prop_t   *prop;
+    njs_lvlhsh_each_t   lhe;
+    njs_lvlhsh_query_t  lhq;
+
+    if (result->object.fast_array) {
+        start = result->start;
+
+        for (n = 0; n < result->length; n++) {
+            if (start[n].short_string.size == NJS_STRING_LONG) {
+                njs_mp_free(vm->mem_pool, start[n].long_string.data);
+            }
+        }
+    }
+
+    njs_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
+
+    hash = &result->object.hash;
+
+    for ( ;; ) {
+        prop = njs_flathsh_each(hash, &lhe);
+
+        if (prop == NULL) {
+            break;
+        }
+
+        njs_mp_free(vm->mem_pool, prop);
+    }
+
+
+    lhq.pool = vm->mem_pool;
+    lhq.proto = &njs_object_hash_proto;
+
+    njs_flathsh_destroy(hash, &lhq);
+
+    njs_array_destroy(vm, result);
+}
+
+
 njs_int_t
 njs_regexp_prototype_exec(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
@@ -1497,6 +1541,10 @@ njs_regexp_prototype_symbol_replace(njs_vm_t *vm, njs_value_t *args,
                                               arguments, ncaptures, &groups,
                                               replace, retval);
 
+            if (njs_object_slots(r)) {
+                njs_regexp_exec_result_free(vm, njs_array(r));
+            }
+
         } else {
             ret = njs_array_expand(vm, array, 0,
                                    njs_is_defined(&groups) ? 3 : 2);
@@ -1516,6 +1564,8 @@ njs_regexp_prototype_symbol_replace(njs_vm_t *vm, njs_value_t *args,
                                     njs_value_arg(&njs_value_undefined),
                                     arguments, n, retval);
         }
+
+        njs_array_destroy(vm, array);
 
         if (njs_slow_path(ret == NJS_ERROR)) {
             return NJS_ERROR;
