@@ -2000,7 +2000,7 @@ njs_xml_error(njs_vm_t *vm, njs_xml_doc_t *current, const char *fmt, ...)
                         err->int2);
     }
 
-    njs_vm_error(vm, "%s", p - errstr, errstr);
+    njs_vm_error(vm, "%*s", p - errstr, errstr);
 }
 
 

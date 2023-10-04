@@ -22035,6 +22035,10 @@ static njs_unit_test_t  njs_xml_test[] =
       njs_str("FOO,BAR,0,2") },
 
     { njs_str("const xml = require('xml');"
+              "let doc = xml.parse(`GARBAGE`)"),
+      njs_str("Error: failed to parse XML (libxml2: \"Start tag expected, '<' not found\" at 1:1)") },
+
+    { njs_str("const xml = require('xml');"
               "let doc = xml.parse(`<r><a></a>TEXT</r>`);"
               "doc.r.$text"),
       njs_str("TEXT") },
