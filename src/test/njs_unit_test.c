@@ -9734,6 +9734,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'мояВерблюжьяСтрока'.split(/(?=[А-Я])/)"),
       njs_str("моя,Верблюжья,Строка") },
 
+    { njs_str("`aaaaaaaaaaaaaaaaa`.split(/(.*)/)"),
+      njs_str(",aaaaaaaaaaaaaaaaa,") },
+
     { njs_str("'Harry Trump ;Fred Barney; Helen Rigby ; Bill Abel ;Chris Hand '.split( /\\s*(?:;|$)\\s*/)"),
       njs_str("Harry Trump,Fred Barney,Helen Rigby,Bill Abel,Chris Hand,") },
 
