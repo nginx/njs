@@ -592,6 +592,14 @@ njs_mp_alloc_large(njs_mp_t *mp, size_t alignment, size_t size)
         return NULL;
     }
 
+#if (NJS_DEBUG)
+    /*
+     * Ensure that the size is not zero, otherwise njs_mp_find_block()
+     * will not be able to find the block.
+     */
+    size += size == 0;
+#endif
+
     if (njs_is_power_of_two(size)) {
         block = njs_malloc(sizeof(njs_mp_block_t));
         if (njs_slow_path(block == NULL)) {
