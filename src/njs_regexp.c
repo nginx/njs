@@ -1541,10 +1541,6 @@ njs_regexp_prototype_symbol_replace(njs_vm_t *vm, njs_value_t *args,
                                               arguments, ncaptures, &groups,
                                               replace, retval);
 
-            if (njs_object_slots(r)) {
-                njs_regexp_exec_result_free(vm, njs_array(r));
-            }
-
         } else {
             ret = njs_array_expand(vm, array, 0,
                                    njs_is_defined(&groups) ? 3 : 2);
@@ -1585,6 +1581,15 @@ njs_regexp_prototype_symbol_replace(njs_vm_t *vm, njs_value_t *args,
             njs_string_get(&matched, &m);
 
             next_pos = pos + (int64_t) m.length;
+        }
+
+        if (!func_replace && njs_object_slots(r)) {
+            /*
+              * Doing free here ONLY for non-function replace, because
+              * otherwise we cannot be certain the result of match
+              * was not stored elsewhere.
+              */
+            njs_regexp_exec_result_free(vm, njs_array(r));
         }
     }
 
