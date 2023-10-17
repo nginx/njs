@@ -819,7 +819,7 @@ njs_js_ext_shared_dict_items(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
         rc = njs_vm_array_alloc(vm, kv, 2);
         if (rc != NJS_OK) {
-            return NJS_ERROR;
+            goto fail;
         }
 
         value = njs_vm_array_push(vm, kv);
