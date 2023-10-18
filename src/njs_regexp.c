@@ -936,9 +936,14 @@ njs_regexp_builtin_exec(njs_vm_t *vm, njs_value_t *r, njs_value_t *s,
         offset = last_index;
 
     } else {
-        offset = njs_string_utf8_offset(string.start,
-                                        string.start + string.size, last_index)
-                 - string.start;
+        if ((size_t) last_index < string.length) {
+            offset = njs_string_utf8_offset(string.start,
+                                            string.start + string.size,
+                                            last_index)
+                     - string.start;
+        } else {
+            offset = string.size;
+        }
     }
 
     ret = njs_regexp_match(vm, &pattern->regex[type], string.start, offset,

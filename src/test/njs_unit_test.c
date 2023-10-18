@@ -9261,6 +9261,12 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'abc'.replaceAll(/^/g, '|$&|')"),
       njs_str("||abc") },
 
+    { njs_str("('α'.repeat(30) + 'aa').replace(/a/g, '#')"),
+      njs_str("αααααααααααααααααααααααααααααα##") },
+
+    { njs_str("('α'.repeat(30) + 'aa').replaceAll(/a/g, '#')"),
+      njs_str("αααααααααααααααααααααααααααααα##") },
+
     { njs_str("var uri ='/u/v1/Aa/bB?type=m3u8&mt=42';"
               "uri.replace(/^\\/u\\/v1\\/[^/]*\\/([^\?]*)\\?.*(mt=[^&]*).*$/, '$1|$2')"),
       njs_str("bB|mt=42") },
