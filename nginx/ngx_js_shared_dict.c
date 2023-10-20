@@ -1240,7 +1240,7 @@ ngx_js_dict_delete(njs_vm_t *vm, ngx_js_dict_t *dict, njs_str_t *key,
     ngx_time_t          *tp;
     ngx_js_dict_node_t  *node;
 
-    ngx_rwlock_rlock(&dict->sh->rwlock);
+    ngx_rwlock_wlock(&dict->sh->rwlock);
 
     node = ngx_js_dict_lookup(dict, key);
 
