@@ -1,3 +1,30 @@
+Changes with njs 0.8.2                                       24 Oct 2023
+
+    nginx modules:
+
+    *) Feature: introduced console object. The following methods
+       were introduced: error(), info(), log(), time(), timeEnd(),
+       warn().
+
+    *) Bugfix: fixed HEAD response handling with large Content-Length
+       in fetch API.
+
+    *) Bugfix: fixed items() method for a shared dictionary.
+
+    *) Bugfix: fixed delete() method for a shared dictionary.
+
+    Core:
+
+    *) Feature: extended "fs" module. Added existsSync().
+
+    *) Bugfix: fixed "xml" module. Fixed broken XML exception handling
+       in parse() method.
+
+    *) Bugfix: fixed RegExp.prototype.exec() with global regexp and
+       unicode input.
+
+    *) Bugfix: fixed return statement parsing with invalid expression.
+
 Changes with njs 0.8.1                                       12 Sep 2023
 
     nginx modules:
