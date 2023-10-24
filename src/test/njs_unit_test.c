@@ -10093,6 +10093,15 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("\n{\nreturn;\n}"),
       njs_str("SyntaxError: Illegal return statement in 3") },
 
+    { njs_str("function f () {return a +}"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("`${function(){return n=>}}`"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
+    { njs_str("(function(){return a +})"),
+      njs_str("SyntaxError: Unexpected token \"}\" in 1") },
+
     { njs_str("if (1) function f(){}"),
       njs_str("SyntaxError: Functions can only be declared at top level or inside a block in 1") },
 

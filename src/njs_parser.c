@@ -6347,10 +6347,12 @@ njs_parser_return_statement(njs_parser_t *parser, njs_lexer_token_t *token,
 
         parser->node = NULL;
 
-        njs_parser_next(parser, njs_parser_expression);
+        if (token->type != NJS_TOKEN_CLOSE_BRACE) {
+            njs_parser_next(parser, njs_parser_expression);
 
-        return njs_parser_after(parser, current, node, 0,
-                                njs_parser_return_statement_after);
+            return njs_parser_after(parser, current, node, 0,
+                                    njs_parser_return_statement_after);
+        }
     }
 
     parser->node = node;
@@ -6364,8 +6366,9 @@ njs_parser_return_statement_after(njs_parser_t *parser,
     njs_lexer_token_t *token, njs_queue_link_t *current)
 {
     if (parser->ret != NJS_OK) {
-        parser->node = parser->target;
-        return njs_parser_stack_pop(parser);
+        njs_parser_syntax_error(parser, "Unexpected token \"%V\"",
+                                &token->text);
+        return NJS_DONE;
     }
 
     if (njs_parser_expect_semicolon(parser, token) != NJS_OK) {
