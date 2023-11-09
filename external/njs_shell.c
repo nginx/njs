@@ -101,9 +101,9 @@ static njs_int_t njs_console_init(njs_vm_t *vm, njs_console_t *console);
 static void njs_console_output(njs_vm_t *vm, njs_value_t *value,
     njs_int_t ret);
 static njs_int_t njs_externals_init(njs_vm_t *vm);
-static njs_vm_t *njs_create_vm(njs_opts_t *opts, njs_vm_opt_t *vm_options);
+static njs_vm_t *njs_create_vm(njs_opts_t *opts);
 static void njs_process_output(njs_vm_t *vm, njs_value_t *value, njs_int_t ret);
-static njs_int_t njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options);
+static njs_int_t njs_process_file(njs_opts_t *opts);
 static njs_int_t njs_process_script(njs_vm_t *vm, void *runtime,
     const njs_str_t *script);
 
@@ -113,8 +113,7 @@ static njs_int_t njs_options_parse(njs_opts_t *opts, int argc, char **argv);
 static void njs_options_free(njs_opts_t *opts);
 
 #ifdef NJS_HAVE_READLINE
-static njs_int_t njs_interactive_shell(njs_opts_t *opts,
-    njs_vm_opt_t *vm_options);
+static njs_int_t njs_interactive_shell(njs_opts_t *opts);
 static njs_int_t njs_editline_init(void);
 static char *njs_completion_generator(const char *text, int state);
 #endif
@@ -303,13 +302,10 @@ static njs_console_t  njs_console;
 static njs_int_t
 njs_main(njs_opts_t *opts)
 {
-    njs_vm_t      *vm;
-    njs_int_t     ret;
-    njs_vm_opt_t  vm_options;
+    njs_vm_t   *vm;
+    njs_int_t  ret;
 
-    njs_mm_denormals(opts.denormals);
-
-    njs_vm_opt_init(&vm_options);
+    njs_mm_denormals(opts->denormals);
 
     if (opts->file == NULL) {
         if (opts->command.length != 0) {
@@ -328,47 +324,17 @@ njs_main(njs_opts_t *opts)
         }
     }
 
-    vm_options.file.start = (u_char *) opts->file;
-    vm_options.file.length = njs_strlen(opts->file);
-
-    vm_options.init = 1;
-    vm_options.interactive = opts->interactive;
-    vm_options.disassemble = opts->disassemble;
-    vm_options.backtrace = 1;
-    vm_options.quiet = opts->quiet;
-    vm_options.sandbox = opts->sandbox;
-    vm_options.unsafe = !opts->safe;
-    vm_options.module = opts->module;
-#ifdef NJS_DEBUG_GENERATOR
-    vm_options.generator_debug = opts->generator_debug;
-#endif
-#ifdef NJS_DEBUG_OPCODE
-    vm_options.opcode_debug = opts->opcode_debug;
-#endif
-
-    vm_options.ops = &njs_console_ops;
-    vm_options.addons = njs_console_addon_modules;
-    vm_options.external = &njs_console;
-    vm_options.argv = opts->argv;
-    vm_options.argc = opts->argc;
-    vm_options.ast = opts->ast;
-    vm_options.unhandled_rejection = opts->unhandled_rejection;
-
-    if (opts->stack_size != 0) {
-        vm_options.max_stack_size = opts->stack_size;
-    }
-
 #if (!defined NJS_FUZZER_TARGET && defined NJS_HAVE_READLINE)
 
     if (opts->interactive) {
-        ret = njs_interactive_shell(opts, &vm_options);
+        ret = njs_interactive_shell(opts);
 
     } else
 
 #endif
 
     if (opts->command.length != 0) {
-        vm = njs_create_vm(opts, &vm_options);
+        vm = njs_create_vm(opts);
         if (vm == NULL) {
             return NJS_ERROR;
         }
@@ -377,7 +343,7 @@ njs_main(njs_opts_t *opts)
         njs_vm_destroy(vm);
 
     } else {
-        ret = njs_process_file(opts, &vm_options);
+        ret = njs_process_file(opts);
     }
 
     return ret;
@@ -751,15 +717,48 @@ njs_externals_init(njs_vm_t *vm)
 
 
 static njs_vm_t *
-njs_create_vm(njs_opts_t *opts, njs_vm_opt_t *vm_options)
+njs_create_vm(njs_opts_t *opts)
 {
-    u_char      *p, *start;
-    njs_vm_t    *vm;
-    njs_int_t   ret;
-    njs_str_t   path;
-    njs_uint_t  i;
+    u_char        *p, *start;
+    njs_vm_t      *vm;
+    njs_int_t     ret;
+    njs_str_t     path;
+    njs_uint_t    i;
+    njs_vm_opt_t  vm_options;
 
-    vm = njs_vm_create(vm_options);
+    njs_vm_opt_init(&vm_options);
+
+    vm_options.file.start = (u_char *) opts->file;
+    vm_options.file.length = njs_strlen(opts->file);
+
+    vm_options.init = 1;
+    vm_options.interactive = opts->interactive;
+    vm_options.disassemble = opts->disassemble;
+    vm_options.backtrace = 1;
+    vm_options.quiet = opts->quiet;
+    vm_options.sandbox = opts->sandbox;
+    vm_options.unsafe = !opts->safe;
+    vm_options.module = opts->module;
+#ifdef NJS_DEBUG_GENERATOR
+    vm_options.generator_debug = opts->generator_debug;
+#endif
+#ifdef NJS_DEBUG_OPCODE
+    vm_options.opcode_debug = opts->opcode_debug;
+#endif
+
+    vm_options.ops = &njs_console_ops;
+    vm_options.addons = njs_console_addon_modules;
+    vm_options.external = &njs_console;
+    vm_options.argv = opts->argv;
+    vm_options.argc = opts->argc;
+    vm_options.ast = opts->ast;
+    vm_options.unhandled_rejection = opts->unhandled_rejection;
+
+    if (opts->stack_size != 0) {
+        vm_options.max_stack_size = opts->stack_size;
+    }
+
+    vm = njs_vm_create(&vm_options);
     if (vm == NULL) {
         njs_stderror("failed to create vm\n");
         return NULL;
@@ -865,7 +864,7 @@ njs_process_events(void *runtime)
 
 
 static njs_int_t
-njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
+njs_process_file(njs_opts_t *opts)
 {
     int          fd;
     char         *file;
@@ -954,7 +953,7 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
         source.length += n;
     }
 
-    vm = njs_create_vm(opts, vm_options);
+    vm = njs_create_vm(opts);
     if (vm == NULL) {
         ret = NJS_ERROR;
         goto done;
@@ -976,7 +975,7 @@ njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
         }
     }
 
-    ret = njs_process_script(vm, vm_options->external, &script);
+    ret = njs_process_script(vm, njs_vm_external_ptr(vm), &script);
     if (ret != NJS_OK) {
         ret = NJS_ERROR;
         goto done;
@@ -1133,7 +1132,7 @@ free_line:
 
 
 static njs_int_t
-njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
+njs_interactive_shell(njs_opts_t *opts)
 {
     int             flags;
     fd_set          fds;
@@ -1146,7 +1145,7 @@ njs_interactive_shell(njs_opts_t *opts, njs_vm_opt_t *vm_options)
         return NJS_ERROR;
     }
 
-    vm = njs_create_vm(opts, vm_options);
+    vm = njs_create_vm(opts);
     if (vm == NULL) {
         return NJS_ERROR;
     }
