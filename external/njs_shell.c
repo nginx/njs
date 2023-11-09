@@ -30,10 +30,6 @@
 #endif
 
 
-typedef void (*njs_console_output_pt)(njs_vm_t *vm, njs_value_t *value,
-    njs_int_t ret);
-
-
 typedef struct {
     uint8_t                 disassemble;
     uint8_t                 denormals;
@@ -51,7 +47,7 @@ typedef struct {
     int                     stack_size;
 
     char                    *file;
-    char                    *command;
+    njs_str_t               command;
     size_t                  n_paths;
     char                    **paths;
     char                    **argv;
@@ -94,16 +90,20 @@ typedef struct {
 
     njs_queue_t             labels;
 
+    njs_bool_t              suppress_stdout;
+
     njs_completion_t        completion;
 } njs_console_t;
 
 
+static njs_int_t njs_main(njs_opts_t *opts);
 static njs_int_t njs_console_init(njs_vm_t *vm, njs_console_t *console);
 static void njs_console_output(njs_vm_t *vm, njs_value_t *value,
     njs_int_t ret);
 static njs_int_t njs_externals_init(njs_vm_t *vm);
 static njs_vm_t *njs_create_vm(njs_opts_t *opts, njs_vm_opt_t *vm_options);
 static void njs_process_output(njs_vm_t *vm, njs_value_t *value, njs_int_t ret);
+static njs_int_t njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options);
 static njs_int_t njs_process_script(njs_vm_t *vm, void *runtime,
     const njs_str_t *script);
 
@@ -111,7 +111,6 @@ static njs_int_t njs_process_script(njs_vm_t *vm, void *runtime,
 
 static njs_int_t njs_options_parse(njs_opts_t *opts, int argc, char **argv);
 static void njs_options_free(njs_opts_t *opts);
-static njs_int_t njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options);
 
 #ifdef NJS_HAVE_READLINE
 static njs_int_t njs_interactive_shell(njs_opts_t *opts,
@@ -301,25 +300,97 @@ static njs_int_t      njs_console_proto_id;
 static njs_console_t  njs_console;
 
 
+static njs_int_t
+njs_main(njs_opts_t *opts)
+{
+    njs_vm_t      *vm;
+    njs_int_t     ret;
+    njs_vm_opt_t  vm_options;
+
+    njs_mm_denormals(opts.denormals);
+
+    njs_vm_opt_init(&vm_options);
+
+    if (opts->file == NULL) {
+        if (opts->command.length != 0) {
+            opts->file = (char *) "string";
+        }
+
+#ifdef NJS_HAVE_READLINE
+        else if (opts->interactive) {
+            opts->file = (char *) "shell";
+        }
+#endif
+
+        if (opts->file == NULL) {
+            njs_stderror("file name is required in non-interactive mode\n");
+            return NJS_ERROR;
+        }
+    }
+
+    vm_options.file.start = (u_char *) opts->file;
+    vm_options.file.length = njs_strlen(opts->file);
+
+    vm_options.init = 1;
+    vm_options.interactive = opts->interactive;
+    vm_options.disassemble = opts->disassemble;
+    vm_options.backtrace = 1;
+    vm_options.quiet = opts->quiet;
+    vm_options.sandbox = opts->sandbox;
+    vm_options.unsafe = !opts->safe;
+    vm_options.module = opts->module;
+#ifdef NJS_DEBUG_GENERATOR
+    vm_options.generator_debug = opts->generator_debug;
+#endif
+#ifdef NJS_DEBUG_OPCODE
+    vm_options.opcode_debug = opts->opcode_debug;
+#endif
+
+    vm_options.ops = &njs_console_ops;
+    vm_options.addons = njs_console_addon_modules;
+    vm_options.external = &njs_console;
+    vm_options.argv = opts->argv;
+    vm_options.argc = opts->argc;
+    vm_options.ast = opts->ast;
+    vm_options.unhandled_rejection = opts->unhandled_rejection;
+
+    if (opts->stack_size != 0) {
+        vm_options.max_stack_size = opts->stack_size;
+    }
+
+#if (!defined NJS_FUZZER_TARGET && defined NJS_HAVE_READLINE)
+
+    if (opts->interactive) {
+        ret = njs_interactive_shell(opts, &vm_options);
+
+    } else
+
+#endif
+
+    if (opts->command.length != 0) {
+        vm = njs_create_vm(opts, &vm_options);
+        if (vm == NULL) {
+            return NJS_ERROR;
+        }
+
+        ret = njs_process_script(vm, njs_vm_external_ptr(vm), &opts->command);
+        njs_vm_destroy(vm);
+
+    } else {
+        ret = njs_process_file(opts, &vm_options);
+    }
+
+    return ret;
+}
+
+
 #ifndef NJS_FUZZER_TARGET
 
 int
 main(int argc, char **argv)
 {
-    njs_vm_t      *vm;
-    njs_int_t     ret;
-    njs_opts_t    opts;
-    njs_str_t     command;
-    njs_vm_opt_t  vm_options;
-
-    static uintptr_t uptr[] = {
-        (uintptr_t) njs_console_output,
-    };
-
-    static njs_vm_meta_t metas = {
-        .size = njs_nitems(uptr),
-        .values = uptr
-    };
+    njs_int_t   ret;
+    njs_opts_t  opts;
 
     njs_memzero(&opts, sizeof(njs_opts_t));
     opts.interactive = 1;
@@ -336,79 +407,7 @@ main(int argc, char **argv)
         goto done;
     }
 
-    njs_mm_denormals(opts.denormals);
-
-    njs_vm_opt_init(&vm_options);
-
-    if (opts.file == NULL) {
-        if (opts.command != NULL) {
-            opts.file = (char *) "string";
-        }
-
-#ifdef NJS_HAVE_READLINE
-        else if (opts.interactive) {
-            opts.file = (char *) "shell";
-        }
-#endif
-
-        if (opts.file == NULL) {
-            njs_stderror("file name is required in non-interactive mode\n");
-            goto done;
-        }
-    }
-
-    vm_options.file.start = (u_char *) opts.file;
-    vm_options.file.length = njs_strlen(opts.file);
-
-    vm_options.init = 1;
-    vm_options.interactive = opts.interactive;
-    vm_options.disassemble = opts.disassemble;
-    vm_options.backtrace = 1;
-    vm_options.quiet = opts.quiet;
-    vm_options.sandbox = opts.sandbox;
-    vm_options.unsafe = !opts.safe;
-    vm_options.module = opts.module;
-#ifdef NJS_DEBUG_GENERATOR
-    vm_options.generator_debug = opts.generator_debug;
-#endif
-#ifdef NJS_DEBUG_OPCODE
-    vm_options.opcode_debug = opts.opcode_debug;
-#endif
-
-    vm_options.ops = &njs_console_ops;
-    vm_options.addons = njs_console_addon_modules;
-    vm_options.metas = &metas;
-    vm_options.external = &njs_console;
-    vm_options.argv = opts.argv;
-    vm_options.argc = opts.argc;
-    vm_options.ast = opts.ast;
-    vm_options.unhandled_rejection = opts.unhandled_rejection;
-
-    if (opts.stack_size != 0) {
-        vm_options.max_stack_size = opts.stack_size;
-    }
-
-#ifdef NJS_HAVE_READLINE
-
-    if (opts.interactive) {
-        ret = njs_interactive_shell(&opts, &vm_options);
-
-    } else
-
-#endif
-
-    if (opts.command) {
-        vm = njs_create_vm(&opts, &vm_options);
-        if (vm != NULL) {
-            command.start = (u_char *) opts.command;
-            command.length = njs_strlen(opts.command);
-            ret = njs_process_script(vm, njs_vm_external_ptr(vm), &command);
-            njs_vm_destroy(vm);
-        }
-
-    } else {
-        ret = njs_process_file(&opts, &vm_options);
-    }
+    ret = njs_main(&opts);
 
 done:
 
@@ -494,7 +493,8 @@ njs_options_parse(njs_opts_t *opts, int argc, char **argv)
             opts->interactive = 0;
 
             if (++i < argc) {
-                opts->command = argv[i];
+                opts->command.start = (u_char *) argv[i];
+                opts->command.length = njs_strlen(argv[i]);
                 goto done;
             }
 
@@ -638,163 +638,12 @@ njs_options_free(njs_opts_t *opts)
 }
 
 
-static njs_int_t
-njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
-{
-    int          fd;
-    char         *file;
-    u_char       *p, *end, *start;
-    size_t       size;
-    ssize_t      n;
-    njs_vm_t     *vm;
-    njs_int_t    ret;
-    njs_str_t    source, script;
-    struct stat  sb;
-    u_char       buf[4096];
-
-    file = opts->file;
-
-    if (file[0] == '-' && file[1] == '\0') {
-        fd = STDIN_FILENO;
-
-    } else {
-        fd = open(file, O_RDONLY);
-        if (fd == -1) {
-            njs_stderror("failed to open file: '%s' (%s)\n",
-                         file, strerror(errno));
-            return NJS_ERROR;
-        }
-    }
-
-    if (fstat(fd, &sb) == -1) {
-        njs_stderror("fstat(%d) failed while reading '%s' (%s)\n",
-                     fd, file, strerror(errno));
-        ret = NJS_ERROR;
-        goto close_fd;
-    }
-
-    size = sizeof(buf);
-
-    if (S_ISREG(sb.st_mode) && sb.st_size) {
-        size = sb.st_size;
-    }
-
-    vm = NULL;
-
-    source.length = 0;
-    source.start = realloc(NULL, size);
-    if (source.start == NULL) {
-        njs_stderror("alloc failed while reading '%s'\n", file);
-        ret = NJS_ERROR;
-        goto done;
-    }
-
-    p = source.start;
-    end = p + size;
-
-    for ( ;; ) {
-        n = read(fd, buf, sizeof(buf));
-
-        if (n == 0) {
-            break;
-        }
-
-        if (n < 0) {
-            njs_stderror("failed to read file: '%s' (%s)\n",
-                      file, strerror(errno));
-            ret = NJS_ERROR;
-            goto done;
-        }
-
-        if (p + n > end) {
-            size *= 2;
-
-            start = realloc(source.start, size);
-            if (start == NULL) {
-                njs_stderror("alloc failed while reading '%s'\n", file);
-                ret = NJS_ERROR;
-                goto done;
-            }
-
-            source.start = start;
-
-            p = source.start + source.length;
-            end = source.start + size;
-        }
-
-        memcpy(p, buf, n);
-
-        p += n;
-        source.length += n;
-    }
-
-    vm = njs_create_vm(opts, vm_options);
-    if (vm == NULL) {
-        ret = NJS_ERROR;
-        goto done;
-    }
-
-    script = source;
-
-    /* shebang */
-
-    if (script.length > 2 && memcmp(script.start, "#!", 2) == 0) {
-        p = njs_strlchr(script.start, script.start + script.length, '\n');
-
-        if (p != NULL) {
-            script.length -= (p + 1 - script.start);
-            script.start = p + 1;
-
-        } else {
-            script.length = 0;
-        }
-    }
-
-    ret = njs_process_script(vm, vm_options->external, &script);
-    if (ret != NJS_OK) {
-        ret = NJS_ERROR;
-        goto done;
-    }
-
-    ret = NJS_OK;
-
-done:
-
-    if (vm != NULL) {
-        njs_vm_destroy(vm);
-    }
-
-    if (source.start != NULL) {
-        free(source.start);
-    }
-
-close_fd:
-
-    if (fd != STDIN_FILENO) {
-        (void) close(fd);
-    }
-
-    return ret;
-}
-
 #else
 
 int
 LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
-    njs_vm_t      *vm;
-    njs_opts_t    opts;
-    njs_str_t     script;
-    njs_vm_opt_t  vm_options;
-
-    static uintptr_t uptr[] = {
-        (uintptr_t) NULL,
-    };
-
-    static njs_vm_meta_t metas = {
-        .size = njs_nitems(uptr),
-        .values = uptr
-    };
+    njs_opts_t  opts;
 
     if (size == 0) {
         return 0;
@@ -802,24 +651,15 @@ LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 
     njs_memzero(&opts, sizeof(njs_opts_t));
 
-    njs_vm_opt_init(&vm_options);
+    opts.file = (char *) "fuzzer";
+    opts.command.start = (u_char *) data;
+    opts.command.length = size;
 
-    vm_options.init = 1;
-    vm_options.backtrace = 0;
-    vm_options.metas = &metas;
-    vm_options.ops = &njs_console_ops;
+    njs_memzero(&njs_console, sizeof(njs_console_t));
 
-    vm = njs_create_vm(&opts, &vm_options);
+    njs_console.suppress_stdout = 1;
 
-    if (njs_fast_path(vm != NULL)) {
-        script.length = size;
-        script.start = (u_char *) data;
-
-        (void) njs_process_script(vm, NULL, &script);
-        njs_vm_destroy(vm);
-    }
-
-    return 0;
+    return njs_main(&opts);
 }
 
 #endif
@@ -1025,6 +865,146 @@ njs_process_events(void *runtime)
 
 
 static njs_int_t
+njs_process_file(njs_opts_t *opts, njs_vm_opt_t *vm_options)
+{
+    int          fd;
+    char         *file;
+    u_char       *p, *end, *start;
+    size_t       size;
+    ssize_t      n;
+    njs_vm_t     *vm;
+    njs_int_t    ret;
+    njs_str_t    source, script;
+    struct stat  sb;
+    u_char       buf[4096];
+
+    file = opts->file;
+
+    if (file[0] == '-' && file[1] == '\0') {
+        fd = STDIN_FILENO;
+
+    } else {
+        fd = open(file, O_RDONLY);
+        if (fd == -1) {
+            njs_stderror("failed to open file: '%s' (%s)\n",
+                         file, strerror(errno));
+            return NJS_ERROR;
+        }
+    }
+
+    if (fstat(fd, &sb) == -1) {
+        njs_stderror("fstat(%d) failed while reading '%s' (%s)\n",
+                     fd, file, strerror(errno));
+        ret = NJS_ERROR;
+        goto close_fd;
+    }
+
+    size = sizeof(buf);
+
+    if (S_ISREG(sb.st_mode) && sb.st_size) {
+        size = sb.st_size;
+    }
+
+    vm = NULL;
+
+    source.length = 0;
+    source.start = realloc(NULL, size);
+    if (source.start == NULL) {
+        njs_stderror("alloc failed while reading '%s'\n", file);
+        ret = NJS_ERROR;
+        goto done;
+    }
+
+    p = source.start;
+    end = p + size;
+
+    for ( ;; ) {
+        n = read(fd, buf, sizeof(buf));
+
+        if (n == 0) {
+            break;
+        }
+
+        if (n < 0) {
+            njs_stderror("failed to read file: '%s' (%s)\n",
+                      file, strerror(errno));
+            ret = NJS_ERROR;
+            goto done;
+        }
+
+        if (p + n > end) {
+            size *= 2;
+
+            start = realloc(source.start, size);
+            if (start == NULL) {
+                njs_stderror("alloc failed while reading '%s'\n", file);
+                ret = NJS_ERROR;
+                goto done;
+            }
+
+            source.start = start;
+
+            p = source.start + source.length;
+            end = source.start + size;
+        }
+
+        memcpy(p, buf, n);
+
+        p += n;
+        source.length += n;
+    }
+
+    vm = njs_create_vm(opts, vm_options);
+    if (vm == NULL) {
+        ret = NJS_ERROR;
+        goto done;
+    }
+
+    script = source;
+
+    /* shebang */
+
+    if (script.length > 2 && memcmp(script.start, "#!", 2) == 0) {
+        p = njs_strlchr(script.start, script.start + script.length, '\n');
+
+        if (p != NULL) {
+            script.length -= (p + 1 - script.start);
+            script.start = p + 1;
+
+        } else {
+            script.length = 0;
+        }
+    }
+
+    ret = njs_process_script(vm, vm_options->external, &script);
+    if (ret != NJS_OK) {
+        ret = NJS_ERROR;
+        goto done;
+    }
+
+    ret = NJS_OK;
+
+done:
+
+    if (vm != NULL) {
+        njs_vm_destroy(vm);
+    }
+
+    if (source.start != NULL) {
+        free(source.start);
+    }
+
+close_fd:
+
+    if (fd != STDIN_FILENO) {
+        (void) close(fd);
+    }
+
+    return ret;
+}
+
+
+static njs_int_t
 njs_process_script(njs_vm_t *vm, void *runtime, const njs_str_t *script)
 {
     u_char              *start, *end;
@@ -1091,12 +1071,12 @@ njs_process_script(njs_vm_t *vm, void *runtime, const njs_str_t *script)
 static void
 njs_process_output(njs_vm_t *vm, njs_value_t *value, njs_int_t ret)
 {
-    njs_console_output_pt  pt;
+    njs_console_t  *console;
 
-    pt = (njs_console_output_pt) njs_vm_meta(vm, 0);
+    console = njs_vm_external_ptr(vm);
 
-    if (pt != NULL) {
-        pt(vm, value, ret);
+    if (!console->suppress_stdout) {
+        njs_console_output(vm, value, ret);
     }
 }
 
