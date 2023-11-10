@@ -864,18 +864,15 @@ njs_process_events(void *runtime)
 
 
 static njs_int_t
-njs_process_file(njs_opts_t *opts)
+njs_read_file(njs_opts_t *opts, njs_str_t *content)
 {
     int          fd;
     char         *file;
     u_char       *p, *end, *start;
     size_t       size;
     ssize_t      n;
-    njs_vm_t     *vm;
     njs_int_t    ret;
-    njs_str_t    source, script;
     struct stat  sb;
-    u_char       buf[4096];
 
     file = opts->file;
 
@@ -898,27 +895,25 @@ njs_process_file(njs_opts_t *opts)
         goto close_fd;
     }
 
-    size = sizeof(buf);
+    size = 4096;
 
     if (S_ISREG(sb.st_mode) && sb.st_size) {
         size = sb.st_size;
     }
 
-    vm = NULL;
-
-    source.length = 0;
-    source.start = realloc(NULL, size);
-    if (source.start == NULL) {
+    content->length = 0;
+    content->start = realloc(NULL, size);
+    if (content->start == NULL) {
         njs_stderror("alloc failed while reading '%s'\n", file);
         ret = NJS_ERROR;
-        goto done;
+        goto close_fd;
     }
 
-    p = source.start;
+    p = content->start;
     end = p + size;
 
     for ( ;; ) {
-        n = read(fd, buf, sizeof(buf));
+        n = read(fd, p, end - p);
 
         if (n == 0) {
             break;
@@ -928,34 +923,54 @@ njs_process_file(njs_opts_t *opts)
             njs_stderror("failed to read file: '%s' (%s)\n",
                       file, strerror(errno));
             ret = NJS_ERROR;
-            goto done;
+            goto close_fd;
         }
 
-        if (p + n > end) {
+        if (p + n == end) {
             size *= 2;
 
-            start = realloc(source.start, size);
+            start = realloc(content->start, size);
             if (start == NULL) {
                 njs_stderror("alloc failed while reading '%s'\n", file);
                 ret = NJS_ERROR;
-                goto done;
+                goto close_fd;
             }
 
-            source.start = start;
+            content->start = start;
 
-            p = source.start + source.length;
-            end = source.start + size;
+            p = content->start + content->length;
+            end = content->start + size;
         }
 
-        memcpy(p, buf, n);
-
         p += n;
-        source.length += n;
+        content->length += n;
     }
 
-    vm = njs_create_vm(opts);
-    if (vm == NULL) {
-        ret = NJS_ERROR;
+    ret = NJS_OK;
+
+close_fd:
+
+    if (fd != STDIN_FILENO) {
+        (void) close(fd);
+    }
+
+    return ret;
+}
+
+
+static njs_int_t
+njs_process_file(njs_opts_t *opts)
+{
+    u_char     *p;
+    njs_vm_t   *vm;
+    njs_int_t  ret;
+    njs_str_t  source, script;
+
+    vm = NULL;
+    source.start = NULL;
+
+    ret = njs_read_file(opts, &source);
+    if (ret != NJS_OK) {
         goto done;
     }
 
@@ -975,6 +990,12 @@ njs_process_file(njs_opts_t *opts)
         }
     }
 
+    vm = njs_create_vm(opts);
+    if (vm == NULL) {
+        ret = NJS_ERROR;
+        goto done;
+    }
+
     ret = njs_process_script(vm, njs_vm_external_ptr(vm), &script);
     if (ret != NJS_OK) {
         ret = NJS_ERROR;
@@ -991,12 +1012,6 @@ done:
 
     if (source.start != NULL) {
         free(source.start);
-    }
-
-close_fd:
-
-    if (fd != STDIN_FILENO) {
-        (void) close(fd);
     }
 
     return ret;
