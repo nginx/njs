@@ -3637,8 +3637,18 @@ ngx_headers_js_ext_set(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                 ph = &(*ph)->next;
                 *pp = NULL;
             }
+
+            goto done;
         }
     }
+
+    ret = ngx_js_headers_append(vm, headers, name.start, name.length,
+                                value.start, value.length);
+    if (ret != NJS_OK) {
+        return NJS_ERROR;
+    }
+
+done:
 
     njs_value_undefined_set(retval);
 

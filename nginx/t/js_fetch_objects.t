@@ -206,6 +206,11 @@ $t->write_file('test.js', <<EOF);
                 h.set('a', '#');
                 return h.get('a');
              }, '#'],
+             ['set on empty', () => {
+                var h = new Headers([]);
+                h.set('x-test', '1234');
+                return h.get('x-test');
+             }, '1234'],
         ];
 
         run(r, tests);
