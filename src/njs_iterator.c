@@ -301,7 +301,6 @@ njs_object_iterate(njs_vm_t *vm, njs_iterator_args_t *args,
     njs_value_t         *value, *entry, prop, character;
     const u_char        *p, *end, *pos;
     njs_string_prop_t   string_prop;
-    njs_object_value_t  *object;
 
     value = njs_value_arg(&args->value);
     from = args->from;
@@ -348,15 +347,7 @@ njs_object_iterate(njs_vm_t *vm, njs_iterator_args_t *args,
 
     if (njs_is_string(value) || njs_is_object_string(value)) {
 
-        if (njs_is_string(value)) {
-            object = njs_object_value_alloc(vm, NJS_OBJ_TYPE_STRING, 0, value);
-            if (njs_slow_path(object == NULL)) {
-                return NJS_ERROR;
-            }
-
-            njs_set_object_value(njs_value_arg(&args->value), object);
-        }
-        else {
+        if (!njs_is_string(value)) {
             value = njs_object_value(value);
         }
 
@@ -461,7 +452,6 @@ njs_object_iterate_reverse(njs_vm_t *vm, njs_iterator_args_t *args,
     njs_value_t         *entry, *value, prop, character;
     const u_char        *p, *end, *pos;
     njs_string_prop_t   string_prop;
-    njs_object_value_t  *object;
 
     value = njs_value_arg(&args->value);
     from = args->from;
@@ -510,15 +500,7 @@ njs_object_iterate_reverse(njs_vm_t *vm, njs_iterator_args_t *args,
 
     if (njs_is_string(value) || njs_is_object_string(value)) {
 
-        if (njs_is_string(value)) {
-            object = njs_object_value_alloc(vm, NJS_OBJ_TYPE_STRING, 0, value);
-            if (njs_slow_path(object == NULL)) {
-                return NJS_ERROR;
-            }
-
-            njs_set_object_value(njs_value_arg(&args->value), object);
-        }
-        else {
+        if (!njs_is_string(value)) {
             value = njs_object_value(value);
         }
 

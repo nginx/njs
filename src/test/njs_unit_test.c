@@ -12136,6 +12136,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("let e = AggregateError('abc'); e.errors"),
       njs_str("a,b,c") },
 
+    { njs_str("let e = AggregateError('1234567'); e.errors"),
+      njs_str("1,2,3,4,5,6,7") },
+
     { njs_str("let e = AggregateError([1, 2, 3], 'm'); e"),
       njs_str("AggregateError: m") },
 
