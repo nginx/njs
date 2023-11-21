@@ -43,6 +43,12 @@ static njs_int_t ngx_js_ext_console_time(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t ngx_js_ext_console_time_end(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
+static njs_int_t njs_set_timeout(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
+static njs_int_t njs_set_immediate(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
+static njs_int_t njs_clear_timeout(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static void ngx_js_cleanup_vm(void *data);
 
 static njs_int_t ngx_js_core_init(njs_vm_t *vm);
@@ -344,6 +350,7 @@ ngx_js_invoke(njs_vm_t *vm, ngx_str_t *fname, ngx_log_t *log,
     njs_int_t        ret;
     njs_str_t        name;
     ngx_str_t        exception;
+    ngx_js_ctx_t    *ctx;
     njs_function_t  *func;
 
     name.start = fname->data;
@@ -377,7 +384,13 @@ ngx_js_invoke(njs_vm_t *vm, ngx_str_t *fname, ngx_log_t *log,
         return NGX_ERROR;
     }
 
-    return (ret == NJS_AGAIN) ? NGX_AGAIN : NGX_OK;
+    if (ret == NJS_AGAIN) {
+        return NGX_AGAIN;
+    }
+
+    ctx = ngx_external_ctx(vm, njs_vm_external_ptr(vm));
+
+    return njs_rbtree_is_empty(&ctx->waiting_events) ? NGX_OK : NGX_AGAIN;
 }
 
 
@@ -431,11 +444,87 @@ ngx_js_string(njs_vm_t *vm, njs_value_t *value, njs_str_t *str)
 
 
 static njs_int_t
+njs_function_bind(njs_vm_t *vm, const njs_str_t *name,
+    njs_function_native_t native, njs_bool_t ctor)
+{
+    njs_function_t      *f;
+    njs_opaque_value_t   value;
+
+    f = njs_vm_function_alloc(vm, native, 1, ctor);
+    if (f == NULL) {
+        return NJS_ERROR;
+    }
+
+    njs_value_function_set(njs_value_arg(&value), f);
+
+    return njs_vm_bind(vm, name, njs_value_arg(&value), 1);
+}
+
+
+
+static intptr_t
+ngx_js_event_rbtree_compare(njs_rbtree_node_t *node1, njs_rbtree_node_t *node2)
+{
+    ngx_js_event_t  *ev1, *ev2;
+
+    ev1 = (ngx_js_event_t *) ((u_char *) node1
+                              - offsetof(ngx_js_event_t, node));
+    ev2 = (ngx_js_event_t *) ((u_char *) node2
+                              - offsetof(ngx_js_event_t, node));
+
+    if (ev1->fd < ev2->fd) {
+        return -1;
+    }
+
+    if (ev1->fd > ev2->fd) {
+        return 1;
+    }
+
+    return 0;
+}
+
+
+void
+ngx_js_ctx_init(ngx_js_ctx_t *ctx)
+{
+    ctx->event_id = 0;
+    njs_rbtree_init(&ctx->waiting_events, ngx_js_event_rbtree_compare);
+}
+
+
+void
+ngx_js_ctx_destroy(ngx_js_ctx_t *ctx)
+{
+    ngx_js_event_t     *event;
+    njs_rbtree_node_t  *node;
+
+    node = njs_rbtree_min(&ctx->waiting_events);
+
+    while (njs_rbtree_is_there_successor(&ctx->waiting_events, node)) {
+        event = (ngx_js_event_t *) ((u_char *) node
+                                    - offsetof(ngx_js_event_t, node));
+
+        if (event->destructor != NULL) {
+            event->destructor(njs_vm_external_ptr(event->vm), event);
+        }
+
+        node = njs_rbtree_node_successor(&ctx->waiting_events, node);
+    }
+
+    njs_vm_destroy(ctx->vm);
+}
+
+
+static njs_int_t
 ngx_js_core_init(njs_vm_t *vm)
 {
     njs_int_t           ret, proto_id;
     njs_str_t           name;
     njs_opaque_value_t  value;
+
+    static const njs_str_t  set_timeout = njs_str("setTimeout");
+    static const njs_str_t  set_immediate = njs_str("setImmediate");
+    static const njs_str_t  clear_timeout = njs_str("clearTimeout");
 
     proto_id = njs_vm_external_prototype(vm, ngx_js_ext_core,
                                          njs_nitems(ngx_js_ext_core));
@@ -473,6 +562,21 @@ ngx_js_core_init(njs_vm_t *vm)
 
     ret = njs_vm_bind(vm, &name, njs_value_arg(&value), 1);
     if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    ret = njs_function_bind(vm, &set_timeout, njs_set_timeout, 1);
+    if (ret != NJS_OK) {
+        return NJS_ERROR;
+    }
+
+    ret = njs_function_bind(vm, &set_immediate, njs_set_immediate, 1);
+    if (ret != NJS_OK) {
+        return NJS_ERROR;
+    }
+
+    ret = njs_function_bind(vm, &clear_timeout, njs_clear_timeout, 1);
+    if (ret != NJS_OK) {
         return NJS_ERROR;
     }
 
@@ -852,6 +956,173 @@ ngx_js_ext_console_time_end(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 not_found:
 
     njs_vm_log(vm, "Timer \"%V\" doesn't exist.\n", &name);
+
+    njs_value_undefined_set(retval);
+
+    return NJS_OK;
+}
+
+
+static void
+ngx_js_timer_handler(ngx_event_t *ev)
+{
+    njs_vm_t            *vm;
+    njs_int_t            ret;
+    ngx_str_t            exception;
+    ngx_js_ctx_t        *ctx;
+    ngx_js_event_t      *event;
+    ngx_connection_t    *c;
+    njs_external_ptr_t   external;
+    njs_opaque_value_t   retval;
+
+    event = (ngx_js_event_t *) ((u_char *) ev - offsetof(ngx_js_event_t, ev));
+
+    vm = event->vm;
+
+    ret = njs_vm_invoke(vm, event->function, event->args, event->nargs,
+                        njs_value_arg(&retval));
+
+    external = njs_vm_external_ptr(vm);
+    ctx = ngx_external_ctx(vm, external);
+    njs_rbtree_delete(&ctx->waiting_events, &event->node);
+
+    if (ret == NJS_ERROR) {
+        ngx_js_exception(vm, &exception);
+
+        c = ngx_external_connection(vm, njs_vm_external_ptr(vm));
+
+        ngx_log_error(NGX_LOG_ERR, c->log, 0,
+                      "js exception: %V", &exception);
+    }
+
+    ngx_external_event_finalize(vm)(external, ret);
+}
+
+
+static void
+ngx_js_clear_timer(njs_external_ptr_t external, ngx_js_event_t *event)
+{
+    if (event->ev.timer_set) {
+        ngx_del_timer(&event->ev);
+    }
+}
+
+
+static njs_int_t
+njs_set_timer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused, njs_bool_t immediate, njs_value_t *retval)
+{
+    uint64_t           delay;
+    njs_uint_t         n;
+    ngx_js_ctx_t      *ctx;
+    ngx_js_event_t    *event;
+    ngx_connection_t  *c;
+
+    if (njs_slow_path(nargs < 2)) {
+        njs_vm_type_error(vm, "too few arguments");
+        return NJS_ERROR;
+    }
+
+    if (njs_slow_path(!njs_value_is_function(njs_argument(args, 1)))) {
+        njs_vm_type_error(vm, "first arg must be a function");
+        return NJS_ERROR;
+    }
+
+    delay = 0;
+
+    if (!immediate && nargs >= 3
+        && njs_value_is_number(njs_argument(args, 2)))
+    {
+        delay = njs_value_number(njs_argument(args, 2));
+    }
+
+    n = immediate ? 2 : 3;
+    nargs = (nargs >= n) ? nargs - n : 0;
+
+    event = njs_mp_zalloc(njs_vm_memory_pool(vm),
+                          sizeof(ngx_js_event_t)
+                          + sizeof(njs_opaque_value_t) * nargs);
+    if (njs_slow_path(event == NULL)) {
+        njs_vm_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    event->vm = vm;
+    event->function = njs_value_function(njs_argument(args, 1));
+    event->nargs = nargs;
+    event->args = (njs_value_t *) ((u_char *) event + sizeof(ngx_js_event_t));
+    event->destructor = ngx_js_clear_timer;
+
+    ctx = ngx_external_ctx(vm, njs_vm_external_ptr(vm));
+    event->fd = ctx->event_id++;
+
+    c = ngx_external_connection(vm, njs_vm_external_ptr(vm));
+
+    event->ev.log = c->log;
+    event->ev.data = event;
+    event->ev.handler = ngx_js_timer_handler;
+
+    if (event->nargs != 0) {
+        memcpy(event->args, njs_argument(args, n),
+               sizeof(njs_opaque_value_t) * event->nargs);
+    }
+
+    njs_rbtree_insert(&ctx->waiting_events, &event->node);
+
+    ngx_add_timer(&event->ev, delay);
+
+    njs_value_number_set(retval, event->fd);
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+njs_set_timeout(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused, njs_value_t *retval)
+{
+    return njs_set_timer(vm, args, nargs, unused, 0, retval);
+}
+
+
+static njs_int_t
+njs_set_immediate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused, njs_value_t *retval)
+{
+    return njs_set_timer(vm, args, nargs, unused, 1, retval);
+}
+
+
+static njs_int_t
+njs_clear_timeout(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused, njs_value_t *retval)
+{
+    ngx_js_ctx_t       *ctx;
+    ngx_js_event_t      event_lookup, *event;
+    njs_rbtree_node_t  *rb;
+
+    if (nargs < 2 || !njs_value_is_number(njs_argument(args, 1))) {
+        njs_value_undefined_set(retval);
+        return NJS_OK;
+    }
+
+    ctx = ngx_external_ctx(vm, njs_vm_external_ptr(vm));
+    event_lookup.fd = njs_value_number(njs_argument(args, 1));
+
+    rb = njs_rbtree_find(&ctx->waiting_events, &event_lookup.node);
+    if (njs_slow_path(rb == NULL)) {
+        njs_vm_internal_error(vm, "failed to find timer");
+        return NJS_ERROR;
+    }
+
+    event = (ngx_js_event_t *) ((u_char *) rb
+                                - offsetof(ngx_js_event_t, node));
+
+    if (event->ev.timer_set) {
+        ngx_del_timer(&event->ev);
+    }
+
+    njs_rbtree_delete(&ctx->waiting_events, (njs_rbtree_part_t *) rb);
 
     njs_value_undefined_set(retval);
 

@@ -11,8 +11,6 @@
 #include <njs_arr.h>
 #include <njs_queue.h>
 #include <njs_rbtree.h>
-#include <njs_flathsh.h>
-#include <njs_djb_hash.h>
 
 #if (!defined NJS_FUZZER_TARGET && defined NJS_HAVE_READLINE)
 
@@ -70,7 +68,12 @@ typedef struct {
 
 
 typedef struct {
-    njs_vm_event_t          vm_event;
+    NJS_RBTREE_NODE         (node);
+    njs_function_t          *function;
+    njs_value_t             *args;
+    njs_uint_t              nargs;
+    uint32_t                id;
+
     njs_queue_link_t        link;
 } njs_ev_t;
 
@@ -85,7 +88,8 @@ typedef struct {
 typedef struct {
     njs_vm_t                *vm;
 
-    njs_lvlhsh_t            events;  /* njs_ev_t * */
+    uint32_t                event_id;
+    njs_rbtree_t            events;  /* njs_ev_t * */
     njs_queue_t             posted_events;
 
     njs_queue_t             labels;
@@ -120,6 +124,12 @@ static char *njs_completion_generator(const char *text, int state);
 
 #endif
 
+static njs_int_t njs_set_timeout(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
+static njs_int_t njs_set_immediate(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
+static njs_int_t njs_clear_timeout(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t njs_ext_console_log(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t magic, njs_value_t *retval);
 static njs_int_t njs_ext_console_time(njs_vm_t *vm, njs_value_t *args,
@@ -127,17 +137,11 @@ static njs_int_t njs_ext_console_time(njs_vm_t *vm, njs_value_t *args,
 static njs_int_t njs_ext_console_time_end(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 
-static njs_host_event_t njs_console_set_timer(njs_external_ptr_t external,
-    uint64_t delay, njs_vm_event_t vm_event);
-
-static void njs_console_clear_timer(njs_external_ptr_t external,
-    njs_host_event_t event);
 static void njs_console_log(njs_vm_t *vm, njs_external_ptr_t external,
     njs_log_level_t level, const u_char *start, size_t length);
 
-static njs_int_t lvlhsh_key_test(njs_lvlhsh_query_t *lhq, void *data);
-static void *lvlhsh_pool_alloc(void *pool, size_t size);
-static void lvlhsh_pool_free(void *pool, void *p, size_t size);
+static intptr_t njs_event_rbtree_compare(njs_rbtree_node_t *node1,
+    njs_rbtree_node_t *node2);
 
 njs_int_t njs_array_buffer_detach(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
@@ -264,17 +268,7 @@ static njs_external_t  njs_ext_262[] = {
 };
 
 
-static const njs_lvlhsh_proto_t  lvlhsh_proto  njs_aligned(64) = {
-    NJS_LVLHSH_LARGE_SLAB,
-    lvlhsh_key_test,
-    lvlhsh_pool_alloc,
-    lvlhsh_pool_free,
-};
-
-
 static njs_vm_ops_t njs_console_ops = {
-    njs_console_set_timer,
-    njs_console_clear_timer,
     NULL,
     njs_console_log,
 };
@@ -635,7 +629,8 @@ njs_console_init(njs_vm_t *vm, njs_console_t *console)
 {
     console->vm = vm;
 
-    njs_lvlhsh_init(&console->events);
+    console->event_id = 0;
+    njs_rbtree_init(&console->events, njs_event_rbtree_compare);
     njs_queue_init(&console->posted_events);
     njs_queue_init(&console->labels);
 
@@ -645,6 +640,24 @@ njs_console_init(njs_vm_t *vm, njs_console_t *console)
     }
 
     return NJS_OK;
+}
+
+
+static njs_int_t
+njs_function_bind(njs_vm_t *vm, const njs_str_t *name,
+    njs_function_native_t native, njs_bool_t ctor)
+{
+    njs_function_t      *f;
+    njs_opaque_value_t   value;
+
+    f = njs_vm_function_alloc(vm, native, 1, ctor);
+    if (f == NULL) {
+        return NJS_ERROR;
+    }
+
+    njs_value_function_set(njs_value_arg(&value), f);
+
+    return njs_vm_bind(vm, name, njs_value_arg(&value), 1);
 }
 
 
@@ -659,6 +672,9 @@ njs_externals_init(njs_vm_t *vm)
     static const njs_str_t  dollar_262 = njs_str("$262");
     static const njs_str_t  print_name = njs_str("print");
     static const njs_str_t  console_log = njs_str("console.log");
+    static const njs_str_t  set_timeout = njs_str("setTimeout");
+    static const njs_str_t  set_immediate = njs_str("setImmediate");
+    static const njs_str_t  clear_timeout = njs_str("clearTimeout");
 
     console = njs_vm_options(vm)->external;
 
@@ -690,8 +706,18 @@ njs_externals_init(njs_vm_t *vm)
         return NJS_ERROR;
     }
 
-    ret = njs_console_init(vm, console);
-    if (njs_slow_path(ret != NJS_OK)) {
+    ret = njs_function_bind(vm, &set_timeout, njs_set_timeout, 0);
+    if (ret != NJS_OK) {
+        return NJS_ERROR;
+    }
+
+    ret = njs_function_bind(vm, &set_immediate, njs_set_immediate, 0);
+    if (ret != NJS_OK) {
+        return NJS_ERROR;
+    }
+
+    ret = njs_function_bind(vm, &clear_timeout, njs_clear_timeout, 0);
+    if (ret != NJS_OK) {
         return NJS_ERROR;
     }
 
@@ -708,6 +734,11 @@ njs_externals_init(njs_vm_t *vm)
     }
 
     ret = njs_vm_bind(vm, &dollar_262, njs_value_arg(&value), 1);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    ret = njs_console_init(vm, console);
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
@@ -829,10 +860,13 @@ njs_console_output(njs_vm_t *vm, njs_value_t *value, njs_int_t ret)
 static njs_int_t
 njs_process_events(void *runtime)
 {
-    njs_ev_t          *ev;
-    njs_queue_t       *events;
-    njs_console_t     *console;
-    njs_queue_link_t  *link;
+    njs_ev_t            *ev;
+    njs_vm_t            *vm;
+    njs_int_t           ret;
+    njs_queue_t         *events;
+    njs_console_t       *console;
+    njs_queue_link_t    *link;
+    njs_opaque_value_t  retval;
 
     if (runtime == NULL) {
         njs_stderror("njs_process_events(): no runtime\n");
@@ -840,6 +874,7 @@ njs_process_events(void *runtime)
     }
 
     console = runtime;
+    vm = console->vm;
 
     events = &console->posted_events;
 
@@ -856,10 +891,24 @@ njs_process_events(void *runtime)
         ev->link.prev = NULL;
         ev->link.next = NULL;
 
-        njs_vm_post_event(console->vm, ev->vm_event, NULL, 0);
+        njs_rbtree_delete(&console->events, &ev->node);
+
+        ret = njs_vm_invoke(vm, ev->function, ev->args, ev->nargs,
+                            njs_value_arg(&retval));
+        if (ret == NJS_ERROR) {
+            njs_process_output(vm, njs_value_arg(&retval), ret);
+
+            if (!njs_vm_options(vm)->interactive) {
+                return NJS_ERROR;
+            }
+        }
     }
 
-    return NJS_OK;
+    if (!njs_rbtree_is_empty(&console->events)) {
+        return NJS_AGAIN;
+    }
+
+    return njs_vm_pending(vm) ? NJS_AGAIN: NJS_OK;
 }
 
 
@@ -1047,34 +1096,22 @@ njs_process_script(njs_vm_t *vm, void *runtime, const njs_str_t *script)
     }
 
     for ( ;; ) {
-        if (!njs_vm_pending(vm) && !njs_vm_unhandled_rejection(vm)) {
-            ret = NJS_OK;
-            break;
-        }
-
-        ret = njs_process_events(runtime);
-        if (njs_slow_path(ret != NJS_OK)) {
-            njs_stderror("njs_process_events() failed\n");
-            ret = NJS_ERROR;
-            break;
-        }
-
-        if (njs_vm_waiting(vm) && !njs_vm_posted(vm)) {
-            /*TODO: async events. */
-
-            njs_stderror("njs_process_script(): async events unsupported\n");
-            ret = NJS_ERROR;
-            break;
-        }
-
         ret = njs_vm_run(vm);
-
         if (ret == NJS_ERROR) {
             njs_process_output(vm, njs_value_arg(&retval), ret);
 
             if (!njs_vm_options(vm)->interactive) {
                 return NJS_ERROR;
             }
+        }
+
+        ret = njs_process_events(runtime);
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            break;
+        }
+
+        if (ret == NJS_OK) {
+            break;
         }
     }
 
@@ -1534,81 +1571,119 @@ njs_ext_console_time_end(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_host_event_t
-njs_console_set_timer(njs_external_ptr_t external, uint64_t delay,
-    njs_vm_event_t vm_event)
+static njs_int_t
+njs_set_timer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused, njs_bool_t immediate, njs_value_t *retval)
 {
-    njs_ev_t            *ev;
-    njs_vm_t            *vm;
-    njs_int_t           ret;
-    njs_console_t       *console;
-    njs_lvlhsh_query_t  lhq;
+    njs_ev_t       *ev;
+    uint64_t       delay;
+    njs_uint_t     n;
+    njs_console_t  *console;
 
-    console = external;
-    vm = console->vm;
+    console = njs_vm_external_ptr(vm);
+
+    if (njs_slow_path(nargs < 2)) {
+        njs_vm_type_error(vm, "too few arguments");
+        return NJS_ERROR;
+    }
+
+    if (njs_slow_path(!njs_value_is_function(njs_argument(args, 1)))) {
+        njs_vm_type_error(vm, "first arg must be a function");
+        return NJS_ERROR;
+    }
+
+    delay = 0;
+
+    if (!immediate && nargs >= 3
+        && njs_value_is_number(njs_argument(args, 2)))
+    {
+        delay = njs_value_number(njs_argument(args, 2));
+    }
 
     if (delay != 0) {
-        njs_vm_err(vm, "njs_console_set_timer(): async timers unsupported\n");
-        return NULL;
+        njs_vm_internal_error(vm, "njs_set_timer(): async timers unsupported");
+        return NJS_ERROR;
     }
 
-    ev = njs_mp_alloc(njs_vm_memory_pool(vm), sizeof(njs_ev_t));
+    n = immediate ? 2 : 3;
+    nargs = (nargs >= n) ? nargs - n : 0;
+
+    ev = njs_mp_alloc(njs_vm_memory_pool(vm),
+                      sizeof(njs_ev_t) + sizeof(njs_opaque_value_t) * nargs);
     if (njs_slow_path(ev == NULL)) {
-        return NULL;
+        njs_vm_memory_error(vm);
+        return NJS_ERROR;
     }
 
-    ev->vm_event = vm_event;
+    ev->function = njs_value_function(njs_argument(args, 1));
+    ev->nargs = nargs;
+    ev->args = (njs_value_t *) ((u_char *) ev + sizeof(njs_ev_t));
+    ev->id = console->event_id++;
 
-    lhq.key.start = (u_char *) &ev->vm_event;
-    lhq.key.length = sizeof(njs_vm_event_t);
-    lhq.key_hash = njs_djb_hash(lhq.key.start, lhq.key.length);
-
-    lhq.replace = 0;
-    lhq.value = ev;
-    lhq.proto = &lvlhsh_proto;
-    lhq.pool = njs_vm_memory_pool(vm);
-
-    ret = njs_lvlhsh_insert(&console->events, &lhq);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return NULL;
+    if (ev->nargs != 0) {
+        memcpy(ev->args, njs_argument(args, n),
+               sizeof(njs_opaque_value_t) * ev->nargs);
     }
+
+    njs_rbtree_insert(&console->events, &ev->node);
 
     njs_queue_insert_tail(&console->posted_events, &ev->link);
 
-    return (njs_host_event_t) ev;
+    njs_value_number_set(retval, ev->id);
+
+    return NJS_OK;
 }
 
 
-static void
-njs_console_clear_timer(njs_external_ptr_t external, njs_host_event_t event)
+static njs_int_t
+njs_set_timeout(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused, njs_value_t *retval)
 {
-    njs_vm_t            *vm;
-    njs_ev_t            *ev;
-    njs_int_t           ret;
-    njs_console_t       *console;
-    njs_lvlhsh_query_t  lhq;
+    return njs_set_timer(vm, args, nargs, unused, 0, retval);
+}
 
-    ev = event;
-    console = external;
-    vm = console->vm;
 
-    lhq.key.start = (u_char *) &ev->vm_event;
-    lhq.key.length = sizeof(njs_vm_event_t);
-    lhq.key_hash = njs_djb_hash(lhq.key.start, lhq.key.length);
+static njs_int_t
+njs_set_immediate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused, njs_value_t *retval)
+{
+    return njs_set_timer(vm, args, nargs, unused, 1, retval);
+}
 
-    lhq.proto = &lvlhsh_proto;
-    lhq.pool = njs_vm_memory_pool(vm);
 
-    if (ev->link.prev != NULL) {
-        njs_queue_remove(&ev->link);
+static njs_int_t
+njs_clear_timeout(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused, njs_value_t *retval)
+{
+    njs_ev_t           ev_lookup, *ev;
+    njs_console_t      *console;
+    njs_rbtree_node_t  *rb;
+
+    if (nargs < 2 || !njs_value_is_number(njs_argument(args, 1))) {
+        njs_value_undefined_set(retval);
+        return NJS_OK;
     }
 
-    ret = njs_lvlhsh_delete(&console->events, &lhq);
-    if (ret != NJS_OK) {
-        njs_vm_err(vm, "njs_lvlhsh_delete() failed\n");
+    console = njs_vm_external_ptr(vm);
+
+    ev_lookup.id = njs_value_number(njs_argument(args, 1));
+
+    rb = njs_rbtree_find(&console->events, &ev_lookup.node);
+    if (njs_slow_path(rb == NULL)) {
+        njs_vm_internal_error(vm, "failed to find timer");
+        return NJS_ERROR;
     }
 
-    njs_mp_free(njs_vm_memory_pool(vm), ev);
+    njs_rbtree_delete(&console->events, (njs_rbtree_part_t *) rb);
+
+    ev = (njs_ev_t *) rb;
+    njs_queue_remove(&ev->link);
+    ev->link.prev = NULL;
+    ev->link.next = NULL;
+
+    njs_value_undefined_set(retval);
+
+    return NJS_OK;
 }
 
 
@@ -1630,30 +1705,21 @@ njs_console_log(njs_vm_t *vm, njs_external_ptr_t external,
 }
 
 
-static njs_int_t
-lvlhsh_key_test(njs_lvlhsh_query_t *lhq, void *data)
+static intptr_t
+njs_event_rbtree_compare(njs_rbtree_node_t *node1, njs_rbtree_node_t *node2)
 {
-    njs_ev_t  *ev;
+    njs_ev_t  *ev1, *ev2;
 
-    ev = data;
+    ev1 = (njs_ev_t *) node1;
+    ev2 = (njs_ev_t *) node2;
 
-    if (memcmp(&ev->vm_event, lhq->key.start, sizeof(njs_vm_event_t)) == 0) {
-        return NJS_OK;
+    if (ev1->id < ev2->id) {
+        return -1;
     }
 
-    return NJS_DECLINED;
-}
+    if (ev1->id > ev2->id) {
+        return 1;
+    }
 
-
-static void *
-lvlhsh_pool_alloc(void *pool, size_t size)
-{
-    return njs_mp_align(pool, NJS_MAX_ALIGNMENT, size);
-}
-
-
-static void
-lvlhsh_pool_free(void *pool, void *p, size_t size)
-{
-    njs_mp_free(pool, p);
+    return 0;
 }

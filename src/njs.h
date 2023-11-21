@@ -240,8 +240,6 @@ typedef void (*njs_logger_t)(njs_vm_t *vm, njs_external_ptr_t external,
 
 
 typedef struct {
-    njs_set_timer_t                 set_timer;
-    njs_event_destructor_t          clear_timer;
     njs_module_loader_t             module_loader;
     njs_logger_t                    logger;
 } njs_vm_ops_t;

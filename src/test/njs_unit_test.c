@@ -18947,25 +18947,6 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("require.hasOwnProperty('length')"),
       njs_str("true") },
 
-    /* setTimeout(). */
-
-    { njs_str("setTimeout()"),
-      njs_str("TypeError: too few arguments") },
-
-    { njs_str("setTimeout(function(){})"),
-      njs_str("InternalError: not supported by host environment") },
-
-    { njs_str("setTimeout(function(){}, 12)"),
-      njs_str("InternalError: not supported by host environment") },
-
-    /* clearTimeout(). */
-
-    { njs_str("clearTimeout()"),
-      njs_str("undefined") },
-
-    { njs_str("clearTimeout(123)"),
-      njs_str("undefined") },
-
     /* Trick: number to boolean. */
 
     { njs_str("var a = 0; !!a"),
@@ -23366,11 +23347,6 @@ static njs_unit_test_t  njs_backtraces_test[] =
     { njs_str("require()"),
       njs_str("TypeError: missing path\n"
               "    at require (native)\n"
-              "    at main (:1)\n") },
-
-    { njs_str("setTimeout()"),
-      njs_str("TypeError: too few arguments\n"
-              "    at setTimeout (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("require('crypto').createHash('sha')"),

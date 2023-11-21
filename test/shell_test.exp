@@ -420,7 +420,7 @@ njs_test {
 
 njs_test {
     {"setTimeout(function () {}, 1, 'a')\r\n"
-     "njs_console_set_timer(): async timers unsupported"}
+     "InternalError: njs_set_timer(): async timers unsupported"}
 }
 
 njs_test {

@@ -81,7 +81,6 @@
 #include <njs_encoding.h>
 #include <njs_buffer.h>
 
-#include <njs_timer.h>
 #include <njs_module.h>
 
 #include <njs_event.h>

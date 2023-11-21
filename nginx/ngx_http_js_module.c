@@ -49,7 +49,7 @@ typedef struct {
 
 
 typedef struct {
-    njs_vm_t              *vm;
+    NGX_JS_COMMON_CTX;
     ngx_log_t             *log;
     ngx_uint_t             done;
     ngx_int_t              status;
@@ -75,14 +75,6 @@ typedef struct {
     ngx_http_request_t    *request;
     njs_opaque_value_t     callbacks[2];
 } ngx_http_js_cb_t;
-
-
-typedef struct {
-    ngx_http_request_t    *request;
-    njs_vm_event_t         vm_event;
-    void                  *unused;
-    ngx_int_t              ident;
-} ngx_http_js_event_t;
 
 
 typedef struct {
@@ -264,11 +256,6 @@ static njs_int_t ngx_http_js_location(njs_vm_t *vm, ngx_http_request_t *r,
     unsigned flags, njs_str_t *name, njs_value_t *setval,
     njs_value_t *retval);
 
-static njs_host_event_t ngx_http_js_set_timer(njs_external_ptr_t external,
-    uint64_t delay, njs_vm_event_t vm_event);
-static void ngx_http_js_clear_timer(njs_external_ptr_t external,
-    njs_host_event_t event);
-static void ngx_http_js_timer_handler(ngx_event_t *ev);
 static ngx_pool_t *ngx_http_js_pool(njs_vm_t *vm, ngx_http_request_t *r);
 static ngx_resolver_t *ngx_http_js_resolver(njs_vm_t *vm,
     ngx_http_request_t *r);
@@ -281,6 +268,8 @@ static size_t ngx_http_js_max_response_buffer_size(njs_vm_t *vm,
     ngx_http_request_t *r);
 static void ngx_http_js_handle_vm_event(ngx_http_request_t *r,
     njs_vm_event_t vm_event, njs_value_t *args, njs_uint_t nargs);
+static void ngx_http_js_event_finalize(ngx_http_request_t *r, njs_int_t rc);
+static ngx_js_ctx_t *ngx_http_js_ctx(njs_vm_t *vm, ngx_http_request_t *r);
 
 static void ngx_http_js_periodic_handler(ngx_event_t *ev);
 static void ngx_http_js_periodic_write_event_handler(ngx_http_request_t *r);
@@ -853,8 +842,6 @@ static njs_external_t  ngx_http_js_ext_periodic_session[] = {
 
 
 static njs_vm_ops_t ngx_http_js_ops = {
-    ngx_http_js_set_timer,
-    ngx_http_js_clear_timer,
     NULL,
     ngx_js_logger,
 };
@@ -872,6 +859,8 @@ static uintptr_t ngx_http_js_uptr[] = {
     (uintptr_t) ngx_http_js_buffer_size,
     (uintptr_t) ngx_http_js_max_response_buffer_size,
     (uintptr_t) 0 /* main_conf ptr */,
+    (uintptr_t) ngx_http_js_event_finalize,
+    (uintptr_t) ngx_http_js_ctx,
 };
 
 
@@ -991,7 +980,7 @@ ngx_http_js_content_write_event_handler(ngx_http_request_t *r)
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
-    if (!njs_vm_pending(ctx->vm)) {
+    if (!ngx_vm_pending(ctx)) {
         ngx_http_js_content_finalize(r, ctx);
         return;
     }
@@ -1087,7 +1076,7 @@ ngx_http_js_header_filter(ngx_http_request_t *r)
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
     ctx->filter = 1;
-    pending = njs_vm_pending(ctx->vm);
+    pending = ngx_vm_pending(ctx);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http js header call \"%V\"", &jlcf->header_filter);
@@ -1190,7 +1179,7 @@ ngx_http_js_body_filter(ngx_http_request_t *r, ngx_chain_t *in)
                 return ret;
             }
 
-            pending = njs_vm_pending(ctx->vm);
+            pending = ngx_vm_pending(ctx);
 
             ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                            "http js body call \"%V\"", &jlcf->body_filter);
@@ -1269,7 +1258,7 @@ ngx_http_js_variable_set(ngx_http_request_t *r, ngx_http_variable_value_t *v,
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
-    pending = njs_vm_pending(ctx->vm);
+    pending = ngx_vm_pending(ctx);
 
     rc = ngx_js_invoke(ctx->vm, fname, r->connection->log, &ctx->request, 1,
                        &ctx->retval);
@@ -1352,6 +1341,8 @@ ngx_http_js_init_vm(ngx_http_request_t *r, njs_int_t proto_id)
             return NGX_ERROR;
         }
 
+        ngx_js_ctx_init((ngx_js_ctx_t *) ctx);
+
         njs_value_invalid_set(njs_value_arg(&ctx->retval));
 
         ngx_http_set_ctx(r, ctx, ngx_http_js_module);
@@ -1424,14 +1415,14 @@ ngx_http_js_cleanup_ctx(void *data)
 {
     ngx_http_js_ctx_t *ctx = data;
 
-    if (njs_vm_pending(ctx->vm)) {
+    if (ngx_vm_pending(ctx)) {
         ngx_log_error(NGX_LOG_ERR, ctx->log, 0, "pending events");
     }
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ctx->log, 0, "http js vm destroy: %p",
                    ctx->vm);
 
-    njs_vm_destroy(ctx->vm);
+    ngx_js_ctx_destroy((ngx_js_ctx_t *) ctx);
 }
 
 
@@ -4280,7 +4271,7 @@ ngx_http_js_periodic_write_event_handler(ngx_http_request_t *r)
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
-    if (!njs_vm_pending(ctx->vm)) {
+    if (!ngx_vm_pending(ctx)) {
         ngx_http_js_periodic_finalize(r, NGX_OK);
         return;
     }
@@ -4317,9 +4308,9 @@ ngx_http_js_periodic_finalize(ngx_http_request_t *r, ngx_int_t rc)
     ngx_log_debug4(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http js periodic finalize: \"%V\" rc: %i c: %i pending: %i",
                    &ctx->periodic->method, rc, r->count,
-                   njs_vm_pending(ctx->vm));
+                   ngx_vm_pending(ctx));
 
-    if (r->count > 1 || (rc == NGX_OK && njs_vm_pending(ctx->vm))) {
+    if (r->count > 1 || (rc == NGX_OK && ngx_vm_pending(ctx))) {
         return;
     }
 
@@ -4383,65 +4374,6 @@ ngx_http_js_periodic_init(ngx_js_periodic_t *periodic)
     ngx_add_timer(&periodic->event, jitter + 1);
 
     return NGX_OK;
-}
-
-
-static njs_host_event_t
-ngx_http_js_set_timer(njs_external_ptr_t external, uint64_t delay,
-    njs_vm_event_t vm_event)
-{
-    ngx_event_t          *ev;
-    ngx_http_request_t   *r;
-    ngx_http_js_event_t  *js_event;
-
-    r = (ngx_http_request_t *) external;
-
-    ev = ngx_pcalloc(r->pool, sizeof(ngx_event_t));
-    if (ev == NULL) {
-        return NULL;
-    }
-
-    js_event = ngx_palloc(r->pool, sizeof(ngx_http_js_event_t));
-    if (js_event == NULL) {
-        return NULL;
-    }
-
-    js_event->request = r;
-    js_event->vm_event = vm_event;
-    js_event->ident = r->connection->fd;
-
-    ev->data = js_event;
-    ev->log = r->connection->log;
-    ev->handler = ngx_http_js_timer_handler;
-
-    ngx_add_timer(ev, delay);
-
-    return ev;
-}
-
-
-static void
-ngx_http_js_clear_timer(njs_external_ptr_t external, njs_host_event_t event)
-{
-    ngx_event_t  *ev = event;
-
-    if (ev->timer_set) {
-        ngx_del_timer(ev);
-    }
-}
-
-
-static void
-ngx_http_js_timer_handler(ngx_event_t *ev)
-{
-    ngx_http_request_t   *r;
-    ngx_http_js_event_t  *js_event;
-
-    js_event = (ngx_http_js_event_t *) ev->data;
-
-    r = js_event->request;
-
-    ngx_http_js_handle_vm_event(r, js_event->vm_event, NULL, 0);
 }
 
 
@@ -4530,7 +4462,19 @@ ngx_http_js_handle_vm_event(ngx_http_request_t *r, njs_vm_event_t vm_event,
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "js exception: %V", &exception);
+    }
 
+    ngx_http_js_event_finalize(r, rc);
+}
+
+
+static void
+ngx_http_js_event_finalize(ngx_http_request_t *r, njs_int_t rc)
+{
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "http js event finalize rc: %i", (ngx_int_t) rc);
+
+    if (rc == NJS_ERROR) {
         if (r->health_check) {
             ngx_http_js_periodic_finalize(r, NGX_ERROR);
             return;
@@ -4545,6 +4489,13 @@ ngx_http_js_handle_vm_event(ngx_http_request_t *r, njs_vm_event_t vm_event,
     }
 
     ngx_http_run_posted_requests(r->connection);
+}
+
+
+static ngx_js_ctx_t *
+ngx_http_js_ctx(njs_vm_t *vm, ngx_http_request_t *r)
+{
+    return ngx_http_get_module_ctx(r, ngx_http_js_module);
 }
 
 

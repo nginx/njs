@@ -12,7 +12,9 @@
 
 #include <ngx_config.h>
 #include <ngx_core.h>
+#include <ngx_event.h>
 #include <njs.h>
+#include <njs_rbtree.h>
 #include "ngx_js_fetch.h"
 #include "ngx_js_shared_dict.h"
 
@@ -31,9 +33,15 @@
 #define ngx_js_buffer_type(btype) ((btype) & ~NGX_JS_DEPRECATED)
 
 
+typedef struct ngx_js_event_s ngx_js_event_t;
+typedef struct ngx_js_dict_s  ngx_js_dict_t;
+typedef struct ngx_js_ctx_s  ngx_js_ctx_t;
+
+
 typedef ngx_pool_t *(*ngx_external_pool_pt)(njs_vm_t *vm, njs_external_ptr_t e);
 typedef void (*ngx_js_event_handler_pt)(njs_external_ptr_t e,
     njs_vm_event_t vm_event, njs_value_t *args, njs_uint_t nargs);
+typedef void (*ngx_js_event_finalize_pt)(njs_external_ptr_t e, njs_int_t rc);
 typedef ngx_resolver_t *(*ngx_external_resolver_pt)(njs_vm_t *vm,
     njs_external_ptr_t e);
 typedef ngx_msec_t (*ngx_external_timeout_pt)(njs_vm_t *vm,
@@ -43,9 +51,9 @@ typedef ngx_flag_t (*ngx_external_flag_pt)(njs_vm_t *vm,
 typedef ngx_flag_t (*ngx_external_size_pt)(njs_vm_t *vm,
     njs_external_ptr_t e);
 typedef ngx_ssl_t *(*ngx_external_ssl_pt)(njs_vm_t *vm, njs_external_ptr_t e);
+typedef ngx_js_ctx_t *(*ngx_js_external_ctx_pt)(njs_vm_t *vm,
+    njs_external_ptr_t e);
 
-
-typedef struct ngx_js_dict_s  ngx_js_dict_t;
 
 typedef struct {
     ngx_str_t              name;
@@ -53,6 +61,19 @@ typedef struct {
     u_char                *file;
     ngx_uint_t             line;
 } ngx_js_named_path_t;
+
+
+struct ngx_js_event_s {
+    njs_vm_t            *vm;
+    njs_function_t      *function;
+    njs_value_t         *args;
+    ngx_socket_t         fd;
+    NJS_RBTREE_NODE     (node);
+    njs_uint_t           nargs;
+    void               (*destructor)(njs_external_ptr_t external,
+                                     ngx_js_event_t *event);
+    ngx_event_t          ev;
+};
 
 
 #define NGX_JS_COMMON_MAIN_CONF                                               \
@@ -89,6 +110,12 @@ typedef struct {
 #endif
 
 
+#define NGX_JS_COMMON_CTX                                                     \
+    njs_vm_t              *vm;                                                \
+    njs_rbtree_t           waiting_events;                                    \
+    ngx_socket_t           event_id
+
+
 typedef struct {
     NGX_JS_COMMON_MAIN_CONF;
 } ngx_js_main_conf_t;
@@ -97,6 +124,11 @@ typedef struct {
 typedef struct {
     NGX_JS_COMMON_LOC_CONF;
 } ngx_js_loc_conf_t;
+
+
+struct ngx_js_ctx_s {
+    NGX_JS_COMMON_CTX;
+};
 
 
 #define ngx_external_connection(vm, e)                                        \
@@ -122,6 +154,10 @@ typedef struct {
 #define NGX_JS_MAIN_CONF_INDEX  10
 #define ngx_main_conf(vm)                                                     \
 	((ngx_js_main_conf_t *) njs_vm_meta(vm, NGX_JS_MAIN_CONF_INDEX))
+#define ngx_external_event_finalize(vm) \
+    ((ngx_js_event_finalize_pt) njs_vm_meta(vm, 11))
+#define ngx_external_ctx(vm, e) \
+    ((ngx_js_external_ctx_pt) njs_vm_meta(vm, 12))(vm, e)
 
 
 #define ngx_js_prop(vm, type, value, start, len)                              \
@@ -129,6 +165,12 @@ typedef struct {
                              : njs_vm_value_buffer_set(vm, value, start, len))
 
 
+#define ngx_vm_pending(ctx)                                                   \
+    (njs_vm_pending((ctx)->vm) || !njs_rbtree_is_empty(&(ctx)->waiting_events))
+
+
+void ngx_js_ctx_init(ngx_js_ctx_t *ctx);
+void ngx_js_ctx_destroy(ngx_js_ctx_t *ctx);
 ngx_int_t ngx_js_call(njs_vm_t *vm, ngx_str_t *fname, ngx_log_t *log,
     njs_opaque_value_t *args, njs_uint_t nargs);
 ngx_int_t ngx_js_invoke(njs_vm_t *vm, ngx_str_t *fname, ngx_log_t *log,

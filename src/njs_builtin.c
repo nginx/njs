@@ -1259,12 +1259,6 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
 
     NJS_DECLARE_PROP_NATIVE("eval", njs_eval_function, 1, 0),
 
-    NJS_DECLARE_PROP_NATIVE("setTimeout", njs_set_timeout, 2, 0),
-
-    NJS_DECLARE_PROP_NATIVE("setImmediate", njs_set_immediate, 4, 0),
-
-    NJS_DECLARE_PROP_NATIVE("clearTimeout", njs_clear_timeout, 1, 0),
-
     NJS_DECLARE_PROP_NATIVE("require", njs_module_require, 1, 0),
 
     /* Global objects. */
