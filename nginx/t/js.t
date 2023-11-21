@@ -46,6 +46,7 @@ http {
     js_set $test_global   test.global_obj;
     js_set $test_log      test.log;
     js_set $test_internal test.sub_internal;
+    js_set $buffer        test.buffer;
     js_set $test_except   test.except;
 
     js_import test.js;
@@ -93,6 +94,10 @@ http {
 
         location /status {
             js_content test.status;
+        }
+
+        location /buffer_variable {
+            js_content test.buffer_variable;
         }
 
         location /request_body {
@@ -171,6 +176,10 @@ $t->write_file('test.js', <<EOF);
         return 'variable=' + r.variables.remote_addr;
     }
 
+    function buffer(r) {
+        return Buffer.from([0xaa, 0xbb, 0xcc, 0xdd]);
+    }
+
     function global_obj(r) {
         return 'global=' + global;
     }
@@ -225,6 +234,10 @@ $t->write_file('test.js', <<EOF);
         r.log('SEE-LOG');
     }
 
+    function buffer_variable(r) {
+        r.return(200, r.rawVariables.buffer.toString('hex'));
+    }
+
     async function internal(r) {
         let reply = await r.subrequest('/sub_internal');
 
@@ -248,14 +261,15 @@ $t->write_file('test.js', <<EOF);
     function content_empty(r) {
     }
 
-    export default {njs:test_njs, method, version, addr, uri,
+    export default {njs:test_njs, method, version, addr, uri, buffer,
                     variable, global_obj, status, request_body, internal,
                     request_body_cache, send, return_method, sub_internal,
-                    type, log, except, content_except, content_empty};
+                    type, log, buffer_variable, except, content_except,
+                    content_empty};
 
 EOF
 
-$t->try_run('no njs available')->plan(27);
+$t->try_run('no njs available')->plan(28);
 
 ###############################################################################
 
@@ -304,6 +318,14 @@ TODO: {
 local $TODO = 'not yet' unless has_version('0.7.7');
 
 like(http_get('/internal'), qr/parent: false sub: true/, 'r.internal');
+
+}
+
+
+TODO: {
+local $TODO = 'not yet' unless has_version('0.8.3');
+
+like(http_get('/buffer_variable'), qr/aabbccdd/, 'buffer variable');
 
 }
 

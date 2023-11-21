@@ -1250,7 +1250,7 @@ ngx_http_js_variable_set(ngx_http_request_t *r, ngx_http_variable_value_t *v,
 
     ngx_int_t           rc;
     njs_int_t           pending;
-    ngx_str_t           value;
+    njs_str_t           value;
     ngx_http_js_ctx_t  *ctx;
 
     rc = ngx_http_js_init_vm(r, ngx_http_js_request_proto_id);
@@ -1285,15 +1285,15 @@ ngx_http_js_variable_set(ngx_http_request_t *r, ngx_http_variable_value_t *v,
         return NGX_ERROR;
     }
 
-    if (ngx_js_retval(ctx->vm, &ctx->retval, &value) != NGX_OK) {
+    if (ngx_js_string(ctx->vm, njs_value_arg(&ctx->retval), &value) != NGX_OK) {
         return NGX_ERROR;
     }
 
-    v->len = value.len;
+    v->len = value.length;
     v->valid = 1;
     v->no_cacheable = 0;
     v->not_found = 0;
-    v->data = value.data;
+    v->data = value.start;
 
     return NGX_OK;
 }

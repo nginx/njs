@@ -68,6 +68,7 @@ stream {
     js_set $js_req_line  test.req_line;
     js_set $js_sess_unk  test.sess_unk;
     js_set $js_async     test.asyncf;
+    js_set $js_buffer    test.buffer;
 
     js_import test.js;
 
@@ -190,6 +191,11 @@ stream {
         listen      127.0.0.1:8100;
         return      $js_async;
     }
+
+    server {
+        listen      127.0.0.1:8101;
+        return      $js_buffer;
+    }
 }
 
 EOF
@@ -211,8 +217,13 @@ $t->write_file('test.js', <<EOF);
         return 'sess_unk=' + s.unk;
     }
 
+    function buffer(s) {
+        return Buffer.from([0xaa, 0xbb, 0xcc, 0xdd]);
+    }
+
     function log(s) {
         s.log("SEE-THIS");
+        return 'log';
     }
 
     var res = '';
@@ -377,12 +388,13 @@ $t->write_file('test.js', <<EOF);
                     preread_step, filter_step, access_undecided, access_allow,
                     access_deny, preread_async, preread_data, preread_req_line,
                     req_line, filter_empty, filter_header_inject, filter_search,
-                    access_except, preread_except, filter_except, asyncf};
+                    access_except, preread_except, filter_except, asyncf,
+                    buffer};
 
 EOF
 
 $t->run_daemon(\&stream_daemon, port(8090));
-$t->try_run('no stream njs available')->plan(23);
+$t->try_run('no stream njs available')->plan(24);
 $t->waitforsocket('127.0.0.1:' . port(8090));
 
 ###############################################################################
@@ -391,7 +403,7 @@ is(stream('127.0.0.1:' . port(8080))->read(), 'addr=127.0.0.1',
 	's.remoteAddress');
 is(dgram('127.0.0.1:' . port(8985))->io('.'), 'addr=127.0.0.1',
 	's.remoteAddress udp');
-is(stream('127.0.0.1:' . port(8081))->read(), 'undefined', 's.log');
+is(stream('127.0.0.1:' . port(8081))->read(), 'log', 's.log');
 is(stream('127.0.0.1:' . port(8082))->read(), 'variable=127.0.0.1',
 	's.variables');
 is(stream('127.0.0.1:' . port(8083))->read(), '', 'stream js unknown function');
@@ -417,6 +429,14 @@ stream('127.0.0.1:' . port(8099))->io('x');
 
 is(stream('127.0.0.1:' . port(8100))->read(), 'retval: 30', 'asyncf');
 
+TODO: {
+local $TODO = 'not yet' unless has_version('0.8.3');
+
+like(stream('127.0.0.1:' . port(8101))->read(), qr/\xaa\xbb\xcc\xdd/,
+	'buffer variable');
+
+}
+
 $t->stop();
 
 ok(index($t->read_file('error.log'), 'SEE-THIS') > 0, 'stream js log');
@@ -429,6 +449,25 @@ my @p = (port(8087), port(8088), port(8089));
 like($t->read_file('status.log'), qr/$p[0]:200/, 'status undecided');
 like($t->read_file('status.log'), qr/$p[1]:200/, 'status allow');
 like($t->read_file('status.log'), qr/$p[2]:403/, 'status deny');
+
+###############################################################################
+
+sub has_version {
+	my $need = shift;
+
+	get('/njs') =~ /^([.0-9]+)$/m;
+
+	my @v = split(/\./, $1);
+	my ($n, $v);
+
+	for $n (split(/\./, $need)) {
+		$v = shift @v || 0;
+		return 0 if $n > $v;
+		return 1 if $v > $n;
+	}
+
+	return 1;
+}
 
 ###############################################################################
 
