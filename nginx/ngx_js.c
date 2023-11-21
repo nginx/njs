@@ -359,7 +359,7 @@ ngx_js_invoke(njs_vm_t *vm, ngx_str_t *fname, ngx_log_t *log,
     ret = njs_vm_invoke(vm, func, njs_value_arg(args), nargs,
                         njs_value_arg(retval));
     if (ret == NJS_ERROR) {
-        ngx_js_retval(vm, NULL, &exception);
+        ngx_js_exception(vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, log, 0,
                       "js exception: %V", &exception);
@@ -369,7 +369,7 @@ ngx_js_invoke(njs_vm_t *vm, ngx_str_t *fname, ngx_log_t *log,
 
     ret = njs_vm_run(vm);
     if (ret == NJS_ERROR) {
-        ngx_js_retval(vm, NULL, &exception);
+        ngx_js_exception(vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, log, 0,
                       "js exception: %V", &exception);
@@ -382,18 +382,12 @@ ngx_js_invoke(njs_vm_t *vm, ngx_str_t *fname, ngx_log_t *log,
 
 
 ngx_int_t
-ngx_js_retval(njs_vm_t *vm, njs_opaque_value_t *retval, ngx_str_t *s)
+ngx_js_exception(njs_vm_t *vm, ngx_str_t *s)
 {
     njs_int_t  ret;
     njs_str_t  str;
 
-    if (retval != NULL && njs_value_is_valid(njs_value_arg(retval))) {
-        ret = njs_vm_value_string(vm, &str, njs_value_arg(retval));
-
-    } else {
-        ret = njs_vm_exception_string(vm, &str);
-    }
-
+    ret = njs_vm_exception_string(vm, &str);
     if (ret != NJS_OK) {
         return NGX_ERROR;
     }

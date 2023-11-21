@@ -133,8 +133,7 @@ ngx_int_t ngx_js_call(njs_vm_t *vm, ngx_str_t *fname, ngx_log_t *log,
     njs_opaque_value_t *args, njs_uint_t nargs);
 ngx_int_t ngx_js_invoke(njs_vm_t *vm, ngx_str_t *fname, ngx_log_t *log,
     njs_opaque_value_t *args, njs_uint_t nargs, njs_opaque_value_t *retval);
-ngx_int_t ngx_js_retval(njs_vm_t *vm, njs_opaque_value_t *retval,
-    ngx_str_t *s);
+ngx_int_t ngx_js_exception(njs_vm_t *vm, ngx_str_t *s);
 
 njs_int_t ngx_js_ext_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t level, njs_value_t *retval);

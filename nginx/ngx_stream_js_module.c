@@ -754,7 +754,7 @@ ngx_stream_js_phase_handler(ngx_stream_session_t *s, ngx_str_t *name)
 
     ret = ngx_stream_js_run_event(s, ctx, &ctx->events[NGX_JS_EVENT_UPLOAD], 0);
     if (ret != NJS_OK) {
-        ngx_js_retval(ctx->vm, NULL, &exception);
+        ngx_js_exception(ctx->vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, c->log, 0, "js exception: %V",
                       &exception);
@@ -841,7 +841,7 @@ ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
         if (event->ev != NULL) {
             ret = ngx_stream_js_run_event(s, ctx, event, from_upstream);
             if (ret != NJS_OK) {
-                ngx_js_retval(ctx->vm, NULL, &exception);
+                ngx_js_exception(ctx->vm, &exception);
 
                 ngx_log_error(NGX_LOG_ERR, c->log, 0, "js exception: %V",
                               &exception);
@@ -1063,7 +1063,7 @@ ngx_stream_js_init_vm(ngx_stream_session_t *s, njs_int_t proto_id)
     }
 
     if (njs_vm_start(ctx->vm, njs_value_arg(&retval)) == NJS_ERROR) {
-        ngx_js_retval(ctx->vm, NULL, &exception);
+        ngx_js_exception(ctx->vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
                       "js exception: %V", &exception);
@@ -1812,7 +1812,7 @@ ngx_stream_js_handle_event(ngx_stream_session_t *s, njs_vm_event_t vm_event,
                    (ngx_int_t) rc, vm_event);
 
     if (rc == NJS_ERROR) {
-        ngx_js_retval(ctx->vm, NULL, &exception);
+        ngx_js_exception(ctx->vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
                       "js exception: %V", &exception);

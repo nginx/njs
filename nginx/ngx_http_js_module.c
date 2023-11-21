@@ -1401,7 +1401,7 @@ ngx_http_js_init_vm(ngx_http_request_t *r, njs_int_t proto_id)
     }
 
     if (njs_vm_start(ctx->vm, njs_value_arg(&retval)) == NJS_ERROR) {
-        ngx_js_retval(ctx->vm, NULL, &exception);
+        ngx_js_exception(ctx->vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "js exception: %V", &exception);
@@ -4526,7 +4526,7 @@ ngx_http_js_handle_vm_event(ngx_http_request_t *r, njs_vm_event_t vm_event,
                    (ngx_int_t) rc, vm_event);
 
     if (rc == NJS_ERROR) {
-        ngx_js_retval(ctx->vm, NULL, &exception);
+        ngx_js_exception(ctx->vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                       "js exception: %V", &exception);
