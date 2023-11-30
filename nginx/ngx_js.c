@@ -973,14 +973,12 @@ ngx_js_timer_handler(ngx_event_t *ev)
     ngx_js_event_t      *event;
     ngx_connection_t    *c;
     njs_external_ptr_t   external;
-    njs_opaque_value_t   retval;
 
     event = (ngx_js_event_t *) ((u_char *) ev - offsetof(ngx_js_event_t, ev));
 
     vm = event->vm;
 
-    ret = njs_vm_invoke(vm, event->function, event->args, event->nargs,
-                        njs_value_arg(&retval));
+    ret = njs_vm_call(vm, event->function, event->args, event->nargs);
 
     external = njs_vm_external_ptr(vm);
     ctx = ngx_external_ctx(vm, external);
