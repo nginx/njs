@@ -1029,35 +1029,6 @@ njs_set_object_value(njs_value_t *value, njs_object_value_t *object_value)
 #define njs_set_invalid(value)                                                \
     (value)->type = NJS_INVALID
 
-
-#if 0 /* GC: todo */
-
-#define njs_retain(value)                                                     \
-    do {                                                                      \
-        if ((value)->data.truth == NJS_STRING_LONG) {                         \
-            njs_value_retain(value);                                          \
-        }                                                                     \
-    } while (0)
-
-
-#define njs_release(vm, value)                                                \
-    do {                                                                      \
-        if ((value)->data.truth == NJS_STRING_LONG) {                         \
-            njs_value_release((vm), (value));                                 \
-        }                                                                     \
-    } while (0)
-
-#else
-
-#define njs_retain(value)
-#define njs_release(vm, value)
-
-#endif
-
-
-
-void njs_value_retain(njs_value_t *value);
-void njs_value_release(njs_vm_t *vm, njs_value_t *value);
 njs_int_t njs_value_to_primitive(njs_vm_t *vm, njs_value_t *dst,
     njs_value_t *value, njs_uint_t hint);
 njs_array_t *njs_value_enumerate(njs_vm_t *vm, njs_value_t *value,

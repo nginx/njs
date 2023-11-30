@@ -310,7 +310,6 @@ njs_function_rest_parameters_init(njs_vm_t *vm, njs_native_frame_t *frame)
         return NJS_ERROR;
     }
 
-    /* GC: retain. */
     njs_set_array(rest_arguments, array);
 
     vm->top_frame->local[n] = rest_arguments;
@@ -1418,8 +1417,6 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     function->bound = values;
-
-    /* GC: ? retain args. */
 
     memcpy(values, args, size);
 

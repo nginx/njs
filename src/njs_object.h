@@ -196,7 +196,6 @@ njs_primitive_value_to_key(njs_vm_t *vm, njs_value_t *dst,
 
     case NJS_SYMBOL:
     case NJS_STRING:
-        /* GC: njs_retain(src); */
         value = src;
         break;
 

@@ -2030,7 +2030,6 @@ njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
             array->length = index + 1;
         }
 
-        /* GC: retain. */
         array->start[index] = *init;
 
         break;
@@ -2569,10 +2568,7 @@ njs_vmcode_return(njs_vm_t *vm, njs_value_t *dst, njs_value_t *retval)
     frame = (njs_frame_t *) vm->top_frame;
 
     if (frame->native.ctor) {
-        if (njs_is_object(retval)) {
-            njs_release(vm, frame->native.local[0]);
-
-        } else {
+        if (!njs_is_object(retval)) {
             retval = frame->native.local[0];
         }
     }

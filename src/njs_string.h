@@ -73,7 +73,6 @@
 struct njs_string_s {
     u_char    *start;
     uint32_t  length;   /* Length in UTF-8 characters. */
-    uint32_t  retain;   /* Link counter. */
 };
 
 

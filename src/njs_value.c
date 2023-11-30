@@ -58,61 +58,6 @@ const njs_value_t  njs_string_anonymous =   njs_string("anonymous");
 const njs_value_t  njs_string_memory_error = njs_string("MemoryError");
 
 
-void
-njs_value_retain(njs_value_t *value)
-{
-    njs_string_t  *string;
-
-    if (njs_is_string(value)) {
-
-        if (value->long_string.external != 0xff) {
-            string = value->long_string.data;
-
-            njs_thread_log_debug("retain:%uxD \"%*s\"", string->retain,
-                                 value->long_string.size, string->start);
-
-            if (string->retain != 0xffff) {
-                string->retain++;
-            }
-        }
-    }
-}
-
-
-void
-njs_value_release(njs_vm_t *vm, njs_value_t *value)
-{
-    njs_string_t  *string;
-
-    if (njs_is_string(value)) {
-
-        if (value->long_string.external != 0xff) {
-            string = value->long_string.data;
-
-            njs_thread_log_debug("release:%uxD \"%*s\"", string->retain,
-                                 value->long_string.size, string->start);
-
-            if (string->retain != 0xffff) {
-                string->retain--;
-
-#if 0
-                if (string->retain == 0) {
-                    if ((u_char *) string + sizeof(njs_string_t)
-                        != string->start)
-                    {
-                        njs_memcache_pool_free(vm->mem_pool,
-                                               string->start);
-                    }
-
-                    njs_memcache_pool_free(vm->mem_pool, string);
-                }
-#endif
-            }
-        }
-    }
-}
-
-
 /*
  * A hint value is 0 for numbers and 1 for strings.  The value chooses
  * method calls order specified by ECMAScript 5.1: "valueOf", "toString"
@@ -140,7 +85,6 @@ njs_value_to_primitive(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value,
 
 
     if (njs_is_primitive(value)) {
-        /* GC */
         *dst = *value;
         return NJS_OK;
     }
@@ -1622,7 +1566,6 @@ njs_primitive_value_to_string(njs_vm_t *vm, njs_value_t *dst,
         return NJS_ERROR;
 
     case NJS_STRING:
-        /* GC: njs_retain(src); */
         value = src;
         break;
 

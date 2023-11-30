@@ -235,7 +235,6 @@ njs_scope_value_index(njs_vm_t *vm, const njs_value_t *src, njs_uint_t runtime,
 
             string->start = (u_char *) string + sizeof(njs_string_t);
             string->length = src->long_string.data->length;
-            string->retain = 0xffff;
 
             memcpy(string->start, start, size);
         }

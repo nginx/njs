@@ -279,7 +279,6 @@ njs_object_create(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
 
         if (!njs_is_null(value)) {
-            /* GC */
             object->__proto__ = njs_object(value);
 
         } else {
@@ -2022,8 +2021,6 @@ njs_property_prototype_create(njs_vm_t *vm, njs_lvlhsh_t *hash,
         return NULL;
     }
 
-    /* GC */
-
     njs_set_type_object(njs_prop_value(prop), prototype, prototype->type);
 
     lhq.value = prop;
@@ -2272,8 +2269,6 @@ njs_property_constructor_set(njs_vm_t *vm, njs_lvlhsh_t *hash,
     if (njs_slow_path(prop == NULL)) {
         return NULL;
     }
-
-    /* GC */
 
     njs_value_assign(njs_prop_value(prop), constructor);
     prop->enumerable = 0;

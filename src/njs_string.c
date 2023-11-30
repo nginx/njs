@@ -120,7 +120,6 @@ njs_string_set(njs_vm_t *vm, njs_value_t *value, const u_char *start,
 
         string->start = (u_char *) start;
         string->length = 0;
-        string->retain = 1;
     }
 
     return NJS_OK;
@@ -233,7 +232,6 @@ njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint64_t size,
 
         string->start = (u_char *) string + sizeof(njs_string_t);
         string->length = length;
-        string->retain = 1;
 
         if (map_offset != 0) {
             map = (uint32_t *) (string->start + map_offset);
@@ -520,8 +518,6 @@ void
 njs_string_copy(njs_value_t *dst, njs_value_t *src)
 {
     *dst = *src;
-
-    /* GC: long string retain */
 }
 
 
@@ -700,8 +696,6 @@ njs_string_instance_length(njs_vm_t *vm, njs_object_prop_t *prop,
     }
 
     njs_set_number(retval, length);
-
-    njs_release(vm, value);
 
     return NJS_OK;
 }
