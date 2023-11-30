@@ -53,6 +53,10 @@ njs_utf8_next(const u_char *p, const u_char *end)
 
     if ((c & 0x80) != 0) {
 
+        if (njs_slow_path(p >= end)) {
+            return p;
+        }
+
         do {
             c = *p;
 
@@ -70,12 +74,17 @@ njs_utf8_next(const u_char *p, const u_char *end)
 
 
 njs_inline const u_char *
-njs_utf8_prev(const u_char *p)
+njs_utf8_prev(const u_char *p, const u_char *start)
 {
    u_char  c;
 
    do {
        p--;
+
+       if (njs_slow_path(p < start)) {
+           break;
+       }
+
        c = *p;
 
    } while ((c & 0xC0) == 0x80);

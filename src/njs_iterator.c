@@ -542,7 +542,7 @@ njs_object_iterate_reverse(njs_vm_t *vm, njs_iterator_args_t *args,
             }
 
             while (i-- > to) {
-                pos = njs_utf8_prev(p);
+                pos = njs_utf8_prev(p, string_prop.start);
 
                 /* This cannot fail. */
                 (void) njs_string_new(vm, &character, pos, p - pos , 1);

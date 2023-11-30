@@ -1884,7 +1884,7 @@ njs_string_prototype_last_index_of(njs_vm_t *vm, njs_value_t *args,
 
         p = njs_string_utf8_offset(string.start, end, index);
 
-        for (; p >= string.start; p = njs_utf8_prev(p)) {
+        for (; p >= string.start;  p = njs_utf8_prev(p, string.start)) {
             if ((p + s.size) <= end && memcmp(p, s.start, s.size) == 0) {
                 goto done;
             }
@@ -2408,7 +2408,7 @@ njs_string_trim(const njs_value_t *value, njs_string_prop_t *string,
                     break;
                 }
 
-                prev = njs_utf8_prev(prev);
+                prev = njs_utf8_prev(prev, start);
                 p = prev;
                 cp = njs_utf8_decode(&ctx, &p, end);
 
