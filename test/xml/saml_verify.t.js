@@ -280,7 +280,7 @@ function p(args, default_opts) {
 
 let saml_verify_tsuite = {
     name: "SAML verify",
-    skip: () => (!has_njs() || !has_fs() || !has_webcrypto()),
+    skip: () => (!has_njs() || !has_fs() || !has_webcrypto() || !has_xml()),
     T: verify,
     prepare_args: p,
     opts: {

@@ -4,5 +4,14 @@ if (typeof require == 'function'
     && typeof njs == 'object'
     && typeof njs.version == 'string')
 {
-    xml = require('xml');
+    try {
+        xml = require('xml');
+
+    } catch (e) {
+        // ignore
+    }
+}
+
+function has_xml() {
+    return xml;
 }

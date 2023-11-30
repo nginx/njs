@@ -11,8 +11,7 @@ let data = `<?xml version="1.0"?>
 <root>&c;</root>
 `;
 
-if (has_njs()) {
-    const xml = require('xml');
+if (has_njs() && has_xml()) {
     let doc = xml.parse(data);
     assert.sameValue(doc.$root.$text, "");
 }
