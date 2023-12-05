@@ -8,7 +8,6 @@
 #include <njs_main.h>
 
 
-static njs_int_t njs_vm_handle_events(njs_vm_t *vm);
 static njs_int_t njs_vm_protos_init(njs_vm_t *vm, njs_value_t *global);
 
 
@@ -198,25 +197,8 @@ njs_vm_ctor_push(njs_vm_t *vm)
 void
 njs_vm_destroy(njs_vm_t *vm)
 {
-    njs_event_t        *event;
-    njs_lvlhsh_each_t  lhe;
-
     if (vm->hooks[NJS_HOOK_EXIT] != NULL) {
         (void) njs_vm_call(vm, vm->hooks[NJS_HOOK_EXIT], NULL, 0);
-    }
-
-    if (njs_waiting_events(vm)) {
-        njs_lvlhsh_each_init(&lhe, &njs_event_hash_proto);
-
-        for ( ;; ) {
-            event = njs_lvlhsh_each(&vm->events_hash, &lhe);
-
-            if (event == NULL) {
-                break;
-            }
-
-            njs_del_event(vm, event, NJS_EVENT_RELEASE);
-        }
     }
 
     njs_mp_destroy(vm->mem_pool);
@@ -487,12 +469,10 @@ njs_vm_runtime_init(njs_vm_t *vm)
     njs_lvlhsh_init(&vm->values_hash);
     njs_lvlhsh_init(&vm->keywords_hash);
     njs_lvlhsh_init(&vm->modules_hash);
-    njs_lvlhsh_init(&vm->events_hash);
 
     njs_rbtree_init(&vm->global_symbols, njs_symbol_rbtree_cmp);
 
-    njs_queue_init(&vm->posted_events);
-    njs_queue_init(&vm->promise_events);
+    njs_queue_init(&vm->jobs);
 
     return NJS_OK;
 }
@@ -640,99 +620,73 @@ njs_vm_scopes_restore(njs_vm_t *vm, njs_native_frame_t *native)
 }
 
 
-njs_vm_event_t
-njs_vm_add_event(njs_vm_t *vm, njs_function_t *function, njs_uint_t once,
-    njs_host_event_t host_ev, njs_event_destructor_t destructor)
-{
-    njs_event_t  *event;
-
-    event = njs_mp_alloc(vm->mem_pool, sizeof(njs_event_t));
-    if (njs_slow_path(event == NULL)) {
-        return NULL;
-    }
-
-    event->host_event = host_ev;
-    event->destructor = destructor;
-    event->function = function;
-    event->once = once;
-    event->posted = 0;
-    event->nargs = 0;
-    event->args = NULL;
-
-    if (njs_add_event(vm, event) != NJS_OK) {
-        return NULL;
-    }
-
-    return event;
-}
-
-
-void
-njs_vm_del_event(njs_vm_t *vm, njs_vm_event_t vm_event)
-{
-    njs_event_t  *event;
-
-    event = (njs_event_t *) vm_event;
-
-    njs_del_event(vm, event, NJS_EVENT_RELEASE | NJS_EVENT_DELETE);
-}
-
-
 njs_int_t
-njs_vm_waiting(njs_vm_t *vm)
+njs_vm_pending(njs_vm_t *vm)
 {
-    return njs_waiting_events(vm);
-}
-
-
-njs_int_t
-njs_vm_posted(njs_vm_t *vm)
-{
-    return njs_posted_events(vm) || njs_promise_events(vm);
+    return !njs_queue_is_empty(&(vm)->jobs);
 }
 
 
 njs_int_t
 njs_vm_unhandled_rejection(njs_vm_t *vm)
 {
-    return vm->options.unhandled_rejection
-             == NJS_VM_OPT_UNHANDLED_REJECTION_THROW
-           && vm->promise_reason != NULL
-           && vm->promise_reason->length != 0;
+    njs_int_t    ret;
+    njs_str_t    str;
+    njs_value_t  string;
+
+    if (!(vm->options.unhandled_rejection
+          == NJS_VM_OPT_UNHANDLED_REJECTION_THROW
+          && vm->promise_reason != NULL
+          && vm->promise_reason->length != 0))
+    {
+        return 0;
+    }
+
+    njs_value_assign(&string, &vm->promise_reason->start[0]);
+    ret = njs_value_to_string(vm, &string, &string);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    njs_string_get(&string, &str);
+    njs_vm_error(vm, "unhandled promise rejection: %V", &str);
+
+    njs_mp_free(vm->mem_pool, vm->promise_reason);
+    vm->promise_reason = NULL;
+
+    return 1;
 }
 
 
 njs_int_t
-njs_vm_post_event(njs_vm_t *vm, njs_vm_event_t vm_event,
+njs_vm_enqueue_job(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *args, njs_uint_t nargs)
 {
     njs_event_t  *event;
 
-    event = (njs_event_t *) vm_event;
+    event = njs_mp_zalloc(vm->mem_pool, sizeof(njs_event_t));
+    if (njs_slow_path(event == NULL)) {
+        njs_memory_error(vm);
+        return NJS_ERROR;
+    }
 
-    if (nargs != 0 && !event->posted) {
-        event->nargs = nargs;
+    event->function = function;
+
+    if (nargs != 0) {
         event->args = njs_mp_alloc(vm->mem_pool, sizeof(njs_value_t) * nargs);
         if (njs_slow_path(event->args == NULL)) {
+            njs_memory_error(vm);
             return NJS_ERROR;
         }
 
         memcpy(event->args, args, sizeof(njs_value_t) * nargs);
+
+        event->nargs = nargs;
     }
 
-    if (!event->posted) {
-        event->posted = 1;
-        njs_queue_insert_tail(&vm->posted_events, &event->link);
-    }
+    njs_queue_insert_tail(&vm->jobs, &event->link);
 
     return NJS_OK;
-}
-
-
-njs_int_t
-njs_vm_run(njs_vm_t *vm)
-{
-    return njs_vm_handle_events(vm);
 }
 
 
@@ -747,80 +701,32 @@ njs_vm_start(njs_vm_t *vm, njs_value_t *retval)
 }
 
 
-static njs_int_t
-njs_vm_handle_events(njs_vm_t *vm)
+njs_int_t
+njs_vm_execute_pending_job(njs_vm_t *vm)
 {
     njs_int_t         ret;
-    njs_str_t         str;
-    njs_value_t       string;
     njs_event_t       *ev;
-    njs_queue_t       *promise_events, *posted_events;
+    njs_queue_t       *jobs;
     njs_queue_link_t  *link;
 
-    promise_events = &vm->promise_events;
-    posted_events = &vm->posted_events;
+    jobs = &vm->jobs;
 
-    do {
-        for ( ;; ) {
-            link = njs_queue_first(promise_events);
+    link = njs_queue_first(jobs);
 
-            if (link == njs_queue_tail(promise_events)) {
-                break;
-            }
+    if (link == njs_queue_tail(jobs)) {
+        return NJS_OK;
+    }
 
-            ev = njs_queue_link_data(link, njs_event_t, link);
+    ev = njs_queue_link_data(link, njs_event_t, link);
 
-            njs_queue_remove(&ev->link);
+    njs_queue_remove(&ev->link);
 
-            ret = njs_vm_call(vm, ev->function, ev->args, ev->nargs);
-            if (njs_slow_path(ret == NJS_ERROR)) {
-                return ret;
-            }
-        }
+    ret = njs_vm_call(vm, ev->function, ev->args, ev->nargs);
+    if (ret == NJS_ERROR) {
+        return ret;
+    }
 
-        if (njs_vm_unhandled_rejection(vm)) {
-            njs_value_assign(&string, &vm->promise_reason->start[0]);
-            ret = njs_value_to_string(vm, &string, &string);
-            if (njs_slow_path(ret != NJS_OK)) {
-                return ret;
-            }
-
-            njs_string_get(&string, &str);
-            njs_vm_error(vm, "unhandled promise rejection: %V", &str);
-
-            njs_mp_free(vm->mem_pool, vm->promise_reason);
-            vm->promise_reason = NULL;
-
-            return NJS_ERROR;
-        }
-
-        for ( ;; ) {
-            link = njs_queue_first(posted_events);
-
-            if (link == njs_queue_tail(posted_events)) {
-                break;
-            }
-
-            ev = njs_queue_link_data(link, njs_event_t, link);
-
-            if (ev->once) {
-                njs_del_event(vm, ev, NJS_EVENT_RELEASE | NJS_EVENT_DELETE);
-
-            } else {
-                ev->posted = 0;
-                njs_queue_remove(&ev->link);
-            }
-
-            ret = njs_vm_call(vm, ev->function, ev->args, ev->nargs);
-
-            if (ret == NJS_ERROR) {
-                return ret;
-            }
-        }
-
-    } while (!njs_queue_is_empty(promise_events));
-
-    return njs_vm_pending(vm) ? NJS_AGAIN : NJS_OK;
+    return 1;
 }
 
 

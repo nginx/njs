@@ -415,7 +415,6 @@ njs_unit_test_r_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 {
     njs_int_t            ret;
     njs_value_t          value, *argument, *select;
-    njs_vm_event_t       vm_event;
     njs_function_t       *callback;
     njs_external_ev_t    *ev;
     njs_external_env_t   *env;
@@ -444,16 +443,10 @@ njs_unit_test_r_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    vm_event = njs_vm_add_event(vm, callback, 1, NULL, NULL);
-    if (vm_event == NULL) {
-        njs_internal_error(vm, "njs_vm_add_event() failed");
-        return NJS_ERROR;
-    }
-
     argument = njs_arg(args, nargs, 1);
     select = njs_arg(args, nargs, 2);
 
-    ev->vm_event = vm_event;
+    ev->function = callback;
     ev->data = r;
     ev->nargs = 2;
     njs_value_assign(&ev->args[0], &ev->callbacks[!!njs_bool(select)]);
@@ -1429,9 +1422,14 @@ njs_external_env_init(njs_external_env_t *env)
 njs_int_t
 njs_external_process_events(njs_vm_t *vm, njs_external_env_t *env)
 {
+    njs_int_t          ret;
     njs_queue_t        *events;
     njs_queue_link_t   *link;
     njs_external_ev_t  *ev;
+
+    if (env == NULL) {
+        return NJS_OK;
+    }
 
     events = &env->events;
 
@@ -1448,11 +1446,13 @@ njs_external_process_events(njs_vm_t *vm, njs_external_env_t *env)
         ev->link.prev = NULL;
         ev->link.next = NULL;
 
-        njs_vm_post_event(vm, ev->vm_event, njs_value_arg(&ev->args[0]),
-                          ev->nargs);
+        ret = njs_vm_call(vm, ev->function, njs_value_arg(ev->args), ev->nargs);
+        if (ret == NJS_ERROR) {
+            return NJS_ERROR;
+        }
     }
 
-    return NJS_OK;
+    return njs_vm_pending(vm) ? NJS_AGAIN: NJS_OK;
 }
 
 
@@ -1474,5 +1474,16 @@ njs_external_call(njs_vm_t *vm, const njs_str_t *fname, njs_value_t *args,
         return NJS_ERROR;
     }
 
-    return njs_vm_run(vm);
+    for ( ;; ) {
+        ret = njs_vm_execute_pending_job(vm);
+        if (ret <= NJS_OK) {
+            if (ret == NJS_ERROR || njs_vm_unhandled_rejection(vm)) {
+                return NJS_ERROR;
+            }
+
+            break;
+        }
+    }
+
+    return NJS_OK;
 }

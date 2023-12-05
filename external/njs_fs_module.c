@@ -3264,7 +3264,6 @@ njs_fs_result(njs_vm_t *vm, njs_opaque_value_t *result, njs_index_t calltype,
     const njs_value_t *callback, njs_uint_t nargs, njs_value_t *retval)
 {
     njs_int_t           ret;
-    njs_vm_event_t      vm_event;
     njs_function_t      *cb;
     njs_opaque_value_t  promise, callbacks[2], arguments[2];
 
@@ -3290,16 +3289,11 @@ njs_fs_result(njs_vm_t *vm, njs_opaque_value_t *result, njs_index_t calltype,
             return NJS_ERROR;
         }
 
-        vm_event = njs_vm_add_event(vm, cb, 1, NULL, NULL);
-        if (njs_slow_path(vm_event == NULL)) {
-            return NJS_ERROR;
-        }
-
         njs_value_assign(&arguments[0],
                          &callbacks[njs_value_is_error(njs_value_arg(result))]);
         njs_value_assign(&arguments[1], result);
 
-        ret = njs_vm_post_event(vm, vm_event, njs_value_arg(&arguments), 2);
+        ret = njs_vm_enqueue_job(vm, cb, njs_value_arg(&arguments), 2);
         if (njs_slow_path(ret == NJS_ERROR)) {
             return NJS_ERROR;
         }
@@ -3318,13 +3312,8 @@ njs_fs_result(njs_vm_t *vm, njs_opaque_value_t *result, njs_index_t calltype,
             njs_value_assign(&arguments[1], result);
         }
 
-        vm_event = njs_vm_add_event(vm, njs_value_function(callback), 1, NULL,
-                                    NULL);
-        if (njs_slow_path(vm_event == NULL)) {
-            return NJS_ERROR;
-        }
-
-        ret = njs_vm_post_event(vm, vm_event, njs_value_arg(&arguments), 2);
+        ret = njs_vm_enqueue_job(vm, njs_value_function(callback),
+                                 njs_value_arg(&arguments), 2);
         if (njs_slow_path(ret == NJS_ERROR)) {
             return NJS_ERROR;
         }

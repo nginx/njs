@@ -39,9 +39,7 @@ typedef struct ngx_js_ctx_s  ngx_js_ctx_t;
 
 
 typedef ngx_pool_t *(*ngx_external_pool_pt)(njs_vm_t *vm, njs_external_ptr_t e);
-typedef void (*ngx_js_event_handler_pt)(njs_external_ptr_t e,
-    njs_vm_event_t vm_event, njs_value_t *args, njs_uint_t nargs);
-typedef void (*ngx_js_event_finalize_pt)(njs_external_ptr_t e, njs_int_t rc);
+typedef void (*ngx_js_event_finalize_pt)(njs_external_ptr_t e, ngx_int_t rc);
 typedef ngx_resolver_t *(*ngx_external_resolver_pt)(njs_vm_t *vm,
     njs_external_ptr_t e);
 typedef ngx_msec_t (*ngx_external_timeout_pt)(njs_vm_t *vm,
@@ -73,6 +71,7 @@ struct ngx_js_event_s {
     void               (*destructor)(njs_external_ptr_t external,
                                      ngx_js_event_t *event);
     ngx_event_t          ev;
+    void                *data;
 };
 
 
@@ -116,6 +115,20 @@ struct ngx_js_event_s {
     ngx_socket_t           event_id
 
 
+#define ngx_js_add_event(ctx, event)                                          \
+    njs_rbtree_insert(&(ctx)->waiting_events, &(event)->node)
+
+
+#define ngx_js_del_event(ctx, event)                                          \
+    do {                                                                      \
+        if ((event)->destructor) {                                            \
+            (event)->destructor(njs_vm_external_ptr((event)->vm), event);     \
+        }                                                                     \
+                                                                              \
+        njs_rbtree_delete(&(ctx)->waiting_events, &(event)->node);            \
+    } while (0)
+
+
 typedef struct {
     NGX_JS_COMMON_MAIN_CONF;
 } ngx_js_main_conf_t;
@@ -139,8 +152,8 @@ struct ngx_js_ctx_s {
     ((ngx_external_resolver_pt) njs_vm_meta(vm, 2))(vm, e)
 #define ngx_external_resolver_timeout(vm, e)                                  \
     ((ngx_external_timeout_pt) njs_vm_meta(vm, 3))(vm, e)
-#define ngx_external_event_handler(vm, e)                                     \
-    ((ngx_js_event_handler_pt) njs_vm_meta(vm, 4))
+#define ngx_external_event_finalize(vm) \
+    ((ngx_js_event_finalize_pt) njs_vm_meta(vm, 4))
 #define ngx_external_ssl(vm, e)                                               \
     ((ngx_external_ssl_pt) njs_vm_meta(vm, 5))(vm, e)
 #define ngx_external_ssl_verify(vm, e)                                        \
@@ -154,10 +167,8 @@ struct ngx_js_ctx_s {
 #define NGX_JS_MAIN_CONF_INDEX  10
 #define ngx_main_conf(vm)                                                     \
 	((ngx_js_main_conf_t *) njs_vm_meta(vm, NGX_JS_MAIN_CONF_INDEX))
-#define ngx_external_event_finalize(vm) \
-    ((ngx_js_event_finalize_pt) njs_vm_meta(vm, 11))
 #define ngx_external_ctx(vm, e) \
-    ((ngx_js_external_ctx_pt) njs_vm_meta(vm, 12))(vm, e)
+    ((ngx_js_external_ctx_pt) njs_vm_meta(vm, 11))(vm, e)
 
 
 #define ngx_js_prop(vm, type, value, start, len)                              \
@@ -171,9 +182,11 @@ struct ngx_js_ctx_s {
 
 void ngx_js_ctx_init(ngx_js_ctx_t *ctx);
 void ngx_js_ctx_destroy(ngx_js_ctx_t *ctx);
-ngx_int_t ngx_js_call(njs_vm_t *vm, ngx_str_t *fname, ngx_log_t *log,
+ngx_int_t ngx_js_call(njs_vm_t *vm, njs_function_t *func, njs_value_t *args,
+    njs_uint_t nargs);
+ngx_int_t ngx_js_name_call(njs_vm_t *vm, ngx_str_t *fname, ngx_log_t *log,
     njs_opaque_value_t *args, njs_uint_t nargs);
-ngx_int_t ngx_js_invoke(njs_vm_t *vm, ngx_str_t *fname, ngx_log_t *log,
+ngx_int_t ngx_js_name_invoke(njs_vm_t *vm, ngx_str_t *fname, ngx_log_t *log,
     njs_opaque_value_t *args, njs_uint_t nargs, njs_opaque_value_t *retval);
 ngx_int_t ngx_js_exception(njs_vm_t *vm, ngx_str_t *s);
 

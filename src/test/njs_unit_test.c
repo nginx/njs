@@ -23705,24 +23705,28 @@ njs_process_test(njs_external_state_t *state, njs_opts_t *opts,
     case sw_loop:
     default:
         for ( ;; ) {
-            if (!njs_vm_pending(state->vm)) {
-                break;
+            for ( ;; ) {
+                ret = njs_vm_execute_pending_job(state->vm);
+                if (ret <= NJS_OK) {
+                    if (ret == NJS_ERROR
+                        || njs_vm_unhandled_rejection(state->vm))
+                    {
+                        return NJS_ERROR;
+                    }
+
+                    break;
+                }
             }
 
             ret = njs_external_process_events(state->vm, state->env);
-            if (ret != NJS_OK) {
+            if (ret == NJS_ERROR) {
                 njs_stderror("njs_external_process_events() failed\n");
                 return NJS_ERROR;
             }
 
-            if (njs_vm_waiting(state->vm) && !njs_vm_posted(state->vm)) {
-                /*TODO: async events. */
-
-                njs_stderror("njs_process_test(): async events unsupported\n");
-                return NJS_ERROR;
+            if (ret == NJS_OK) {
+                break;
             }
-
-            (void) njs_vm_run(state->vm);
 
             if (opts->async) {
                 return NJS_OK;

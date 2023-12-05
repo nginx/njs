@@ -205,34 +205,8 @@ struct njs_external_s {
 };
 
 
-/*
- * NJS and event loops.
- *
- * njs_vm_ops_t callbacks are used to interact with the event loop environment.
- *
- * Functions get an external object as the first argument. The external
- * object is provided as the third argument to njs_vm_clone().
- *
- * The callbacks are expected to return to the VM the unique id of an
- * underlying event.  This id will be passed as the second argument to
- * njs_event_destructor() at the moment the VM wants to destroy it.
- *
- * When an underlying events fires njs_vm_post_event() should be invoked with
- * the value provided as vm_event.
- *
- * The events posted by njs_vm_post_event() are processed as soon as
- * njs_vm_run() is invoked. njs_vm_run() returns NJS_AGAIN until pending events
- * are present.
- */
-
-typedef void *                      njs_vm_event_t;
-typedef void *                      njs_host_event_t;
 typedef void *                      njs_external_ptr_t;
 
-typedef njs_host_event_t (*njs_set_timer_t)(njs_external_ptr_t external,
-    uint64_t delay, njs_vm_event_t vm_event);
-typedef void (*njs_event_destructor_t)(njs_external_ptr_t external,
-    njs_host_event_t event);
 typedef njs_mod_t *(*njs_module_loader_t)(njs_vm_t *vm,
     njs_external_ptr_t external, njs_str_t *name);
 typedef void (*njs_logger_t)(njs_vm_t *vm, njs_external_ptr_t external,
@@ -342,25 +316,16 @@ NJS_EXPORT njs_mod_t *njs_vm_compile_module(njs_vm_t *vm, njs_str_t *name,
     u_char **start, u_char *end);
 NJS_EXPORT njs_vm_t *njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external);
 
-NJS_EXPORT njs_vm_event_t njs_vm_add_event(njs_vm_t *vm,
-    njs_function_t *function, njs_uint_t once, njs_host_event_t host_ev,
-    njs_event_destructor_t destructor);
-NJS_EXPORT void njs_vm_del_event(njs_vm_t *vm, njs_vm_event_t vm_event);
-NJS_EXPORT njs_int_t njs_vm_post_event(njs_vm_t *vm, njs_vm_event_t vm_event,
+NJS_EXPORT njs_int_t njs_vm_enqueue_job(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *args, njs_uint_t nargs);
-
 /*
- * Returns 1 if async events are present.
+ * Executes a single pending job.
+ *  1 successful run.
+ *  NJS_OK pending job was not found.
+ *  NJS_ERROR some exception or internal error happens.
  */
-NJS_EXPORT njs_int_t njs_vm_waiting(njs_vm_t *vm);
-
-/*
- * Returns 1 if posted events are ready to be executed.
- */
-NJS_EXPORT njs_int_t njs_vm_posted(njs_vm_t *vm);
-
-#define njs_vm_pending(vm)  (njs_vm_waiting(vm) || njs_vm_posted(vm))
-
+NJS_EXPORT njs_int_t njs_vm_execute_pending_job(njs_vm_t *vm);
+NJS_EXPORT njs_int_t njs_vm_pending(njs_vm_t *vm);
 NJS_EXPORT njs_int_t njs_vm_unhandled_rejection(njs_vm_t *vm);
 
 NJS_EXPORT void *njs_vm_completions(njs_vm_t *vm, njs_str_t *expression);
@@ -376,16 +341,6 @@ NJS_EXPORT njs_int_t njs_vm_call(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *args, njs_uint_t nargs);
 NJS_EXPORT njs_int_t njs_vm_invoke(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *args, njs_uint_t nargs, njs_value_t *retval);
-
-/*
- * Runs posted events.
- *  NJS_OK successfully processed all posted events, no more events.
- *  NJS_AGAIN successfully processed all events, some posted events are
- *    still pending.
- *  NJS_ERROR some exception or internal error happens.
- *    njs_vm_exception_get(vm) can be used to get the exception value.
- */
-NJS_EXPORT njs_int_t njs_vm_run(njs_vm_t *vm);
 
 /*
  * Runs the global code.

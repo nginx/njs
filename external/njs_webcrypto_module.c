@@ -4771,7 +4771,6 @@ njs_webcrypto_result(njs_vm_t *vm, njs_opaque_value_t *result, njs_int_t rc,
 {
     njs_int_t           ret;
     njs_function_t      *callback;
-    njs_vm_event_t      vm_event;
     njs_opaque_value_t  promise, arguments[2];
 
     ret = njs_vm_promise_create(vm, njs_value_arg(&promise),
@@ -4785,11 +4784,6 @@ njs_webcrypto_result(njs_vm_t *vm, njs_opaque_value_t *result, njs_int_t rc,
         goto error;
     }
 
-    vm_event = njs_vm_add_event(vm, callback, 1, NULL, NULL);
-    if (vm_event == NULL) {
-        goto error;
-    }
-
     njs_value_assign(&arguments[0], &arguments[(rc != NJS_OK)]);
 
     if (rc != NJS_OK) {
@@ -4799,7 +4793,7 @@ njs_webcrypto_result(njs_vm_t *vm, njs_opaque_value_t *result, njs_int_t rc,
         njs_value_assign(&arguments[1], result);
     }
 
-    ret = njs_vm_post_event(vm, vm_event, njs_value_arg(&arguments), 2);
+    ret = njs_vm_enqueue_job(vm, callback, njs_value_arg(&arguments), 2);
     if (ret == NJS_ERROR) {
         goto error;
     }

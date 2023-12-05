@@ -136,9 +136,7 @@ struct njs_vm_s {
     njs_lvlhsh_t             modules_hash;
 
     uint32_t                 event_id;
-    njs_lvlhsh_t             events_hash;
-    njs_queue_t              posted_events;
-    njs_queue_t              promise_events;
+    njs_queue_t              jobs;
 
     njs_vm_opt_t             options;
 

@@ -1096,12 +1096,18 @@ njs_process_script(njs_vm_t *vm, void *runtime, const njs_str_t *script)
     }
 
     for ( ;; ) {
-        ret = njs_vm_run(vm);
-        if (ret == NJS_ERROR) {
-            njs_process_output(vm, njs_value_arg(&retval), ret);
+        for ( ;; ) {
+            ret = njs_vm_execute_pending_job(vm);
+            if (ret <= NJS_OK) {
+                if (ret == NJS_ERROR || njs_vm_unhandled_rejection(vm)) {
+                    njs_process_output(vm, NULL, ret);
 
-            if (!njs_vm_options(vm)->interactive) {
-                return NJS_ERROR;
+                    if (!njs_vm_options(vm)->interactive) {
+                        return NJS_ERROR;
+                    }
+                }
+
+                break;
             }
         }
 

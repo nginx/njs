@@ -15,7 +15,7 @@ typedef struct {
 
 
 typedef struct {
-    njs_vm_event_t          vm_event;
+    njs_function_t          *function;
     void                    *data;
     njs_uint_t              nargs;
     njs_opaque_value_t      args[3];

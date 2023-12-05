@@ -34,7 +34,6 @@ NJS_LIB_SRCS=" \
    src/njs_generator.c \
    src/njs_disassembler.c \
    src/njs_module.c \
-   src/njs_event.c \
    src/njs_extern.c \
    src/njs_boolean.c \
    src/njs_number.c \

@@ -449,39 +449,6 @@ njs_promise_capability_executor(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-njs_inline njs_int_t
-njs_promise_add_event(njs_vm_t *vm, njs_function_t *function, njs_value_t *args,
-    njs_uint_t nargs)
-{
-    njs_event_t  *event;
-
-    event = njs_mp_zalloc(vm->mem_pool, sizeof(njs_event_t));
-    if (njs_slow_path(event == NULL)) {
-        njs_memory_error(vm);
-        return NJS_ERROR;
-    }
-
-    event->function = function;
-    event->once = 1;
-
-    if (nargs != 0) {
-        event->args = njs_mp_alloc(vm->mem_pool, sizeof(njs_value_t) * nargs);
-        if (njs_slow_path(event->args == NULL)) {
-            njs_memory_error(vm);
-            return NJS_ERROR;
-        }
-
-        memcpy(event->args, args, sizeof(njs_value_t) * nargs);
-
-        event->nargs = nargs;
-    }
-
-    njs_queue_insert_tail(&vm->promise_events, &event->link);
-
-    return NJS_OK;
-}
-
-
 njs_inline njs_value_t *
 njs_promise_trigger_reactions(njs_vm_t *vm, njs_value_t *value,
     njs_queue_t *queue)
@@ -505,7 +472,7 @@ njs_promise_trigger_reactions(njs_vm_t *vm, njs_value_t *value,
         njs_set_data(&arguments[0], reaction, 0);
         arguments[1] = *value;
 
-        ret = njs_promise_add_event(vm, function, arguments, 2);
+        ret = njs_vm_enqueue_job(vm, function, arguments, 2);
         if (njs_slow_path(ret != NJS_OK)) {
             return njs_value_arg(&njs_value_null);
         }
@@ -738,7 +705,7 @@ njs_promise_resolve_function(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     function->u.native = njs_promise_resolve_thenable_job;
 
-    ret = njs_promise_add_event(vm, function, arguments, 3);
+    ret = njs_vm_enqueue_job(vm, function, arguments, 3);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -994,7 +961,7 @@ njs_promise_perform_then(njs_vm_t *vm, njs_value_t *value,
 
         arguments[1] = data->result;
 
-        ret = njs_promise_add_event(vm, function, arguments, 2);
+        ret = njs_vm_enqueue_job(vm, function, arguments, 2);
         if (njs_slow_path(ret != NJS_OK)) {
             return ret;
         }
