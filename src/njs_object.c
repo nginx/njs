@@ -897,7 +897,7 @@ njs_object_enumerate_object(njs_vm_t *vm, const njs_object_t *object,
 
 static njs_int_t
 njs_get_own_ordered_keys(njs_vm_t *vm, const njs_object_t *object,
-    const njs_object_t *parent, njs_array_t *items, njs_object_enum_t kind,
+    const njs_object_t *parent, njs_array_t *items,
     njs_object_enum_type_t type, njs_bool_t all)
 {
     double              num;
@@ -1163,8 +1163,7 @@ njs_object_own_enumerate_object(njs_vm_t *vm, const njs_object_t *object,
 
     switch (kind) {
     case NJS_ENUM_KEYS:
-        ret = njs_get_own_ordered_keys(vm, object, parent, items, kind, type,
-                                       all);
+        ret = njs_get_own_ordered_keys(vm, object, parent, items, type, all);
         if (ret != NJS_OK) {
             return NJS_ERROR;
         }
@@ -1178,8 +1177,8 @@ njs_object_own_enumerate_object(njs_vm_t *vm, const njs_object_t *object,
             return NJS_ERROR;
         }
 
-        ret = njs_get_own_ordered_keys(vm, object, parent, items_sorted, kind,
-                                       type, all);
+        ret = njs_get_own_ordered_keys(vm, object, parent, items_sorted, type,
+                                       all);
         if (ret != NJS_OK) {
             return NJS_ERROR;
         }
