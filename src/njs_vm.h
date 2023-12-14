@@ -182,6 +182,9 @@ struct njs_vm_s {
 
     njs_rbtree_t             global_symbols;
     uint64_t                 symbol_generator;
+
+    njs_module_loader_t      module_loader;
+    void                     *module_loader_opaque;
 };
 
 

@@ -48,9 +48,9 @@ njs_parser_module(njs_parser_t *parser, njs_str_t *name)
     external = parser;
     loader = njs_default_module_loader;
 
-    if (vm->options.ops != NULL && vm->options.ops->module_loader != NULL) {
-        loader = vm->options.ops->module_loader;
-        external = vm->external;
+    if (vm->module_loader != NULL) {
+        loader = vm->module_loader;
+        external = vm->module_loader_opaque;
     }
 
     module = loader(vm, external, name);

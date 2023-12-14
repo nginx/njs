@@ -269,7 +269,6 @@ static njs_external_t  njs_ext_262[] = {
 
 
 static njs_vm_ops_t njs_console_ops = {
-    NULL,
     njs_console_log,
 };
 

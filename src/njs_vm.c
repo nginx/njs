@@ -730,6 +730,15 @@ njs_vm_execute_pending_job(njs_vm_t *vm)
 }
 
 
+void
+njs_vm_set_module_loader(njs_vm_t *vm, njs_module_loader_t module_loader,
+    void *opaque)
+{
+    vm->module_loader = module_loader;
+    vm->module_loader_opaque = opaque;
+}
+
+
 njs_int_t
 njs_vm_add_path(njs_vm_t *vm, const njs_str_t *path)
 {

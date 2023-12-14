@@ -609,7 +609,6 @@ static njs_external_t  ngx_stream_js_ext_session_flags[] = {
 
 
 static njs_vm_ops_t ngx_stream_js_ops = {
-    NULL,
     ngx_js_logger,
 };
 

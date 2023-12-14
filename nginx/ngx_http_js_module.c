@@ -840,7 +840,6 @@ static njs_external_t  ngx_http_js_ext_periodic_session[] = {
 
 
 static njs_vm_ops_t ngx_http_js_ops = {
-    NULL,
     ngx_js_logger,
 };
 
