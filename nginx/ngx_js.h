@@ -192,8 +192,10 @@ ngx_int_t ngx_js_exception(njs_vm_t *vm, ngx_str_t *s);
 
 njs_int_t ngx_js_ext_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t level, njs_value_t *retval);
-void ngx_js_logger(njs_vm_t *vm, njs_external_ptr_t external,
-    njs_log_level_t level, const u_char *start, size_t length);
+void ngx_js_log(njs_vm_t *vm, njs_external_ptr_t external,
+    ngx_uint_t level, const char *fmt, ...);
+void ngx_js_logger(njs_vm_t *vm, njs_external_ptr_t external, ngx_uint_t level,
+    const u_char *start, size_t length);
 char * ngx_js_import(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 char * ngx_js_preload_object(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 ngx_int_t ngx_js_init_preload_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf);

@@ -787,11 +787,10 @@ njs_int_t
 ngx_js_ext_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t magic, njs_value_t *retval)
 {
-    char             *p;
-    ngx_int_t        lvl;
-    njs_str_t        msg;
-    njs_uint_t       n;
-    njs_log_level_t  level;
+    char        *p;
+    ngx_int_t   lvl;
+    njs_str_t   msg;
+    njs_uint_t  n, level;
 
     p = njs_vm_external(vm, NJS_PROTO_ID_ANY, njs_argument(args, 0));
     if (p == NULL) {
@@ -799,7 +798,7 @@ ngx_js_ext_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    level = (njs_log_level_t) magic & NGX_JS_LOG_MASK;
+    level = magic & NGX_JS_LOG_MASK;
 
     if (level == 0) {
         if (ngx_js_integer(vm, njs_arg(args, nargs, 1), &lvl) != NGX_OK) {
@@ -892,7 +891,8 @@ ngx_js_ext_console_time(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         label = ngx_queue_data(q, ngx_js_timelabel_t, queue);
 
         if (njs_strstr_eq(&name, &label->name)) {
-            njs_vm_log(vm, "Timer \"%V\" already exists.\n", &name);
+            ngx_js_log(vm, njs_vm_external_ptr(vm), NGX_LOG_INFO,
+                       "Timer \"%V\" already exists.", &name);
             njs_value_undefined_set(retval);
             return NJS_OK;
         }
@@ -988,7 +988,8 @@ ngx_js_ext_console_time_end(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     ms = ns / 1000000;
     ns = ns % 1000000;
 
-    njs_vm_log(vm, "%V: %uL.%06uLms\n", &name, ms, ns);
+    ngx_js_log(vm, njs_vm_external_ptr(vm), NGX_LOG_INFO, "%V: %uL.%06uLms",
+               &name, ms, ns);
 
     njs_value_undefined_set(retval);
 
@@ -996,7 +997,8 @@ ngx_js_ext_console_time_end(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 not_found:
 
-    njs_vm_log(vm, "Timer \"%V\" doesn't exist.\n", &name);
+    ngx_js_log(vm, njs_vm_external_ptr(vm), NGX_LOG_INFO,
+               "Timer \"%V\" doesn't exist.", &name);
 
     njs_value_undefined_set(retval);
 
@@ -1152,7 +1154,23 @@ njs_clear_timeout(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 void
-ngx_js_logger(njs_vm_t *vm, njs_external_ptr_t external, njs_log_level_t level,
+ngx_js_log(njs_vm_t *vm, njs_external_ptr_t external, ngx_uint_t level,
+    const char *fmt, ...)
+{
+    u_char   *p;
+    va_list   args;
+    u_char    buf[NGX_MAX_ERROR_STR];
+
+    va_start(args, fmt);
+    p = njs_vsprintf(buf, buf + sizeof(buf), fmt, args);
+    va_end(args);
+
+    ngx_js_logger(vm, external, level, buf, p - buf);
+}
+
+
+void
+ngx_js_logger(njs_vm_t *vm, njs_external_ptr_t external, ngx_uint_t level,
     const u_char *start, size_t length)
 {
     ngx_log_t           *log;
@@ -1174,7 +1192,7 @@ ngx_js_logger(njs_vm_t *vm, njs_external_ptr_t external, njs_log_level_t level,
         log = ngx_cycle->log;
     }
 
-    ngx_log_error((ngx_uint_t) level, log, 0, "js: %*s", length, start);
+    ngx_log_error(level, log, 0, "js: %*s", length, start);
 
     if (external != NULL) {
         log->handler = handler;

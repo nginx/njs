@@ -3668,7 +3668,6 @@ njs_fs_filehandle_cleanup(void *data)
     njs_filehandle_t  *fh = data;
 
     if (fh->vm != NULL && fh->fd != -1) {
-        njs_vm_warn(fh->vm, "closing file description %d on cleanup\n", fh->fd);
         (void) close(fh->fd);
     }
 }

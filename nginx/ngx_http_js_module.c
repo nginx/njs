@@ -839,11 +839,6 @@ static njs_external_t  ngx_http_js_ext_periodic_session[] = {
 };
 
 
-static njs_vm_ops_t ngx_http_js_ops = {
-    ngx_js_logger,
-};
-
-
 static uintptr_t ngx_http_js_uptr[] = {
     offsetof(ngx_http_request_t, connection),
     (uintptr_t) ngx_http_js_pool,
@@ -1660,8 +1655,9 @@ ngx_http_js_ext_header_out(njs_vm_t *vm, njs_object_prop_t *prop,
     }
 
     if (r->header_sent && setval != NULL) {
-        njs_vm_warn(vm, "ignored setting of response header \"%V\" because"
-                        " headers were already sent", &name);
+        ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
+                      "ignored setting of response header \"%V\" because"
+                      " headers were already sent", &name);
     }
 
     for (h = headers_out; h->name.length > 0; h++) {
@@ -4509,7 +4505,6 @@ ngx_http_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf)
 
     options.backtrace = 1;
     options.unhandled_rejection = NJS_VM_OPT_UNHANDLED_REJECTION_THROW;
-    options.ops = &ngx_http_js_ops;
     options.metas = &ngx_http_js_metas;
     options.addons = njs_http_js_addon_modules;
     options.argv = ngx_argv;

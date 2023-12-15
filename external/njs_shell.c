@@ -53,6 +53,13 @@ typedef struct {
 } njs_opts_t;
 
 
+typedef enum {
+    NJS_LOG_ERROR = 4,
+    NJS_LOG_WARN = 5,
+    NJS_LOG_INFO = 7,
+} njs_log_level_t;
+
+
 typedef struct {
     size_t                  index;
     size_t                  length;
@@ -137,8 +144,9 @@ static njs_int_t njs_ext_console_time(njs_vm_t *vm, njs_value_t *args,
 static njs_int_t njs_ext_console_time_end(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 
-static void njs_console_log(njs_vm_t *vm, njs_external_ptr_t external,
-    njs_log_level_t level, const u_char *start, size_t length);
+static void njs_console_log(njs_log_level_t level, const char *fmt, ...);
+static void njs_console_logger(njs_log_level_t level, const u_char *start,
+    size_t length);
 
 static intptr_t njs_event_rbtree_compare(njs_rbtree_node_t *node1,
     njs_rbtree_node_t *node2);
@@ -159,7 +167,7 @@ static njs_external_t  njs_ext_console[] = {
             .native = njs_ext_console_log,
 #define NJS_LOG_DUMP  16
 #define NJS_LOG_MASK  15
-            .magic8 = NJS_LOG_LEVEL_INFO | NJS_LOG_DUMP,
+            .magic8 = NJS_LOG_INFO | NJS_LOG_DUMP,
         }
     },
 
@@ -171,7 +179,7 @@ static njs_external_t  njs_ext_console[] = {
         .enumerable = 1,
         .u.method = {
             .native = njs_ext_console_log,
-            .magic8 = NJS_LOG_LEVEL_ERROR,
+            .magic8 = NJS_LOG_ERROR,
         }
     },
 
@@ -183,7 +191,7 @@ static njs_external_t  njs_ext_console[] = {
         .enumerable = 1,
         .u.method = {
             .native = njs_ext_console_log,
-            .magic8 = NJS_LOG_LEVEL_INFO,
+            .magic8 = NJS_LOG_INFO,
         }
     },
 
@@ -195,7 +203,7 @@ static njs_external_t  njs_ext_console[] = {
         .enumerable = 1,
         .u.method = {
             .native = njs_ext_console_log,
-            .magic8 = NJS_LOG_LEVEL_INFO,
+            .magic8 = NJS_LOG_INFO,
         }
     },
 
@@ -237,7 +245,7 @@ static njs_external_t  njs_ext_console[] = {
         .enumerable = 1,
         .u.method = {
             .native = njs_ext_console_log,
-            .magic8 = NJS_LOG_LEVEL_WARN,
+            .magic8 = NJS_LOG_WARN,
         }
     },
 
@@ -265,11 +273,6 @@ static njs_external_t  njs_ext_262[] = {
         }
     },
 
-};
-
-
-static njs_vm_ops_t njs_console_ops = {
-    njs_console_log,
 };
 
 
@@ -776,7 +779,6 @@ njs_create_vm(njs_opts_t *opts)
     vm_options.opcode_debug = opts->opcode_debug;
 #endif
 
-    vm_options.ops = &njs_console_ops;
     vm_options.addons = njs_console_addon_modules;
     vm_options.external = &njs_console;
     vm_options.argv = opts->argv;
@@ -1419,7 +1421,7 @@ njs_ext_console_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             return NJS_ERROR;
         }
 
-        njs_vm_logger(vm, level, "%*s\n", msg.length, msg.start);
+        njs_console_logger(level, msg.start, msg.length);
 
         n++;
     }
@@ -1475,7 +1477,8 @@ njs_ext_console_time(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         label = njs_queue_link_data(link, njs_timelabel_t, link);
 
         if (njs_strstr_eq(&name, &label->name)) {
-            njs_vm_log(vm, "Timer \"%V\" already exists.\n", &name);
+            njs_console_log(NJS_LOG_INFO, "Timer \"%V\" already exists.",
+                            &name);
             njs_value_undefined_set(retval);
             return NJS_OK;
         }
@@ -1546,7 +1549,8 @@ njs_ext_console_time_end(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     for ( ;; ) {
         if (link == njs_queue_tail(labels)) {
-            njs_vm_log(vm, "Timer \"%V\" doesn’t exist.\n", &name);
+            njs_console_log(NJS_LOG_INFO, "Timer \"%V\" doesn’t exist.",
+                            &name);
             njs_value_undefined_set(retval);
             return NJS_OK;
         }
@@ -1566,7 +1570,7 @@ njs_ext_console_time_end(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     ms = ns / 1000000;
     ns = ns % 1000000;
 
-    njs_vm_log(vm, "%V: %uL.%06uLms\n", &name, ms, ns);
+    njs_console_log(NJS_LOG_INFO, "%V: %uL.%06uLms", &name, ms, ns);
 
     njs_mp_free(njs_vm_memory_pool(vm), label);
 
@@ -1693,20 +1697,36 @@ njs_clear_timeout(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static void
-njs_console_log(njs_vm_t *vm, njs_external_ptr_t external,
-    njs_log_level_t level, const u_char *start, size_t length)
+njs_console_log(njs_log_level_t level, const char *fmt, ...)
+{
+    u_char   *p;
+    va_list  args;
+    u_char   buf[2048];
+
+    va_start(args, fmt);
+    p = njs_vsprintf(buf, buf + sizeof(buf), fmt, args);
+    va_end(args);
+
+    njs_console_logger(level, buf, p - buf);
+}
+
+
+static void
+njs_console_logger(njs_log_level_t level, const u_char *start, size_t length)
 {
     switch (level) {
-    case NJS_LOG_LEVEL_INFO:
-        njs_printf("%*s", length, start);
+    case NJS_LOG_WARN:
+        njs_printf("W: ");
         break;
-    case NJS_LOG_LEVEL_WARN:
-        njs_printf("W: %*s", length, start);
+    case NJS_LOG_ERROR:
+        njs_printf("E: ");
         break;
-    case NJS_LOG_LEVEL_ERROR:
-        njs_printf("E: %*s", length, start);
+    case NJS_LOG_INFO:
         break;
     }
+
+    njs_print(start, length);
+    njs_print("\n", 1);
 }
 
 

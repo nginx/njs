@@ -1532,7 +1532,7 @@ njs_env_hash_init(njs_vm_t *vm, njs_lvlhsh_t *hash, char **environment)
     uint32_t            cp;
     njs_int_t           ret;
     const u_char        *val, *entry, *s, *end;
-    njs_object_prop_t   *prop, *prev;
+    njs_object_prop_t   *prop;
     njs_string_prop_t   string;
     njs_lvlhsh_query_t  lhq;
 
@@ -1599,13 +1599,6 @@ njs_env_hash_init(njs_vm_t *vm, njs_lvlhsh_t *hash, char **environment)
              * Always using the first element among the duplicates
              * and ignoring the rest.
              */
-
-            prev = lhq.value;
-
-            if (!njs_values_same(njs_prop_value(prop), njs_prop_value(prev))) {
-                njs_vm_warn(vm, "environment variable \"%V\" has more than one"
-                            " value\n", &lhq.key);
-            }
         }
     }
 
