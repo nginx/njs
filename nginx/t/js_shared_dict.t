@@ -41,6 +41,7 @@ http {
     js_shared_dict_zone zone=foo:32k timeout=2s evict;
     js_shared_dict_zone zone=bar:64k type=string;
     js_shared_dict_zone zone=waka:32k type=number;
+    js_shared_dict_zone zone=no_timeout:32k;
 
     server {
         listen       127.0.0.1:8080;
@@ -108,6 +109,10 @@ http {
 
         location /set {
             js_content test.set;
+        }
+
+        location /set_clear {
+            js_content test.set_clear;
         }
 
         location /size {
@@ -259,16 +264,25 @@ $t->write_file('test.js', <<'EOF');
         r.return(200, `size: ${dict.size()}`);
     }
 
+    function set_clear(r) {
+        var dict = ngx.shared.no_timeout;
+        dict.set("test", "test value");
+        dict.set("test1", "test1 value");
+        dict.clear();
+        r.return(200, `size: ${dict.size()}`);
+    }
+
+
     function zones(r) {
         r.return(200, Object.keys(ngx.shared).sort());
     }
 
     export default { add, capacity, chain, clear, del, free_space, get, has,
                      incr, items, keys, name, njs: test_njs, pop, replace, set,
-                     size, zones };
+                     set_clear, size, zones };
 EOF
 
-$t->try_run('no js_shared_dict_zone')->plan(43);
+$t->try_run('no js_shared_dict_zone')->plan(44);
 
 ###############################################################################
 
@@ -339,7 +353,10 @@ like(http_get('/pop?dict=bar&key=FOO'), qr/zzz/, 'pop bar.FOO');
 like(http_get('/pop?dict=bar&key=FOO'), qr/undefined/, 'pop deleted bar.FOO');
 http_get('/set?dict=foo&key=BAR&value=xxx');
 like(http_get('/clear?dict=foo'), qr/undefined/, 'clear foo');
+
 like(http_get('/size?dict=foo'), qr/size: 0/, 'no of items in foo after clear');
+like(http_get('/set_clear'), qr/size: 0/,
+	'no of items in no_timeout after clear');
 
 ###############################################################################
 

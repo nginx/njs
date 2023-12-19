@@ -109,6 +109,8 @@ static njs_int_t ngx_js_dict_shared_error_name(njs_vm_t *vm,
 static ngx_int_t ngx_js_dict_init_zone(ngx_shm_zone_t *shm_zone, void *data);
 static njs_int_t ngx_js_shared_dict_preinit(njs_vm_t *vm);
 static njs_int_t ngx_js_shared_dict_init(njs_vm_t *vm);
+static void ngx_js_dict_node_free(ngx_js_dict_t *dict,
+    ngx_js_dict_node_t *node);
 
 
 static njs_external_t  ngx_js_ext_shared_dict[] = {
@@ -454,8 +456,10 @@ static njs_int_t
 njs_js_ext_shared_dict_clear(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
 {
-    ngx_js_dict_t   *dict;
-    ngx_shm_zone_t  *shm_zone;
+    ngx_rbtree_t       *rbtree;
+    ngx_js_dict_t      *dict;
+    ngx_shm_zone_t     *shm_zone;
+    ngx_rbtree_node_t  *rn, *next;
 
     shm_zone = njs_vm_external(vm, ngx_js_shared_dict_proto_id,
                                njs_argument(args, 0));
@@ -468,7 +472,27 @@ njs_js_ext_shared_dict_clear(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     ngx_rwlock_wlock(&dict->sh->rwlock);
 
-    ngx_js_dict_evict(dict, 0x7fffffff /* INT_MAX */);
+    if (dict->timeout) {
+        ngx_js_dict_evict(dict, 0x7fffffff /* INT_MAX */);
+
+    } else {
+        rbtree = &dict->sh->rbtree;
+
+        if (rbtree->root == rbtree->sentinel) {
+            return NJS_OK;
+        }
+
+        for (rn = ngx_rbtree_min(rbtree->root, rbtree->sentinel);
+             rn != NULL;
+             rn = next)
+        {
+            next = ngx_rbtree_next(rbtree, rn);
+
+            ngx_rbtree_delete(rbtree, rn);
+
+            ngx_js_dict_node_free(dict, (ngx_js_dict_node_t *) rn);
+        }
+    }
 
     ngx_rwlock_unlock(&dict->sh->rwlock);
 
