@@ -522,12 +522,12 @@ njs_integer(njs_sprintf_t *spf, u_char *buf, uint64_t ui64)
         } while (ui64 != 0);
     }
 
+    length = (temp + NJS_INT64_T_LEN) - p;
+
     /* Zero or space padding. */
 
-    if (spf->width != 0) {
-
-        length = (temp + NJS_INT64_T_LEN) - p;
-        end = buf + (spf->width - length);
+    if (length < spf->width) {
+        end = buf + spf->width - length;
         end = njs_min(end, spf->end);
 
         while (buf < end) {
@@ -537,7 +537,6 @@ njs_integer(njs_sprintf_t *spf, u_char *buf, uint64_t ui64)
 
     /* Number copying. */
 
-    length = (temp + NJS_INT64_T_LEN) - p;
     end = buf + length;
     end = njs_min(end, spf->end);
 
