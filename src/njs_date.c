@@ -243,10 +243,18 @@ njs_make_date(int64_t tm[], njs_bool_t local)
     days = njs_make_day(tm[NJS_DATE_YR], tm[NJS_DATE_MON],
                         tm[NJS_DATE_DAY]);
 
+    if (njs_slow_path(isnan(days))) {
+        return NAN;
+    }
+
     time = ((tm[NJS_DATE_HR] * 60.0 + tm[NJS_DATE_MIN]) * 60.0
             + tm[NJS_DATE_SEC]) * 1000.0 + tm[NJS_DATE_MSEC];
 
     time += days * 86400000.0;
+
+    if (time < -8.64e15 || time > 8.64e15) {
+        return NAN;
+    }
 
     if (local) {
         time += njs_tz_offset(time) * 60000;
