@@ -1894,7 +1894,7 @@ njs_dump_visited(njs_vm_t *vm, njs_json_stringify_t *stringify,
 }
 
 
-njs_inline njs_bool_t
+njs_inline void
 njs_dump_empty(njs_json_stringify_t *stringify, njs_json_state_t *state,
     njs_chb_t *chain, njs_bool_t sep_position)
 {
@@ -1902,7 +1902,7 @@ njs_dump_empty(njs_json_stringify_t *stringify, njs_json_state_t *state,
     int64_t  diff;
 
     if (!state->array) {
-        return 0;
+        return;
     }
 
     if (sep_position) {
@@ -1917,6 +1917,10 @@ njs_dump_empty(njs_json_stringify_t *stringify, njs_json_state_t *state,
         } else {
             prev = (state->index > 0) ? njs_key_to_index(state->key) : -1;
         }
+    }
+
+    if (isnan(prev)) {
+        return;
     }
 
     if (isnan(key)) {
@@ -1947,8 +1951,6 @@ njs_dump_empty(njs_json_stringify_t *stringify, njs_json_state_t *state,
             njs_json_stringify_indent(stringify, chain, 1);
         }
     }
-
-    return 1;
 }
 
 
