@@ -2035,16 +2035,17 @@ njs_typed_array_prototype_sort(njs_vm_t *vm, njs_value_t *args,
     }
 
     njs_qsort(base, length, element_size, cmp, &ctx);
+
+    if (njs_slow_path(ctx.exception)) {
+        return NJS_ERROR;
+    }
+
     if (ctx.function != NULL) {
         if (&buffer->u.u8[array->offset * element_size] == orig) {
             memcpy(orig, base, length * element_size);
         }
 
         njs_mp_free(vm->mem_pool, base);
-    }
-
-    if (njs_slow_path(ctx.exception)) {
-        return NJS_ERROR;
     }
 
     njs_set_typed_array(retval, array);
