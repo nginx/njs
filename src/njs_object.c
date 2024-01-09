@@ -591,7 +591,7 @@ njs_object_enumerate_array(njs_vm_t *vm, const njs_array_t *array,
     njs_value_t  *p, *start, *end;
     njs_array_t  *entry;
 
-    if (!array->object.fast_array) {
+    if (!array->object.fast_array || array->length == 0) {
         return NJS_OK;
     }
 
