@@ -34,6 +34,10 @@ njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
     hash = &slot->external_shared_hash;
     njs_lvlhsh_init(hash);
 
+    if (n == 0) {
+        return NJS_OK;
+    }
+
     lhq.replace = 0;
     lhq.proto = &njs_object_hash_proto;
     lhq.pool = vm->mem_pool;
