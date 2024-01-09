@@ -1235,6 +1235,7 @@ njs_int_t
 njs_regexp_prototype_exec(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
 {
+    unsigned     flags;
     njs_int_t    ret;
     njs_value_t  *r, *s;
     njs_value_t  string_lvalue;
@@ -1253,8 +1254,14 @@ njs_regexp_prototype_exec(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return ret;
     }
 
-    return njs_regexp_builtin_exec(vm, r, s,
-                                   njs_number(njs_arg(args, nargs, 2)), retval);
+    if (nargs > 2) {
+        flags = njs_number(njs_arg(args, nargs, 2));
+
+    } else {
+        flags = 0;
+    }
+
+    return njs_regexp_builtin_exec(vm, r, s, flags, retval);
 }
 
 
