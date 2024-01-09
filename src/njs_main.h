@@ -41,9 +41,7 @@
 
 #include <njs_regex.h>
 
-#include <njs_md5.h>
-#include <njs_sha1.h>
-#include <njs_sha2.h>
+#include <njs_hash.h>
 
 #include <njs.h>
 #include <njs_value.h>

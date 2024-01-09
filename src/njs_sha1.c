@@ -10,12 +10,12 @@
 #include <njs_main.h>
 
 
-static const u_char *njs_sha1_body(njs_sha1_t *ctx, const u_char *data,
+static const u_char *njs_sha1_body(njs_hash_t *ctx, const u_char *data,
     size_t size);
 
 
 void
-njs_sha1_init(njs_sha1_t *ctx)
+njs_sha1_init(njs_hash_t *ctx)
 {
     ctx->a = 0x67452301;
     ctx->b = 0xefcdab89;
@@ -28,7 +28,7 @@ njs_sha1_init(njs_sha1_t *ctx)
 
 
 void
-njs_sha1_update(njs_sha1_t *ctx, const void *data, size_t size)
+njs_sha1_update(njs_hash_t *ctx, const void *data, size_t size)
 {
     size_t  used, free;
 
@@ -59,7 +59,7 @@ njs_sha1_update(njs_sha1_t *ctx, const void *data, size_t size)
 
 
 void
-njs_sha1_final(u_char result[20], njs_sha1_t *ctx)
+njs_sha1_final(u_char result[32], njs_hash_t *ctx)
 {
     size_t  used, free;
 
@@ -152,7 +152,7 @@ njs_sha1_final(u_char result[20], njs_sha1_t *ctx)
  */
 
 static const u_char *
-njs_sha1_body(njs_sha1_t *ctx, const u_char *data, size_t size)
+njs_sha1_body(njs_hash_t *ctx, const u_char *data, size_t size)
 {
     uint32_t       a, b, c, d, e, temp;
     uint32_t       saved_a, saved_b, saved_c, saved_d, saved_e;

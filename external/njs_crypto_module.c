@@ -6,16 +6,14 @@
 
 
 #include <njs.h>
-#include <njs_md5.h>
-#include <njs_sha1.h>
-#include <njs_sha2.h>
+#include <njs_hash.h>
 #include <njs_string.h>
 #include <njs_buffer.h>
 
 
-typedef void (*njs_hash_init)(void *ctx);
-typedef void (*njs_hash_update)(void *ctx, const void *data, size_t size);
-typedef void (*njs_hash_final)(u_char *result, void *ctx);
+typedef void (*njs_hash_init)(njs_hash_t *ctx);
+typedef void (*njs_hash_update)(njs_hash_t *ctx, const void *data, size_t size);
+typedef void (*njs_hash_final)(u_char result[32], njs_hash_t *ctx);
 
 typedef njs_int_t (*njs_digest_encode)(njs_vm_t *vm, njs_value_t *value,
     const njs_str_t *src);
@@ -31,24 +29,13 @@ typedef struct {
 } njs_hash_alg_t;
 
 typedef struct {
-    union {
-        njs_md5_t       md5;
-        njs_sha1_t      sha1;
-        njs_sha2_t      sha2;
-    } u;
-
+    njs_hash_t          ctx;
     njs_hash_alg_t      *alg;
 } njs_digest_t;
 
 typedef struct {
     u_char              opad[64];
-
-    union {
-        njs_md5_t       md5;
-        njs_sha1_t      sha1;
-        njs_sha2_t      sha2;
-    } u;
-
+    njs_hash_t          ctx;
     njs_hash_alg_t      *alg;
 } njs_hmac_t;
 
@@ -85,25 +72,25 @@ static njs_hash_alg_t njs_hash_algorithms[] = {
    {
      njs_str("md5"),
      16,
-     (njs_hash_init) njs_md5_init,
-     (njs_hash_update) njs_md5_update,
-     (njs_hash_final) njs_md5_final
+     njs_md5_init,
+     njs_md5_update,
+     njs_md5_final
    },
 
    {
      njs_str("sha1"),
      20,
-     (njs_hash_init) njs_sha1_init,
-     (njs_hash_update) njs_sha1_update,
-     (njs_hash_final) njs_sha1_final
+     njs_sha1_init,
+     njs_sha1_update,
+     njs_sha1_final
    },
 
    {
      njs_str("sha256"),
      32,
-     (njs_hash_init) njs_sha2_init,
-     (njs_hash_update) njs_sha2_update,
-     (njs_hash_final) njs_sha2_final
+     njs_sha2_init,
+     njs_sha2_update,
+     njs_sha2_final
    },
 
    {
@@ -312,7 +299,7 @@ njs_crypto_create_hash(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     dgst->alg = alg;
 
-    alg->init(&dgst->u);
+    alg->init(&dgst->ctx);
 
     return njs_vm_external_create(vm, retval, njs_crypto_hash_proto_id,
                                   dgst, 0);
@@ -390,10 +377,10 @@ njs_hash_prototype_update(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (!hmac) {
-        dgst->alg->update(&dgst->u, data.start, data.length);
+        dgst->alg->update(&dgst->ctx, data.start, data.length);
 
     } else {
-        ctx->alg->update(&ctx->u, data.start, data.length);
+        ctx->alg->update(&ctx->ctx, data.start, data.length);
     }
 
     njs_value_assign(retval, this);
@@ -450,17 +437,17 @@ njs_hash_prototype_digest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     if (!hmac) {
         alg = dgst->alg;
-        alg->final(digest, &dgst->u);
+        alg->final(digest, &dgst->ctx);
         dgst->alg = NULL;
 
     } else {
         alg = ctx->alg;
-        alg->final(hash1, &ctx->u);
+        alg->final(hash1, &ctx->ctx);
 
-        alg->init(&ctx->u);
-        alg->update(&ctx->u, ctx->opad, 64);
-        alg->update(&ctx->u, hash1, alg->size);
-        alg->final(digest, &ctx->u);
+        alg->init(&ctx->ctx);
+        alg->update(&ctx->ctx, ctx->opad, 64);
+        alg->update(&ctx->ctx, hash1, alg->size);
+        alg->final(digest, &ctx->ctx);
         ctx->alg = NULL;
     }
 
@@ -562,9 +549,9 @@ njs_crypto_create_hmac(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     ctx->alg = alg;
 
     if (key.length > sizeof(key_buf)) {
-        alg->init(&ctx->u);
-        alg->update(&ctx->u, key.start, key.length);
-        alg->final(digest, &ctx->u);
+        alg->init(&ctx->ctx);
+        alg->update(&ctx->ctx, key.start, key.length);
+        alg->final(digest, &ctx->ctx);
 
         memcpy(key_buf, digest, alg->size);
         njs_explicit_memzero(key_buf + alg->size, sizeof(key_buf) - alg->size);
@@ -583,8 +570,8 @@ njs_crypto_create_hmac(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
          key_buf[i] ^= 0x36;
     }
 
-    alg->init(&ctx->u);
-    alg->update(&ctx->u, key_buf, 64);
+    alg->init(&ctx->ctx);
+    alg->update(&ctx->ctx, key_buf, 64);
 
     return njs_vm_external_create(vm, retval, njs_crypto_hmac_proto_id,
                                   ctx, 0);
