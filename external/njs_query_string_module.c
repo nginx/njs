@@ -506,7 +506,7 @@ njs_query_string_parser(njs_vm_t *vm, u_char *query, u_char *end,
 
         size = val - key;
 
-        if (val != end) {
+        if (val != part) {
             val += eq->length;
         }
 
