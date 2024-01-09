@@ -1617,7 +1617,7 @@ njs_string_from_char_code(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
         if (is_point) {
             num = njs_number(&args[i]);
-            if (isnan(num)) {
+            if (isnan(num) || isinf(num)) {
                 goto range_error;
             }
 
