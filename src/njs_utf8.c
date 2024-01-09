@@ -361,25 +361,27 @@ njs_utf8_stream_length(njs_unicode_decode_t *ctx, const u_char *p, size_t len,
     size = 0;
     length = 0;
 
-    end = p + len;
+    if (p != NULL) {
+        end = p + len;
 
-    while (p < end) {
-        codepoint = njs_utf8_decode(ctx, &p, end);
+        while (p < end) {
+            codepoint = njs_utf8_decode(ctx, &p, end);
 
-        if (codepoint > NJS_UNICODE_MAX_CODEPOINT) {
-            if (codepoint == NJS_UNICODE_CONTINUE) {
-                break;
+            if (codepoint > NJS_UNICODE_MAX_CODEPOINT) {
+                if (codepoint == NJS_UNICODE_CONTINUE) {
+                    break;
+                }
+
+                if (fatal) {
+                    return -1;
+                }
+
+                codepoint = NJS_UNICODE_REPLACEMENT;
             }
 
-            if (fatal) {
-                return -1;
-            }
-
-            codepoint = NJS_UNICODE_REPLACEMENT;
+            size += njs_utf8_size(codepoint);
+            length++;
         }
-
-        size += njs_utf8_size(codepoint);
-        length++;
     }
 
     if (last && ctx->need != 0x00) {

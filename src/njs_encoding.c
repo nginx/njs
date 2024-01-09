@@ -543,7 +543,7 @@ njs_text_decoder_decode(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     /* Looking for BOM. */
 
-    if (!data->ignore_bom) {
+    if (start != NULL && !data->ignore_bom) {
         start += njs_utf8_bom(start, end);
     }
 
