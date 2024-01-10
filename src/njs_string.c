@@ -2797,7 +2797,7 @@ njs_string_prototype_match(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 match:
 
-    return njs_regexp_prototype_exec(vm, arguments, nargs, unused, retval);
+    return njs_regexp_prototype_exec(vm, arguments, 2, unused, retval);
 }
 
 
