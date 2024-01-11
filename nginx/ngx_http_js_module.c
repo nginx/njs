@@ -2615,7 +2615,8 @@ static njs_int_t
 ngx_http_js_ext_get_args(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
-    njs_int_t           ret;
+    u_char              *data;
+    njs_int_t            ret;
     njs_value_t         *args;
     ngx_http_js_ctx_t   *ctx;
     ngx_http_request_t  *r;
@@ -2631,8 +2632,8 @@ ngx_http_js_ext_get_args(njs_vm_t *vm, njs_object_prop_t *prop,
     args = njs_value_arg(&ctx->args);
 
     if (njs_value_is_null(args)) {
-        ret = njs_vm_query_string_parse(vm, r->args.data,
-                                        r->args.data + r->args.len, args);
+        data = (r->args.len != 0) ? r->args.data : (u_char *) "";
+        ret = njs_vm_query_string_parse(vm, data, data + r->args.len, args);
 
         if (ret == NJS_ERROR) {
             return NJS_ERROR;
