@@ -137,7 +137,7 @@ njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc, njs_value_t *rval,
     #define BREAK           pc += ret; NEXT
 
     #define NEXT            vmcode = (njs_vmcode_generic_t *) pc;             \
-                            SWITCH (vmcode->code.operation)
+                            SWITCH (vmcode->code)
 
     #define NEXT_LBL
     #define FALLTHROUGH
@@ -237,7 +237,7 @@ njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc, njs_value_t *rval,
 
 NEXT_LBL;
 
-    SWITCH (vmcode->code.operation) {
+    SWITCH (vmcode->code) {
 
     CASE (NJS_VMCODE_MOVE):
         njs_vmcode_debug_opcode();

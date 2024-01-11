@@ -41,7 +41,7 @@ struct njs_parser_node_s {
         uint32_t                    length;
         njs_variable_reference_t    reference;
         njs_value_t                 value;
-        njs_vmcode_operation_t      operation;
+        njs_vmcode_t                operation;
         njs_parser_node_t           *object;
         njs_mod_t                   *module;
     } u;

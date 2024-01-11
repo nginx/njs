@@ -9,7 +9,7 @@
 
 
 typedef struct {
-    njs_vmcode_operation_t     operation;
+    njs_vmcode_t               operation;
     size_t                     size;
     njs_str_t                  name;
 } njs_code_name_t;
@@ -191,6 +191,7 @@ njs_disassemble(u_char *start, u_char *end, njs_int_t count, njs_arr_t *lines)
     njs_str_t                    *name;
     njs_uint_t                   n;
     const char                   *type;
+    njs_vmcode_t                 operation;
     njs_code_name_t              *code_name;
     njs_vmcode_jump_t            *jump;
     njs_vmcode_error_t           *error;
@@ -203,7 +204,6 @@ njs_disassemble(u_char *start, u_char *end, njs_int_t count, njs_arr_t *lines)
     njs_vmcode_finally_t         *finally;
     njs_vmcode_try_end_t         *try_end;
     njs_vmcode_try_start_t       *try_start;
-    njs_vmcode_operation_t       operation;
     njs_vmcode_cond_jump_t       *cond_jump;
     njs_vmcode_test_jump_t       *test_jump;
     njs_vmcode_prop_next_t       *prop_next;
@@ -224,7 +224,7 @@ njs_disassemble(u_char *start, u_char *end, njs_int_t count, njs_arr_t *lines)
     p = start;
 
     while (((p < end) && (count == -1)) || (count-- > 0)) {
-        operation = *(njs_vmcode_operation_t *) p;
+        operation = *(njs_vmcode_t *) p;
         line = njs_lookup_line(lines, p - start);
 
         if (operation == NJS_VMCODE_ARRAY) {
@@ -553,7 +553,7 @@ njs_disassemble(u_char *start, u_char *end, njs_int_t count, njs_arr_t *lines)
         njs_printf("%5uD | %05uz UNKNOWN           %04Xz\n", line,
                    p - start, (size_t) (uintptr_t) operation);
 
-        p += sizeof(njs_vmcode_operation_t);
+        p += sizeof(njs_vmcode_t);
 
     next:
 

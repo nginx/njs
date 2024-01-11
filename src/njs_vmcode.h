@@ -23,11 +23,7 @@
 
 
 typedef intptr_t                        njs_jump_off_t;
-typedef uint8_t                         njs_vmcode_operation_t;
-
-
-#define NJS_VMCODE_3OPERANDS            0
-#define NJS_VMCODE_2OPERANDS            1
+typedef uint8_t                         njs_vmcode_t;
 
 
 enum {
@@ -116,12 +112,6 @@ enum {
     NJS_VMCODE_DEBUGGER,
     NJS_VMCODES
 };
-
-
-typedef struct {
-    njs_vmcode_operation_t     operation;
-    uint8_t                    operands;   /* 2 bits */
-} njs_vmcode_t;
 
 
 typedef struct {
