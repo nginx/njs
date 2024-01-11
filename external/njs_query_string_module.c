@@ -491,7 +491,7 @@ njs_query_string_parser(njs_vm_t *vm, u_char *query, u_char *end,
 
     key = query;
 
-    do {
+    while (key < end) {
         if (count++ == max_keys) {
             break;
         }
@@ -519,8 +519,7 @@ njs_query_string_parser(njs_vm_t *vm, u_char *query, u_char *end,
     next:
 
         key = part + sep->length;
-
-    } while (key < end);
+    }
 
     return NJS_OK;
 }
