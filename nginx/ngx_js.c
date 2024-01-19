@@ -357,7 +357,7 @@ ngx_js_call(njs_vm_t *vm, njs_function_t *func, njs_value_t *args,
         if (ret <= NJS_OK) {
             c = ngx_external_connection(vm, njs_vm_external_ptr(vm));
 
-            if (ret == NJS_ERROR || njs_vm_unhandled_rejection(vm)) {
+            if (ret == NJS_ERROR) {
                 ngx_js_exception(vm, &exception);
 
                 ngx_log_error(NGX_LOG_ERR, c->log, 0,
@@ -417,7 +417,7 @@ ngx_js_name_invoke(njs_vm_t *vm, ngx_str_t *fname, ngx_log_t *log,
     for ( ;; ) {
         ret = njs_vm_execute_pending_job(vm);
         if (ret <= NJS_OK) {
-            if (ret == NJS_ERROR || njs_vm_unhandled_rejection(vm)) {
+            if (ret == NJS_ERROR) {
                 ngx_js_exception(vm, &exception);
 
                 ngx_log_error(NGX_LOG_ERR, log, 0,
@@ -427,6 +427,13 @@ ngx_js_name_invoke(njs_vm_t *vm, ngx_str_t *fname, ngx_log_t *log,
 
             break;
         }
+    }
+
+    if (njs_vm_unhandled_rejection(vm)) {
+        ngx_js_exception(vm, &exception);
+
+        ngx_log_error(NGX_LOG_ERR, log, 0, "js exception: %V", &exception);
+        return NGX_ERROR;
     }
 
     ctx = ngx_external_ctx(vm, njs_vm_external_ptr(vm));

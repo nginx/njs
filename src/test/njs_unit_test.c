@@ -23708,9 +23708,7 @@ njs_process_test(njs_external_state_t *state, njs_opts_t *opts,
             for ( ;; ) {
                 ret = njs_vm_execute_pending_job(state->vm);
                 if (ret <= NJS_OK) {
-                    if (ret == NJS_ERROR
-                        || njs_vm_unhandled_rejection(state->vm))
-                    {
+                    if (ret == NJS_ERROR) {
                         return NJS_ERROR;
                     }
 

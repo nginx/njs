@@ -1485,7 +1485,7 @@ njs_external_call(njs_vm_t *vm, const njs_str_t *fname, njs_value_t *args,
     for ( ;; ) {
         ret = njs_vm_execute_pending_job(vm);
         if (ret <= NJS_OK) {
-            if (ret == NJS_ERROR || njs_vm_unhandled_rejection(vm)) {
+            if (ret == NJS_ERROR) {
                 return NJS_ERROR;
             }
 
