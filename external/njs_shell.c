@@ -93,6 +93,12 @@ typedef struct {
 
 
 typedef struct {
+    void                    *promise;
+    njs_opaque_value_t      message;
+} njs_rejected_promise_t;
+
+
+typedef struct {
     njs_vm_t                *vm;
 
     uint32_t                event_id;
@@ -100,6 +106,8 @@ typedef struct {
     njs_queue_t             posted_events;
 
     njs_queue_t             labels;
+
+    njs_arr_t               *rejected_promises;
 
     njs_bool_t              suppress_stdout;
 
@@ -422,7 +430,7 @@ njs_options_parse(njs_opts_t *opts, int argc, char **argv)
 
     opts->denormals = 1;
     opts->exit_code = EXIT_FAILURE;
-    opts->unhandled_rejection = NJS_VM_OPT_UNHANDLED_REJECTION_THROW;
+    opts->unhandled_rejection = 1;
 
     p = getenv("NJS_EXIT_CODE");
     if (p != NULL) {
@@ -528,7 +536,7 @@ njs_options_parse(njs_opts_t *opts, int argc, char **argv)
             break;
 
         case 'r':
-            opts->unhandled_rejection = NJS_VM_OPT_UNHANDLED_REJECTION_IGNORE;
+            opts->unhandled_rejection = 0;
             break;
 
         case 's':
@@ -635,6 +643,8 @@ njs_console_init(njs_vm_t *vm, njs_console_t *console)
     njs_rbtree_init(&console->events, njs_event_rbtree_compare);
     njs_queue_init(&console->posted_events);
     njs_queue_init(&console->labels);
+
+    console->rejected_promises = NULL;
 
     console->completion.completions = njs_vm_completions(vm, NULL);
     if (console->completion.completions == NULL) {
@@ -749,6 +759,53 @@ njs_externals_init(njs_vm_t *vm)
 }
 
 
+static void
+njs_rejection_tracker(njs_vm_t *vm, njs_external_ptr_t external,
+    njs_bool_t is_handled, njs_value_t *promise, njs_value_t *reason)
+{
+    void                    *promise_obj;
+    uint32_t                i, length;
+    njs_console_t           *console;
+    njs_rejected_promise_t  *rejected_promise;
+
+    console = external;
+
+    if (is_handled && console->rejected_promises != NULL) {
+        rejected_promise = console->rejected_promises->start;
+        length = console->rejected_promises->items;
+
+        promise_obj = njs_value_ptr(promise);
+
+        for (i = 0; i < length; i++) {
+            if (rejected_promise[i].promise == promise_obj) {
+                njs_arr_remove(console->rejected_promises,
+                               &rejected_promise[i]);
+
+                break;
+            }
+        }
+
+        return;
+    }
+
+    if (console->rejected_promises == NULL) {
+        console->rejected_promises = njs_arr_create(njs_vm_memory_pool(vm), 4,
+                                                sizeof(njs_rejected_promise_t));
+        if (njs_slow_path(console->rejected_promises == NULL)) {
+            return;
+        }
+    }
+
+    rejected_promise = njs_arr_add(console->rejected_promises);
+    if (njs_slow_path(rejected_promise == NULL)) {
+        return;
+    }
+
+    rejected_promise->promise = njs_value_ptr(promise);
+    njs_value_assign(&rejected_promise->message, reason);
+}
+
+
 static njs_vm_t *
 njs_create_vm(njs_opts_t *opts)
 {
@@ -784,7 +841,6 @@ njs_create_vm(njs_opts_t *opts)
     vm_options.argv = opts->argv;
     vm_options.argc = opts->argc;
     vm_options.ast = opts->ast;
-    vm_options.unhandled_rejection = opts->unhandled_rejection;
 
     if (opts->stack_size != 0) {
         vm_options.max_stack_size = opts->stack_size;
@@ -794,6 +850,11 @@ njs_create_vm(njs_opts_t *opts)
     if (vm == NULL) {
         njs_stderror("failed to create vm\n");
         return NULL;
+    }
+
+    if (opts->unhandled_rejection) {
+        njs_vm_set_rejection_tracker(vm, njs_rejection_tracker,
+                                     njs_vm_external_ptr(vm));
     }
 
     for (i = 0; i < opts->n_paths; i++) {
@@ -910,6 +971,40 @@ njs_process_events(void *runtime)
     }
 
     return njs_vm_pending(vm) ? NJS_AGAIN: NJS_OK;
+}
+
+
+static njs_int_t
+njs_unhandled_rejection(void *runtime)
+{
+    njs_int_t               ret;
+    njs_str_t               message;
+    njs_console_t           *console;
+    njs_rejected_promise_t  *rejected_promise;
+
+    console = runtime;
+
+    if (console->rejected_promises == NULL
+        || console->rejected_promises->items == 0)
+    {
+        return 0;
+    }
+
+    rejected_promise = console->rejected_promises->start;
+
+    ret = njs_vm_value_to_string(console->vm, &message,
+                                 njs_value_arg(&rejected_promise->message));
+    if (njs_slow_path(ret != NJS_OK)) {
+        return -1;
+    }
+
+    njs_vm_error(console->vm, "unhandled promise rejection: %V",
+                 &message);
+
+    njs_arr_destroy(console->rejected_promises);
+    console->rejected_promises = NULL;
+
+    return 1;
 }
 
 
@@ -1112,7 +1207,7 @@ njs_process_script(njs_vm_t *vm, void *runtime, const njs_str_t *script)
             }
         }
 
-        if (njs_vm_unhandled_rejection(vm)) {
+        if (njs_unhandled_rejection(runtime)) {
             njs_process_output(vm, NULL, NJS_ERROR);
 
             if (!njs_vm_options(vm)->interactive) {

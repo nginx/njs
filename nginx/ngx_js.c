@@ -12,15 +12,21 @@
 
 
 typedef struct {
-    ngx_queue_t       labels;
+    ngx_queue_t          labels;
 } ngx_js_console_t;
 
 
 typedef struct {
-    njs_str_t         name;
-    uint64_t          time;
-    ngx_queue_t       queue;
+    njs_str_t            name;
+    uint64_t             time;
+    ngx_queue_t          queue;
 } ngx_js_timelabel_t;
+
+
+typedef struct {
+    void                *promise;
+    njs_opaque_value_t   message;
+} ngx_js_rejected_promise_t;
 
 
 static njs_int_t ngx_js_ext_build(njs_vm_t *vm, njs_object_prop_t *prop,
@@ -49,6 +55,7 @@ static njs_int_t njs_set_immediate(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t njs_clear_timeout(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
+static njs_int_t ngx_js_unhandled_rejection(ngx_js_ctx_t *ctx);
 static void ngx_js_cleanup_vm(void *data);
 
 static njs_int_t ngx_js_core_init(njs_vm_t *vm);
@@ -429,14 +436,14 @@ ngx_js_name_invoke(njs_vm_t *vm, ngx_str_t *fname, ngx_log_t *log,
         }
     }
 
-    if (njs_vm_unhandled_rejection(vm)) {
+    ctx = ngx_external_ctx(vm, njs_vm_external_ptr(vm));
+
+    if (ngx_js_unhandled_rejection(ctx)) {
         ngx_js_exception(vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, log, 0, "js exception: %V", &exception);
         return NGX_ERROR;
     }
-
-    ctx = ngx_external_ctx(vm, njs_vm_external_ptr(vm));
 
     return njs_rbtree_is_empty(&ctx->waiting_events) ? NGX_OK : NGX_AGAIN;
 }
@@ -1661,6 +1668,53 @@ ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
 }
 
 
+static void
+ngx_js_rejection_tracker(njs_vm_t *vm, njs_external_ptr_t unused,
+    njs_bool_t is_handled, njs_value_t *promise, njs_value_t *reason)
+{
+    void                       *promise_obj;
+    uint32_t                    i, length;
+    ngx_js_ctx_t               *ctx;
+    ngx_js_rejected_promise_t  *rejected_promise;
+
+    ctx = ngx_external_ctx(vm, njs_vm_external_ptr(vm));
+
+    if (is_handled && ctx->rejected_promises != NULL) {
+        rejected_promise = ctx->rejected_promises->start;
+        length = ctx->rejected_promises->items;
+
+        promise_obj = njs_value_ptr(promise);
+
+        for (i = 0; i < length; i++) {
+            if (rejected_promise[i].promise == promise_obj) {
+                njs_arr_remove(ctx->rejected_promises,
+                               &rejected_promise[i]);
+
+                break;
+            }
+        }
+
+        return;
+    }
+
+    if (ctx->rejected_promises == NULL) {
+        ctx->rejected_promises = njs_arr_create(njs_vm_memory_pool(vm), 4,
+                                             sizeof(ngx_js_rejected_promise_t));
+        if (njs_slow_path(ctx->rejected_promises == NULL)) {
+            return;
+        }
+    }
+
+    rejected_promise = njs_arr_add(ctx->rejected_promises);
+    if (njs_slow_path(rejected_promise == NULL)) {
+        return;
+    }
+
+    rejected_promise->promise = njs_value_ptr(promise);
+    njs_value_assign(&rejected_promise->message, reason);
+}
+
+
 ngx_int_t
 ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
     njs_vm_opt_t *options)
@@ -1738,6 +1792,9 @@ ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
     cln->handler = ngx_js_cleanup_vm;
     cln->data = conf;
 
+    njs_vm_set_rejection_tracker(conf->vm, ngx_js_rejection_tracker,
+                                 NULL);
+
     path.start = ngx_cycle->conf_prefix.data;
     path.length = ngx_cycle->conf_prefix.len;
 
@@ -1807,6 +1864,36 @@ ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
     }
 
     return NGX_OK;
+}
+
+
+static njs_int_t
+ngx_js_unhandled_rejection(ngx_js_ctx_t *ctx)
+{
+    njs_int_t                   ret;
+    njs_str_t                   message;
+    ngx_js_rejected_promise_t  *rejected_promise;
+
+    if (ctx->rejected_promises == NULL
+        || ctx->rejected_promises->items == 0)
+    {
+        return 0;
+    }
+
+    rejected_promise = ctx->rejected_promises->start;
+
+    ret = njs_vm_value_to_string(ctx->vm, &message,
+                                 njs_value_arg(&rejected_promise->message));
+    if (njs_slow_path(ret != NJS_OK)) {
+        return -1;
+    }
+
+    njs_vm_error(ctx->vm, "unhandled promise rejection: %V", &message);
+
+    njs_arr_destroy(ctx->rejected_promises);
+    ctx->rejected_promises = NULL;
+
+    return 1;
 }
 
 

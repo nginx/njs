@@ -196,6 +196,9 @@ typedef void *                      njs_external_ptr_t;
 
 typedef njs_mod_t *(*njs_module_loader_t)(njs_vm_t *vm,
     njs_external_ptr_t external, njs_str_t *name);
+typedef void (*njs_rejection_tracker_t)(njs_vm_t *vm,
+    njs_external_ptr_t external, njs_bool_t is_handled, njs_value_t *promise,
+    njs_value_t *reason);
 
 
 typedef struct {
@@ -225,9 +228,6 @@ typedef struct {
 
     njs_uint_t                      max_stack_size;
 
-#define NJS_VM_OPT_UNHANDLED_REJECTION_IGNORE   0
-#define NJS_VM_OPT_UNHANDLED_REJECTION_THROW    1
-
 /*
  * interactive  - enables "interactive" mode.
  *  (REPL). Allows starting parent VM without cloning.
@@ -240,9 +240,6 @@ typedef struct {
  *   - Function constructors.
  * module        - ES6 "module" mode. Script mode is default.
  * ast           - print AST.
- * unhandled_rejection IGNORE | THROW - tracks unhandled promise rejections:
- *   - throwing inside a Promise without a catch block.
- *   - throwing inside in a finally or catch block.
  */
     uint8_t                         interactive;     /* 1 bit */
     uint8_t                         trailer;         /* 1 bit */
@@ -260,7 +257,6 @@ typedef struct {
 #ifdef NJS_DEBUG_GENERATOR
     uint8_t                         generator_debug; /* 1 bit */
 #endif
-    uint8_t                         unhandled_rejection;
 } njs_vm_opt_t;
 
 
@@ -304,7 +300,9 @@ NJS_EXPORT njs_int_t njs_vm_enqueue_job(njs_vm_t *vm, njs_function_t *function,
  */
 NJS_EXPORT njs_int_t njs_vm_execute_pending_job(njs_vm_t *vm);
 NJS_EXPORT njs_int_t njs_vm_pending(njs_vm_t *vm);
-NJS_EXPORT njs_int_t njs_vm_unhandled_rejection(njs_vm_t *vm);
+
+NJS_EXPORT void njs_vm_set_rejection_tracker(njs_vm_t *vm,
+        njs_rejection_tracker_t rejection_tracker, void *opaque);
 
 NJS_EXPORT void *njs_vm_completions(njs_vm_t *vm, njs_str_t *expression);
 
@@ -468,6 +466,7 @@ NJS_EXPORT double njs_value_number(const njs_value_t *value);
 NJS_EXPORT njs_function_t *njs_value_function(const njs_value_t *value);
 NJS_EXPORT njs_function_native_t njs_value_native_function(
     const njs_value_t *value);
+NJS_EXPORT void *njs_value_ptr(const njs_value_t *value);
 njs_external_ptr_t njs_value_external(const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_value_external_tag(const njs_value_t *value);
 

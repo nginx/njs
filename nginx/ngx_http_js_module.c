@@ -4505,7 +4505,6 @@ ngx_http_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf)
     ngx_http_js_uptr[NGX_JS_MAIN_CONF_INDEX] = (uintptr_t) jmcf;
 
     options.backtrace = 1;
-    options.unhandled_rejection = NJS_VM_OPT_UNHANDLED_REJECTION_THROW;
     options.metas = &ngx_http_js_metas;
     options.addons = njs_http_js_addon_modules;
     options.argv = ngx_argv;

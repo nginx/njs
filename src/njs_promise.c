@@ -61,8 +61,6 @@ static njs_int_t njs_promise_value_constructor(njs_vm_t *vm, njs_value_t *value,
 static njs_int_t njs_promise_capability_executor(njs_vm_t *vm,
     njs_value_t *args, njs_uint_t nargs, njs_index_t unused,
     njs_value_t *retval);
-static njs_int_t njs_promise_host_rejection_tracker(njs_vm_t *vm,
-    njs_promise_t *promise, njs_promise_rejection_type_t operation);
 static njs_int_t njs_promise_resolve_function(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t njs_promise_reject_function(njs_vm_t *vm, njs_value_t *args,
@@ -513,8 +511,8 @@ njs_promise_fulfill(njs_vm_t *vm, njs_promise_t *promise, njs_value_t *value)
 njs_inline njs_value_t *
 njs_promise_reject(njs_vm_t *vm, njs_promise_t *promise, njs_value_t *reason)
 {
-    njs_int_t           ret;
     njs_queue_t         queue;
+    njs_value_t         promise_value;
     njs_promise_data_t  *data;
 
     data = njs_data(&promise->value);
@@ -523,10 +521,10 @@ njs_promise_reject(njs_vm_t *vm, njs_promise_t *promise, njs_value_t *reason)
     data->state = NJS_PROMISE_REJECTED;
 
     if (!data->is_handled) {
-        ret = njs_promise_host_rejection_tracker(vm, promise,
-                                                 NJS_PROMISE_REJECT);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return njs_value_arg(&njs_value_null);
+        if (vm->rejection_tracker != NULL) {
+            njs_set_promise(&promise_value, promise);
+            vm->rejection_tracker(vm, vm->rejection_tracker_opaque, 0,
+                                  &promise_value, reason);
         }
     }
 
@@ -544,58 +542,6 @@ njs_promise_reject(njs_vm_t *vm, njs_promise_t *promise, njs_value_t *reason)
     njs_queue_init(&data->reject_queue);
 
     return njs_promise_trigger_reactions(vm, reason, &queue);
-}
-
-
-static njs_int_t
-njs_promise_host_rejection_tracker(njs_vm_t *vm, njs_promise_t *promise,
-    njs_promise_rejection_type_t operation)
-{
-    uint32_t            i, length;
-    njs_value_t         *value;
-    njs_promise_data_t  *data;
-
-    if (vm->options.unhandled_rejection
-        == NJS_VM_OPT_UNHANDLED_REJECTION_IGNORE)
-    {
-        return NJS_OK;
-    }
-
-    if (vm->promise_reason == NULL) {
-        vm->promise_reason = njs_array_alloc(vm, 1, 0, NJS_ARRAY_SPARE);
-        if (njs_slow_path(vm->promise_reason == NULL)) {
-            return NJS_ERROR;
-        }
-    }
-
-    data = njs_data(&promise->value);
-
-    if (operation == NJS_PROMISE_REJECT) {
-        if (vm->promise_reason != NULL) {
-            return njs_array_add(vm, vm->promise_reason, &data->result);
-        }
-
-    } else {
-        value = vm->promise_reason->start;
-        length = vm->promise_reason->length;
-
-        for (i = 0; i < length; i++) {
-            if (njs_values_same(&value[i], &data->result)) {
-                length--;
-
-                if (i < length) {
-                    memmove(&value[i], &value[i + 1],
-                            sizeof(njs_value_t) * (length - i));
-                }
-
-                break;
-            }
-        }
-
-        vm->promise_reason->length = length;
-    }
-
-    return NJS_OK;
 }
 
 
@@ -896,7 +842,7 @@ njs_promise_perform_then(njs_vm_t *vm, njs_value_t *value,
     njs_promise_capability_t *capability, njs_value_t *retval)
 {
     njs_int_t               ret;
-    njs_value_t             arguments[2];
+    njs_value_t             arguments[2], promise_value;
     njs_promise_t           *promise;
     njs_function_t          *function;
     njs_promise_data_t      *data;
@@ -949,10 +895,10 @@ njs_promise_perform_then(njs_vm_t *vm, njs_value_t *value,
         if (data->state == NJS_PROMISE_REJECTED) {
             njs_set_data(&arguments[0], rejected_reaction, 0);
 
-            ret = njs_promise_host_rejection_tracker(vm, promise,
-                                                     NJS_PROMISE_HANDLE);
-            if (njs_slow_path(ret != NJS_OK)) {
-                return ret;
+            if (vm->rejection_tracker != NULL) {
+                njs_set_promise(&promise_value, promise);
+                vm->rejection_tracker(vm, vm->rejection_tracker_opaque, 1,
+                                      &promise_value, &data->result);
             }
 
         } else {

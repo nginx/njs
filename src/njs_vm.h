@@ -160,8 +160,6 @@ struct njs_vm_s {
     njs_regex_compile_ctx_t  *regex_compile_ctx;
     njs_regex_match_data_t   *single_match_data;
 
-    njs_array_t              *promise_reason;
-
     njs_parser_scope_t       *global_scope;
 
     /*
@@ -185,6 +183,8 @@ struct njs_vm_s {
 
     njs_module_loader_t      module_loader;
     void                     *module_loader_opaque;
+    njs_rejection_tracker_t  rejection_tracker;
+    void                     *rejection_tracker_opaque;
 };
 
 

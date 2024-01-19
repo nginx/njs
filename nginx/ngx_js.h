@@ -15,6 +15,7 @@
 #include <ngx_event.h>
 #include <njs.h>
 #include <njs_rbtree.h>
+#include <njs_arr.h>
 #include "ngx_js_fetch.h"
 #include "ngx_js_shared_dict.h"
 
@@ -111,6 +112,7 @@ struct ngx_js_event_s {
 
 #define NGX_JS_COMMON_CTX                                                     \
     njs_vm_t              *vm;                                                \
+    njs_arr_t             *rejected_promises;                                 \
     njs_rbtree_t           waiting_events;                                    \
     ngx_socket_t           event_id
 

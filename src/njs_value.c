@@ -457,6 +457,13 @@ njs_value_native_function(const njs_value_t *value)
 }
 
 
+void *
+njs_value_ptr(const njs_value_t *value)
+{
+    return njs_data(value);
+}
+
+
 njs_external_ptr_t
 njs_value_external(const njs_value_t *value)
 {

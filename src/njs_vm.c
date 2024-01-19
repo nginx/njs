@@ -627,37 +627,6 @@ njs_vm_pending(njs_vm_t *vm)
 
 
 njs_int_t
-njs_vm_unhandled_rejection(njs_vm_t *vm)
-{
-    njs_int_t    ret;
-    njs_str_t    str;
-    njs_value_t  string;
-
-    if (!(vm->options.unhandled_rejection
-          == NJS_VM_OPT_UNHANDLED_REJECTION_THROW
-          && vm->promise_reason != NULL
-          && vm->promise_reason->length != 0))
-    {
-        return 0;
-    }
-
-    njs_value_assign(&string, &vm->promise_reason->start[0]);
-    ret = njs_value_to_string(vm, &string, &string);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
-    }
-
-    njs_string_get(&string, &str);
-    njs_vm_error(vm, "unhandled promise rejection: %V", &str);
-
-    njs_mp_free(vm->mem_pool, vm->promise_reason);
-    vm->promise_reason = NULL;
-
-    return 1;
-}
-
-
-njs_int_t
 njs_vm_enqueue_job(njs_vm_t *vm, njs_function_t *function,
     const njs_value_t *args, njs_uint_t nargs)
 {
@@ -735,6 +704,15 @@ njs_vm_set_module_loader(njs_vm_t *vm, njs_module_loader_t module_loader,
 {
     vm->module_loader = module_loader;
     vm->module_loader_opaque = opaque;
+}
+
+
+void
+njs_vm_set_rejection_tracker(njs_vm_t *vm,
+    njs_rejection_tracker_t rejection_tracker, void *opaque)
+{
+    vm->rejection_tracker = rejection_tracker;
+    vm->rejection_tracker_opaque = opaque;
 }
 
 
