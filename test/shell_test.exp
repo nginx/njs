@@ -476,6 +476,15 @@ ReferenceError: \"ref\" is not defined
     at anonymous \\\(string:1\\\)
     at main \\\(string:1\\\)\n$"
 
+njs_test {
+    {"setImmediate(() => { console.log('x'); return Promise.reject('xx'); })\r\n"
+     "0\r\nx\r\nThrown:\r\nError: unhandled promise rejection: xx\r\n"}
+    {"setImmediate(() => { console.log('x'); return Promise.reject('xx'); })\r\n"
+     "1\r\nx\r\nThrown:\r\nError: unhandled promise rejection: xx\r\n"}
+    {"42\r\n"
+     "42\r\n"}
+}
+
 # CLI OPTIONS
 
 # help

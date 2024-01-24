@@ -1207,17 +1207,17 @@ njs_process_script(njs_vm_t *vm, void *runtime, const njs_str_t *script)
             }
         }
 
+        ret = njs_process_events(runtime);
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            break;
+        }
+
         if (njs_unhandled_rejection(runtime)) {
             njs_process_output(vm, NULL, NJS_ERROR);
 
             if (!njs_vm_options(vm)->interactive) {
                 return NJS_ERROR;
             }
-        }
-
-        ret = njs_process_events(runtime);
-        if (njs_slow_path(ret == NJS_ERROR)) {
-            break;
         }
 
         if (ret == NJS_OK) {
