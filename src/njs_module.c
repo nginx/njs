@@ -16,8 +16,7 @@ typedef struct {
 } njs_module_info_t;
 
 
-static njs_int_t njs_module_lookup(njs_vm_t *vm, const njs_str_t *cwd,
-    njs_module_info_t *info);
+static njs_int_t njs_module_lookup(njs_vm_t *vm, njs_module_info_t *info);
 static njs_int_t njs_module_path(njs_vm_t *vm, const njs_str_t *dir,
     njs_module_info_t *info);
 static njs_int_t njs_module_read(njs_vm_t *vm, int fd, njs_str_t *body);
@@ -45,7 +44,7 @@ njs_parser_module(njs_parser_t *parser, njs_str_t *name)
         goto done;
     }
 
-    external = parser;
+    external = NULL;
     loader = njs_default_module_loader;
 
     if (vm->module_loader != NULL) {
@@ -70,7 +69,7 @@ done:
 
 
 static njs_int_t
-njs_module_lookup(njs_vm_t *vm, const njs_str_t *cwd, njs_module_info_t *info)
+njs_module_lookup(njs_vm_t *vm, njs_module_info_t *info)
 {
     njs_int_t   ret;
     njs_str_t   *path;
@@ -78,12 +77,6 @@ njs_module_lookup(njs_vm_t *vm, const njs_str_t *cwd, njs_module_info_t *info)
 
     if (info->name.start[0] == '/') {
         return njs_module_path(vm, NULL, info);
-    }
-
-    ret = njs_module_path(vm, cwd, info);
-
-    if (ret != NJS_DECLINED) {
-        return ret;
     }
 
     if (vm->paths == NULL) {
@@ -157,7 +150,6 @@ njs_module_path(njs_vm_t *vm, const njs_str_t *dir, njs_module_info_t *info)
     if (info->fd < 0) {
         return NJS_DECLINED;
     }
-
 
     info->file.start = (u_char *) &info->path[0];
     info->file.length = njs_strlen(info->file.start);
@@ -359,24 +351,20 @@ njs_module_require(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_mod_t *
-njs_default_module_loader(njs_vm_t *vm, njs_external_ptr_t external,
+njs_default_module_loader(njs_vm_t *vm, njs_external_ptr_t unused,
     njs_str_t *name)
 {
     u_char             *start;
     njs_int_t          ret;
-    njs_str_t          cwd, text;
+    njs_str_t          text;
     njs_mod_t          *module;
-    njs_parser_t       *prev;
     njs_module_info_t  info;
-
-    prev = external;
 
     njs_memzero(&info, sizeof(njs_module_info_t));
 
     info.name = *name;
-    njs_file_dirname(&prev->lexer->file, &cwd);
 
-    ret = njs_module_lookup(vm, &cwd, &info);
+    ret = njs_module_lookup(vm, &info);
     if (njs_slow_path(ret != NJS_OK)) {
         return NULL;
     }

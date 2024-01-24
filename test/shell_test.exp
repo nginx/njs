@@ -563,8 +563,8 @@ njs_test {
 
 # quiet mode
 
-njs_run {"-q" "test/js/import_relative_path.t.js"} \
-        "SyntaxError: Cannot find module \"name.js\" in 7"
+njs_run {"-q" "test/js/import_chain.t.js"} \
+        "SyntaxError: Cannot find module \"lib2.js\" in 7"
 
 # sandboxing
 
