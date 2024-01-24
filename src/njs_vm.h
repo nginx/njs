@@ -118,7 +118,6 @@ typedef enum {
 struct njs_vm_s {
     njs_value_t              exception;
 
-    njs_arr_t                *paths;
     njs_arr_t                *protos;
 
     njs_arr_t                *scope_absolute;

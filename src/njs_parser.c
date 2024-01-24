@@ -8123,6 +8123,45 @@ njs_parser_export_after(njs_parser_t *parser, njs_lexer_token_t *token,
 }
 
 
+static njs_mod_t *
+njs_parser_module(njs_parser_t *parser, njs_str_t *name)
+{
+    njs_vm_t   *vm;
+    njs_mod_t  *module;
+
+    vm = parser->vm;
+
+    if (name->length == 0) {
+        njs_parser_syntax_error(parser, "Cannot find module \"%V\"", name);
+        return NULL;
+    }
+
+    module = njs_module_find(vm, name, 1);
+    if (module != NULL) {
+        goto done;
+    }
+
+    if (vm->module_loader == NULL) {
+        njs_parser_syntax_error(parser, "Cannot load module \"%V\"", name);
+        return NULL;
+    }
+
+    module = vm->module_loader(vm, vm->module_loader_opaque, name);
+    if (module == NULL) {
+        njs_parser_syntax_error(parser, "Cannot find module \"%V\"", name);
+        return NULL;
+    }
+
+done:
+
+    if (module->index == 0) {
+        module->index = vm->shared->module_items++;
+    }
+
+    return module;
+}
+
+
 static njs_int_t
 njs_parser_import(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)

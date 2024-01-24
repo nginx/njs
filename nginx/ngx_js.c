@@ -29,6 +29,20 @@ typedef struct {
 } ngx_js_rejected_promise_t;
 
 
+#if defined(PATH_MAX)
+#define NGX_MAX_PATH             PATH_MAX
+#else
+#define NGX_MAX_PATH             4096
+#endif
+
+typedef struct {
+    int                 fd;
+    njs_str_t           name;
+    njs_str_t           file;
+    char                path[NGX_MAX_PATH + 1];
+} njs_module_info_t;
+
+
 static njs_int_t ngx_js_ext_build(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 static njs_int_t ngx_js_ext_conf_file_path(njs_vm_t *vm,
@@ -1715,6 +1729,182 @@ ngx_js_rejection_tracker(njs_vm_t *vm, njs_external_ptr_t unused,
 }
 
 
+static njs_int_t
+ngx_js_module_path(const ngx_str_t *dir, njs_module_info_t *info)
+{
+    char        *p;
+    size_t      length;
+    njs_bool_t  trail;
+    char        src[NGX_MAX_PATH + 1];
+
+    trail = 0;
+    length = info->name.length;
+
+    if (dir != NULL) {
+        length += dir->len;
+
+        if (length == 0) {
+            return NJS_DECLINED;
+        }
+
+        trail = (dir->data[dir->len - 1] != '/');
+
+        if (trail) {
+            length++;
+        }
+    }
+
+    if (njs_slow_path(length > NGX_MAX_PATH)) {
+        return NJS_ERROR;
+    }
+
+    p = &src[0];
+
+    if (dir != NULL) {
+        p = (char *) njs_cpymem(p, dir->data, dir->len);
+
+        if (trail) {
+            *p++ = '/';
+        }
+    }
+
+    p = (char *) njs_cpymem(p, info->name.start, info->name.length);
+    *p = '\0';
+
+    p = realpath(&src[0], &info->path[0]);
+    if (p == NULL) {
+        return NJS_DECLINED;
+    }
+
+    info->fd = open(&info->path[0], O_RDONLY);
+    if (info->fd < 0) {
+        return NJS_DECLINED;
+    }
+
+    info->file.start = (u_char *) &info->path[0];
+    info->file.length = njs_strlen(info->file.start);
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+ngx_js_module_lookup(ngx_js_loc_conf_t *conf, njs_module_info_t *info)
+{
+    njs_int_t   ret;
+    ngx_str_t   *path;
+    njs_uint_t  i;
+
+    if (info->name.start[0] == '/') {
+        return ngx_js_module_path(NULL, info);
+    }
+
+    ret = ngx_js_module_path((const ngx_str_t *) &ngx_cycle->conf_prefix, info);
+
+    if (ret != NJS_DECLINED) {
+        return ret;
+    }
+
+    if (conf->paths == NGX_CONF_UNSET_PTR) {
+        return NJS_DECLINED;
+    }
+
+    path = conf->paths->elts;
+
+    for (i = 0; i < conf->paths->nelts; i++) {
+        ret = ngx_js_module_path(&path[i], info);
+
+        if (ret != NJS_DECLINED) {
+            return ret;
+        }
+    }
+
+    return NJS_DECLINED;
+}
+
+
+static njs_int_t
+ngx_js_module_read(njs_mp_t *mp, int fd, njs_str_t *text)
+{
+    ssize_t      n;
+    struct stat  sb;
+
+    text->start = NULL;
+
+    if (fstat(fd, &sb) == -1) {
+        goto fail;
+    }
+
+    if (!S_ISREG(sb.st_mode)) {
+        goto fail;
+    }
+
+    text->length = sb.st_size;
+
+    text->start = njs_mp_alloc(mp, text->length);
+    if (text->start == NULL) {
+        goto fail;
+    }
+
+    n = read(fd, text->start, sb.st_size);
+
+    if (n < 0 || n != sb.st_size) {
+        goto fail;
+    }
+
+    return NJS_OK;
+
+fail:
+
+    if (text->start != NULL) {
+        njs_mp_free(mp, text->start);
+    }
+
+    return NJS_ERROR;
+}
+
+
+static njs_mod_t *
+ngx_js_module_loader(njs_vm_t *vm, njs_external_ptr_t external, njs_str_t *name)
+{
+    u_char             *start;
+    njs_int_t           ret;
+    njs_str_t           text;
+    njs_mod_t          *module;
+    ngx_js_loc_conf_t  *conf;
+    njs_module_info_t   info;
+
+    conf = external;
+
+    njs_memzero(&info, sizeof(njs_module_info_t));
+
+    info.name = *name;
+
+    ret = ngx_js_module_lookup(conf, &info);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NULL;
+    }
+
+    ret = ngx_js_module_read(njs_vm_memory_pool(vm), info.fd, &text);
+
+    (void) close(info.fd);
+
+    if (ret != NJS_OK) {
+        njs_vm_internal_error(vm, "while reading \"%V\" module", &info.file);
+        return NULL;
+    }
+
+    start = text.start;
+
+    module = njs_vm_compile_module(vm, &info.file, &start,
+                                   &text.start[text.length]);
+
+    njs_mp_free(njs_vm_memory_pool(vm), text.start);
+
+    return module;
+}
+
+
 ngx_int_t
 ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
     njs_vm_opt_t *options)
@@ -1723,7 +1913,7 @@ ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
     u_char               *start, *end, *p;
     ngx_str_t            *m, file;
     njs_int_t             rc;
-    njs_str_t             text, path;
+    njs_str_t             text;
     ngx_uint_t            i;
     njs_value_t          *value;
     ngx_pool_cleanup_t   *cln;
@@ -1795,30 +1985,13 @@ ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
     njs_vm_set_rejection_tracker(conf->vm, ngx_js_rejection_tracker,
                                  NULL);
 
-    path.start = ngx_cycle->conf_prefix.data;
-    path.length = ngx_cycle->conf_prefix.len;
-
-    rc = njs_vm_add_path(conf->vm, &path);
-    if (rc != NJS_OK) {
-        ngx_log_error(NGX_LOG_EMERG, cf->log, 0, "failed to add \"js_path\"");
-        return NGX_ERROR;
-    }
+    njs_vm_set_module_loader(conf->vm, ngx_js_module_loader, conf);
 
     if (conf->paths != NGX_CONF_UNSET_PTR) {
         m = conf->paths->elts;
 
         for (i = 0; i < conf->paths->nelts; i++) {
             if (ngx_conf_full_name(cf->cycle, &m[i], 1) != NGX_OK) {
-                return NGX_ERROR;
-            }
-
-            path.start = m[i].data;
-            path.length = m[i].len;
-
-            rc = njs_vm_add_path(conf->vm, &path);
-            if (rc != NJS_OK) {
-                ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
-                              "failed to add \"js_path\"");
                 return NGX_ERROR;
             }
         }

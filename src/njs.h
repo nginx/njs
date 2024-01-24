@@ -327,8 +327,6 @@ NJS_EXPORT njs_int_t njs_vm_invoke(njs_vm_t *vm, njs_function_t *function,
  */
 NJS_EXPORT njs_int_t njs_vm_start(njs_vm_t *vm, njs_value_t *retval);
 
-NJS_EXPORT njs_int_t njs_vm_add_path(njs_vm_t *vm, const njs_str_t *path);
-
 #define NJS_PROTO_ID_ANY    (-1)
 
 NJS_EXPORT njs_int_t njs_vm_external_prototype(njs_vm_t *vm,
