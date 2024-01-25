@@ -137,8 +137,7 @@ static njs_int_t njs_process_script(njs_vm_t *vm, void *runtime,
 #ifndef NJS_FUZZER_TARGET
 
 static njs_int_t njs_options_parse(njs_opts_t *opts, int argc, char **argv);
-static njs_int_t njs_options_add_path(njs_opts_t *opts, u_char *path,
-    size_t len);
+static njs_int_t njs_options_add_path(njs_opts_t *opts, char *path, size_t len);
 static void njs_options_free(njs_opts_t *opts);
 
 #ifdef NJS_HAVE_READLINE
@@ -400,7 +399,8 @@ done:
 static njs_int_t
 njs_options_parse(njs_opts_t *opts, int argc, char **argv)
 {
-    char        *p;
+    char        *p, *start;
+    size_t      len;
     njs_int_t   i, ret;
     njs_uint_t  n;
 
@@ -445,6 +445,27 @@ njs_options_parse(njs_opts_t *opts, int argc, char **argv)
     p = getenv("NJS_EXIT_CODE");
     if (p != NULL) {
         opts->exit_code = atoi(p);
+    }
+
+    start = getenv("NJS_PATH");
+    if (start != NULL) {
+        for ( ;; ) {
+            p = (char *) njs_strchr(start, ':');
+
+            len = (p != NULL) ? (size_t) (p - start) : njs_strlen(start);
+
+            ret = njs_options_add_path(opts, start, len);
+            if (ret != NJS_OK) {
+                njs_stderror("failed to add path\n");
+                return NJS_ERROR;
+            }
+
+            if (p == NULL) {
+                break;
+            }
+
+            start = p + 1;
+        }
     }
 
     for (i = 1; i < argc; i++) {
@@ -526,8 +547,7 @@ njs_options_parse(njs_opts_t *opts, int argc, char **argv)
 
         case 'p':
             if (++i < argc) {
-                ret = njs_options_add_path(opts, (u_char *) argv[i],
-                                           njs_strlen(argv[i]));
+                ret = njs_options_add_path(opts, argv[i], njs_strlen(argv[i]));
                 if (ret != NJS_OK) {
                     njs_stderror("failed to add path\n");
                     return NJS_ERROR;
@@ -604,7 +624,7 @@ done:
 
 
 static njs_int_t
-njs_options_add_path(njs_opts_t *opts, u_char *path, size_t len)
+njs_options_add_path(njs_opts_t *opts, char *path, size_t len)
 {
     njs_str_t  *paths;
 
@@ -617,7 +637,7 @@ njs_options_add_path(njs_opts_t *opts, u_char *path, size_t len)
     }
 
     opts->paths = paths;
-    opts->paths[opts->n_paths - 1].start = path;
+    opts->paths[opts->n_paths - 1].start = (u_char *) path;
     opts->paths[opts->n_paths - 1].length = len;
 
     return NJS_OK;
@@ -1004,10 +1024,7 @@ njs_module_loader(njs_vm_t *vm, njs_external_ptr_t external, njs_str_t *name)
 static njs_vm_t *
 njs_create_vm(njs_opts_t *opts)
 {
-    size_t        len;
-    u_char        *p, *start;
     njs_vm_t      *vm;
-    njs_int_t     ret;
     njs_vm_opt_t  vm_options;
 
     njs_vm_opt_init(&vm_options);
@@ -1052,29 +1069,6 @@ njs_create_vm(njs_opts_t *opts)
     }
 
     njs_vm_set_module_loader(vm, njs_module_loader, opts);
-
-    start = (u_char *) getenv("NJS_PATH");
-    if (start == NULL) {
-        return vm;
-    }
-
-    for ( ;; ) {
-        p = njs_strchr(start, ':');
-
-        len = (p != NULL) ? (size_t) (p - start) : njs_strlen(start);
-
-        ret = njs_options_add_path(opts, start, len);
-        if (ret != NJS_OK) {
-            njs_stderror("failed to add path\n");
-            return NULL;
-        }
-
-        if (p == NULL) {
-            break;
-        }
-
-        start = p + 1;
-    }
 
     return vm;
 }
