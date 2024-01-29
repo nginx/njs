@@ -915,7 +915,7 @@ njs_lexer_number(njs_lexer_t *lexer, njs_lexer_token_t *token)
         if (*p == 'x' || *p == 'X') {
             p++;
 
-            if (p == lexer->end) {
+            if (p == lexer->end || njs_char_to_hex(*p) < 0) {
                 goto illegal_token;
             }
 
@@ -929,7 +929,7 @@ njs_lexer_number(njs_lexer_t *lexer, njs_lexer_token_t *token)
         if (*p == 'o' || *p == 'O') {
             p++;
 
-            if (p == lexer->end) {
+            if (p == lexer->end || (u_char)(*p - '0') > 7) {
                 goto illegal_token;
             }
 
@@ -947,7 +947,7 @@ njs_lexer_number(njs_lexer_t *lexer, njs_lexer_token_t *token)
         if (*p == 'b' || *p == 'B') {
             p++;
 
-            if (p == lexer->end) {
+            if (p == lexer->end || (u_char)(*p - '0') > 1) {
                 goto illegal_token;
             }
 

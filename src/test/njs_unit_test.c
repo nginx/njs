@@ -353,7 +353,10 @@ static njs_unit_test_t  njs_test[] =
       njs_str("SyntaxError: Unexpected token \"0O778\" in 1") },
 
     { njs_str("0O_7"),
-      njs_str("SyntaxError: Unexpected token \"_7\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"0O\" in 1") },
+
+    { njs_str("0O + 1"),
+      njs_str("SyntaxError: Unexpected token \"0O\" in 1") },
 
     { njs_str("0o7_"),
       njs_str("SyntaxError: Unexpected token \"_\" in 1") },
@@ -408,7 +411,10 @@ static njs_unit_test_t  njs_test[] =
       njs_str("SyntaxError: Unexpected token \"0B12\" in 1") },
 
     { njs_str("0b_11"),
-      njs_str("SyntaxError: Unexpected token \"_11\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"0b\" in 1") },
+
+    { njs_str("0b + 1"),
+      njs_str("SyntaxError: Unexpected token \"0b\" in 1") },
 
     { njs_str("0B1__1"),
       njs_str("SyntaxError: Unexpected token \"__1\" in 1") },
@@ -446,7 +452,10 @@ static njs_unit_test_t  njs_test[] =
       njs_str("SyntaxError: Unexpected token \"g\" in 1") },
 
     { njs_str("0X_ff"),
-      njs_str("SyntaxError: Unexpected token \"_ff\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"0X\" in 1") },
+
+    { njs_str("0X + 1"),
+      njs_str("SyntaxError: Unexpected token \"0X\" in 1") },
 
     { njs_str("0xff_"),
       njs_str("SyntaxError: Unexpected token \"_\" in 1") },
