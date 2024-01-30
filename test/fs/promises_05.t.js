@@ -49,7 +49,18 @@ var testSync = () => new Promise((resolve, reject) => {
         try {
             fs.writeFileSync(fname(dname_utf8), fname(dname_utf8));
 
-            throw new Error('fs.mkdirSync error 1');
+            const mode = fs.statSync(fname(dname_utf8)).mode & 0o777;
+
+            if (mode == 0o555) {
+                /*
+                 * Some file systems ignore the mode parameter for mkdir.
+                 * For example: a shared folder on a MacOS host mounted
+                 * to a Linux guest via Parallels Desktop.
+                 */
+                throw new Error('fs.writeFileSync did not respect mode');
+            }
+
+            fs.unlinkSync(fname(dname_utf8));
 
         } catch (e) {
             if (e.syscall != 'open' || e.code != 'EACCES') {
