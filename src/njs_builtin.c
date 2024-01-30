@@ -28,7 +28,7 @@ static njs_int_t njs_global_this_prop_handler(njs_vm_t *vm,
 static njs_arr_t *njs_vm_expression_completions(njs_vm_t *vm,
     njs_str_t *expression);
 static njs_arr_t *njs_vm_global_var_completions(njs_vm_t *vm,
-	njs_str_t *expression);
+    njs_str_t *expression);
 static njs_arr_t *njs_object_completions(njs_vm_t *vm, njs_value_t *object,
     njs_str_t *expression);
 static njs_int_t njs_env_hash_init(njs_vm_t *vm, njs_lvlhsh_t *hash,
