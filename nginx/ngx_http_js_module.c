@@ -4323,30 +4323,24 @@ ngx_http_js_periodic_finalize(ngx_http_request_t *r, ngx_int_t rc)
 static void
 ngx_http_js_periodic_destroy(ngx_http_request_t *r, ngx_js_periodic_t *periodic)
 {
-    ngx_connection_t    *c;
-    ngx_http_cleanup_t  *cln;
+    ngx_connection_t  *c;
 
     c = r->connection;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
-                   "http js periodic destroy: \"%V\"",
-                   &periodic->method);
+                   "http js periodic destroy: \"%V\"", &periodic->method);
 
     periodic->connection = NULL;
 
-    for (cln = r->cleanup; cln; cln = cln->next) {
-        if (cln->handler) {
-            cln->handler(cln->data);
-        }
-    }
+    r->logged = 1;
+
+    ngx_http_free_request(r, NGX_OK);
 
     ngx_free_connection(c);
 
     c->fd = (ngx_socket_t) -1;
     c->pool = NULL;
     c->destroyed = 1;
-
-    ngx_destroy_pool(r->pool);
 }
 
 
