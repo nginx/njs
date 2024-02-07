@@ -115,6 +115,8 @@ typedef struct {
 
     njs_queue_t             labels;
 
+    njs_str_t               cwd;
+
     njs_arr_t               *rejected_promises;
 
     njs_bool_t              suppress_stdout;
@@ -693,6 +695,8 @@ njs_console_init(njs_vm_t *vm, njs_console_t *console)
     njs_queue_init(&console->posted_events);
     njs_queue_init(&console->labels);
 
+    njs_memzero(&console->cwd, sizeof(njs_str_t));
+
     console->rejected_promises = NULL;
 
     console->completion.completions = njs_vm_completions(vm, NULL);
@@ -869,7 +873,7 @@ njs_module_path(const njs_str_t *dir, njs_module_info_t *info)
     if (dir != NULL) {
         length += dir->length;
 
-        if (length == 0) {
+        if (length == 0 || dir->length == 0) {
             return NJS_DECLINED;
         }
 
@@ -915,7 +919,8 @@ njs_module_path(const njs_str_t *dir, njs_module_info_t *info)
 
 
 static njs_int_t
-njs_module_lookup(njs_opts_t *opts, njs_module_info_t *info)
+njs_module_lookup(njs_opts_t *opts, const njs_str_t *cwd,
+    njs_module_info_t *info)
 {
     njs_int_t   ret;
     njs_str_t   *path;
@@ -923,6 +928,12 @@ njs_module_lookup(njs_opts_t *opts, njs_module_info_t *info)
 
     if (info->name.start[0] == '/') {
         return njs_module_path(NULL, info);
+    }
+
+    ret = njs_module_path(cwd, info);
+
+    if (ret != NJS_DECLINED) {
+        return ret;
     }
 
     path = opts->paths;
@@ -980,23 +991,86 @@ fail:
 }
 
 
+static void
+njs_file_dirname(const njs_str_t *path, njs_str_t *name)
+{
+    const u_char  *p, *end;
+
+    if (path->length == 0) {
+        goto current_dir;
+    }
+
+    p = path->start + path->length - 1;
+
+    /* Stripping basename. */
+
+    while (p >= path->start && *p != '/') { p--; }
+
+    end = p + 1;
+
+    if (end == path->start) {
+        goto current_dir;
+    }
+
+    /* Stripping trailing slashes. */
+
+    while (p >= path->start && *p == '/') { p--; }
+
+    p++;
+
+    if (p == path->start) {
+        p = end;
+    }
+
+    name->start = path->start;
+    name->length = p - path->start;
+
+    return;
+
+current_dir:
+
+    *name = njs_str_value(".");
+}
+
+
+static njs_int_t
+njs_console_set_cwd(njs_vm_t *vm, njs_console_t *console, njs_str_t *file)
+{
+    njs_str_t  cwd;
+
+    njs_file_dirname(file, &cwd);
+
+    console->cwd.start = njs_mp_alloc(njs_vm_memory_pool(vm), cwd.length);
+    if (njs_slow_path(console->cwd.start == NULL)) {
+        return NJS_ERROR;
+    }
+
+    memcpy(console->cwd.start, cwd.start, cwd.length);
+    console->cwd.length = cwd.length;
+
+    return NJS_OK;
+}
+
+
 static njs_mod_t *
 njs_module_loader(njs_vm_t *vm, njs_external_ptr_t external, njs_str_t *name)
 {
     u_char             *start;
     njs_int_t          ret;
-    njs_str_t          text;
+    njs_str_t          text, prev_cwd;
     njs_mod_t          *module;
     njs_opts_t         *opts;
+    njs_console_t      *console;
     njs_module_info_t  info;
 
     opts = external;
+    console = njs_vm_external_ptr(vm);
 
     njs_memzero(&info, sizeof(njs_module_info_t));
 
     info.name = *name;
 
-    ret = njs_module_lookup(opts, &info);
+    ret = njs_module_lookup(opts, &console->cwd, &info);
     if (njs_slow_path(ret != NJS_OK)) {
         return NULL;
     }
@@ -1010,10 +1084,22 @@ njs_module_loader(njs_vm_t *vm, njs_external_ptr_t external, njs_str_t *name)
         return NULL;
     }
 
+    prev_cwd = console->cwd;
+
+    ret = njs_console_set_cwd(vm, console, &info.file);
+    if (njs_slow_path(ret != NJS_OK)) {
+        njs_vm_internal_error(vm, "while setting cwd for \"%V\" module",
+                              &info.file);
+        return NULL;
+    }
+
     start = text.start;
 
     module = njs_vm_compile_module(vm, &info.file, &start,
                                    &text.start[text.length]);
+
+    njs_mp_free(njs_vm_memory_pool(vm), console->cwd.start);
+    console->cwd = prev_cwd;
 
     njs_mp_free(njs_vm_memory_pool(vm), text.start);
 
@@ -1025,6 +1111,7 @@ static njs_vm_t *
 njs_create_vm(njs_opts_t *opts)
 {
     njs_vm_t      *vm;
+    njs_int_t     ret;
     njs_vm_opt_t  vm_options;
 
     njs_vm_opt_init(&vm_options);
@@ -1066,6 +1153,12 @@ njs_create_vm(njs_opts_t *opts)
     if (opts->unhandled_rejection) {
         njs_vm_set_rejection_tracker(vm, njs_rejection_tracker,
                                      njs_vm_external_ptr(vm));
+    }
+
+    ret = njs_console_set_cwd(vm, njs_vm_external_ptr(vm), &vm_options.file);
+    if (njs_slow_path(ret != NJS_OK)) {
+        njs_stderror("failed to set cwd\n");
+        return NULL;
     }
 
     njs_vm_set_module_loader(vm, njs_module_loader, opts);

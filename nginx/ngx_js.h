@@ -83,6 +83,7 @@ struct ngx_js_event_s {
 
 #define _NGX_JS_COMMON_LOC_CONF                                               \
     njs_vm_t              *vm;                                                \
+    ngx_str_t              cwd;                                               \
     ngx_array_t           *imports;                                           \
     ngx_array_t           *paths;                                             \
                                                                               \

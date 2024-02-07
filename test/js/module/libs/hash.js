@@ -4,6 +4,7 @@ function hash() {
     return v;
 }
 
+import sub from 'sub/sub3.js';
 import name from 'name.js';
 import crypto from 'crypto';
 

@@ -1743,7 +1743,7 @@ ngx_js_module_path(const ngx_str_t *dir, njs_module_info_t *info)
     if (dir != NULL) {
         length += dir->len;
 
-        if (length == 0) {
+        if (length == 0 || dir->len == 0) {
             return NJS_DECLINED;
         }
 
@@ -1797,6 +1797,12 @@ ngx_js_module_lookup(ngx_js_loc_conf_t *conf, njs_module_info_t *info)
 
     if (info->name.start[0] == '/') {
         return ngx_js_module_path(NULL, info);
+    }
+
+    ret = ngx_js_module_path(&conf->cwd, info);
+
+    if (ret != NJS_DECLINED) {
+        return ret;
     }
 
     ret = ngx_js_module_path((const ngx_str_t *) &ngx_cycle->conf_prefix, info);
@@ -1864,12 +1870,74 @@ fail:
 }
 
 
+static void
+ngx_js_file_dirname(const njs_str_t *path, ngx_str_t *name)
+{
+    const u_char  *p, *end;
+
+    if (path->length == 0) {
+        goto current_dir;
+    }
+
+    p = path->start + path->length - 1;
+
+    /* Stripping basename. */
+
+    while (p >= path->start && *p != '/') { p--; }
+
+    end = p + 1;
+
+    if (end == path->start) {
+        goto current_dir;
+    }
+
+    /* Stripping trailing slashes. */
+
+    while (p >= path->start && *p == '/') { p--; }
+
+    p++;
+
+    if (p == path->start) {
+        p = end;
+    }
+
+    name->data = path->start;
+    name->len = p - path->start;
+
+    return;
+
+current_dir:
+
+    ngx_str_set(name, ".");
+}
+
+
+static njs_int_t
+ngx_js_set_cwd(njs_vm_t *vm, ngx_js_loc_conf_t *conf, njs_str_t *path)
+{
+    ngx_str_t  cwd;
+
+    ngx_js_file_dirname(path, &cwd);
+
+    conf->cwd.data = njs_mp_alloc(njs_vm_memory_pool(vm), cwd.len);
+    if (conf->cwd.data == NULL) {
+        return NJS_ERROR;
+    }
+
+    memcpy(conf->cwd.data, cwd.data, cwd.len);
+    conf->cwd.len = cwd.len;
+
+    return NJS_OK;
+}
+
+
 static njs_mod_t *
 ngx_js_module_loader(njs_vm_t *vm, njs_external_ptr_t external, njs_str_t *name)
 {
     u_char             *start;
     njs_int_t           ret;
     njs_str_t           text;
+    ngx_str_t           prev_cwd;
     njs_mod_t          *module;
     ngx_js_loc_conf_t  *conf;
     njs_module_info_t   info;
@@ -1894,10 +1962,22 @@ ngx_js_module_loader(njs_vm_t *vm, njs_external_ptr_t external, njs_str_t *name)
         return NULL;
     }
 
+    prev_cwd = conf->cwd;
+
+    ret = ngx_js_set_cwd(vm, conf, &info.file);
+    if (ret != NJS_OK) {
+        njs_vm_internal_error(vm, "while setting cwd for \"%V\" module",
+                              &info.file);
+        return NULL;
+    }
+
     start = text.start;
 
     module = njs_vm_compile_module(vm, &info.file, &start,
                                    &text.start[text.length]);
+
+    njs_mp_free(njs_vm_memory_pool(vm), conf->cwd.data);
+    conf->cwd = prev_cwd;
 
     njs_mp_free(njs_vm_memory_pool(vm), text.start);
 
@@ -1984,6 +2064,12 @@ ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
 
     njs_vm_set_rejection_tracker(conf->vm, ngx_js_rejection_tracker,
                                  NULL);
+
+    rc = ngx_js_set_cwd(conf->vm, conf, &options->file);
+    if (rc != NJS_OK) {
+        ngx_log_error(NGX_LOG_EMERG, cf->log, 0, "failed to set cwd");
+        return NGX_ERROR;
+    }
 
     njs_vm_set_module_loader(conf->vm, ngx_js_module_loader, conf);
 
