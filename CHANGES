@@ -1,3 +1,34 @@
+Changes with njs 0.8.3                                       07 Feb 2024
+
+    nginx modules:
+
+    *) Bugfix: fixed Headers.set().
+
+    *) Bugfix: fixed js_set with Buffer values.
+
+    *) Bugfix: fixed clear() method of a shared dictionary when
+       a timeout is not specified.
+
+    *) Bugfix: fixed stub_status statistics when js_periodic is
+       enabled.
+
+    Core:
+
+    *) Bugfix: fixed building with libxml2 2.12 and later.
+
+    *) Bugfix: fixed Date constructor for overflows and with
+       NaN values.
+
+    *) Bugfix: fixed underflow in querystring.parse().
+
+    *) Bugfix: fixed potential buffer overread in
+       String.prototype.match().
+
+    *) Bugfix: fixed parsing of for-in loops.
+
+    *) Bugfix: fixed parsing of hexadecimal, octal, and binary
+       literals with no digits.
+
 Changes with njs 0.8.2                                       24 Oct 2023
 
     nginx modules:
