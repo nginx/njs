@@ -1,5 +1,5 @@
 function f() {
-    return a;
+    return globalThis.a;
 }
 
 export default {f};
