@@ -17,7 +17,6 @@ NJS_LIB_SRCS=" \
    src/njs_sha1.c \
    src/njs_sha2.c \
    src/njs_time.c \
-   src/njs_file.c \
    src/njs_malloc.c \
    src/njs_mp.c \
    src/njs_sprintf.c \

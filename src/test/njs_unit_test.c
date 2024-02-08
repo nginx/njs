@@ -6,7 +6,6 @@
 
 #include <njs.h>
 #include <njs_unix.h>
-#include <njs_file.h>
 #include <njs_utils.h>
 #include <njs_queue.h>
 #include <njs_string.h>
@@ -24449,99 +24448,6 @@ njs_vm_object_alloc_test(njs_vm_t *vm, njs_opts_t *opts, njs_stat_t *stat)
 
 
 static njs_int_t
-njs_file_basename_test(njs_vm_t *vm, njs_opts_t *opts, njs_stat_t *stat)
-{
-    njs_str_t   name;
-    njs_bool_t  success;
-    njs_uint_t  i;
-
-    static const struct {
-        njs_str_t   path;
-        njs_str_t   expected;
-    } tests[] = {
-        { njs_str(""),            njs_str("") },
-        { njs_str("/"),           njs_str("") },
-        { njs_str("/a"),          njs_str("a") },
-        { njs_str("///"),         njs_str("") },
-        { njs_str("///a"),        njs_str("a") },
-        { njs_str("///a/"),       njs_str("") },
-        { njs_str("a"),           njs_str("a") },
-        { njs_str("a/"),          njs_str("") },
-        { njs_str("a//"),         njs_str("") },
-        { njs_str("path/name"),   njs_str("name") },
-        { njs_str("/path/name"),  njs_str("name") },
-        { njs_str("/path/name/"), njs_str("") },
-    };
-
-    for (i = 0; i < njs_nitems(tests); i++) {
-        njs_file_basename(&tests[i].path, &name);
-
-        success = njs_strstr_eq(&tests[i].expected, &name);
-
-        if (!success) {
-            njs_printf("njs_file_basename_test(\"%V\"):\n"
-                       "expected: \"%V\"\n     got: \"%V\"\n",
-                       &tests[i].path, &tests[i].expected, &name);
-
-            stat->failed++;
-
-        } else {
-            stat->passed++;
-        }
-    }
-
-    return NJS_OK;
-}
-
-
-static njs_int_t
-njs_file_dirname_test(njs_vm_t *vm, njs_opts_t *opts, njs_stat_t *stat)
-{
-    njs_str_t   name;
-    njs_bool_t  success;
-    njs_uint_t  i;
-
-    static const struct {
-        njs_str_t   path;
-        njs_str_t   expected;
-    } tests[] = {
-        { njs_str(""),               njs_str(".") },
-        { njs_str("/"),              njs_str("/") },
-        { njs_str("/a"),             njs_str("/") },
-        { njs_str("///"),            njs_str("///") },
-        { njs_str("///a"),           njs_str("///") },
-        { njs_str("///a/"),          njs_str("///a") },
-        { njs_str("a"),              njs_str(".") },
-        { njs_str("a/"),             njs_str("a") },
-        { njs_str("a//"),            njs_str("a") },
-        { njs_str("p1/p2/name"),     njs_str("p1/p2") },
-        { njs_str("/p1/p2/name"),    njs_str("/p1/p2") },
-        { njs_str("/p1/p2///name"),  njs_str("/p1/p2") },
-        { njs_str("/p1/p2/name/"),   njs_str("/p1/p2/name") },
-    };
-
-    for (i = 0; i < njs_nitems(tests); i++) {
-        njs_file_dirname(&tests[i].path, &name);
-
-        success = njs_strstr_eq(&tests[i].expected, &name);
-
-        if (!success) {
-            njs_printf("njs_file_dirname_test(\"%V\"):\n"
-                       "expected: \"%V\"\n     got: \"%V\"\n",
-                       &tests[i].path, &tests[i].expected, &name);
-
-            stat->failed++;
-        } else {
-            stat->passed++;
-        }
-
-    }
-
-    return NJS_OK;
-}
-
-
-static njs_int_t
 njs_chb_test(njs_vm_t *vm, njs_opts_t *opts, njs_stat_t *stat)
 {
     u_char     *p;
@@ -24935,10 +24841,6 @@ njs_vm_internal_api_test(njs_unit_test_t unused[], size_t num, njs_str_t *name,
     } tests[] = {
         { njs_vm_object_alloc_test,
           njs_str("njs_vm_object_alloc_test") },
-        { njs_file_basename_test,
-          njs_str("njs_file_basename_test") },
-        { njs_file_dirname_test,
-          njs_str("njs_file_dirname_test") },
         { njs_chb_test,
           njs_str("njs_chb_test") },
         { njs_sort_test,
