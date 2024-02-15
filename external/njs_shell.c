@@ -7,7 +7,6 @@
 
 #include <njs.h>
 #include <njs_unix.h>
-#include <njs_time.h>
 #include <njs_arr.h>
 #include <njs_queue.h>
 #include <njs_rbtree.h>
@@ -169,6 +168,7 @@ static void njs_console_logger(njs_log_level_t level, const u_char *start,
 
 static intptr_t njs_event_rbtree_compare(njs_rbtree_node_t *node1,
     njs_rbtree_node_t *node2);
+static uint64_t njs_time(void);
 
 njs_int_t njs_array_buffer_detach(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
@@ -2121,4 +2121,23 @@ njs_event_rbtree_compare(njs_rbtree_node_t *node1, njs_rbtree_node_t *node2)
     }
 
     return 0;
+}
+
+
+static uint64_t
+njs_time(void)
+{
+#if (NJS_HAVE_CLOCK_MONOTONIC)
+    struct timespec ts;
+
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+
+    return (uint64_t) ts.tv_sec * 1000000000 + ts.tv_nsec;
+#else
+    struct timeval tv;
+
+    gettimeofday(&tv, NULL);
+
+    return (uint64_t) tv.tv_sec * 1000000000 + tv.tv_usec * 1000;
+#endif
 }

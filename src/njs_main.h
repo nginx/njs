@@ -27,7 +27,6 @@
 #include <njs_queue.h>
 #include <njs_flathsh.h>
 #include <njs_random.h>
-#include <njs_time.h>
 #include <njs_malloc.h>
 #include <njs_rbtree.h>
 #include <njs_mp.h>

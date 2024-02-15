@@ -22,6 +22,19 @@
 #define NJS_DATE_MSEC                   7
 
 
+#if (NJS_HAVE_TM_GMTOFF)
+
+#define njs_timezone(tm)                                                      \
+    ((tm)->tm_gmtoff)
+
+#elif (NJS_HAVE_ALTZONE)
+
+#define njs_timezone(tm)                                                      \
+    (-(((tm)->tm_isdst > 0) ? altzone : timezone))
+
+#endif
+
+
 #define njs_date_magic(field, local)                                          \
     ((local << 6) + field)
 
