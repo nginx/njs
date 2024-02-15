@@ -39,8 +39,6 @@
 
 #include <njs_regex.h>
 
-#include <njs_hash.h>
-
 #include <njs.h>
 #include <njs_value.h>
 

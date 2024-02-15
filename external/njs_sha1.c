@@ -7,7 +7,11 @@
  */
 
 
-#include <njs_main.h>
+#include <njs_unix.h>
+#include <njs_types.h>
+#include <njs_clang.h>
+#include <njs_str.h>
+#include "njs_hash.h"
 
 
 static const u_char *njs_sha1_body(njs_hash_t *ctx, const u_char *data,

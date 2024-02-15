@@ -6,9 +6,9 @@
 
 
 #include <njs.h>
-#include <njs_hash.h>
 #include <njs_string.h>
 #include <njs_buffer.h>
+#include "njs_hash.h"
 
 
 typedef void (*njs_hash_init)(njs_hash_t *ctx);

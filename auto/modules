@@ -9,7 +9,10 @@ njs_module_srcs=src/njs_buffer.c
 
 njs_module_name=njs_crypto_module
 njs_module_incs=
-njs_module_srcs=external/njs_crypto_module.c
+njs_module_srcs="external/njs_crypto_module.c \
+                 external/njs_md5.c \
+                 external/njs_sha1.c \
+                 external/njs_sha2.c"
 
 . auto/module
 
