@@ -11,6 +11,21 @@
 #include <njs_queue.h>
 #include <njs_rbtree.h>
 
+#if (NJS_HAVE_QUICKJS)
+#if defined(__GNUC__) && (__GNUC__ >= 8)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-function-type"
+#endif
+
+#include <quickjs.h>
+
+#if defined(__GNUC__) && (__GNUC__ >= 8)
+#pragma GCC diagnostic pop
+#endif
+#define NJS_QUICKJS_VERSION  "Unknown version"
+#include <pthread.h>
+#endif
+
 #if (!defined NJS_FUZZER_TARGET && defined NJS_HAVE_READLINE)
 
 #include <locale.h>
@@ -38,8 +53,10 @@ typedef struct {
     uint8_t                 version;
     uint8_t                 ast;
     uint8_t                 unhandled_rejection;
+    uint8_t                 suppress_stdout;
     uint8_t                 opcode_debug;
     uint8_t                 generator_debug;
+    uint8_t                 can_block;
     int                     exit_code;
     int                     stack_size;
 
@@ -49,6 +66,11 @@ typedef struct {
     njs_str_t               *paths;
     char                    **argv;
     njs_uint_t              argc;
+
+    enum {
+        NJS_ENGINE_NJS = 0,
+        NJS_ENGINE_QUICKJS = 1,
+    }                       engine;
 } njs_opts_t;
 
 
@@ -75,8 +97,19 @@ typedef struct {
 
 typedef struct {
     NJS_RBTREE_NODE         (node);
-    njs_function_t          *function;
-    njs_value_t             *args;
+    union {
+        struct {
+            njs_function_t      *function;
+            njs_value_t         *args;
+        }                       njs;
+#if (NJS_HAVE_QUICKJS)
+        struct {
+            JSValue             function;
+            JSValue             *args;
+        }                       qjs;
+#endif
+    }                           u;
+
     njs_uint_t              nargs;
     uint32_t                id;
 
@@ -92,8 +125,18 @@ typedef struct {
 
 
 typedef struct {
-    void                    *promise;
-    njs_opaque_value_t      message;
+    union {
+        struct {
+            njs_opaque_value_t  promise;
+            njs_opaque_value_t  message;
+        }                       njs;
+#if (NJS_HAVE_QUICKJS)
+        struct {
+            JSValue             promise;
+            JSValue             message;
+        }                       qjs;
+#endif
+    }                           u;
 } njs_rejected_promise_t;
 
 
@@ -105,8 +148,39 @@ typedef struct {
 } njs_module_info_t;
 
 
+typedef struct  njs_engine_s     njs_engine_t;
+
+
+struct njs_engine_s {
+    union {
+        struct {
+            njs_vm_t            *vm;
+
+            njs_opaque_value_t  value;
+            njs_completion_t    completion;
+        }                       njs;
+#if (NJS_HAVE_QUICKJS)
+        struct {
+            JSRuntime           *rt;
+            JSContext           *ctx;
+            JSValue             value;
+        }                       qjs;
+#endif
+    }                           u;
+
+    njs_int_t                 (*eval)(njs_engine_t *engine, njs_str_t *script);
+    njs_int_t                 (*execute_pending_job)(njs_engine_t *engine);
+    njs_int_t                 (*unhandled_rejection)(njs_engine_t *engine);
+    njs_int_t                 (*process_events)(njs_engine_t *engine);
+    njs_int_t                 (*destroy)(njs_engine_t *engine);
+    njs_int_t                 (*output)(njs_engine_t *engine, njs_int_t ret);
+
+    unsigned                    type;
+    njs_mp_t                    *pool;
+};
+
 typedef struct {
-    njs_vm_t                *vm;
+    njs_engine_t            *engine;
 
     uint32_t                event_id;
     njs_rbtree_t            events;  /* njs_ev_t * */
@@ -119,25 +193,57 @@ typedef struct {
     njs_arr_t               *rejected_promises;
 
     njs_bool_t              suppress_stdout;
+    njs_bool_t              interactive;
+    njs_bool_t              module;
+    char                    **argv;
+    njs_uint_t              argc;
 
-    njs_completion_t        completion;
+#if (NJS_HAVE_QUICKJS)
+    JSValue                 process;
+
+    njs_queue_t             agents;
+    njs_queue_t             reports;
+    pthread_mutex_t         agent_mutex;
+    pthread_cond_t          agent_cond;
+    pthread_mutex_t         report_mutex;
+#endif
 } njs_console_t;
 
 
+#if (NJS_HAVE_QUICKJS)
+typedef struct {
+    njs_queue_link_t        link;
+    pthread_t               tid;
+    njs_console_t           *console;
+    char                    *script;
+    JSValue                 broadcast_func;
+    njs_bool_t              broadcast_pending;
+    JSValue                 broadcast_sab;
+    uint8_t                 *broadcast_sab_buf;
+    size_t                  broadcast_sab_size;
+    int32_t                 broadcast_val;
+} njs_262agent_t;
+
+
+typedef struct {
+    njs_queue_link_t        link;
+    char                    *str;
+} njs_agent_report_t;
+#endif
+
+
 static njs_int_t njs_main(njs_opts_t *opts);
-static njs_int_t njs_console_init(njs_vm_t *vm, njs_console_t *console);
-static void njs_console_output(njs_vm_t *vm, njs_value_t *value,
-    njs_int_t ret);
+static njs_int_t njs_console_init(njs_opts_t *opts, njs_console_t *console);
 static njs_int_t njs_externals_init(njs_vm_t *vm);
-static njs_vm_t *njs_create_vm(njs_opts_t *opts);
-static void njs_process_output(njs_vm_t *vm, njs_value_t *value, njs_int_t ret);
+static njs_engine_t *njs_create_engine(njs_opts_t *opts);
 static njs_int_t njs_process_file(njs_opts_t *opts);
-static njs_int_t njs_process_script(njs_vm_t *vm, void *runtime,
-    const njs_str_t *script);
+static njs_int_t njs_process_script(njs_engine_t *engine,
+    njs_console_t *console, njs_str_t *script);
 
 #ifndef NJS_FUZZER_TARGET
 
 static njs_int_t njs_options_parse(njs_opts_t *opts, int argc, char **argv);
+static njs_int_t njs_options_parse_engine(njs_opts_t *opts, const char *engine);
 static njs_int_t njs_options_add_path(njs_opts_t *opts, char *path, size_t len);
 static void njs_options_free(njs_opts_t *opts);
 
@@ -166,6 +272,9 @@ static void njs_console_log(njs_log_level_t level, const char *fmt, ...);
 static void njs_console_logger(njs_log_level_t level, const u_char *start,
     size_t length);
 
+static njs_int_t njs_console_time(njs_console_t *console, njs_str_t *name);
+static void njs_console_time_end(njs_console_t *console, njs_str_t *name,
+    uint64_t time);
 static intptr_t njs_event_rbtree_compare(njs_rbtree_node_t *node1,
     njs_rbtree_node_t *node2);
 static uint64_t njs_time(void);
@@ -317,8 +426,8 @@ static njs_console_t  njs_console;
 static njs_int_t
 njs_main(njs_opts_t *opts)
 {
-    njs_vm_t   *vm;
-    njs_int_t  ret;
+    njs_int_t     ret;
+    njs_engine_t  *engine;
 
     njs_mm_denormals(opts->denormals);
 
@@ -339,6 +448,12 @@ njs_main(njs_opts_t *opts)
         }
     }
 
+    ret = njs_console_init(opts, &njs_console);
+    if (njs_slow_path(ret != NJS_OK)) {
+        njs_stderror("njs_console_init() failed\n");
+        return NJS_ERROR;
+    }
+
 #if (!defined NJS_FUZZER_TARGET && defined NJS_HAVE_READLINE)
 
     if (opts->interactive) {
@@ -349,13 +464,13 @@ njs_main(njs_opts_t *opts)
 #endif
 
     if (opts->command.length != 0) {
-        vm = njs_create_vm(opts);
-        if (vm == NULL) {
+        engine = njs_create_engine(opts);
+        if (engine == NULL) {
             return NJS_ERROR;
         }
 
-        ret = njs_process_script(vm, njs_vm_external_ptr(vm), &opts->command);
-        njs_vm_destroy(vm);
+        ret = njs_process_script(engine, &njs_console, &opts->command);
+        engine->destroy(engine);
 
     } else {
         ret = njs_process_file(opts);
@@ -426,6 +541,10 @@ njs_options_parse(njs_opts_t *opts, int argc, char **argv)
         "  -g                enable generator debug.\n"
 #endif
         "  -j <size>         set the maximum stack size in bytes.\n"
+        "  -m                load as ES6 module (script is default).\n"
+#ifdef NJS_HAVE_QUICKJS
+        "  -n njs|QuickJS    set JS engine (njs is default)\n"
+#endif
 #ifdef NJS_DEBUG_OPCODE
         "  -o                enable opcode debug.\n"
 #endif
@@ -433,20 +552,37 @@ njs_options_parse(njs_opts_t *opts, int argc, char **argv)
         "  -q                disable interactive introduction prompt.\n"
         "  -r                ignore unhandled promise rejection.\n"
         "  -s                sandbox mode.\n"
-        "  -t script|module  source code type (script is default).\n"
         "  -v                print njs version and exit.\n"
         "  -u                disable \"unsafe\" mode.\n"
         "  script.js | -     run code from a file or stdin.\n";
 
-    ret = NJS_DONE;
-
     opts->denormals = 1;
+    opts->can_block = 1;
     opts->exit_code = EXIT_FAILURE;
+    opts->engine = NJS_ENGINE_NJS;
     opts->unhandled_rejection = 1;
 
     p = getenv("NJS_EXIT_CODE");
     if (p != NULL) {
         opts->exit_code = atoi(p);
+    }
+
+    p = getenv("NJS_CAN_BLOCK");
+    if (p != NULL) {
+        opts->can_block = atoi(p);
+    }
+
+    p = getenv("NJS_LOAD_AS_MODULE");
+    if (p != NULL) {
+        opts->module = 1;
+    }
+
+    p = getenv("NJS_ENGINE");
+    if (p != NULL) {
+        ret = njs_options_parse_engine(opts, p);
+        if (ret != NJS_OK) {
+            return NJS_ERROR;
+        }
     }
 
     start = getenv("NJS_PATH");
@@ -486,7 +622,7 @@ njs_options_parse(njs_opts_t *opts, int argc, char **argv)
         case '?':
         case 'h':
             njs_printf("%*s", njs_length(help), help);
-            return ret;
+            return NJS_DONE;
 
         case 'a':
             opts->ast = 1;
@@ -541,6 +677,23 @@ njs_options_parse(njs_opts_t *opts, int argc, char **argv)
             njs_stderror("option \"-j\" requires argument\n");
             return NJS_ERROR;
 
+        case 'm':
+            opts->module = 1;
+            break;
+
+        case 'n':
+            if (++i < argc) {
+                ret = njs_options_parse_engine(opts, argv[i]);
+                if (ret != NJS_OK) {
+                    return NJS_ERROR;
+                }
+
+                break;
+            }
+
+            njs_stderror("option \"-n\" requires argument\n");
+            return NJS_ERROR;
+
 #ifdef NJS_DEBUG_OPCODE
         case 'o':
             opts->opcode_debug = 1;
@@ -573,22 +726,6 @@ njs_options_parse(njs_opts_t *opts, int argc, char **argv)
             opts->sandbox = 1;
             break;
 
-        case 't':
-            if (++i < argc) {
-                if (strcmp(argv[i], "module") == 0) {
-                    opts->module = 1;
-
-                } else if (strcmp(argv[i], "script") != 0) {
-                    njs_stderror("option \"-t\" unexpected source type: %s\n",
-                                 argv[i]);
-                    return NJS_ERROR;
-                }
-
-                break;
-            }
-
-            njs_stderror("option \"-t\" requires source type\n");
-            return NJS_ERROR;
         case 'v':
         case 'V':
             opts->version = 1;
@@ -608,6 +745,40 @@ njs_options_parse(njs_opts_t *opts, int argc, char **argv)
 
 done:
 
+#ifdef NJS_HAVE_QUICKJS
+    if (opts->engine == NJS_ENGINE_QUICKJS) {
+        if (opts->ast) {
+            njs_stderror("option \"-a\" is not supported for quickjs\n");
+            return NJS_ERROR;
+        }
+
+        if (opts->disassemble) {
+            njs_stderror("option \"-d\" is not supported for quickjs\n");
+            return NJS_ERROR;
+        }
+
+        if (opts->generator_debug) {
+            njs_stderror("option \"-g\" is not supported for quickjs\n");
+            return NJS_ERROR;
+        }
+
+        if (opts->opcode_debug) {
+            njs_stderror("option \"-o\" is not supported for quickjs\n");
+            return NJS_ERROR;
+        }
+
+        if (opts->sandbox) {
+            njs_stderror("option \"-s\" is not supported for quickjs\n");
+            return NJS_ERROR;
+        }
+
+        if (opts->safe) {
+            njs_stderror("option \"-u\" is not supported for quickjs\n");
+            return NJS_ERROR;
+        }
+    }
+#endif
+
     opts->argc = njs_max(argc - i + 1, 2);
     opts->argv = malloc(sizeof(char*) * opts->argc);
     if (opts->argv == NULL) {
@@ -619,6 +790,26 @@ done:
     opts->argv[1] = (opts->file != NULL) ? opts->file : (char *) "";
     for (n = 2; n < opts->argc; n++) {
         opts->argv[n] = argv[i + n - 1];
+    }
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+njs_options_parse_engine(njs_opts_t *opts, const char *engine)
+{
+    if (strncasecmp(engine, "njs", 3) == 0) {
+        opts->engine = NJS_ENGINE_NJS;
+
+#ifdef NJS_HAVE_QUICKJS
+    } else if (strncasecmp(engine, "QuickJS", 7) == 0) {
+        opts->engine = NJS_ENGINE_QUICKJS;
+#endif
+
+    } else {
+        njs_stderror("unknown engine \"%s\"\n", engine);
+        return NJS_ERROR;
     }
 
     return NJS_OK;
@@ -675,10 +866,7 @@ LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
     opts.file = (char *) "fuzzer";
     opts.command.start = (u_char *) data;
     opts.command.length = size;
-
-    njs_memzero(&njs_console, sizeof(njs_console_t));
-
-    njs_console.suppress_stdout = 1;
+    opts.suppress_stdout = 1;
 
     return njs_main(&opts);
 }
@@ -686,23 +874,31 @@ LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 #endif
 
 static njs_int_t
-njs_console_init(njs_vm_t *vm, njs_console_t *console)
+njs_console_init(njs_opts_t *opts, njs_console_t *console)
 {
-    console->vm = vm;
+    njs_memzero(console, sizeof(njs_console_t));
 
-    console->event_id = 0;
     njs_rbtree_init(&console->events, njs_event_rbtree_compare);
     njs_queue_init(&console->posted_events);
     njs_queue_init(&console->labels);
 
-    njs_memzero(&console->cwd, sizeof(njs_str_t));
+    console->interactive = opts->interactive;
+    console->suppress_stdout = opts->suppress_stdout;
+    console->module = opts->module;
+    console->argv = opts->argv;
+    console->argc = opts->argc;
 
-    console->rejected_promises = NULL;
+#if (NJS_HAVE_QUICKJS)
+    if (opts->engine == NJS_ENGINE_QUICKJS) {
+        njs_queue_init(&console->agents);
+        njs_queue_init(&console->reports);
+        pthread_mutex_init(&console->report_mutex, NULL);
+        pthread_mutex_init(&console->agent_mutex, NULL);
+        pthread_cond_init(&console->agent_cond, NULL);
 
-    console->completion.completions = njs_vm_completions(vm, NULL);
-    if (console->completion.completions == NULL) {
-        return NJS_ERROR;
+        console->process = JS_UNDEFINED;
     }
+#endif
 
     return NJS_OK;
 }
@@ -741,7 +937,7 @@ njs_externals_init(njs_vm_t *vm)
     static const njs_str_t  set_immediate = njs_str("setImmediate");
     static const njs_str_t  clear_timeout = njs_str("clearTimeout");
 
-    console = njs_vm_options(vm)->external;
+    console = njs_vm_external_ptr(vm);
 
     njs_console_proto_id = njs_vm_external_prototype(vm, njs_ext_console,
                                          njs_nitems(njs_ext_console));
@@ -803,11 +999,6 @@ njs_externals_init(njs_vm_t *vm)
         return NJS_ERROR;
     }
 
-    ret = njs_console_init(vm, console);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return NJS_ERROR;
-    }
-
     return NJS_OK;
 }
 
@@ -830,7 +1021,9 @@ njs_rejection_tracker(njs_vm_t *vm, njs_external_ptr_t external,
         promise_obj = njs_value_ptr(promise);
 
         for (i = 0; i < length; i++) {
-            if (rejected_promise[i].promise == promise_obj) {
+            if (njs_value_ptr(njs_value_arg(&rejected_promise[i].u.njs.promise))
+                == promise_obj)
+            {
                 njs_arr_remove(console->rejected_promises,
                                &rejected_promise[i]);
 
@@ -842,7 +1035,7 @@ njs_rejection_tracker(njs_vm_t *vm, njs_external_ptr_t external,
     }
 
     if (console->rejected_promises == NULL) {
-        console->rejected_promises = njs_arr_create(njs_vm_memory_pool(vm), 4,
+        console->rejected_promises = njs_arr_create(console->engine->pool, 4,
                                                 sizeof(njs_rejected_promise_t));
         if (njs_slow_path(console->rejected_promises == NULL)) {
             return;
@@ -854,8 +1047,8 @@ njs_rejection_tracker(njs_vm_t *vm, njs_external_ptr_t external,
         return;
     }
 
-    rejected_promise->promise = njs_value_ptr(promise);
-    njs_value_assign(&rejected_promise->message, reason);
+    njs_value_assign(&rejected_promise->u.njs.promise, promise);
+    njs_value_assign(&rejected_promise->u.njs.message, reason);
 }
 
 
@@ -968,7 +1161,7 @@ njs_module_read(njs_mp_t *mp, int fd, njs_str_t *text)
 
     text->length = sb.st_size;
 
-    text->start = njs_mp_alloc(mp, text->length);
+    text->start = njs_mp_alloc(mp, text->length + 1);
     if (text->start == NULL) {
         goto fail;
     }
@@ -978,6 +1171,8 @@ njs_module_read(njs_mp_t *mp, int fd, njs_str_t *text)
     if (n < 0 || n != sb.st_size) {
         goto fail;
     }
+
+    text->start[text->length] = '\0';
 
     return NJS_OK;
 
@@ -1034,13 +1229,13 @@ current_dir:
 
 
 static njs_int_t
-njs_console_set_cwd(njs_vm_t *vm, njs_console_t *console, njs_str_t *file)
+njs_console_set_cwd(njs_console_t *console, njs_str_t *file)
 {
     njs_str_t  cwd;
 
     njs_file_dirname(file, &cwd);
 
-    console->cwd.start = njs_mp_alloc(njs_vm_memory_pool(vm), cwd.length);
+    console->cwd.start = njs_mp_alloc(console->engine->pool, cwd.length);
     if (njs_slow_path(console->cwd.start == NULL)) {
         return NJS_ERROR;
     }
@@ -1086,7 +1281,7 @@ njs_module_loader(njs_vm_t *vm, njs_external_ptr_t external, njs_str_t *name)
 
     prev_cwd = console->cwd;
 
-    ret = njs_console_set_cwd(vm, console, &info.file);
+    ret = njs_console_set_cwd(console, &info.file);
     if (njs_slow_path(ret != NJS_OK)) {
         njs_vm_internal_error(vm, "while setting cwd for \"%V\" module",
                               &info.file);
@@ -1107,8 +1302,8 @@ njs_module_loader(njs_vm_t *vm, njs_external_ptr_t external, njs_str_t *name)
 }
 
 
-static njs_vm_t *
-njs_create_vm(njs_opts_t *opts)
+static njs_int_t
+njs_engine_njs_init(njs_engine_t *engine, njs_opts_t *opts)
 {
     njs_vm_t      *vm;
     njs_int_t     ret;
@@ -1147,7 +1342,12 @@ njs_create_vm(njs_opts_t *opts)
     vm = njs_vm_create(&vm_options);
     if (vm == NULL) {
         njs_stderror("failed to create vm\n");
-        return NULL;
+        return NJS_ERROR;
+    }
+
+    engine->u.njs.completion.completions = njs_vm_completions(vm, NULL);
+    if (engine->u.njs.completion.completions == NULL) {
+        return NJS_ERROR;
     }
 
     if (opts->unhandled_rejection) {
@@ -1155,30 +1355,77 @@ njs_create_vm(njs_opts_t *opts)
                                      njs_vm_external_ptr(vm));
     }
 
-    ret = njs_console_set_cwd(vm, njs_vm_external_ptr(vm), &vm_options.file);
+    ret = njs_console_set_cwd(njs_vm_external_ptr(vm), &vm_options.file);
     if (njs_slow_path(ret != NJS_OK)) {
         njs_stderror("failed to set cwd\n");
-        return NULL;
+        return NJS_ERROR;
     }
 
     njs_vm_set_module_loader(vm, njs_module_loader, opts);
 
-    return vm;
+    engine->u.njs.vm = vm;
+
+    return NJS_OK;
 }
 
 
-static void
-njs_console_output(njs_vm_t *vm, njs_value_t *value, njs_int_t ret)
+static njs_int_t
+njs_engine_njs_destroy(njs_engine_t *engine)
 {
-    njs_str_t  out;
+    njs_vm_destroy(engine->u.njs.vm);
+    njs_mp_destroy(engine->pool);
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+njs_engine_njs_eval(njs_engine_t *engine, njs_str_t *script)
+{
+     u_char     *start, *end;
+     njs_int_t  ret;
+
+     start = script->start;
+     end = start + script->length;
+
+     ret = njs_vm_compile(engine->u.njs.vm, &start, end);
+
+     if (ret == NJS_OK && start == end) {
+        return njs_vm_start(engine->u.njs.vm,
+                           njs_value_arg(&engine->u.njs.value));
+     }
+
+     return NJS_ERROR;
+}
+
+
+static njs_int_t
+njs_engine_njs_execute_pending_job(njs_engine_t *engine)
+{
+    return njs_vm_execute_pending_job(engine->u.njs.vm);
+}
+
+
+static njs_int_t
+njs_engine_njs_output(njs_engine_t *engine, njs_int_t ret)
+{
+    njs_vm_t       *vm;
+    njs_str_t      out;
+    njs_console_t  *console;
+
+    vm = engine->u.njs.vm;
+    console = njs_vm_external_ptr(vm);
 
     if (ret == NJS_OK) {
-        if (njs_vm_value_dump(vm, &out, value, 0, 1) != NJS_OK) {
-            njs_stderror("Shell:failed to get retval from VM\n");
-            return;
-        }
+        if (console->interactive) {
+            if (njs_vm_value_dump(vm, &out, njs_value_arg(&engine->u.njs.value),
+                                  0, 1)
+                != NJS_OK)
+            {
+                njs_stderror("Shell:failed to get retval from VM\n");
+                return NJS_ERROR;
+            }
 
-        if (njs_vm_options(vm)->interactive) {
             njs_print(out.start, out.length);
             njs_print("\n", 1);
         }
@@ -1187,11 +1434,13 @@ njs_console_output(njs_vm_t *vm, njs_value_t *value, njs_int_t ret)
         njs_vm_exception_string(vm, &out);
         njs_stderror("Thrown:\n%V\n", &out);
     }
+
+    return NJS_OK;
 }
 
 
 static njs_int_t
-njs_process_events(void *runtime)
+njs_engine_njs_process_events(njs_engine_t *engine)
 {
     njs_ev_t            *ev;
     njs_vm_t            *vm;
@@ -1201,14 +1450,8 @@ njs_process_events(void *runtime)
     njs_queue_link_t    *link;
     njs_opaque_value_t  retval;
 
-    if (runtime == NULL) {
-        njs_stderror("njs_process_events(): no runtime\n");
-        return NJS_ERROR;
-    }
-
-    console = runtime;
-    vm = console->vm;
-
+    vm = engine->u.njs.vm;
+    console = njs_vm_external_ptr(vm);
     events = &console->posted_events;
 
     for ( ;; ) {
@@ -1221,17 +1464,14 @@ njs_process_events(void *runtime)
         ev = njs_queue_link_data(link, njs_ev_t, link);
 
         njs_queue_remove(&ev->link);
-        ev->link.prev = NULL;
-        ev->link.next = NULL;
-
         njs_rbtree_delete(&console->events, &ev->node);
 
-        ret = njs_vm_invoke(vm, ev->function, ev->args, ev->nargs,
+        ret = njs_vm_invoke(vm, ev->u.njs.function, ev->u.njs.args, ev->nargs,
                             njs_value_arg(&retval));
         if (ret == NJS_ERROR) {
-            njs_process_output(vm, njs_value_arg(&retval), ret);
+            njs_engine_njs_output(engine, ret);
 
-            if (!njs_vm_options(vm)->interactive) {
+            if (!console->interactive) {
                 return NJS_ERROR;
             }
         }
@@ -1246,14 +1486,16 @@ njs_process_events(void *runtime)
 
 
 static njs_int_t
-njs_unhandled_rejection(void *runtime)
+njs_engine_njs_unhandled_rejection(njs_engine_t *engine)
 {
+    njs_vm_t                *vm;
     njs_int_t               ret;
     njs_str_t               message;
     njs_console_t           *console;
     njs_rejected_promise_t  *rejected_promise;
 
-    console = runtime;
+    vm = engine->u.njs.vm;
+    console = njs_vm_external_ptr(vm);
 
     if (console->rejected_promises == NULL
         || console->rejected_promises->items == 0)
@@ -1263,19 +1505,1495 @@ njs_unhandled_rejection(void *runtime)
 
     rejected_promise = console->rejected_promises->start;
 
-    ret = njs_vm_value_to_string(console->vm, &message,
-                                 njs_value_arg(&rejected_promise->message));
+    ret = njs_vm_value_to_string(vm, &message,
+                               njs_value_arg(&rejected_promise->u.njs.message));
     if (njs_slow_path(ret != NJS_OK)) {
         return -1;
     }
 
-    njs_vm_error(console->vm, "unhandled promise rejection: %V",
-                 &message);
+    njs_vm_error(vm, "unhandled promise rejection: %V", &message);
 
     njs_arr_destroy(console->rejected_promises);
     console->rejected_promises = NULL;
 
     return 1;
+}
+
+#ifdef NJS_HAVE_QUICKJS
+
+static JSValue
+njs_qjs_console_log(JSContext *ctx, JSValueConst this_val, int argc,
+    JSValueConst *argv, int magic)
+{
+    int         i;
+    size_t      len;
+    const char  *str;
+
+    for (i = 0; i < argc; i++) {
+        str = JS_ToCStringLen(ctx, &len, argv[i]);
+        if (!str) {
+            return JS_EXCEPTION;
+        }
+
+        njs_console_logger(magic, (const u_char*) str, len);
+        JS_FreeCString(ctx, str);
+    }
+
+    return JS_UNDEFINED;
+}
+
+
+static JSValue
+njs_qjs_console_time(JSContext *ctx, JSValueConst this_val, int argc,
+    JSValueConst *argv)
+{
+    njs_str_t      name;
+    const char     *str;
+    njs_console_t  *console;
+
+    static const njs_str_t  default_label = njs_str("default");
+
+    console = JS_GetRuntimeOpaque(JS_GetRuntime(ctx));
+
+    name = default_label;
+
+    if (argc > 0 && !JS_IsUndefined(argv[0])) {
+        str = JS_ToCStringLen(ctx, &name.length, argv[0]);
+        if (str == NULL) {
+            return JS_EXCEPTION;
+        }
+
+        name.start = njs_mp_alloc(console->engine->pool, name.length);
+        if (njs_slow_path(name.start == NULL)) {
+            JS_ThrowOutOfMemory(ctx);
+            return JS_EXCEPTION;
+        }
+
+        (void) memcpy(name.start, str, name.length);
+
+        JS_FreeCString(ctx, str);
+    }
+
+    if (njs_console_time(console, &name) != NJS_OK) {
+        return JS_EXCEPTION;
+    }
+
+    return JS_UNDEFINED;
+}
+
+
+static JSValue
+njs_qjs_console_time_end(JSContext *ctx, JSValueConst this_val, int argc,
+    JSValueConst *argv)
+{
+    uint64_t       ns;
+    njs_str_t      name;
+    const char     *str;
+    njs_console_t  *console;
+
+    static const njs_str_t  default_label = njs_str("default");
+
+    ns = njs_time();
+
+    console = JS_GetRuntimeOpaque(JS_GetRuntime(ctx));
+
+    name = default_label;
+
+    if (argc > 0 && !JS_IsUndefined(argv[0])) {
+        str = JS_ToCStringLen(ctx, &name.length, argv[0]);
+        if (str == NULL) {
+            return JS_EXCEPTION;
+        }
+
+        name.start = njs_mp_alloc(console->engine->pool, name.length);
+        if (njs_slow_path(name.start == NULL)) {
+            JS_ThrowOutOfMemory(ctx);
+            return JS_EXCEPTION;
+        }
+
+        (void) memcpy(name.start, str, name.length);
+
+        JS_FreeCString(ctx, str);
+    }
+
+    njs_console_time_end(console, &name, ns);
+
+    return JS_UNDEFINED;
+}
+
+
+static JSValue
+njs_qjs_set_timer(JSContext *ctx, JSValueConst this_val, int argc,
+    JSValueConst *argv, int immediate)
+{
+    int            n;
+    int64_t        delay;
+    njs_ev_t       *ev;
+    njs_uint_t     i;
+    njs_console_t  *console;
+
+    if (njs_slow_path(argc < 1)) {
+        JS_ThrowTypeError(ctx, "too few arguments");
+        return JS_EXCEPTION;
+    }
+
+    if (njs_slow_path(!JS_IsFunction(ctx, argv[0]))) {
+        JS_ThrowTypeError(ctx, "first arg must be a function");
+        return JS_EXCEPTION;
+    }
+
+    delay = 0;
+
+    if (!immediate && argc >= 2 && JS_IsNumber(argv[1])) {
+        JS_ToInt64(ctx, &delay, argv[1]);
+    }
+
+    if (delay != 0) {
+        JS_ThrowInternalError(ctx, "njs_set_timer(): async timers unsupported");
+        return JS_EXCEPTION;
+    }
+
+    console = JS_GetRuntimeOpaque(JS_GetRuntime(ctx));
+
+    n = immediate ? 1 : 2;
+    argc = (argc >= n) ? argc - n : 0;
+
+    ev = njs_mp_alloc(console->engine->pool,
+                      sizeof(njs_ev_t) + sizeof(njs_opaque_value_t) * argc);
+    if (njs_slow_path(ev == NULL)) {
+        JS_ThrowOutOfMemory(ctx);
+        return JS_EXCEPTION;
+    }
+
+    ev->u.qjs.function = JS_DupValue(ctx, argv[0]);
+    ev->u.qjs.args = (JSValue *) &ev[1];
+    ev->nargs = (njs_uint_t) argc;
+    ev->id = console->event_id++;
+
+    if (ev->nargs != 0) {
+        for (i = 0; i < ev->nargs; i++) {
+            ev->u.qjs.args[i] = JS_DupValue(ctx, argv[i + n]);
+        }
+    }
+
+    njs_rbtree_insert(&console->events, &ev->node);
+
+    njs_queue_insert_tail(&console->posted_events, &ev->link);
+
+    return JS_NewUint32(ctx, ev->id);
+}
+
+
+static void
+njs_qjs_destroy_event(JSContext *ctx, njs_console_t *console, njs_ev_t *ev)
+{
+    njs_uint_t  i;
+
+    JS_FreeValue(ctx, ev->u.qjs.function);
+
+    if (ev->nargs != 0) {
+        for (i = 0; i < ev->nargs; i++) {
+            JS_FreeValue(ctx, ev->u.qjs.args[i]);
+        }
+    }
+
+    njs_mp_free(console->engine->pool, ev);
+}
+
+
+static JSValue
+njs_qjs_clear_timeout(JSContext *ctx, JSValueConst this_val, int argc,
+    JSValueConst *argv)
+{
+    njs_ev_t           ev_lookup, *ev;
+    njs_console_t      *console;
+    njs_rbtree_node_t  *rb;
+
+    if (argc < 1 || !JS_IsNumber(argv[0])) {
+        return JS_UNDEFINED;
+    }
+
+    console = JS_GetRuntimeOpaque(JS_GetRuntime(ctx));
+
+    if (JS_ToUint32(ctx, &ev_lookup.id, argv[0])) {
+        return JS_EXCEPTION;
+    }
+
+    rb = njs_rbtree_find(&console->events, &ev_lookup.node);
+    if (njs_slow_path(rb == NULL)) {
+        JS_ThrowTypeError(ctx, "failed to find timer");
+        return JS_EXCEPTION;
+    }
+
+    ev = (njs_ev_t *) rb;
+    njs_queue_remove(&ev->link);
+    njs_rbtree_delete(&console->events, (njs_rbtree_part_t *) rb);
+
+    njs_qjs_destroy_event(ctx, console, ev);
+
+    return JS_UNDEFINED;
+}
+
+
+static njs_int_t
+njs_qjs_set_to_string_tag(JSContext *ctx, JSValueConst val, const char *tag)
+{
+    JSAtom    atom;
+    JSValue   global_obj, symbol, toStringTag;
+    njs_int_t ret;
+
+    global_obj = JS_GetGlobalObject(ctx);
+
+    symbol = JS_GetPropertyStr(ctx, global_obj, "Symbol");
+    JS_FreeValue(ctx, global_obj);
+    if (JS_IsException(symbol)) {
+        return -1;
+    }
+
+    toStringTag = JS_GetPropertyStr(ctx, symbol, "toStringTag");
+    if (JS_IsException(toStringTag)) {
+        JS_FreeValue(ctx, symbol);
+        return -1;
+    }
+
+    atom = JS_ValueToAtom(ctx, toStringTag);
+
+    JS_FreeValue(ctx, symbol);
+    JS_FreeValue(ctx, toStringTag);
+
+    if (atom == JS_ATOM_NULL) {
+        JS_ThrowInternalError(ctx, "failed to get atom");
+        return -1;
+    }
+
+    ret = JS_DefinePropertyValue(ctx, val, atom, JS_NewString(ctx, tag),
+                                 JS_PROP_C_W_E);
+
+    JS_FreeAtom(ctx, atom);
+
+    return ret;
+}
+
+
+static JSValue
+njs_qjs_process_getter(JSContext *ctx, JSValueConst this_val)
+{
+    char           **ep;
+    JSAtom         atom;
+    JSValue        obj, val, str, name, env;
+    njs_int_t      ret;
+    njs_uint_t     i;
+    const char     *entry, *value;
+    njs_console_t  *console;
+
+    console = JS_GetRuntimeOpaque(JS_GetRuntime(ctx));
+
+    if (!JS_IsUndefined(console->process)) {
+        return JS_DupValue(ctx, console->process);
+    }
+
+    obj = JS_NewObject(ctx);
+    if (JS_IsException(obj)) {
+        return JS_EXCEPTION;
+    }
+
+    ret = njs_qjs_set_to_string_tag(ctx, obj, "process");
+    if (ret == -1) {
+        JS_FreeValue(ctx, obj);
+        return JS_EXCEPTION;
+    }
+
+    val = JS_NewArray(ctx);
+    if (JS_IsException(val)) {
+        JS_FreeValue(ctx, obj);
+        return JS_EXCEPTION;
+    }
+
+    ret = JS_SetPropertyStr(ctx, obj, "argv", val);
+    if (ret == -1) {
+        JS_FreeValue(ctx, obj);
+        JS_FreeValue(ctx, val);
+        return JS_EXCEPTION;
+    }
+
+    for (i = 0; i < console->argc; i++) {
+        str = JS_NewStringLen(ctx, console->argv[i],
+                              njs_strlen(console->argv[i]));
+        if (JS_IsException(str)) {
+            JS_FreeValue(ctx, obj);
+            return JS_EXCEPTION;
+        }
+
+        ret = JS_DefinePropertyValueUint32(ctx, val, i, str, JS_PROP_C_W_E);
+        if (ret == -1) {
+            JS_FreeValue(ctx, obj);
+            return JS_EXCEPTION;
+        }
+    }
+
+    env = JS_NewObject(ctx);
+    if (JS_IsException(obj)) {
+        JS_FreeValue(ctx, obj);
+        return JS_EXCEPTION;
+    }
+
+    ret = JS_SetPropertyStr(ctx, obj, "env", env);
+    if (ret == -1) {
+        JS_FreeValue(ctx, obj);
+        JS_FreeValue(ctx, env);
+        return JS_EXCEPTION;
+    }
+
+    ep = environ;
+
+    while (*ep != NULL) {
+        entry = *ep++;
+
+        value = (const char *) njs_strchr(entry, '=');
+        if (njs_slow_path(value == NULL)) {
+            continue;
+        }
+
+        str = JS_UNDEFINED;
+        name = JS_NewStringLen(ctx, entry, value - entry);
+        if (JS_IsException(name)) {
+            goto error;
+        }
+
+        str = JS_NewStringLen(ctx, value, njs_strlen(value));
+        if (JS_IsException(str)) {
+            goto error;
+        }
+
+        atom = JS_ValueToAtom(ctx, name);
+        if (atom == JS_ATOM_NULL) {
+            goto error;
+        }
+
+        ret = JS_DefinePropertyValue(ctx, env, atom, str, JS_PROP_C_W_E);
+        JS_FreeAtom(ctx, atom);
+        if (ret == -1) {
+error:
+            JS_FreeValue(ctx, name);
+            JS_FreeValue(ctx, str);
+            JS_FreeValue(ctx, obj);
+            return JS_EXCEPTION;
+        }
+
+        JS_FreeValue(ctx, name);
+    }
+
+    ret = JS_SetPropertyStr(ctx, obj, "pid", JS_NewInt32(ctx, getpid()));
+    if (ret == -1) {
+        JS_FreeValue(ctx, obj);
+        return JS_EXCEPTION;
+    }
+
+    ret = JS_SetPropertyStr(ctx, obj, "ppid", JS_NewInt32(ctx, getppid()));
+    if (ret == -1) {
+        JS_FreeValue(ctx, obj);
+        return JS_EXCEPTION;
+    }
+
+    console->process = JS_DupValue(ctx, obj);
+
+    return obj;
+}
+
+static JSValue
+njs_qjs_njs_getter(JSContext *ctx, JSValueConst this_val)
+{
+    JSValue    obj;
+    njs_int_t  ret;
+
+    obj = JS_NewObject(ctx);
+    if (JS_IsException(obj)) {
+        return JS_EXCEPTION;
+    }
+
+    ret = njs_qjs_set_to_string_tag(ctx, obj, "njs");
+    if (ret == -1) {
+        JS_FreeValue(ctx, obj);
+        return JS_EXCEPTION;
+    }
+
+    ret = JS_SetPropertyStr(ctx, obj, "version_number",
+                            JS_NewInt32(ctx, NJS_VERSION_NUMBER));
+    if (ret == -1) {
+        JS_FreeValue(ctx, obj);
+        return JS_EXCEPTION;
+    }
+
+    ret = JS_SetPropertyStr(ctx, obj, "version",
+                            JS_NewString(ctx, NJS_VERSION));
+    if (ret == -1) {
+        JS_FreeValue(ctx, obj);
+        return JS_EXCEPTION;
+    }
+
+    ret = JS_SetPropertyStr(ctx, obj, "engine", JS_NewString(ctx, "QuickJS"));
+    if (ret == -1) {
+        JS_FreeValue(ctx, obj);
+        return JS_EXCEPTION;
+    }
+
+    return obj;
+}
+
+
+static njs_int_t njs_qjs_global_init(JSContext *ctx, JSValue global_obj);
+
+
+static void
+njs_qjs_dump_obj(JSContext *ctx, FILE *f, JSValueConst val, const char *prefix,
+    const char *quote)
+{
+    njs_bool_t  is_str;
+    const char  *str;
+
+    is_str = JS_IsString(val);
+
+    str = JS_ToCString(ctx, val);
+    if (str) {
+        fprintf(f, "%s%s%s%s\n", prefix, is_str ? quote : "",
+                str, is_str ? quote : "");
+        JS_FreeCString(ctx, str);
+
+    } else {
+        fprintf(f, "%s[exception]\n", prefix);
+    }
+}
+
+
+static void
+njs_qjs_dump_error2(JSContext *ctx, JSValueConst exception)
+{
+    _Bool    is_error;
+    JSValue  val;
+
+    is_error = JS_IsError(ctx, exception);
+
+    njs_qjs_dump_obj(ctx, stderr, exception, "Thrown:\n", "");
+
+    if (is_error) {
+        val = JS_GetPropertyStr(ctx, exception, "stack");
+        if (!JS_IsUndefined(val)) {
+            njs_qjs_dump_obj(ctx, stderr, val, "", "");
+        }
+
+        JS_FreeValue(ctx, val);
+    }
+}
+
+
+static void
+njs_qjs_dump_error(JSContext *ctx)
+{
+    JSValue  exception;
+
+    exception = JS_GetException(ctx);
+    njs_qjs_dump_error2(ctx, exception);
+    JS_FreeValue(ctx, exception);
+}
+
+
+static void *
+njs_qjs_agent(void *arg)
+{
+    int            ret;
+    JSValue        ret_val, global_obj;
+    JSRuntime      *rt;
+    JSContext      *ctx, *ctx1;
+    njs_console_t  *console;
+    JSValue        args[2];
+
+    njs_262agent_t *agent = arg;
+    console = agent->console;
+
+    rt = JS_NewRuntime();
+    if (rt == NULL) {
+        njs_stderror("JS_NewRuntime failure\n");
+        exit(1);
+    }
+
+    ctx = JS_NewContext(rt);
+    if (ctx == NULL) {
+        JS_FreeRuntime(rt);
+        njs_stderror("JS_NewContext failure\n");
+        exit(1);
+    }
+
+    JS_SetContextOpaque(ctx, agent);
+    JS_SetRuntimeInfo(rt, "agent");
+    JS_SetCanBlock(rt, 1);
+
+    global_obj = JS_GetGlobalObject(ctx);
+
+    ret = njs_qjs_global_init(ctx, global_obj);
+    if (ret == -1) {
+        JS_FreeContext(ctx);
+        JS_FreeRuntime(rt);
+        njs_stderror("njs_qjs_global_init failure\n");
+        exit(1);
+    }
+
+    JS_FreeValue(ctx, global_obj);
+
+    ret_val = JS_Eval(ctx, agent->script, strlen(agent->script),
+                      "<evalScript>", JS_EVAL_TYPE_GLOBAL);
+
+    free(agent->script);
+    agent->script = NULL;
+
+    if (JS_IsException(ret_val)) {
+        njs_qjs_dump_error(ctx);
+    }
+
+    JS_FreeValue(ctx, ret_val);
+
+    for (;;) {
+        ret = JS_ExecutePendingJob(JS_GetRuntime(ctx), &ctx1);
+        if (ret < 0) {
+            njs_qjs_dump_error(ctx);
+            break;
+
+        } else if (ret == 0) {
+            if (JS_IsUndefined(agent->broadcast_func)) {
+                break;
+
+            } else {
+                pthread_mutex_lock(&console->agent_mutex);
+
+                while (!agent->broadcast_pending) {
+                    pthread_cond_wait(&console->agent_cond,
+                                      &console->agent_mutex);
+                }
+
+                agent->broadcast_pending = 0;
+                pthread_cond_signal(&console->agent_cond);
+                pthread_mutex_unlock(&console->agent_mutex);
+
+                args[0] = JS_NewArrayBuffer(ctx, agent->broadcast_sab_buf,
+                                            agent->broadcast_sab_size,
+                                            NULL, NULL, 1);
+                args[1] = JS_NewInt32(ctx, agent->broadcast_val);
+
+                ret_val = JS_Call(ctx, agent->broadcast_func, JS_UNDEFINED,
+                                  2, (JSValueConst *)args);
+
+                JS_FreeValue(ctx, args[0]);
+                JS_FreeValue(ctx, args[1]);
+
+                if (JS_IsException(ret_val)) {
+                    njs_qjs_dump_error(ctx);
+                }
+
+                JS_FreeValue(ctx, ret_val);
+                JS_FreeValue(ctx, agent->broadcast_func);
+                agent->broadcast_func = JS_UNDEFINED;
+            }
+        }
+    }
+
+    JS_FreeValue(ctx, agent->broadcast_func);
+
+    JS_FreeContext(ctx);
+    JS_FreeRuntime(rt);
+
+    return NULL;
+}
+
+
+static JSValue
+njs_qjs_agent_start(JSContext *ctx, JSValue this_val, int argc, JSValue *argv)
+{
+    const char      *script;
+    njs_console_t   *console;
+    njs_262agent_t  *agent;
+
+    if (JS_GetContextOpaque(ctx) != NULL) {
+        return JS_ThrowTypeError(ctx, "cannot be called inside an agent");
+    }
+
+    script = JS_ToCString(ctx, argv[0]);
+    if (script == NULL) {
+        return JS_EXCEPTION;
+    }
+
+    console = JS_GetRuntimeOpaque(JS_GetRuntime(ctx));
+
+    agent = malloc(sizeof(*agent));
+    if (agent == NULL) {
+        return JS_ThrowOutOfMemory(ctx);
+    }
+
+    njs_memzero(agent, sizeof(*agent));
+
+    agent->broadcast_func = JS_UNDEFINED;
+    agent->broadcast_sab = JS_UNDEFINED;
+    agent->script = strdup(script);
+    if (agent->script == NULL) {
+        return JS_ThrowOutOfMemory(ctx);
+    }
+
+    JS_FreeCString(ctx, script);
+
+    agent->console = console;
+    njs_queue_insert_tail(&console->agents, &agent->link);
+
+    pthread_create(&agent->tid, NULL, njs_qjs_agent, agent);
+
+    return JS_UNDEFINED;
+}
+
+
+static JSValue
+njs_qjsr_agent_get_report(JSContext *ctx, JSValue this_val, int argc,
+    JSValue *argv)
+{
+    JSValue             ret;
+    njs_console_t       *console;
+    njs_queue_link_t    *link;
+    njs_agent_report_t  *rep;
+
+    console = JS_GetRuntimeOpaque(JS_GetRuntime(ctx));
+
+    pthread_mutex_lock(&console->report_mutex);
+
+    rep = NULL;
+
+    for ( ;; ) {
+        link = njs_queue_first(&console->reports);
+
+        if (link == njs_queue_tail(&console->reports)) {
+            break;
+        }
+
+        rep = njs_queue_link_data(link, njs_agent_report_t, link);
+
+        njs_queue_remove(&rep->link);
+        break;
+    }
+
+    pthread_mutex_unlock(&console->report_mutex);
+
+    if (rep != NULL) {
+        ret = JS_NewString(ctx, rep->str);
+        free(rep->str);
+        free(rep);
+
+    } else {
+        ret = JS_NULL;
+    }
+
+    return ret;
+}
+
+
+static njs_bool_t
+njs_qjs_broadcast_pending(njs_console_t *console)
+{
+    njs_262agent_t    *agent;
+    njs_queue_link_t  *link;
+
+    link = njs_queue_first(&console->agents);
+
+    for ( ;; ) {
+        if (link == njs_queue_tail(&console->agents)) {
+            break;
+        }
+
+        agent = njs_queue_link_data(link, njs_262agent_t, link);
+
+        if (agent->broadcast_pending) {
+            return 1;
+        }
+
+        link = njs_queue_next(link);
+    }
+
+    return 0;
+}
+
+static JSValue
+njs_qjs_agent_broadcast(JSContext *ctx, JSValue this_val, int argc,
+    JSValue *argv)
+{
+    uint8_t           *buf;
+    size_t            buf_size;
+    int32_t           val;
+    njs_console_t     *console;
+    njs_262agent_t    *agent;
+    njs_queue_link_t  *link;
+
+    JSValueConst sab = argv[0];
+
+    if (JS_GetContextOpaque(ctx) != NULL) {
+        return JS_ThrowTypeError(ctx, "cannot be called inside an agent");
+    }
+
+    buf = JS_GetArrayBuffer(ctx, &buf_size, sab);
+    if (buf == NULL) {
+        return JS_EXCEPTION;
+    }
+
+    if (JS_ToInt32(ctx, &val, argv[1])) {
+        return JS_EXCEPTION;
+    }
+
+    console = JS_GetRuntimeOpaque(JS_GetRuntime(ctx));
+
+    pthread_mutex_lock(&console->agent_mutex);
+
+    link = njs_queue_first(&console->agents);
+
+    for ( ;; ) {
+        if (link == njs_queue_tail(&console->agents)) {
+            break;
+        }
+
+        agent = njs_queue_link_data(link, njs_262agent_t, link);
+
+        agent->broadcast_pending = 1;
+        agent->broadcast_sab = JS_DupValue(ctx, sab);
+        agent->broadcast_sab_buf = buf;
+        agent->broadcast_sab_size = buf_size;
+        agent->broadcast_val = val;
+
+        link = njs_queue_next(link);
+    }
+
+    pthread_cond_broadcast(&console->agent_cond);
+
+    while (njs_qjs_broadcast_pending(console)) {
+        pthread_cond_wait(&console->agent_cond, &console->agent_mutex);
+    }
+
+    pthread_mutex_unlock(&console->agent_mutex);
+
+    return JS_UNDEFINED;
+}
+
+
+static JSValue
+njs_qjs_agent_receive_broadcast(JSContext *ctx, JSValue this_val, int argc,
+    JSValue *argv)
+{
+    njs_262agent_t *agent = JS_GetContextOpaque(ctx);
+    if (agent == NULL) {
+        return JS_ThrowTypeError(ctx, "must be called inside an agent");
+    }
+
+    if (!JS_IsFunction(ctx, argv[0])) {
+        return JS_ThrowTypeError(ctx, "expecting function");
+    }
+
+    JS_FreeValue(ctx, agent->broadcast_func);
+    agent->broadcast_func = JS_DupValue(ctx, argv[0]);
+
+    return JS_UNDEFINED;
+}
+
+
+static JSValue
+njs_qjs_agent_report(JSContext *ctx, JSValue this_val, int argc, JSValue *argv)
+{
+    const char          *str;
+    njs_console_t       *console;
+    njs_262agent_t      *agent;
+    njs_agent_report_t  *rep;
+
+    str = JS_ToCString(ctx, argv[0]);
+    if (str == NULL) {
+        return JS_EXCEPTION;
+    }
+
+    rep = malloc(sizeof(*rep));
+    rep->str = strdup(str);
+    JS_FreeCString(ctx, str);
+
+    agent = JS_GetContextOpaque(ctx);
+    console = agent->console;
+
+    pthread_mutex_lock(&console->report_mutex);
+    njs_queue_insert_tail(&console->reports, &rep->link);
+    pthread_mutex_unlock(&console->report_mutex);
+
+    return JS_UNDEFINED;
+}
+
+
+static JSValue
+njs_qjs_agent_leaving(JSContext *ctx, JSValue this_val, int argc, JSValue *argv)
+{
+    njs_262agent_t *agent = JS_GetContextOpaque(ctx);
+    if (agent == NULL) {
+        return JS_ThrowTypeError(ctx, "must be called inside an agent");
+    }
+
+    return JS_UNDEFINED;
+}
+
+
+static JSValue
+njs_qjs_agent_sleep(JSContext *ctx, JSValue this_val, int argc, JSValue *argv)
+{
+    uint32_t duration;
+
+    if (JS_ToUint32(ctx, &duration, argv[0])) {
+        return JS_EXCEPTION;
+    }
+
+    usleep(duration * 1000);
+
+    return JS_UNDEFINED;
+}
+
+
+static JSValue
+njs_qjs_agent_monotonic_now(JSContext *ctx, JSValue this_val, int argc,
+    JSValue *argv)
+{
+    return JS_NewInt64(ctx, njs_time() / 1000000);
+}
+
+
+static const JSCFunctionListEntry njs_qjs_agent_proto[] = {
+    JS_CFUNC_DEF("start", 1, njs_qjs_agent_start),
+    JS_CFUNC_DEF("getReport", 0, njs_qjsr_agent_get_report),
+    JS_CFUNC_DEF("broadcast", 2, njs_qjs_agent_broadcast),
+    JS_CFUNC_DEF("report", 1, njs_qjs_agent_report),
+    JS_CFUNC_DEF("leaving", 0, njs_qjs_agent_leaving),
+    JS_CFUNC_DEF("receiveBroadcast", 1, njs_qjs_agent_receive_broadcast),
+    JS_CFUNC_DEF("sleep", 1, njs_qjs_agent_sleep),
+    JS_CFUNC_DEF("monotonicNow", 0, njs_qjs_agent_monotonic_now),
+};
+
+
+static JSValue
+njs_qjs_new_agent(JSContext *ctx)
+{
+    JSValue  agent;
+
+    agent = JS_NewObject(ctx);
+    if (JS_IsException(agent)) {
+        return JS_EXCEPTION;
+    }
+
+    JS_SetPropertyFunctionList(ctx, agent, njs_qjs_agent_proto,
+                               njs_nitems(njs_qjs_agent_proto));
+    return agent;
+}
+
+
+static JSValue
+njs_qjs_detach_array_buffer(JSContext *ctx, JSValueConst this_val, int argc,
+    JSValueConst *argv)
+{
+    JS_DetachArrayBuffer(ctx, argv[0]);
+
+    return JS_NULL;
+}
+
+static JSValue
+njs_qjs_eval_script(JSContext *ctx, JSValue this_val, int argc, JSValue *argv)
+{
+    size_t     len;
+    JSValue    ret;
+    const char *str;
+
+    str = JS_ToCStringLen(ctx, &len, argv[0]);
+    if (str == NULL) {
+        return JS_EXCEPTION;
+    }
+
+    ret = JS_Eval(ctx, str, len, "<evalScript>", JS_EVAL_TYPE_GLOBAL);
+
+    JS_FreeCString(ctx, str);
+
+    return ret;
+}
+
+
+static JSValue
+njs_qjs_create_realm(JSContext *ctx, JSValue this_val, int argc, JSValue *argv)
+{
+    JSValue    ret_val, global_obj;
+    njs_int_t  ret;
+    JSContext  *ctx1;
+
+    ctx1 = JS_NewContext(JS_GetRuntime(ctx));
+    if (ctx1 == NULL) {
+        return JS_ThrowOutOfMemory(ctx);
+    }
+
+    global_obj = JS_GetGlobalObject(ctx1);
+
+    ret = njs_qjs_global_init(ctx1, global_obj);
+    if (ret == -1) {
+        JS_FreeContext(ctx1);
+        return JS_EXCEPTION;
+    }
+
+    ret_val = JS_GetPropertyStr(ctx1, global_obj, "$262");
+
+    JS_FreeValue(ctx1, global_obj);
+    JS_FreeContext(ctx1);
+
+    return ret_val;
+}
+
+
+static JSValue
+njs_qjs_is_HTMLDDA(JSContext *ctx, JSValue this_val, int argc, JSValue *argv)
+{
+    return JS_NULL;
+}
+
+
+static const JSCFunctionListEntry njs_qjs_262_proto[] = {
+    JS_CFUNC_DEF("detachArrayBuffer", 1, njs_qjs_detach_array_buffer),
+    JS_CFUNC_DEF("evalScript", 1, njs_qjs_eval_script),
+    JS_CFUNC_DEF("codePointRange", 2, js_string_codePointRange),
+    JS_CFUNC_DEF("createRealm", 0, njs_qjs_create_realm),
+};
+
+
+static JSValue
+njs_qjs_new_262(JSContext *ctx, JSValueConst this_val)
+{
+    JSValue  obj, obj262, global_obj;
+
+    obj262 = JS_NewObject(ctx);
+    if (JS_IsException(obj262)) {
+        return JS_EXCEPTION;
+    }
+
+    JS_SetPropertyFunctionList(ctx, obj262, njs_qjs_262_proto,
+                               njs_nitems(njs_qjs_262_proto));
+
+    global_obj = JS_GetGlobalObject(ctx);
+    JS_SetPropertyStr(ctx, obj262, "global", JS_DupValue(ctx, global_obj));
+    JS_FreeValue(ctx, global_obj);
+
+    obj = JS_NewCFunction(ctx, njs_qjs_is_HTMLDDA, "IsHTMLDDA", 0);
+    JS_SetIsHTMLDDA(ctx, obj);
+    JS_SetPropertyStr(ctx, obj262, "IsHTMLDDA", obj);
+
+    JS_SetPropertyStr(ctx, obj262, "agent", njs_qjs_new_agent(ctx));
+
+    return obj262;
+}
+
+
+static const JSCFunctionListEntry njs_qjs_global_proto[] = {
+    JS_CFUNC_DEF("clearTimeout", 1, njs_qjs_clear_timeout),
+    JS_CFUNC_MAGIC_DEF("print", 0, njs_qjs_console_log, NJS_LOG_INFO),
+    JS_CGETSET_DEF("njs", njs_qjs_njs_getter, NULL),
+    JS_CGETSET_DEF("process", njs_qjs_process_getter, NULL),
+    JS_CFUNC_MAGIC_DEF("setImmediate", 0, njs_qjs_set_timer, 1),
+    JS_CFUNC_MAGIC_DEF("setTimeout", 0, njs_qjs_set_timer, 0),
+};
+
+
+static const JSCFunctionListEntry njs_qjs_console_proto[] = {
+    JS_CFUNC_MAGIC_DEF("error", 0, njs_qjs_console_log, NJS_LOG_ERROR),
+    JS_CFUNC_MAGIC_DEF("info", 0, njs_qjs_console_log, NJS_LOG_INFO),
+    JS_CFUNC_MAGIC_DEF("log", 0, njs_qjs_console_log, NJS_LOG_INFO),
+    JS_CFUNC_DEF("time", 0, njs_qjs_console_time),
+    JS_CFUNC_DEF("timeEnd", 0, njs_qjs_console_time_end),
+    JS_CFUNC_MAGIC_DEF("warn", 0, njs_qjs_console_log, NJS_LOG_WARN),
+};
+
+
+static njs_int_t
+njs_qjs_global_init(JSContext *ctx, JSValue global_obj)
+{
+    JS_SetPropertyFunctionList(ctx, global_obj, njs_qjs_global_proto,
+                               njs_nitems(njs_qjs_global_proto));
+
+    return JS_SetPropertyStr(ctx, global_obj, "$262",
+                             njs_qjs_new_262(ctx, global_obj));
+}
+
+
+static void
+njs_qjs_rejection_tracker(JSContext *ctx, JSValueConst promise,
+    JSValueConst reason, JS_BOOL is_handled, void *opaque)
+{
+    void                    *promise_obj;
+    uint32_t                i, length;
+    njs_console_t           *console;
+    njs_rejected_promise_t  *rejected_promise;
+
+    console = opaque;
+
+    if (is_handled && console->rejected_promises != NULL) {
+        rejected_promise = console->rejected_promises->start;
+        length = console->rejected_promises->items;
+
+        promise_obj = JS_VALUE_GET_PTR(promise);
+
+        for (i = 0; i < length; i++) {
+            if (JS_VALUE_GET_PTR(rejected_promise[i].u.qjs.promise)
+                == promise_obj)
+            {
+                JS_FreeValue(ctx, rejected_promise[i].u.qjs.promise);
+                JS_FreeValue(ctx, rejected_promise[i].u.qjs.message);
+                njs_arr_remove(console->rejected_promises,
+                               &rejected_promise[i]);
+
+                break;
+            }
+        }
+
+        return;
+    }
+
+    if (console->rejected_promises == NULL) {
+        console->rejected_promises = njs_arr_create(console->engine->pool, 4,
+                                                sizeof(njs_rejected_promise_t));
+        if (njs_slow_path(console->rejected_promises == NULL)) {
+            return;
+        }
+    }
+
+    rejected_promise = njs_arr_add(console->rejected_promises);
+    if (njs_slow_path(rejected_promise == NULL)) {
+        return;
+    }
+
+    rejected_promise->u.qjs.promise = JS_DupValue(ctx, promise);
+    rejected_promise->u.qjs.message = JS_DupValue(ctx, reason);
+}
+
+
+static JSModuleDef *
+njs_qjs_module_loader(JSContext *ctx, const char *module_name, void *opaque)
+{
+    JSValue            func_val;
+    njs_int_t          ret;
+    njs_str_t          text, prev_cwd;
+    njs_opts_t         *opts;
+    njs_console_t      *console;
+    JSModuleDef        *m;
+    njs_module_info_t  info;
+
+    opts = opaque;
+    console = JS_GetRuntimeOpaque(JS_GetRuntime(ctx));
+
+    njs_memzero(&info, sizeof(njs_module_info_t));
+
+    info.name.start = (u_char *) module_name;
+    info.name.length = njs_strlen(module_name);
+
+    ret = njs_module_lookup(opts, &console->cwd, &info);
+    if (njs_slow_path(ret != NJS_OK)) {
+        JS_ThrowReferenceError(ctx, "could not load module filename '%s'",
+                               module_name);
+        return NULL;
+    }
+
+    ret = njs_module_read(console->engine->pool, info.fd, &text);
+
+    (void) close(info.fd);
+
+    if (njs_slow_path(ret != NJS_OK)) {
+        JS_ThrowInternalError(ctx, "while reading \"%*s\" module",
+                              (int) info.file.length, info.file.start);
+        return NULL;
+    }
+
+    prev_cwd = console->cwd;
+
+    ret = njs_console_set_cwd(console, &info.file);
+    if (njs_slow_path(ret != NJS_OK)) {
+        JS_ThrowInternalError(ctx, "while setting cwd for \"%*s\" module",
+                              (int) info.file.length, info.file.start);
+        return NULL;
+    }
+
+    func_val = JS_Eval(ctx, (char *) text.start, text.length, module_name,
+                       JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
+
+    njs_mp_free(console->engine->pool, console->cwd.start);
+    console->cwd = prev_cwd;
+
+    njs_mp_free(console->engine->pool, text.start);
+
+    if (JS_IsException(func_val)) {
+        return NULL;
+    }
+
+    m = JS_VALUE_GET_PTR(func_val);
+    JS_FreeValue(ctx, func_val);
+
+    return m;
+}
+
+
+static njs_int_t
+njs_engine_qjs_init(njs_engine_t *engine, njs_opts_t *opts)
+{
+    JSValue    global_obj, obj;
+    njs_int_t  ret;
+    JSContext  *ctx;
+
+    engine->u.qjs.rt = JS_NewRuntime();
+    if (engine->u.qjs.rt == NULL) {
+        njs_stderror("JS_NewRuntime() failed\n");
+        return NJS_ERROR;
+    }
+
+    engine->u.qjs.ctx = JS_NewContext(engine->u.qjs.rt);
+    if (engine->u.qjs.ctx == NULL) {
+        njs_stderror("JS_NewContext() failed\n");
+        return NJS_ERROR;
+    }
+
+    JS_SetRuntimeOpaque(engine->u.qjs.rt, &njs_console);
+
+    engine->u.qjs.value = JS_UNDEFINED;
+
+    ctx = engine->u.qjs.ctx;
+
+    global_obj = JS_GetGlobalObject(ctx);
+
+    ret = njs_qjs_global_init(ctx, global_obj);
+    if (ret == -1) {
+        njs_stderror("njs_qjs_global_init() failed\n");
+        ret = NJS_ERROR;
+        goto done;
+    }
+
+    obj = JS_NewObject(ctx);
+    if (JS_IsException(obj)) {
+        njs_stderror("JS_NewObject() failed\n");
+        ret = NJS_ERROR;
+        goto done;
+    }
+
+    ret = njs_qjs_set_to_string_tag(ctx, obj, "Console");
+    if (ret == -1) {
+        njs_stderror("njs_qjs_set_to_string_tag() failed\n");
+        ret = NJS_ERROR;
+        goto done;
+    }
+
+    JS_SetOpaque(obj, &njs_console);
+
+    JS_SetPropertyFunctionList(ctx, obj, njs_qjs_console_proto,
+                               njs_nitems(njs_qjs_console_proto));
+
+    ret = JS_SetPropertyStr(ctx, global_obj, "console", obj);
+    if (ret == -1) {
+        njs_stderror("JS_SetPropertyStr() failed\n");
+        ret = NJS_ERROR;
+        goto done;
+    }
+
+    if (opts->unhandled_rejection) {
+        JS_SetHostPromiseRejectionTracker(engine->u.qjs.rt,
+                                         njs_qjs_rejection_tracker,
+                                         JS_GetRuntimeOpaque(engine->u.qjs.rt));
+    }
+
+    JS_SetModuleLoaderFunc(engine->u.qjs.rt, NULL, njs_qjs_module_loader, opts);
+
+    JS_SetCanBlock(engine->u.qjs.rt, opts->can_block);
+
+    ret = NJS_OK;
+
+done:
+
+    JS_FreeValue(ctx, global_obj);
+
+    return ret;
+}
+
+
+static njs_int_t
+njs_engine_qjs_destroy(njs_engine_t *engine)
+{
+    uint32_t                i;
+    njs_ev_t                *ev;
+    njs_queue_t             *events;
+    njs_console_t           *console;
+    njs_262agent_t          *agent;
+    njs_queue_link_t        *link;
+    njs_rejected_promise_t  *rejected_promise;
+
+    console = JS_GetRuntimeOpaque(engine->u.qjs.rt);
+
+    if (console->rejected_promises != NULL) {
+        rejected_promise = console->rejected_promises->start;
+
+        for (i = 0; i < console->rejected_promises->items; i++) {
+            JS_FreeValue(engine->u.qjs.ctx, rejected_promise[i].u.qjs.promise);
+            JS_FreeValue(engine->u.qjs.ctx, rejected_promise[i].u.qjs.message);
+        }
+    }
+
+    events = &console->posted_events;
+
+    for ( ;; ) {
+        link = njs_queue_first(events);
+
+        if (link == njs_queue_tail(events)) {
+            break;
+        }
+
+        ev = njs_queue_link_data(link, njs_ev_t, link);
+
+        njs_queue_remove(&ev->link);
+        njs_rbtree_delete(&console->events, &ev->node);
+
+        njs_qjs_destroy_event(engine->u.qjs.ctx, console, ev);
+    }
+
+    for ( ;; ) {
+        link = njs_queue_first(&console->agents);
+
+        if (link == njs_queue_tail(&console->agents)) {
+            break;
+        }
+
+        agent = njs_queue_link_data(link, njs_262agent_t, link);
+
+        njs_queue_remove(&agent->link);
+
+        pthread_join(agent->tid, NULL);
+        JS_FreeValue(engine->u.qjs.ctx, agent->broadcast_sab);
+        free(agent->script);
+        free(agent);
+    }
+
+    JS_FreeValue(engine->u.qjs.ctx, console->process);
+    JS_FreeValue(engine->u.qjs.ctx, engine->u.qjs.value);
+    JS_FreeContext(engine->u.qjs.ctx);
+    JS_FreeRuntime(engine->u.qjs.rt);
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+njs_engine_qjs_eval(njs_engine_t *engine, njs_str_t *script)
+{
+    int            flags;
+    JSValue        code;
+    njs_console_t  *console;
+
+    flags = JS_EVAL_TYPE_GLOBAL | JS_EVAL_FLAG_STRICT
+            | JS_EVAL_FLAG_COMPILE_ONLY;
+
+    console = JS_GetRuntimeOpaque(engine->u.qjs.rt);
+
+    if (console->module) {
+        flags |= JS_EVAL_TYPE_MODULE;
+    }
+
+    code = JS_Eval(engine->u.qjs.ctx, (char *) script->start,
+                   script->length, "<input>", flags);
+
+    if (JS_IsException(code)) {
+        return NJS_ERROR;
+    }
+
+    JS_FreeValue(engine->u.qjs.ctx, engine->u.qjs.value);
+
+    engine->u.qjs.value = JS_EvalFunction(engine->u.qjs.ctx, code);
+
+    return (JS_IsException(engine->u.qjs.value)) ? NJS_ERROR : NJS_OK;
+}
+
+
+static njs_int_t
+njs_engine_qjs_execute_pending_job(njs_engine_t *engine)
+{
+    JSContext  *ctx1;
+
+    return JS_ExecutePendingJob(engine->u.qjs.rt, &ctx1);
+}
+
+
+static njs_int_t
+njs_engine_qjs_unhandled_rejection(njs_engine_t *engine)
+{
+    size_t                  len;
+    uint32_t                i;
+    JSContext               *ctx;
+    const char              *str;
+    njs_console_t           *console;
+    njs_rejected_promise_t  *rejected_promise;
+
+    ctx = engine->u.qjs.ctx;
+    console = JS_GetRuntimeOpaque(engine->u.qjs.rt);
+
+    if (console->rejected_promises == NULL
+        || console->rejected_promises->items == 0)
+    {
+        return 0;
+    }
+
+    rejected_promise = console->rejected_promises->start;
+
+    str = JS_ToCStringLen(ctx, &len, rejected_promise->u.qjs.message);
+    if (njs_slow_path(str == NULL)) {
+        return -1;
+    }
+
+    JS_ThrowTypeError(ctx, "unhandled promise rejection: %*s", (int) len, str);
+    JS_FreeCString(ctx, str);
+
+    for (i = 0; i < console->rejected_promises->items; i++) {
+        JS_FreeValue(ctx, rejected_promise[i].u.qjs.promise);
+        JS_FreeValue(ctx, rejected_promise[i].u.qjs.message);
+    }
+
+    njs_arr_destroy(console->rejected_promises);
+    console->rejected_promises = NULL;
+
+    return 1;
+}
+
+
+static njs_int_t
+njs_engine_qjs_process_events(njs_engine_t *engine)
+{
+    JSValue           ret;
+    njs_ev_t          *ev;
+    JSContext         *ctx;
+    njs_queue_t       *events;
+    njs_console_t     *console;
+    njs_queue_link_t  *link;
+
+    ctx = engine->u.qjs.ctx;
+    console = JS_GetRuntimeOpaque(engine->u.qjs.rt);
+    events = &console->posted_events;
+
+    for ( ;; ) {
+        link = njs_queue_first(events);
+
+        if (link == njs_queue_tail(events)) {
+            break;
+        }
+
+        ev = njs_queue_link_data(link, njs_ev_t, link);
+
+        njs_queue_remove(&ev->link);
+        njs_rbtree_delete(&console->events, &ev->node);
+
+        ret = JS_Call(ctx, ev->u.qjs.function, JS_UNDEFINED, ev->nargs,
+                      ev->u.qjs.args);
+
+        njs_qjs_destroy_event(ctx, console, ev);
+
+        if (JS_IsException(ret)) {
+            engine->output(engine, NJS_ERROR);
+
+            if (!console->interactive) {
+                return NJS_ERROR;
+            }
+        }
+
+        JS_FreeValue(ctx, ret);
+    }
+
+    if (!njs_rbtree_is_empty(&console->events)) {
+        return NJS_AGAIN;
+    }
+
+    return JS_IsJobPending(engine->u.qjs.rt) ? NJS_AGAIN: NJS_OK;
+}
+
+
+static njs_int_t
+njs_engine_qjs_output(njs_engine_t *engine, njs_int_t ret)
+{
+    JSContext      *ctx;
+    njs_console_t  *console;
+
+    ctx = engine->u.qjs.ctx;
+    console = JS_GetRuntimeOpaque(engine->u.qjs.rt);
+
+    if (ret == NJS_OK) {
+        if (console->interactive) {
+            njs_qjs_dump_obj(ctx, stdout, engine->u.qjs.value, "", "\'");
+        }
+
+    } else {
+        njs_qjs_dump_error(ctx);
+    }
+
+    return NJS_OK;
+}
+
+#endif
+
+
+static njs_engine_t *
+njs_create_engine(njs_opts_t *opts)
+{
+    njs_mp_t      *mp;
+    njs_int_t     ret;
+    njs_engine_t  *engine;
+
+    mp = njs_mp_fast_create(2 * njs_pagesize(), 128, 512, 16);
+    if (njs_slow_path(mp == NULL)) {
+        return NULL;
+    }
+
+    engine = njs_mp_zalloc(mp, sizeof(njs_engine_t));
+    if (njs_slow_path(engine == NULL)) {
+        return NULL;
+    }
+
+    engine->pool = mp;
+
+    njs_console.engine = engine;
+
+    switch (opts->engine) {
+    case NJS_ENGINE_NJS:
+        ret = njs_engine_njs_init(engine, opts);
+        if (njs_slow_path(ret != NJS_OK)) {
+            njs_stderror("njs_engine_njs_init() failed\n");
+            return NULL;
+        }
+
+        engine->type = NJS_ENGINE_NJS;
+        engine->eval = njs_engine_njs_eval;
+        engine->execute_pending_job = njs_engine_njs_execute_pending_job;
+        engine->unhandled_rejection = njs_engine_njs_unhandled_rejection;
+        engine->process_events = njs_engine_njs_process_events;
+        engine->destroy = njs_engine_njs_destroy;
+        engine->output = njs_engine_njs_output;
+        break;
+
+#ifdef NJS_HAVE_QUICKJS
+    case NJS_ENGINE_QUICKJS:
+        ret = njs_engine_qjs_init(engine, opts);
+        if (njs_slow_path(ret != NJS_OK)) {
+            njs_stderror("njs_engine_qjs_init() failed\n");
+            return NULL;
+        }
+
+        engine->type = NJS_ENGINE_QUICKJS;
+        engine->eval = njs_engine_qjs_eval;
+        engine->execute_pending_job = njs_engine_qjs_execute_pending_job;
+        engine->unhandled_rejection = njs_engine_qjs_unhandled_rejection;
+        engine->process_events = njs_engine_qjs_process_events;
+        engine->destroy = njs_engine_qjs_destroy;
+        engine->output = njs_engine_qjs_output;
+        break;
+#endif
+
+    default:
+        njs_stderror("unknown engine type\n");
+        return NULL;
+    }
+
+    return engine;
 }
 
 
@@ -1318,7 +3036,7 @@ njs_read_file(njs_opts_t *opts, njs_str_t *content)
     }
 
     content->length = 0;
-    content->start = realloc(NULL, size);
+    content->start = realloc(NULL, size + 1);
     if (content->start == NULL) {
         njs_stderror("alloc failed while reading '%s'\n", file);
         ret = NJS_ERROR;
@@ -1345,7 +3063,7 @@ njs_read_file(njs_opts_t *opts, njs_str_t *content)
         if (p + n == end) {
             size *= 2;
 
-            start = realloc(content->start, size);
+            start = realloc(content->start, size + 1);
             if (start == NULL) {
                 njs_stderror("alloc failed while reading '%s'\n", file);
                 ret = NJS_ERROR;
@@ -1362,6 +3080,8 @@ njs_read_file(njs_opts_t *opts, njs_str_t *content)
         content->length += n;
     }
 
+    content->start[content->length] = '\0';
+
     ret = NJS_OK;
 
 close_fd:
@@ -1377,12 +3097,12 @@ close_fd:
 static njs_int_t
 njs_process_file(njs_opts_t *opts)
 {
-    u_char     *p;
-    njs_vm_t   *vm;
-    njs_int_t  ret;
-    njs_str_t  source, script;
+    u_char        *p;
+    njs_int_t     ret;
+    njs_str_t     source, script;
+    njs_engine_t  *engine;
 
-    vm = NULL;
+    engine = NULL;
     source.start = NULL;
 
     ret = njs_read_file(opts, &source);
@@ -1406,13 +3126,13 @@ njs_process_file(njs_opts_t *opts)
         }
     }
 
-    vm = njs_create_vm(opts);
-    if (vm == NULL) {
+    engine = njs_create_engine(opts);
+    if (engine == NULL) {
         ret = NJS_ERROR;
         goto done;
     }
 
-    ret = njs_process_script(vm, njs_vm_external_ptr(vm), &script);
+    ret = njs_process_script(engine, &njs_console, &script);
     if (ret != NJS_OK) {
         ret = NJS_ERROR;
         goto done;
@@ -1422,8 +3142,8 @@ njs_process_file(njs_opts_t *opts)
 
 done:
 
-    if (vm != NULL) {
-        njs_vm_destroy(vm);
+    if (engine != NULL) {
+        engine->destroy(engine);
     }
 
     if (source.start != NULL) {
@@ -1435,42 +3155,32 @@ done:
 
 
 static njs_int_t
-njs_process_script(njs_vm_t *vm, void *runtime, const njs_str_t *script)
+njs_process_script(njs_engine_t *engine, njs_console_t *console,
+    njs_str_t *script)
 {
-    u_char              *start, *end;
-    njs_int_t           ret;
-    njs_opaque_value_t  retval;
+    njs_int_t   ret;
 
-    start = script->start;
-    end = start + script->length;
+    ret = engine->eval(engine, script);
 
-    ret = njs_vm_compile(vm, &start, end);
-
-    if (ret == NJS_OK) {
-        if (start == end) {
-            ret = njs_vm_start(vm, njs_value_arg(&retval));
-
-        } else {
-            njs_vm_error(vm, "Extra characters at the end of the script");
-            ret = NJS_ERROR;
-        }
+    if (!console->suppress_stdout) {
+        engine->output(engine, ret);
     }
 
-    njs_process_output(vm, njs_value_arg(&retval), ret);
-
-    if (!njs_vm_options(vm)->interactive && ret == NJS_ERROR) {
+    if (!console->interactive && ret == NJS_ERROR) {
         return NJS_ERROR;
     }
 
     for ( ;; ) {
         for ( ;; ) {
-            ret = njs_vm_execute_pending_job(vm);
+            ret = engine->execute_pending_job(engine);
             if (ret <= NJS_OK) {
                 if (ret == NJS_ERROR) {
-                    njs_process_output(vm, NULL, ret);
+                    if (!console->suppress_stdout) {
+                        engine->output(engine, ret);
+                    }
 
-                    if (!njs_vm_options(vm)->interactive) {
-                        return NJS_ERROR;
+                    if (!console->interactive) {
+                         return NJS_ERROR;
                     }
                 }
 
@@ -1478,15 +3188,17 @@ njs_process_script(njs_vm_t *vm, void *runtime, const njs_str_t *script)
             }
         }
 
-        ret = njs_process_events(runtime);
+        ret = engine->process_events(engine);
         if (njs_slow_path(ret == NJS_ERROR)) {
             break;
         }
 
-        if (njs_unhandled_rejection(runtime)) {
-            njs_process_output(vm, NULL, NJS_ERROR);
+        if (engine->unhandled_rejection(engine)) {
+            if (!console->suppress_stdout) {
+                engine->output(engine, NJS_ERROR);
+            }
 
-            if (!njs_vm_options(vm)->interactive) {
+            if (!console->interactive) {
                 return NJS_ERROR;
             }
         }
@@ -1497,19 +3209,6 @@ njs_process_script(njs_vm_t *vm, void *runtime, const njs_str_t *script)
     }
 
     return ret;
-}
-
-
-static void
-njs_process_output(njs_vm_t *vm, njs_value_t *value, njs_int_t ret)
-{
-    njs_console_t  *console;
-
-    console = njs_vm_external_ptr(vm);
-
-    if (!console->suppress_stdout) {
-        njs_console_output(vm, value, ret);
-    }
 }
 
 
@@ -1549,7 +3248,7 @@ njs_cb_line_handler(char *line_in)
 
     add_history((char *) line.start);
 
-    ret = njs_process_script(njs_console.vm, &njs_console, &line);
+    ret = njs_process_script(njs_console.engine, &njs_console, &line);
     if (ret == NJS_ERROR) {
         njs_running = NJS_ERROR;
     }
@@ -1569,8 +3268,8 @@ njs_interactive_shell(njs_opts_t *opts)
 {
     int             flags;
     fd_set          fds;
-    njs_vm_t        *vm;
     njs_int_t       ret;
+    njs_engine_t    *engine;
     struct timeval  timeout;
 
     if (njs_editline_init() != NJS_OK) {
@@ -1578,15 +3277,21 @@ njs_interactive_shell(njs_opts_t *opts)
         return NJS_ERROR;
     }
 
-    vm = njs_create_vm(opts);
-    if (vm == NULL) {
+    engine = njs_create_engine(opts);
+    if (engine == NULL) {
+        njs_stderror("njs_create_engine() failed\n");
         return NJS_ERROR;
     }
 
     if (!opts->quiet) {
-        njs_printf("interactive njs %s\n\n", NJS_VERSION);
+        if (engine->type == NJS_ENGINE_NJS) {
+            njs_printf("interactive njs (njs:%s)\n\n", NJS_VERSION);
 
-        njs_printf("v.<Tab> -> the properties and prototype methods of v.\n\n");
+#if (NJS_HAVE_QUICKJS)
+        } else {
+            njs_printf("interactive njs (QuickJS:%s)\n\n", NJS_QUICKJS_VERSION);
+#endif
+        }
     }
 
     rl_callback_handler_install(">> ", njs_cb_line_handler);
@@ -1648,7 +3353,7 @@ njs_interactive_shell(njs_opts_t *opts)
         njs_printf("exiting\n");
     }
 
-    njs_vm_destroy(vm);
+    engine->destroy(engine);
 
     return njs_running == NJS_DONE ? NJS_OK : njs_running;
 }
@@ -1709,8 +3414,14 @@ njs_completion_generator(const char *text, int state)
     njs_vm_t          *vm;
     njs_completion_t  *cmpl;
 
-    vm = njs_console.vm;
-    cmpl = &njs_console.completion;
+    if (njs_console.engine == NULL
+        || njs_console.engine->type != NJS_ENGINE_NJS)
+    {
+        return NULL;
+    }
+
+    vm = njs_console.engine->u.njs.vm;
+    cmpl = &njs_console.engine->u.njs.completion;
 
     if (state == 0) {
         cmpl->phase = NJS_COMPLETION_SUFFIX;
@@ -1810,13 +3521,10 @@ static njs_int_t
 njs_ext_console_time(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
 {
-    njs_int_t         ret;
-    njs_str_t         name;
-    njs_queue_t       *labels;
-    njs_value_t       *value;
-    njs_console_t     *console;
-    njs_timelabel_t   *label;
-    njs_queue_link_t  *link;
+    njs_int_t      ret;
+    njs_str_t      name;
+    njs_value_t    *value;
+    njs_console_t  *console;
 
     static const njs_str_t  default_label = njs_str("default");
 
@@ -1844,32 +3552,10 @@ njs_ext_console_time(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         njs_value_string_get(value, &name);
     }
 
-    labels = &console->labels;
-    link = njs_queue_first(labels);
-
-    while (link != njs_queue_tail(labels)) {
-        label = njs_queue_link_data(link, njs_timelabel_t, link);
-
-        if (njs_strstr_eq(&name, &label->name)) {
-            njs_console_log(NJS_LOG_INFO, "Timer \"%V\" already exists.",
-                            &name);
-            njs_value_undefined_set(retval);
-            return NJS_OK;
-        }
-
-        link = njs_queue_next(link);
-    }
-
-    label = njs_mp_alloc(njs_vm_memory_pool(vm), sizeof(njs_timelabel_t));
-    if (njs_slow_path(label == NULL)) {
-        njs_vm_memory_error(vm);
+    if (njs_console_time(console, &name) != NJS_OK) {
+        njs_vm_error(vm, "failed to add timer");
         return NJS_ERROR;
     }
-
-    label->name = name;
-    label->time = njs_time();
-
-    njs_queue_insert_tail(&console->labels, &label->link);
 
     njs_value_undefined_set(retval);
 
@@ -1881,14 +3567,11 @@ static njs_int_t
 njs_ext_console_time_end(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
 {
-    uint64_t          ns, ms;
-    njs_int_t         ret;
-    njs_str_t         name;
-    njs_queue_t       *labels;
-    njs_value_t       *value;
-    njs_console_t     *console;
-    njs_timelabel_t   *label;
-    njs_queue_link_t  *link;
+    uint64_t       ns;
+    njs_int_t      ret;
+    njs_str_t      name;
+    njs_value_t    *value;
+    njs_console_t  *console;
 
     static const njs_str_t  default_label = njs_str("default");
 
@@ -1918,35 +3601,7 @@ njs_ext_console_time_end(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         njs_value_string_get(value, &name);
     }
 
-    labels = &console->labels;
-    link = njs_queue_first(labels);
-
-    for ( ;; ) {
-        if (link == njs_queue_tail(labels)) {
-            njs_console_log(NJS_LOG_INFO, "Timer \"%V\" doesn’t exist.",
-                            &name);
-            njs_value_undefined_set(retval);
-            return NJS_OK;
-        }
-
-        label = njs_queue_link_data(link, njs_timelabel_t, link);
-
-        if (njs_strstr_eq(&name, &label->name)) {
-            njs_queue_remove(&label->link);
-            break;
-        }
-
-        link = njs_queue_next(link);
-    }
-
-    ns = ns - label->time;
-
-    ms = ns / 1000000;
-    ns = ns % 1000000;
-
-    njs_console_log(NJS_LOG_INFO, "%V: %uL.%06uLms", &name, ms, ns);
-
-    njs_mp_free(njs_vm_memory_pool(vm), label);
+    njs_console_time_end(console, &name, ns);
 
     njs_value_undefined_set(retval);
 
@@ -1998,13 +3653,13 @@ njs_set_timer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    ev->function = njs_value_function(njs_argument(args, 1));
+    ev->u.njs.function = njs_value_function(njs_argument(args, 1));
+    ev->u.njs.args = (njs_value_t *) ((u_char *) ev + sizeof(njs_ev_t));
     ev->nargs = nargs;
-    ev->args = (njs_value_t *) ((u_char *) ev + sizeof(njs_ev_t));
     ev->id = console->event_id++;
 
     if (ev->nargs != 0) {
-        memcpy(ev->args, njs_argument(args, n),
+        memcpy(ev->u.njs.args, njs_argument(args, n),
                sizeof(njs_opaque_value_t) * ev->nargs);
     }
 
@@ -2057,12 +3712,11 @@ njs_clear_timeout(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    njs_rbtree_delete(&console->events, (njs_rbtree_part_t *) rb);
-
     ev = (njs_ev_t *) rb;
     njs_queue_remove(&ev->link);
-    ev->link.prev = NULL;
-    ev->link.next = NULL;
+    njs_rbtree_delete(&console->events, (njs_rbtree_part_t *) rb);
+
+    njs_mp_free(console->engine->pool, ev);
 
     njs_value_undefined_set(retval);
 
@@ -2101,6 +3755,81 @@ njs_console_logger(njs_log_level_t level, const u_char *start, size_t length)
 
     njs_print(start, length);
     njs_print("\n", 1);
+}
+
+
+static njs_int_t
+njs_console_time(njs_console_t *console, njs_str_t *name)
+{
+    njs_queue_t       *labels;
+    njs_timelabel_t   *label;
+    njs_queue_link_t  *link;
+
+    labels = &console->labels;
+    link = njs_queue_first(labels);
+
+    while (link != njs_queue_tail(labels)) {
+        label = njs_queue_link_data(link, njs_timelabel_t, link);
+
+        if (njs_strstr_eq(name, &label->name)) {
+            njs_console_log(NJS_LOG_INFO, "Timer \"%V\" already exists.",
+                            name);
+            return NJS_OK;
+        }
+
+        link = njs_queue_next(link);
+    }
+
+    label = njs_mp_alloc(console->engine->pool, sizeof(njs_timelabel_t));
+    if (njs_slow_path(label == NULL)) {
+        return NJS_ERROR;
+    }
+
+    label->name = *name;
+    label->time = njs_time();
+
+    njs_queue_insert_tail(&console->labels, &label->link);
+
+    return NJS_OK;
+}
+
+
+static void
+njs_console_time_end(njs_console_t *console, njs_str_t *name, uint64_t ns)
+{
+    uint64_t          ms;
+    njs_queue_t       *labels;
+    njs_timelabel_t   *label;
+    njs_queue_link_t  *link;
+
+    labels = &console->labels;
+    link = njs_queue_first(labels);
+
+    for ( ;; ) {
+        if (link == njs_queue_tail(labels)) {
+            njs_console_log(NJS_LOG_INFO, "Timer \"%V\" doesn’t exist.",
+                            name);
+            return;
+        }
+
+        label = njs_queue_link_data(link, njs_timelabel_t, link);
+
+        if (njs_strstr_eq(name, &label->name)) {
+            njs_queue_remove(&label->link);
+            break;
+        }
+
+        link = njs_queue_next(link);
+    }
+
+    ns = ns - label->time;
+
+    ms = ns / 1000000;
+    ns = ns % 1000000;
+
+    njs_console_log(NJS_LOG_INFO, "%V: %uL.%06uLms", name, ms, ns);
+
+    njs_mp_free(console->engine->pool, label);
 }
 
 

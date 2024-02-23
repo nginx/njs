@@ -1,0 +1,418 @@
+#
+# Copyright (C) Dmitry Volyntsev
+# Copyright (C) NGINX, Inc.
+#
+
+proc njs_test {body {opts ""}} {
+
+    if {$opts eq ""} {
+        spawn  -nottycopy njs
+
+    } else {
+        eval spawn  -nottycopy njs $opts
+    }
+
+    expect -re "interactive njs \\(njs:\\d+\.\\d+\.\\d+\\)\r\n\r\n>> "
+
+    set len [llength $body]
+    for {set i 0} {$i < $len} {incr i} {
+        set pair [lindex $body $i]
+        send [lindex $pair 0]
+        expect [lindex $pair 1]
+    }
+
+    send "\n"
+    send ".exit\r\n"
+    expect eof
+}
+
+proc njs_run {opts expected_re} {
+    catch {exec njs {*}$opts} out
+    if {[regexp $expected_re $out match] == 0} {
+        return -code error "njs_run: unexpected output '$out' vs '$expected_re'"
+    }
+}
+
+njs_test {
+    {"njs.version\r\n"
+     "njs.version\r\n\*\.\*\.\*"}
+}
+
+# simple multi line interaction
+njs_test {
+    {"var a = 1\r\n"
+     "var a = 1\r\nundefined\r\n>> "}
+    {"a *= 2\r\n"
+     "a *= 2\r\n2\r\n>> "}
+}
+
+# Global completions, no
+# Disabled: readline does not support it in callback mode
+# njs_test {
+#    {"\t\tn"
+#     "\a\r\nDisplay all*possibilities? (y or n)*>> "}
+# }
+
+# Global completions, yes
+njs_test {
+    {"\t\ty"
+     "\a\r\nDisplay all*possibilities? (y or n)*Array"}
+}
+
+# Global completions, single partial match
+
+# \a* is WORKAROUND for libedit-20170329.3.1-r3
+# which inserts '\rESC[6G' after '\a'.
+njs_test {
+    {"O\t"
+     "O\a*bject"}
+}
+
+njs_test {
+    {"Ma\t"
+     "Ma\a*th"}
+}
+
+ njs_test {
+     {"conso\t"
+     "conso\a*le"}
+ }
+
+# Global completions, multiple partial match
+njs_test {
+    {"cons\t\t"
+     "console*const"}
+}
+
+njs_test {
+    {"Type\t"
+     "Type\a*Error"}
+    {"\t\t"
+     "TypeError.length"}
+}
+
+njs_test {
+    {"TypeError.\t\t"
+     "TypeError.length*TypeError.prototype"}
+}
+
+njs_test {
+    {"Object.g\t"
+     "Object.g\a*et"}
+    {"\t\t"
+     "Object.getOwnPropertyDescriptor*Object.getPrototypeOf"}
+}
+
+njs_test {
+    {"JS\t"
+     "JS\a*ON"}
+    {"\t\t"
+     "JSON.parse*JSON.stringify"}
+}
+
+# Global completions, no matches
+njs_test {
+    {"1.\t\t"
+     "1."}
+}
+
+njs_test {
+    {"1..\t\t"
+     "1.."}
+}
+
+njs_test {
+    {"'abc'.\t\t"
+     "'abc'."}
+}
+
+# Global completions, global vars
+njs_test {
+    {"var AA = 1; var AAA = 2\r\n"
+     "var AA = 1; var AAA = 2\r\nundefined\r\n>> "}
+    {"AA\t\t"
+     "AA*AAA*"}
+}
+
+# z*z is WORKAROUND for libedit-20170329.3.1-r3
+# which inserts bogus '\a' between 'z'
+njs_test {
+    {"var zz = 1\r\n"
+     "var zz = 1\r\nundefined\r\n>> "}
+    {"1 + z\t\r\n"
+     "1 + z*z*\r\n2"}
+}
+
+njs_test {
+    {"unknown_var\t\t"
+     "unknown_var"}
+}
+
+njs_test {
+    {"unknown_var.\t\t"
+     "unknown_var."}
+}
+
+# An object's level completions
+njs_test {
+    {"var o = {zz:1, zb:2}\r\n"
+     "var o = {zz:1, zb:2}\r\nundefined\r\n>> "}
+    {"o.z\t\t"
+     "o.zb*o.zz"}
+}
+
+njs_test {
+    {"var d = new Date()\r\n"
+     "var d = new Date()\r\nundefined\r\n>> "}
+    {"d.to\t\t"
+     "d.toDateString*d.toLocaleDateString*d.toString"}
+}
+
+njs_test {
+    {"var o = {a:new Date()}\r\n"
+     "var o = {a:new Date()}\r\nundefined\r\n>> "}
+    {"o.a.to\t\t"
+     "o.a.toDateString*o.a.toLocaleDateString*o.a.toString"}
+}
+
+njs_test {
+    {"var o = {a:1,b:2,333:'t'}\r\n"
+     "var o = {a:1,b:2,333:'t'}\r\nundefined\r\n>> "}
+    {"o.3\t\t"
+     "o.3"}
+}
+
+njs_test {
+    {"var a = Array(5000000); a.aab = 1; a.aac = 2\r\n"
+     "var a = Array(5000000); a.aab = 1; a.aac = 2\r\n2\r\n>> "}
+    {"a.\t\t"
+     "a.aab*"}
+}
+
+njs_test {
+    {"var a = new Uint8Array([5,6,7,8,8]); a.aab = 1; a.aac = 2\r\n"
+     "var a = new Uint8Array(\\\[5,6,7,8,8]); a.aab = 1; a.aac = 2\r\n2\r\n>> "}
+    {"a.\t\t"
+     "a.aab*"}
+}
+
+# console dump
+njs_test {
+    {"console.dump()\r\n"
+     "console.dump()\r\nundefined\r\n>> "}
+    {"console.dump(1)\r\n"
+     "console.dump(1)\r\n1\r\nundefined\r\n>> "}
+    {"console.dump(1, 'a')\r\n"
+     "console.dump(1, 'a')\r\n1\r\na\r\nundefined\r\n>> "}
+    {"var print = console.dump.bind(console); print(1, 'a', [1, 2])\r\n"
+     "1\r\na\r\n\\\[\r\n 1,\r\n 2\r\n]\r\nundefined\r\n>> "}
+    {"var print = console.log.bind(console); print(console.a.a)\r\n"
+     "TypeError: cannot get property \"a\" of undefined"}
+    {"print(console.a.a)\r\n"
+     "TypeError: cannot get property \"a\" of undefined"}
+}
+
+# console.time* functions
+njs_test {
+    {"console.time()\r\n"
+     "console.time()\r\nundefined\r\n>> "}
+    {"console.timeEnd()\r\n"
+     "console.timeEnd()\r\ndefault: *.*ms\r\nundefined\r\n>> "}
+    {"console.time(undefined)\r\n"
+     "console.time(undefined)\r\nundefined\r\n>> "}
+    {"console.timeEnd(undefined)\r\n"
+     "console.timeEnd(undefined)\r\ndefault: *.*ms\r\nundefined\r\n>> "}
+    {"console.time('abc')\r\n"
+     "console.time('abc')\r\nundefined\r\n>> "}
+    {"console.time('abc')\r\n"
+     "console.time('abc')\r\nTimer \"abc\" already exists.\r\nundefined\r\n>> "}
+    {"console.timeEnd('abc')\r\n"
+     "console.timeEnd('abc')\r\nabc: *.*ms\r\nundefined\r\n>> "}
+    {"console.time(true)\r\n"
+     "console.time(true)\r\nundefined\r\n>> "}
+    {"console.timeEnd(true)\r\n"
+     "console.timeEnd(true)\r\ntrue: *.*ms\r\nundefined\r\n>> "}
+    {"console.time(42)\r\n"
+     "console.time(42)\r\nundefined\r\n>> "}
+    {"console.timeEnd(42)\r\n"
+     "console.timeEnd(42)\r\n42: *.*ms\r\nundefined\r\n>> "}
+    {"console.timeEnd()\r\n"
+     "console.timeEnd()\r\nTimer \"default\" doesn’t exist."}
+    {"console.timeEnd('abc')\r\n"
+     "console.timeEnd('abc')\r\nTimer \"abc\" doesn’t exist."}
+    {"console.time('abc')\r\n"
+     "console.time('abc')\r\nundefined\r\n>> "}
+}
+
+njs_test {
+    {"console.ll()\r\n"
+     "console.ll()\r\nThrown:\r\nTypeError: (intermediate value)\\\[\"ll\"] is not a function"}
+}
+
+njs_test {
+    {"console.log.length\r\n"
+     "console.log.length\r\n0"}
+}
+
+# Backtraces for external objects
+njs_test {
+    {"console.info(console.a.a)\r\n"
+     "console.info(console.a.a)\r\nThrown:\r\nTypeError:*at console.info (native)"}
+}
+
+# dumper
+njs_test {
+    {"var o = {toString: function(){}, log: console.log}\r\n"
+     "undefined\r\n>> "}
+    {"o\r\n"
+     "o\r\n{\r\n toString: \\\[Function: toString],\r\n log: \\\[Function: log]\r\n}"}
+}
+
+njs_test {
+    {"[1, new Number(2), 'a', new String('αβZγ'), true, new Boolean(false)]\r\n"
+     "\\\[\r\n 1,\r\n \\\[Number: 2],\r\n 'a',\r\n \\\[String: 'αβZγ'],\r\n true,\r\n \\\[Boolean: false]\r\n]"}
+}
+
+njs_test {
+    {"[undefined,,null]\r\n"
+     "\\\[\r\n undefined,\r\n <empty>,\r\n null\r\n]"}
+}
+
+njs_test {
+    {"[InternalError(),TypeError('msg'), new RegExp(), /^undef$/m, new Date(0)]\r\n"
+     "\\\[\r\n InternalError,\r\n TypeError: msg,\r\n /(?:)/,\r\n /^undef$/m,\r\n 1970-01-01T00:00:00.000Z\r\n]"}
+}
+
+# dumper excapes special characters as JSON.stringify()
+# except '\"'
+njs_test {
+    {"\"\\r\\0\\\"\"\r\n"
+     "\\\\r\\\\u0000\""}
+}
+
+njs_test {
+    {"[{a:1}]\r\n"
+     "\r\n\\\[\r\n {\r\n  a: 1\r\n }\r\n]"}
+}
+
+# CLI OPTIONS
+
+# ast
+
+njs_run {"-a" "-c" "console.log(1*2)"} "{\"name\": \"END\""
+
+# process
+
+njs_run {"-c" "console.log(typeof process.argv)"} "object"
+njs_run {"-c" "console.log(process.argv.slice(2))" "AAA"} "AAA"
+
+njs_run {"-c" "console.log(typeof process.env)"} "object"
+njs_run {"-c" "console.log(process.env.HOME != undefined)"} "true"
+njs_run {"-c" "console.log(process.env.___UNDECLARED != undefined)"} "false"
+
+njs_run {"-c" "console.log(process.pid)"} "\\d+"
+
+njs_run {"-c" "console.log(process.ppid)"} "\\d+"
+
+
+# script args
+
+njs_run {"test/script_args.js" "A" "B"} "AB"
+
+# disassemble
+
+njs_test {
+    {"1+1\r\n"
+     "    1 | 00000 ADD*\r\n*2"}
+    {"__unknown\r\n"
+     "    1 | 00000 GLOBAL GET*\r\n*REFERENCE ERROR*"}
+    {"for (var n in [1]) {try {break} finally{}}\r\n"
+     "    1 | 00000 ARRAY*\r\n*TRY BREAK*PROP NEXT*-*\r\n\r\nundefined"}
+    {"(function() {try {return} finally{}})()\r\n"
+     "    1 | 00000 TRY START*\r\n*TRY RETURN*\r\n\r\nundefined"}
+} "-d"
+
+# modules
+
+# FIXME:
+# During import, the variable is declared regardless of the result of the import.
+# Because of this, in the console mode, checking the variable after the import
+# error may give an incorrect result.
+#
+# For example:
+# {"import ref from 'ref_exception.js'\r\n"
+# "ReferenceError: \"undeclared\" is not defined"}
+# {"ref\r\n"
+# "ReferenceError: \"ref\" is not defined\r\n"}
+
+njs_test {
+    {"import lib1 from 'lib1.js'; import lib2 from 'lib1.js'\r\n"
+     "undefined\r\n"}
+    {"lib2.inc()\r\n"
+     "undefined\r\n"}
+    {"lib1.get()\r\n"
+     "1\r\n"}
+    {"import ref from 'ref_exception.js'\r\n"
+     "ReferenceError: \"undeclared\" is not defined"}
+    {"var ref\r\n"
+     "SyntaxError: \"ref\" has already been declared"}
+    {"import ref from 'ref_exception.js'\r\n"
+     "SyntaxError: \"ref\" has already been declared"}
+} "-p test/js/module/ -p test/js/module/libs/"
+
+# quiet mode
+
+njs_run {"-q" "test/js/import_chain.t.js"} \
+        "SyntaxError: Cannot find module \"lib2.js\" in 7"
+
+# sandboxing
+
+njs_test {
+    {"var fs = require('fs')\r\n"
+     "Error: Cannot find module \"fs\"\r\n"}
+} "-s"
+
+njs_test {
+    {"var crypto = require('crypto')\r\n"
+     "undefined\r\n"}
+} "-s"
+
+
+# safe mode
+
+njs_test {
+    {"new Function()\r\n"
+     "TypeError: function constructor is disabled in \"safe\" mode\r\n"}
+    {"(new Function('return this'))() === globalThis\r\n"
+     "true\r\n"}
+    {"new Function('return this;')\r\n"
+     "[Function]"}
+    {"new Function('return thi')\r\n"
+     "TypeError: function constructor is disabled in \"safe\" mode\r\n"}
+} "-u"
+
+
+# source type
+
+njs_test {
+    {"typeof this\r\n"
+     "'undefined'"}
+    {"(() => typeof this)()\r\n"
+     "'undefined'"}
+    {"this.NaN\r\n"
+     "TypeError: cannot get property \"NaN\" of undefined"}
+} "-m"
+
+njs_test {
+    {"typeof this\r\n"
+     "'object'"}
+    {"(() => typeof this)()\r\n"
+     "'object'"}
+    {"this.NaN\r\n"
+     "this.NaN\r\nNaN"}
+}
+
+
+# version
+
+njs_run {"-v"} "\\d+\.\\d+\.\\d+"

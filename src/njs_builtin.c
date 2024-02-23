@@ -1448,6 +1448,9 @@ static const njs_object_prop_t  njs_njs_object_properties[] =
         .configurable = 1,
     },
 
+    NJS_DECLARE_PROP_VALUE("engine", njs_string("njs"),
+                           NJS_OBJECT_PROP_VALUE_EC),
+
     NJS_DECLARE_PROP_VALUE("version", njs_string(NJS_VERSION),
                            NJS_OBJECT_PROP_VALUE_EC),
 

@@ -241,8 +241,7 @@ lib_test: $NJS_BUILD_DIR/njs_auto_config.h \\
 	$NJS_BUILD_DIR/lvlhsh_unit_test
 	$NJS_BUILD_DIR/unicode_unit_test
 
-test262: njs
-
+test262_njs: njs
 	test/test262 --binary=$NJS_BUILD_DIR/njs
 
 unit_test: $NJS_BUILD_DIR/njs_auto_config.h \\
@@ -264,6 +263,26 @@ dist:
 		-X ".hg*" \\
 	&& echo njs-\$(NJS_VER).tar.gz done
 END
+
+if [ $NJS_HAVE_QUICKJS = YES ]; then
+    cat << END >> $NJS_MAKEFILE
+
+test262: njs test262_njs test262_quickjs
+
+test262_quickjs: njs
+	NJS_SKIP_LIST="test/js/promise_rejection_tracker_recursive.t.js \\
+test/js/async_exception_in_await.t.js" \\
+	test/test262 --binary='$NJS_BUILD_DIR/njs -n QuickJS -m'
+END
+
+else
+    cat << END >> $NJS_MAKEFILE
+
+test262: njs test262_njs
+END
+
+fi
+
 
 njs_ts_deps=`echo $NJS_TS_SRCS \
         | sed -e "s# *\([^ ][^ ]*\)#\1$njs_regex_cont#g"`

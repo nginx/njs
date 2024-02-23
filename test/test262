@@ -28,6 +28,11 @@ END
     cat $njs_log >> $NJS_TEST_LOG
     njs_out=`cat $njs_log`
 
+    if [ "$NJS_SKIP_LIST" != "${NJS_SKIP_LIST#*$njs_test*}" ]; then
+        skip $njs_test
+        continue
+    fi
+
     if [ "$status" -eq 0 ]; then
         if [ -n "$njs_negative" ]; then
             failed $njs_test $njs_log

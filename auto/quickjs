@@ -1,0 +1,55 @@
+
+# Copyright (C) Dmitry Volyntsev
+# Copyright (C) NGINX, Inc.
+
+
+NJS_QUICKJS_LIB=
+NJS_HAVE_QUICKJS=NO
+
+if [ $NJS_QUICKJS = YES ]; then
+    njs_found=no
+
+    njs_feature="QuickJS library"
+    njs_feature_name=NJS_HAVE_QUICKJS
+    njs_feature_run=yes
+    njs_feature_incs=
+    njs_feature_libs=""
+    njs_feature_test="#if defined(__GNUC__) && (__GNUC__ >= 8)
+                      #pragma GCC diagnostic push
+                      #pragma GCC diagnostic ignored \"-Wcast-function-type\"
+                      #endif
+
+                      #include <quickjs.h>
+
+                      int main() {
+                          JSRuntime *rt;
+
+                          rt = JS_NewRuntime();
+                          JS_FreeRuntime(rt);
+                          return 0;
+                     }"
+    . auto/feature
+
+    if [ $njs_found = no ]; then
+        njs_feature="QuickJS library -lquickjs.lto"
+        njs_feature_incs="/usr/include/quickjs/"
+        njs_feature_libs="-L/usr/lib/quickjs/ -lquickjs.lto -lm -ldl -lpthread"
+
+        . auto/feature
+    fi
+
+    if [ $njs_found = no ]; then
+        njs_feature="QuickJS library -lquickjs"
+        njs_feature_libs="-L/usr/lib/quickjs/ -lquickjs -lm -ldl -lpthread"
+
+        . auto/feature
+    fi
+
+    if [ $njs_found = yes ]; then
+        NJS_HAVE_QUICKJS=YES
+        NJS_QUICKJS_LIB="$njs_feature_libs"
+        NJS_LIB_INCS="$NJS_LIB_INCS $njs_feature_incs"
+        NJS_LIB_AUX_LIBS="$NJS_LIB_AUX_LIBS $njs_feature_libs"
+    fi
+
+fi

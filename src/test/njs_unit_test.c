@@ -14457,7 +14457,7 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Object.values(1)"),
       njs_str("") },
 
-    { njs_str("Object.values(njs)[0] === njs.version"),
+    { njs_str("Object.values(njs)[1] === njs.version"),
       njs_str("true") },
 
     { njs_str("njs.version.split('.')"
@@ -14493,7 +14493,7 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Object.entries(true)"),
       njs_str("") },
 
-    { njs_str("Object.entries(njs)[0][1] === njs.version"),
+    { njs_str("Object.entries(njs)[1][1] === njs.version"),
       njs_str("true") },
 
     { njs_str("Object.entries()"),

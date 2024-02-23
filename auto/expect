@@ -20,10 +20,30 @@ fi
 if [ $njs_found = yes -a $NJS_HAVE_READLINE = YES ]; then
     cat << END >> $NJS_MAKEFILE
 
-shell_test:	njs test/shell_test.exp
+shell_test_njs:	njs test/shell_test.exp
 	PATH=$NJS_BUILD_DIR:\$(PATH) LANG=C.UTF-8 TERM=screen \
     expect -f test/shell_test.exp
+	PATH=$NJS_BUILD_DIR:\$(PATH) LANG=C.UTF-8 TERM=screen \
+    expect -f test/shell_test_njs.exp
 END
+
+if [ $NJS_HAVE_QUICKJS = YES ]; then
+    cat << END >> $NJS_MAKEFILE
+
+shell_test:	shell_test_njs shell_test_quickjs
+
+shell_test_quickjs:	njs test/shell_test.exp
+	PATH=$NJS_BUILD_DIR:\$(PATH) LANG=C.UTF-8 TERM=screen NJS_ENGINE=QuickJS \
+    expect -f test/shell_test.exp
+END
+
+else
+    cat << END >> $NJS_MAKEFILE
+
+shell_test:	shell_test_njs
+END
+
+fi
 
 else
     echo " - expect tests are disabled"
