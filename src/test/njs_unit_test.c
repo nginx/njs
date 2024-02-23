@@ -10093,6 +10093,18 @@ static njs_unit_test_t  njs_test[] =
               "].every(v => c(atob(v)).toString() == '8,52,86')"),
       njs_str("true")},
 
+    { njs_str("atob('aGVsbG8=')"),
+      njs_str("hello") },
+
+    { njs_str("atob('aGVsbG8')"),
+      njs_str("hello") },
+
+    { njs_str("atob('TQ==')"),
+      njs_str("M") },
+
+    { njs_str("atob('TQ')"),
+      njs_str("M") },
+
     /* Functions. */
 
     { njs_str("return"),

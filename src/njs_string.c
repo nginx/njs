@@ -4298,7 +4298,14 @@ njs_string_atob(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    len = njs_base64_decoded_length(str.length, pad);
+    len = str.length;
+
+    if (len % 4 != 0) {
+        pad = 4 - (len % 4);
+        len += pad;
+    }
+
+    len = njs_base64_decoded_length(len, pad);
 
     njs_chb_init(&chain, vm->mem_pool);
 
