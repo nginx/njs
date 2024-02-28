@@ -425,8 +425,6 @@ njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external)
 
     nvm->levels[NJS_LEVEL_GLOBAL] = global;
 
-    njs_set_object(&nvm->global_value, &nvm->global_object);
-
     /* globalThis and this */
     njs_scope_value_set(nvm, njs_scope_global_this_index(), &nvm->global_value);
 
@@ -826,7 +824,7 @@ njs_vm_value(njs_vm_t *vm, const njs_str_t *path, njs_value_t *retval)
     start = path->start;
     end = start + path->length;
 
-    njs_set_object(&value, &vm->global_object);
+    njs_value_assign(&value, &vm->global_value);
 
     for ( ;; ) {
         p = njs_strlchr(start, end, '.');

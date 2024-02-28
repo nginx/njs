@@ -435,7 +435,7 @@ njs_function_lambda_frame(njs_vm_t *vm, njs_function_t *function,
     if (njs_slow_path(function->global_this
                       && njs_is_null_or_undefined(this)))
     {
-        njs_set_object(native_frame->local[0], &vm->global_object);
+        njs_value_assign(native_frame->local[0], &vm->global_value);
     }
 
     /* Copy arguments. */

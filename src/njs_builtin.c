@@ -258,8 +258,6 @@ njs_builtin_objects_create(njs_vm_t *vm)
     vm->global_object = shared->objects[0];
     vm->global_object.shared = 0;
 
-    njs_set_object(&vm->global_value, &vm->global_object);
-
     string_object = &shared->string_object;
     njs_lvlhsh_init(&string_object->hash);
     string_object->shared_hash = shared->string_instance_hash;
@@ -442,7 +440,7 @@ njs_builtin_completions(njs_vm_t *vm)
     ctx.type = NJS_BUILTIN_TRAVERSE_KEYS;
     njs_lvlhsh_init(&ctx.keys);
 
-    ret = njs_object_traverse(vm, &vm->global_object, &ctx,
+    ret = njs_object_traverse(vm, njs_object(&vm->global_value), &ctx,
                               njs_builtin_traverse);
     if (njs_slow_path(ret != NJS_OK)) {
         return NULL;
@@ -753,7 +751,7 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
 
     ctx.match = njs_str_value("");
 
-    ret = njs_object_traverse(vm, &vm->global_object, &ctx,
+    ret = njs_object_traverse(vm, njs_object(&vm->global_value), &ctx,
                               njs_builtin_traverse);
 
     if (ret == NJS_DONE) {
