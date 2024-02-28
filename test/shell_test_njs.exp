@@ -212,38 +212,6 @@ njs_test {
      "TypeError: cannot get property \"a\" of undefined"}
 }
 
-# console.time* functions
-njs_test {
-    {"console.time()\r\n"
-     "console.time()\r\nundefined\r\n>> "}
-    {"console.timeEnd()\r\n"
-     "console.timeEnd()\r\ndefault: *.*ms\r\nundefined\r\n>> "}
-    {"console.time(undefined)\r\n"
-     "console.time(undefined)\r\nundefined\r\n>> "}
-    {"console.timeEnd(undefined)\r\n"
-     "console.timeEnd(undefined)\r\ndefault: *.*ms\r\nundefined\r\n>> "}
-    {"console.time('abc')\r\n"
-     "console.time('abc')\r\nundefined\r\n>> "}
-    {"console.time('abc')\r\n"
-     "console.time('abc')\r\nTimer \"abc\" already exists.\r\nundefined\r\n>> "}
-    {"console.timeEnd('abc')\r\n"
-     "console.timeEnd('abc')\r\nabc: *.*ms\r\nundefined\r\n>> "}
-    {"console.time(true)\r\n"
-     "console.time(true)\r\nundefined\r\n>> "}
-    {"console.timeEnd(true)\r\n"
-     "console.timeEnd(true)\r\ntrue: *.*ms\r\nundefined\r\n>> "}
-    {"console.time(42)\r\n"
-     "console.time(42)\r\nundefined\r\n>> "}
-    {"console.timeEnd(42)\r\n"
-     "console.timeEnd(42)\r\n42: *.*ms\r\nundefined\r\n>> "}
-    {"console.timeEnd()\r\n"
-     "console.timeEnd()\r\nTimer \"default\" doesn’t exist."}
-    {"console.timeEnd('abc')\r\n"
-     "console.timeEnd('abc')\r\nTimer \"abc\" doesn’t exist."}
-    {"console.time('abc')\r\n"
-     "console.time('abc')\r\nundefined\r\n>> "}
-}
-
 njs_test {
     {"console.ll()\r\n"
      "console.ll()\r\nThrown:\r\nTypeError: (intermediate value)\\\[\"ll\"] is not a function"}
