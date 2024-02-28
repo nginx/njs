@@ -1270,7 +1270,7 @@ njs_module_loader(njs_vm_t *vm, njs_external_ptr_t external, njs_str_t *name)
         return NULL;
     }
 
-    ret = njs_module_read(njs_vm_memory_pool(vm), info.fd, &text);
+    ret = njs_module_read(console->engine->pool, info.fd, &text);
 
     (void) close(info.fd);
 
@@ -1293,10 +1293,10 @@ njs_module_loader(njs_vm_t *vm, njs_external_ptr_t external, njs_str_t *name)
     module = njs_vm_compile_module(vm, &info.file, &start,
                                    &text.start[text.length]);
 
-    njs_mp_free(njs_vm_memory_pool(vm), console->cwd.start);
+    njs_mp_free(console->engine->pool, console->cwd.start);
     console->cwd = prev_cwd;
 
-    njs_mp_free(njs_vm_memory_pool(vm), text.start);
+    njs_mp_free(console->engine->pool, text.start);
 
     return module;
 }
@@ -3716,7 +3716,7 @@ njs_clear_timeout(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_queue_remove(&ev->link);
     njs_rbtree_delete(&console->events, (njs_rbtree_part_t *) rb);
 
-    njs_mp_free(console->engine->pool, ev);
+    njs_mp_free(njs_vm_memory_pool(vm), ev);
 
     njs_value_undefined_set(retval);
 
@@ -3780,12 +3780,15 @@ njs_console_time(njs_console_t *console, njs_str_t *name)
         link = njs_queue_next(link);
     }
 
-    label = njs_mp_alloc(console->engine->pool, sizeof(njs_timelabel_t));
+    label = njs_mp_alloc(console->engine->pool,
+                         sizeof(njs_timelabel_t) + name->length);
     if (njs_slow_path(label == NULL)) {
         return NJS_ERROR;
     }
 
-    label->name = *name;
+    label->name.start = (u_char *) label + sizeof(njs_timelabel_t);
+    memcpy(label->name.start, name->start, name->length);
+    label->name.length = name->length;
     label->time = njs_time();
 
     njs_queue_insert_tail(&console->labels, &label->link);
