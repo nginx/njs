@@ -160,6 +160,10 @@ http {
             js_content test.copy_subrequest_hdrs;
         }
 
+        location /server {
+            js_content test.server;
+        }
+
         location = /subrequest {
             internal;
 
@@ -435,6 +439,11 @@ $t->write_file('test.js', <<EOF);
         r.return(200, resp.responseText);
     }
 
+    function server(r) {
+        r.headersOut['Server'] = 'Foo';
+        r.return(200);
+    }
+
     function subrequest(r) {
         r.headersOut['A'] = 'a';
         r.headersOut['Content-Encoding'] = 'ce';
@@ -456,12 +465,12 @@ $t->write_file('test.js', <<EOF);
                     hdr_out, raw_hdr_out, hdr_out_array, hdr_out_single,
                     hdr_out_set_cookie, ihdr_out, hdr_out_special_set,
                     copy_subrequest_hdrs, subrequest, date, last_modified,
-                    location, location_sr};
+                    location, location_sr, server};
 
 
 EOF
 
-$t->try_run('no njs')->plan(46);
+$t->try_run('no njs')->plan(49);
 
 ###############################################################################
 
@@ -617,6 +626,15 @@ like(http_get('/date'), qr/Date: Sun, 09 Sep 2001 01:46:40 GMT/,
 like(http_get('/last_modified'),
 	qr/Last-Modified: Sun, 09 Sep 2001 01:46:40 GMT/,
 	'set Last-Modified');
+
+}
+
+TODO: {
+local $TODO = 'not yet' unless has_version('0.8.4');
+
+like(http_get('/date'), qr/Server: nginx/, 'normal server');
+like(http_get('/server'), qr/Server: Foo/, 'set server');
+unlike(http_get('/server'), qr/Server: nginx/, 'set server 2');
 
 }
 
