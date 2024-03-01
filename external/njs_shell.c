@@ -726,6 +726,22 @@ njs_options_parse(njs_opts_t *opts, int argc, char **argv)
             opts->sandbox = 1;
             break;
 
+        case 't':
+            if (++i < argc) {
+                if (strcmp(argv[i], "module") == 0) {
+                    opts->module = 1;
+
+                } else if (strcmp(argv[i], "script") != 0) {
+                    njs_stderror("option \"-t\" unexpected source type: %s\n",
+                                 argv[i]);
+                    return NJS_ERROR;
+                }
+
+                break;
+            }
+
+            njs_stderror("option \"-t\" requires source type\n");
+            return NJS_ERROR;
         case 'v':
         case 'V':
             opts->version = 1;
