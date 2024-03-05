@@ -4193,8 +4193,6 @@ ngx_http_js_server(njs_vm_t *vm, ngx_http_request_t *r, unsigned flags,
     }
 
     return NJS_OK;
-
-    return NJS_OK;
 }
 
 
