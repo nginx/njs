@@ -106,6 +106,8 @@ njs_int_t njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *name, njs_value_t *value, unsigned flags, uint32_t hash);
 njs_int_t njs_object_prop_descriptor(njs_vm_t *vm, njs_value_t *dest,
     njs_value_t *value, njs_value_t *setval);
+njs_int_t njs_object_get_prototype_of(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 const char *njs_prop_type_string(njs_object_prop_type_t type);
 njs_int_t njs_object_prop_init(njs_vm_t *vm, const njs_object_init_t* init,
     const njs_object_prop_t *base, njs_value_t *value, njs_value_t *retval);

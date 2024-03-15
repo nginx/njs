@@ -373,6 +373,8 @@ NJS_EXPORT njs_int_t njs_vm_value(njs_vm_t *vm, const njs_str_t *path,
     njs_value_t *retval);
 NJS_EXPORT njs_function_t *njs_vm_function(njs_vm_t *vm, const njs_str_t *name);
 NJS_EXPORT njs_bool_t njs_vm_constructor(njs_vm_t *vm);
+NJS_EXPORT njs_int_t njs_vm_prototype(njs_vm_t *vm, njs_value_t *value,
+    njs_value_t *retval);
 
 NJS_EXPORT void njs_vm_throw(njs_vm_t *vm, const njs_value_t *value);
 NJS_EXPORT void njs_vm_error2(njs_vm_t *vm, unsigned error_type,
