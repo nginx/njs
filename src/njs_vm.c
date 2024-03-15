@@ -814,6 +814,14 @@ njs_vm_error3(njs_vm_t *vm, unsigned type, const char *fmt, ...)
 
 
 njs_int_t
+njs_vm_global(njs_vm_t *vm, njs_value_t *retval)
+{
+    njs_value_assign(retval, &vm->global_value);
+    return NJS_OK;
+}
+
+
+njs_int_t
 njs_vm_value(njs_vm_t *vm, const njs_str_t *path, njs_value_t *retval)
 {
     u_char       *start, *p, *end;
