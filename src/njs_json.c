@@ -44,7 +44,7 @@ typedef struct {
     njs_value_t                replacer;
     njs_str_t                  space;
     u_char                     space_buf[16];
-    njs_object_enum_type_t     keys_type;
+    uint32_t                   keys_type;
 } njs_json_stringify_t;
 
 
@@ -998,8 +998,10 @@ njs_json_push_stringify_state(njs_json_stringify_t *stringify,
         }
 
     } else {
-        state->keys = njs_value_own_enumerate(stringify->vm, value, NJS_ENUM_KEYS,
-                                              stringify->keys_type, 0);
+        state->keys = njs_value_own_enumerate(stringify->vm, value,
+                                              NJS_ENUM_KEYS
+                                              | stringify->keys_type
+                                              | NJS_ENUM_ENUMERABLE_ONLY);
 
         if (njs_slow_path(state->keys == NULL)) {
             return NULL;

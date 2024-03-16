@@ -313,16 +313,15 @@ struct njs_object_type_init_s {
 
 
 typedef enum {
-    NJS_ENUM_KEYS,
-    NJS_ENUM_VALUES,
-    NJS_ENUM_BOTH,
+#define njs_object_enum_kind(flags) (flags & 7)
+    NJS_ENUM_KEYS = 1,
+    NJS_ENUM_VALUES = 2,
+    NJS_ENUM_BOTH = 4,
+#define njs_object_enum(flags) (flags & (NJS_ENUM_STRING | NJS_ENUM_SYMBOL))
+    NJS_ENUM_STRING = 8,
+    NJS_ENUM_SYMBOL = 16,
+    NJS_ENUM_ENUMERABLE_ONLY = 32,
 } njs_object_enum_t;
-
-
-typedef enum {
-    NJS_ENUM_STRING = 1,
-    NJS_ENUM_SYMBOL = 2,
-} njs_object_enum_type_t;
 
 
 typedef enum {
@@ -1032,9 +1031,9 @@ njs_set_object_value(njs_value_t *value, njs_object_value_t *object_value)
 njs_int_t njs_value_to_primitive(njs_vm_t *vm, njs_value_t *dst,
     njs_value_t *value, njs_uint_t hint);
 njs_array_t *njs_value_enumerate(njs_vm_t *vm, njs_value_t *value,
-    njs_object_enum_t kind, njs_object_enum_type_t type, njs_bool_t all);
+    uint32_t flags);
 njs_array_t *njs_value_own_enumerate(njs_vm_t *vm, njs_value_t *value,
-    njs_object_enum_t kind, njs_object_enum_type_t type, njs_bool_t all);
+    uint32_t flags);
 njs_int_t njs_value_of(njs_vm_t *vm, njs_value_t *value, njs_value_t *retval);
 njs_int_t njs_value_length(njs_vm_t *vm, njs_value_t *value, int64_t *dst);
 const char *njs_type_string(njs_value_type_t type);

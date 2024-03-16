@@ -67,9 +67,9 @@ njs_object_t *njs_object_value_copy(njs_vm_t *vm, njs_value_t *value);
 njs_object_value_t *njs_object_value_alloc(njs_vm_t *vm, njs_uint_t index,
     size_t extra,const njs_value_t *value);
 njs_array_t *njs_object_enumerate(njs_vm_t *vm, const njs_object_t *object,
-    njs_object_enum_t kind, njs_object_enum_type_t type, njs_bool_t all);
+    uint32_t flags);
 njs_array_t *njs_object_own_enumerate(njs_vm_t *vm, const njs_object_t *object,
-    njs_object_enum_t kind, njs_object_enum_type_t type, njs_bool_t all);
+    uint32_t flags);
 njs_int_t njs_object_traverse(njs_vm_t *vm, njs_object_t *object, void *ctx,
     njs_object_traverse_cb_t cb);
 njs_int_t njs_object_hash_create(njs_vm_t *vm, njs_lvlhsh_t *hash,

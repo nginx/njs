@@ -648,7 +648,7 @@ njs_object_completions(njs_vm_t *vm, njs_value_t *object, njs_str_t *expression)
         object->type = NJS_OBJECT;
     }
 
-    keys = njs_value_enumerate(vm, object, NJS_ENUM_KEYS, NJS_ENUM_STRING, 1);
+    keys = njs_value_enumerate(vm, object, NJS_ENUM_KEYS | NJS_ENUM_STRING);
     if (njs_slow_path(keys == NULL)) {
         goto done;
     }

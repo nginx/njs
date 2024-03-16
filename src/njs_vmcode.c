@@ -2164,8 +2164,10 @@ njs_vmcode_property_foreach(njs_vm_t *vm, njs_value_t *object,
     }
 
     next->index = 0;
-    next->array = njs_value_enumerate(vm, object, NJS_ENUM_KEYS,
-                                      NJS_ENUM_STRING, 0);
+    next->array = njs_value_enumerate(vm, object,
+                                      NJS_ENUM_KEYS
+                                      | NJS_ENUM_STRING
+                                      | NJS_ENUM_ENUMERABLE_ONLY);
     if (njs_slow_path(next->array == NULL)) {
         njs_memory_error(vm);
         return NJS_ERROR;

@@ -1868,8 +1868,8 @@ njs_array_keys(njs_vm_t *vm, njs_value_t *object, njs_bool_t all)
 {
     njs_array_t  *keys;
 
-    keys = njs_value_own_enumerate(vm, object, NJS_ENUM_KEYS, NJS_ENUM_STRING,
-                                   all);
+    keys = njs_value_own_enumerate(vm, object, NJS_ENUM_KEYS | NJS_ENUM_STRING
+                                   | (!all ? NJS_ENUM_ENUMERABLE_ONLY : 0));
     if (njs_slow_path(keys == NULL)) {
         return NULL;
     }
