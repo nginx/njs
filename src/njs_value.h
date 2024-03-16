@@ -313,18 +313,6 @@ struct njs_object_type_init_s {
 
 
 typedef enum {
-#define njs_object_enum_kind(flags) (flags & 7)
-    NJS_ENUM_KEYS = 1,
-    NJS_ENUM_VALUES = 2,
-    NJS_ENUM_BOTH = 4,
-#define njs_object_enum(flags) (flags & (NJS_ENUM_STRING | NJS_ENUM_SYMBOL))
-    NJS_ENUM_STRING = 8,
-    NJS_ENUM_SYMBOL = 16,
-    NJS_ENUM_ENUMERABLE_ONLY = 32,
-} njs_object_enum_t;
-
-
-typedef enum {
     NJS_PROPERTY = 0,
     NJS_ACCESSOR,
     NJS_PROPERTY_REF,

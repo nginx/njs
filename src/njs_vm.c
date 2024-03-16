@@ -1114,6 +1114,94 @@ njs_vm_exception_string(njs_vm_t *vm, njs_str_t *dst)
 }
 
 
+njs_value_t *
+njs_vm_value_enumerate(njs_vm_t *vm, njs_value_t *value, uint32_t flags,
+    njs_value_t *retval)
+{
+    ssize_t                  length;
+    njs_int_t                ret;
+    njs_value_t              *val;
+    njs_array_t              *keys;
+    njs_rbtree_t             *variables;
+    njs_rbtree_node_t        *rb_node;
+    njs_variable_node_t      *node;
+    const njs_lexer_entry_t  *lex_entry;
+
+    static const njs_str_t  njs_this_str = njs_str("this");
+
+    keys = njs_value_enumerate(vm, value, flags);
+    if (njs_slow_path(keys == NULL)) {
+        return NULL;
+    }
+
+    if (!njs_values_same(value, &vm->global_value)
+        || vm->global_scope == NULL)
+    {
+        goto done;
+    }
+
+    /* TODO: workaround for values in global object. */
+
+    variables = &vm->global_scope->variables;
+    rb_node = njs_rbtree_min(variables);
+
+    while (njs_rbtree_is_there_successor(variables, rb_node)) {
+        node = (njs_variable_node_t *) rb_node;
+
+        lex_entry = njs_lexer_entry(node->variable->unique_id);
+        if (njs_slow_path(lex_entry == NULL)) {
+            return NULL;
+        }
+
+        if (njs_strstr_eq(&lex_entry->name, &njs_this_str)) {
+            rb_node = njs_rbtree_node_successor(variables, rb_node);
+            continue;
+        }
+
+        length = njs_utf8_length(lex_entry->name.start, lex_entry->name.length);
+        if (njs_slow_path(length < 0)) {
+            return NULL;
+        }
+
+        val = njs_array_push(vm, keys);
+        if (njs_slow_path(value == NULL)) {
+            return NULL;
+        }
+
+        ret = njs_string_new(vm, val, lex_entry->name.start,
+                             lex_entry->name.length, length);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NULL;
+        }
+
+        rb_node = njs_rbtree_node_successor(variables, rb_node);
+    }
+
+done:
+
+     njs_set_array(retval, keys);
+
+     return retval;
+}
+
+
+njs_value_t *
+njs_vm_value_own_enumerate(njs_vm_t *vm, njs_value_t *value, uint32_t flags,
+    njs_value_t *retval)
+{
+    njs_array_t  *keys;
+
+    keys = njs_value_own_enumerate(vm, value, flags);
+    if (njs_slow_path(keys == NULL)) {
+        return NULL;
+    }
+
+    njs_set_array(retval, keys);
+
+    return retval;
+}
+
+
 njs_int_t
 njs_vm_object_alloc(njs_vm_t *vm, njs_value_t *retval, ...)
 {

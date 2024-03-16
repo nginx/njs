@@ -129,6 +129,18 @@ typedef enum {
 
 
 typedef enum {
+#define njs_object_enum_kind(flags) (flags & 7)
+    NJS_ENUM_KEYS = 1,
+    NJS_ENUM_VALUES = 2,
+    NJS_ENUM_BOTH = 4,
+#define njs_object_enum(flags) (flags & (NJS_ENUM_STRING | NJS_ENUM_SYMBOL))
+    NJS_ENUM_STRING = 8,
+    NJS_ENUM_SYMBOL = 16,
+    NJS_ENUM_ENUMERABLE_ONLY = 32,
+} njs_object_enum_t;
+
+
+typedef enum {
     /*
      * Extern property type.
      */
@@ -497,6 +509,10 @@ NJS_EXPORT njs_int_t njs_vm_object_alloc(njs_vm_t *vm, njs_value_t *retval,
     ...);
 NJS_EXPORT njs_value_t *njs_vm_object_keys(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *retval);
+NJS_EXPORT njs_value_t *njs_vm_value_enumerate(njs_vm_t *vm, njs_value_t *value,
+    uint32_t flags, njs_value_t *retval);
+NJS_EXPORT njs_value_t *njs_vm_value_own_enumerate(njs_vm_t *vm,
+    njs_value_t *value, uint32_t flags, njs_value_t *retval);
 NJS_EXPORT njs_value_t *njs_vm_object_prop(njs_vm_t *vm,
     njs_value_t *value, const njs_str_t *key, njs_opaque_value_t *retval);
 NJS_EXPORT njs_int_t njs_vm_object_prop_set(njs_vm_t *vm, njs_value_t *value,
