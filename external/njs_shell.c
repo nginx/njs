@@ -3106,6 +3106,203 @@ njs_engine_qjs_output(njs_engine_t *engine, njs_int_t ret)
     return NJS_OK;
 }
 
+
+static njs_arr_t *
+njs_qjs_object_completions(njs_engine_t *engine, JSContext *ctx,
+    JSValueConst object, njs_str_t *expression)
+{
+    u_char          *prefix;
+    size_t          len, prefix_len;
+    JSValue         prototype;
+    uint32_t        k, n, length;
+    njs_int_t       ret;
+    njs_arr_t       *array;
+    njs_str_t       *completion, key;
+    JSPropertyEnum  *ptab;
+
+    prefix = expression->start + expression->length;
+
+    while (prefix > expression->start && *prefix != '.') {
+        prefix--;
+    }
+
+    if (prefix != expression->start) {
+        prefix++;
+    }
+
+    ptab = NULL;
+    key.start = NULL;
+    prefix_len = prefix - expression->start;
+    len = expression->length - prefix_len;
+
+    array = njs_arr_create(engine->pool, 8, sizeof(njs_str_t));
+    if (njs_slow_path(array == NULL)) {
+        goto fail;
+    }
+
+    while (!JS_IsNull(object)) {
+        ret = JS_GetOwnPropertyNames(ctx, &ptab, &length, object,
+                                     JS_GPN_STRING_MASK);
+        if (ret < 0) {
+            goto fail;
+        }
+
+        for (n = 0; n < length; n++) {
+            key.start = (u_char *) JS_AtomToCString(ctx, ptab[n].atom);
+            JS_FreeAtom(ctx, ptab[n].atom);
+            if (njs_slow_path(key.start == NULL)) {
+                goto fail;
+            }
+
+            key.length = njs_strlen(key.start);
+
+            if (len > key.length || njs_strncmp(key.start, prefix, len) != 0) {
+                goto next;
+            }
+
+            for (k = 0; k < array->items; k++) {
+                completion = njs_arr_item(array, k);
+
+                if ((completion->length - prefix_len - 1) == key.length
+                    && njs_strncmp(&completion->start[prefix_len],
+                                   key.start, key.length)
+                       == 0)
+                {
+                    goto next;
+                }
+            }
+
+            completion = njs_arr_add(array);
+            if (njs_slow_path(completion == NULL)) {
+                goto fail;
+            }
+
+            completion->length = prefix_len + key.length + 1;
+            completion->start = njs_mp_alloc(engine->pool, completion->length);
+            if (njs_slow_path(completion->start == NULL)) {
+                goto fail;
+            }
+
+            njs_sprintf(completion->start,
+                        completion->start + completion->length,
+                        "%*s%V%Z", prefix_len, expression->start, &key);
+
+next:
+
+            JS_FreeCString(ctx, (const char *) key.start);
+        }
+
+        js_free_rt(JS_GetRuntime(ctx), ptab);
+
+        prototype = JS_GetPrototype(ctx, object);
+        if (JS_IsException(prototype)) {
+            goto fail;
+        }
+
+        JS_FreeValue(ctx, object);
+        object = prototype;
+    }
+
+    return array;
+
+fail:
+
+    if (array != NULL) {
+        njs_arr_destroy(array);
+    }
+
+    if (key.start != NULL) {
+        JS_FreeCString(ctx, (const char *) key.start);
+    }
+
+    if (ptab != NULL) {
+        js_free_rt(JS_GetRuntime(ctx), ptab);
+    }
+
+    JS_FreeValue(ctx, object);
+
+    return NULL;
+}
+
+
+static njs_arr_t *
+njs_engine_qjs_complete(njs_engine_t *engine, njs_str_t *expression)
+{
+    u_char      *p, *start, *end;
+    JSAtom      key;
+    JSValue     value, retval;
+    njs_arr_t   *arr;
+    JSContext   *ctx;
+    njs_bool_t  global;
+
+    ctx = engine->u.qjs.ctx;
+
+    p = expression->start;
+    end = p + expression->length;
+
+    global = 1;
+    value = JS_GetGlobalObject(ctx);
+
+    while (p < end && *p != '.') { p++; }
+
+    if (p == end) {
+        goto done;
+    }
+
+    p = expression->start;
+
+    for ( ;; ) {
+
+        start = (*p == '.' && p < end) ? ++p: p;
+
+        if (p == end) {
+            break;
+        }
+
+        while (p < end && *p != '.') { p++; }
+
+        key = JS_NewAtomLen(ctx, (char *) start, p - start);
+        if (key == JS_ATOM_NULL) {
+            goto fail;
+        }
+
+        retval = JS_GetProperty(ctx, value, key);
+
+        JS_FreeAtom(ctx, key);
+
+        if (JS_IsUndefined(retval)) {
+            if (global) {
+                goto fail;
+            }
+
+            goto done;
+        }
+
+        if (JS_IsException(retval)) {
+            goto fail;
+        }
+
+        JS_FreeValue(ctx, value);
+        value = retval;
+        global = 0;
+    }
+
+done:
+
+    arr = njs_qjs_object_completions(engine, ctx, JS_DupValue(ctx, value),
+                                     expression);
+
+    JS_FreeValue(ctx, value);
+
+    return arr;
+
+fail:
+
+    JS_FreeValue(ctx, value);
+
+    return NULL;
+}
+
 #endif
 
 
@@ -3163,6 +3360,7 @@ njs_create_engine(njs_opts_t *opts)
         engine->process_events = njs_engine_qjs_process_events;
         engine->destroy = njs_engine_qjs_destroy;
         engine->output = njs_engine_qjs_output;
+        engine->complete = njs_engine_qjs_complete;
         break;
 #endif
 
@@ -3583,10 +3781,6 @@ njs_completion_generator(const char *text, int state)
     njs_completion_t  *cmpl;
 
     engine = njs_console.engine;
-    if (engine->complete == NULL) {
-        return NULL;
-    }
-
     cmpl = &engine->completion;
 
     if (state == 0) {

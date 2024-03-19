@@ -58,6 +58,153 @@ njs_test {
      "2\r\n>> "}
 }
 
+# Global completions
+
+njs_test {
+    {"\t\t"
+     "$262*"}
+}
+
+# Global completions, single partial match
+
+njs_test {
+    {"O\t"
+     "O\a*bject"}
+}
+
+njs_test {
+    {"Mat\t"
+     "Mat\a*h"}
+}
+
+ njs_test {
+     {"conso\t"
+     "conso\a*le"}
+ }
+
+# Global completions, multiple partial match
+njs_test {
+    {"cons\t\t"
+     "console*const"}
+}
+
+njs_test {
+    {"Type\t"
+     "Type\a*Error"}
+    {".\t\t"
+     "TypeError.__proto__"}
+}
+
+njs_test {
+    {"TypeError.\t\t"
+     "TypeError.__proto__*TypeError.prototype"}
+}
+
+njs_test {
+    {"Object.ge\t"
+     "Object.ge\a*t"}
+    {"\t\t"
+     "Object.getOwnPropertyDescriptor*Object.getPrototypeOf"}
+}
+
+njs_test {
+    {"JS\t"
+     "JS\a*ON"}
+    {".\t\t"
+     "JSON.__*JSON.stringify"}
+}
+
+njs_test {
+    {"decodeURI\t\t"
+     "decodeURI*decodeURIComponent"}
+    {"C\t"
+     "decodeURIC\a*omponent"}
+}
+
+# Global completions, no matches
+njs_test {
+    {"1.\t\t"
+     "1."}
+}
+
+njs_test {
+    {"1..\t\t"
+     "1.."}
+}
+
+njs_test {
+    {"'abc'.\t\t"
+     "'abc'."}
+}
+
+# Global completions, global vars
+njs_test {
+    {"var AA = 1; var AAA = 2\r\n"
+     "var AA = 1; var AAA = 2\r\nundefined\r\n>> "}
+    {"AA\t\t"
+     "AA*AAA*"}
+}
+
+njs_test {
+    {"var zz = 1\r\n"
+     "var zz = 1\r\nundefined\r\n>> "}
+    {"1 + z\t\r\n"
+     "1 + z*z*\r\n2"}
+}
+
+njs_test {
+    {"unknown_var\t\t"
+     "unknown_var"}
+}
+
+njs_test {
+    {"unknown_var.\t\t"
+     "unknown_var."}
+}
+
+# An object's level completions
+njs_test {
+    {"var o = {zz:1, zb:2}\r\n"
+     "var o = {zz:1, zb:2}\r\nundefined\r\n>> "}
+    {"o.z\t\t"
+     "o.zb*o.zz"}
+}
+
+njs_test {
+    {"var d = new Date()\r\n"
+     "var d = new Date()\r\nundefined\r\n>> "}
+    {"d.to\t\t"
+     "d.toDateString*d.toLocaleDateString*d.toString"}
+}
+
+njs_test {
+    {"var o = {a:new Date()}\r\n"
+     "var o = {a:new Date()}\r\nundefined\r\n>> "}
+    {"o.a.to\t\t"
+     "o.a.toDateString*o.a.toLocaleDateString*o.a.toString"}
+}
+
+njs_test {
+    {"var o = {a:1,b:2,333:'t'}\r\n"
+     "var o = {a:1,b:2,333:'t'}\r\nundefined\r\n>> "}
+    {"o.3\t\t"
+     "o.3"}
+}
+
+njs_test {
+    {"var a = Array(5000000); a.aab = 1; a.aac = 2\r\n"
+     "var a = Array(5000000); a.aab = 1; a.aac = 2\r\n2\r\n>> "}
+    {"a.\t\t"
+     "a.aab*"}
+}
+
+njs_test {
+    {"var a = new Uint8Array([5,6,7,8,8]); a.aab = 1; a.aac = 2\r\n"
+     "var a = new Uint8Array(\\\[5,6,7,8,8]); a.aab = 1; a.aac = 2\r\n2\r\n>> "}
+    {"a.\t\t"
+     "a.aab*"}
+}
+
 # console object
 njs_test {
     {"console[Symbol.toStringTag]\r\n"
