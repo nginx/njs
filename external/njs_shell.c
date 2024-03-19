@@ -83,15 +83,7 @@ typedef enum {
 
 typedef struct {
     size_t                  index;
-    size_t                  length;
-    njs_arr_t               *completions;
     njs_arr_t               *suffix_completions;
-    njs_rbtree_node_t       *node;
-
-    enum {
-       NJS_COMPLETION_SUFFIX = 0,
-       NJS_COMPLETION_GLOBAL
-    }                       phase;
 } njs_completion_t;
 
 
@@ -157,7 +149,6 @@ struct njs_engine_s {
             njs_vm_t            *vm;
 
             njs_opaque_value_t  value;
-            njs_completion_t    completion;
         }                       njs;
 #if (NJS_HAVE_QUICKJS)
         struct {
@@ -174,9 +165,11 @@ struct njs_engine_s {
     njs_int_t                 (*process_events)(njs_engine_t *engine);
     njs_int_t                 (*destroy)(njs_engine_t *engine);
     njs_int_t                 (*output)(njs_engine_t *engine, njs_int_t ret);
+    njs_arr_t                *(*complete)(njs_engine_t *engine, njs_str_t *ex);
 
     unsigned                    type;
     njs_mp_t                    *pool;
+    njs_completion_t            completion;
 };
 
 typedef struct {
@@ -1361,11 +1354,6 @@ njs_engine_njs_init(njs_engine_t *engine, njs_opts_t *opts)
         return NJS_ERROR;
     }
 
-    engine->u.njs.completion.completions = njs_vm_completions(vm, NULL);
-    if (engine->u.njs.completion.completions == NULL) {
-        return NJS_ERROR;
-    }
-
     if (opts->unhandled_rejection) {
         njs_vm_set_rejection_tracker(vm, njs_rejection_tracker,
                                      njs_vm_external_ptr(vm));
@@ -1452,6 +1440,179 @@ njs_engine_njs_output(njs_engine_t *engine, njs_int_t ret)
     }
 
     return NJS_OK;
+}
+
+
+static njs_arr_t *
+njs_object_completions(njs_vm_t *vm, njs_value_t *object, njs_str_t *expression)
+{
+    u_char              *prefix;
+    size_t              len, prefix_len;
+    int64_t             k, n, length;
+    njs_int_t           ret;
+    njs_arr_t           *array;
+    njs_str_t           *completion, key;
+    njs_value_t         *keys;
+    njs_opaque_value_t  *start, retval, prototype;
+
+    prefix = expression->start + expression->length;
+
+    while (prefix > expression->start && *prefix != '.') {
+        prefix--;
+    }
+
+    if (prefix != expression->start) {
+        prefix++;
+    }
+
+    prefix_len = prefix - expression->start;
+    len = expression->length - prefix_len;
+
+    array = njs_arr_create(njs_vm_memory_pool(vm), 8, sizeof(njs_str_t));
+    if (njs_slow_path(array == NULL)) {
+        goto fail;
+    }
+
+    while (!njs_value_is_null(object)) {
+        keys = njs_vm_value_enumerate(vm, object, NJS_ENUM_KEYS
+                                      | NJS_ENUM_STRING,
+                                      njs_value_arg(&retval));
+        if (njs_slow_path(keys == NULL)) {
+            goto fail;
+        }
+
+        (void) njs_vm_array_length(vm, keys, &length);
+
+        start = (njs_opaque_value_t *) njs_vm_array_start(vm, keys);
+        if (start == NULL) {
+            goto fail;
+        }
+
+
+        for (n = 0; n < length; n++) {
+            ret = njs_vm_value_to_string(vm, &key, njs_value_arg(start));
+            if (njs_slow_path(ret != NJS_OK)) {
+                goto fail;
+            }
+
+            start++;
+
+            if (len > key.length || njs_strncmp(key.start, prefix, len) != 0) {
+                continue;
+            }
+
+            for (k = 0; k < array->items; k++) {
+                completion = njs_arr_item(array, k);
+
+                if ((completion->length - prefix_len - 1) == key.length
+                    && njs_strncmp(&completion->start[prefix_len],
+                                   key.start, key.length)
+                       == 0)
+                {
+                    break;
+                }
+            }
+
+            if (k != array->items) {
+                continue;
+            }
+
+            completion = njs_arr_add(array);
+            if (njs_slow_path(completion == NULL)) {
+                goto fail;
+            }
+
+            completion->length = prefix_len + key.length + 1;
+            completion->start = njs_mp_alloc(njs_vm_memory_pool(vm),
+                                             completion->length);
+            if (njs_slow_path(completion->start == NULL)) {
+                goto fail;
+            }
+
+
+            njs_sprintf(completion->start,
+                        completion->start + completion->length,
+                        "%*s%V%Z", prefix_len, expression->start, &key);
+        }
+
+        ret = njs_vm_prototype(vm, object, njs_value_arg(&prototype));
+        if (njs_slow_path(ret != NJS_OK)) {
+            goto fail;
+        }
+
+        object = njs_value_arg(&prototype);
+    }
+
+    return array;
+
+fail:
+
+    if (array != NULL) {
+        njs_arr_destroy(array);
+    }
+
+    return NULL;
+}
+
+
+static njs_arr_t *
+njs_engine_njs_complete(njs_engine_t *engine, njs_str_t *expression)
+{
+    u_char              *p, *start, *end;
+    njs_vm_t            *vm;
+    njs_int_t           ret;
+    njs_bool_t          global;
+    njs_opaque_value_t  value, key, retval;
+
+    vm = engine->u.njs.vm;
+
+    p = expression->start;
+    end = p + expression->length;
+
+    global = 1;
+    (void) njs_vm_global(vm, njs_value_arg(&value));
+
+    while (p < end && *p != '.') { p++; }
+
+    if (p == end) {
+        goto done;
+    }
+
+    p = expression->start;
+
+    for ( ;; ) {
+
+        start = (*p == '.' && p < end) ? ++p: p;
+
+        if (p == end) {
+            break;
+        }
+
+        while (p < end && *p != '.') { p++; }
+
+        ret = njs_vm_value_string_set(vm, njs_value_arg(&key), start,
+                                      p - start);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NULL;
+        }
+
+        ret = njs_value_property(vm, njs_value_arg(&value), njs_value_arg(&key),
+                                 njs_value_arg(&retval));
+        if (njs_slow_path(ret != NJS_OK)) {
+            if (ret == NJS_DECLINED && !global) {
+                goto done;
+            }
+
+            return NULL;
+        }
+
+        global = 0;
+        njs_value_assign(&value, &retval);
+    }
+
+done:
+
+    return njs_object_completions(vm, njs_value_arg(&value), expression);
 }
 
 
@@ -2984,6 +3145,7 @@ njs_create_engine(njs_opts_t *opts)
         engine->process_events = njs_engine_njs_process_events;
         engine->destroy = njs_engine_njs_destroy;
         engine->output = njs_engine_njs_output;
+        engine->complete = njs_engine_njs_complete;
         break;
 
 #ifdef NJS_HAVE_QUICKJS
@@ -3413,91 +3575,38 @@ njs_editline_init(void)
 }
 
 
-/* editline frees the buffer every time. */
-#define njs_editline(s) strndup((char *) (s)->start, (s)->length)
-
-#define njs_completion(c, i) &(((njs_str_t *) (c)->start)[i])
-
-#define njs_next_phase(c)                                                   \
-    (c)->index = 0;                                                         \
-    (c)->phase++;                                                           \
-    goto next;
-
 static char *
 njs_completion_generator(const char *text, int state)
 {
     njs_str_t         expression, *suffix;
-    njs_vm_t          *vm;
+    njs_engine_t      *engine;
     njs_completion_t  *cmpl;
 
-    if (njs_console.engine == NULL
-        || njs_console.engine->type != NJS_ENGINE_NJS)
-    {
+    engine = njs_console.engine;
+    if (engine->complete == NULL) {
         return NULL;
     }
 
-    vm = njs_console.engine->u.njs.vm;
-    cmpl = &njs_console.engine->u.njs.completion;
+    cmpl = &engine->completion;
 
     if (state == 0) {
-        cmpl->phase = NJS_COMPLETION_SUFFIX;
         cmpl->index = 0;
-        cmpl->length = njs_strlen(text);
-        cmpl->suffix_completions = NULL;
-    }
+        expression.start = (u_char *) text;
+        expression.length = njs_strlen(text);
 
-next:
-
-    switch (cmpl->phase) {
-    case NJS_COMPLETION_SUFFIX:
-        if (cmpl->length == 0) {
-            njs_next_phase(cmpl);
-        }
-
+        cmpl->suffix_completions = engine->complete(engine, &expression);
         if (cmpl->suffix_completions == NULL) {
-            expression.start = (u_char *) text;
-            expression.length = cmpl->length;
-
-            cmpl->suffix_completions = njs_vm_completions(vm, &expression);
-            if (cmpl->suffix_completions == NULL) {
-                njs_next_phase(cmpl);
-            }
-        }
-
-        for ( ;; ) {
-            if (cmpl->index >= cmpl->suffix_completions->items) {
-                njs_next_phase(cmpl);
-            }
-
-            suffix = njs_completion(cmpl->suffix_completions, cmpl->index++);
-
-            return njs_editline(suffix);
-        }
-
-    case NJS_COMPLETION_GLOBAL:
-        if (cmpl->suffix_completions != NULL) {
-            /* No global completions if suffixes were found. */
-            njs_next_phase(cmpl);
-        }
-
-        for ( ;; ) {
-            if (cmpl->index >= cmpl->completions->items) {
-                break;
-            }
-
-            suffix = njs_completion(cmpl->completions, cmpl->index++);
-
-            if (suffix->start[0] == '.' || suffix->length < cmpl->length) {
-                continue;
-            }
-
-            if (njs_strncmp(text, suffix->start, cmpl->length) == 0) {
-                return njs_editline(suffix);
-            }
+            return NULL;
         }
     }
 
-    return NULL;
+    if (cmpl->index == cmpl->suffix_completions->items) {
+        return NULL;
+    }
+
+    suffix = njs_arr_item(cmpl->suffix_completions, cmpl->index++);
+
+    return strndup((char *) suffix->start, suffix->length);
 }
 
 #endif

@@ -316,8 +316,6 @@ NJS_EXPORT njs_int_t njs_vm_pending(njs_vm_t *vm);
 NJS_EXPORT void njs_vm_set_rejection_tracker(njs_vm_t *vm,
         njs_rejection_tracker_t rejection_tracker, void *opaque);
 
-NJS_EXPORT void *njs_vm_completions(njs_vm_t *vm, njs_str_t *expression);
-
 /*
  * Runs the specified function with provided arguments.
  *  NJS_OK successful run.

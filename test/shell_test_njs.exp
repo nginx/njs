@@ -46,23 +46,15 @@ njs_test {
      "a *= 2\r\n2\r\n>> "}
 }
 
-# Global completions, no
-# Disabled: readline does not support it in callback mode
-# njs_test {
-#    {"\t\tn"
-#     "\a\r\nDisplay all*possibilities? (y or n)*>> "}
-# }
+# Global completions
 
-# Global completions, yes
 njs_test {
-    {"\t\ty"
-     "\a\r\nDisplay all*possibilities? (y or n)*Array"}
+    {"\t\t"
+     "$262*"}
 }
 
 # Global completions, single partial match
 
-# \a* is WORKAROUND for libedit-20170329.3.1-r3
-# which inserts '\rESC[6G' after '\a'.
 njs_test {
     {"O\t"
      "O\a*bject"}
@@ -87,13 +79,13 @@ njs_test {
 njs_test {
     {"Type\t"
      "Type\a*Error"}
-    {"\t\t"
-     "TypeError.length"}
+    {".\t\t"
+     "TypeError.__proto__"}
 }
 
 njs_test {
     {"TypeError.\t\t"
-     "TypeError.length*TypeError.prototype"}
+     "TypeError.__proto__*TypeError.prototype"}
 }
 
 njs_test {
@@ -106,8 +98,8 @@ njs_test {
 njs_test {
     {"JS\t"
      "JS\a*ON"}
-    {"\t\t"
-     "JSON.parse*JSON.stringify"}
+    {".\t\t"
+     "JSON.__proto__*JSON.stringify"}
 }
 
 # Global completions, no matches
@@ -134,8 +126,6 @@ njs_test {
      "AA*AAA*"}
 }
 
-# z*z is WORKAROUND for libedit-20170329.3.1-r3
-# which inserts bogus '\a' between 'z'
 njs_test {
     {"var zz = 1\r\n"
      "var zz = 1\r\nundefined\r\n>> "}
