@@ -479,7 +479,7 @@ njs_js_ext_shared_dict_clear(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         rbtree = &dict->sh->rbtree;
 
         if (rbtree->root == rbtree->sentinel) {
-            return NJS_OK;
+            goto done;
         }
 
         for (rn = ngx_rbtree_min(rbtree->root, rbtree->sentinel);
@@ -493,6 +493,8 @@ njs_js_ext_shared_dict_clear(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             ngx_js_dict_node_free(dict, (ngx_js_dict_node_t *) rn);
         }
     }
+
+done:
 
     ngx_rwlock_unlock(&dict->sh->rwlock);
 

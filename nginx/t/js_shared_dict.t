@@ -266,6 +266,7 @@ $t->write_file('test.js', <<'EOF');
 
     function set_clear(r) {
         var dict = ngx.shared.no_timeout;
+        dict.clear();
         dict.set("test", "test value");
         dict.set("test1", "test1 value");
         dict.clear();
