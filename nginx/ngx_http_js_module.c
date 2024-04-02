@@ -305,6 +305,9 @@ static char *ngx_http_js_merge_loc_conf(ngx_conf_t *cf, void *parent,
 static ngx_ssl_t *ngx_http_js_ssl(njs_vm_t *vm, ngx_http_request_t *r);
 static ngx_flag_t ngx_http_js_ssl_verify(njs_vm_t *vm, ngx_http_request_t *r);
 
+static ngx_int_t ngx_http_js_parse_unsafe_uri(ngx_http_request_t *r,
+    njs_str_t *uri, njs_str_t *args);
+
 #if (NGX_HTTP_SSL)
 
 static ngx_conf_bitmask_t  ngx_http_js_ssl_protocols[] = {
@@ -3272,6 +3275,11 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
+    if (ngx_http_js_parse_unsafe_uri(r, &uri_arg, &args_arg) != NGX_OK) {
+        njs_vm_error(vm, "unsafe uri");
+        return NJS_ERROR;
+    }
+
     arg = njs_arg(args, nargs, 3);
 
     if (callback == NULL && !njs_value_is_undefined(arg)) {
@@ -4978,4 +4986,33 @@ ngx_http_js_ssl_verify(njs_vm_t *vm, ngx_http_request_t *r)
 #else
     return 0;
 #endif
+}
+
+
+static ngx_int_t
+ngx_http_js_parse_unsafe_uri(ngx_http_request_t *r, njs_str_t *uri,
+    njs_str_t *args)
+{
+    ngx_str_t   uri_arg, args_arg;
+    ngx_uint_t  flags;
+
+    flags = NGX_HTTP_LOG_UNSAFE;
+
+    uri_arg.data = uri->start;
+    uri_arg.len = uri->length;
+
+    args_arg.data = args->start;
+    args_arg.len = args->length;
+
+    if (ngx_http_parse_unsafe_uri(r, &uri_arg, &args_arg, &flags) != NGX_OK) {
+        return NGX_ERROR;
+    }
+
+    uri->start = uri_arg.data;
+    uri->length = uri_arg.len;
+
+    args->start = args_arg.data;
+    args->length = args_arg.len;
+
+    return NGX_OK;
 }

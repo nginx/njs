@@ -148,6 +148,10 @@ http {
             js_content test.sr_unavail_pr;
         }
 
+        location /sr_unsafe {
+            js_content test.sr_unsafe;
+        }
+
         location /sr_broken {
             js_content test.sr_broken;
         }
@@ -385,6 +389,11 @@ $t->write_file('test.js', <<EOF);
         subrequest_fn_pr(req, ['/unavail'], ['uri', 'status']);
     }
 
+    function sr_unsafe(r) {
+        r.subrequest('../dir');
+        r.return(200);
+    }
+
     function sr_broken(r) {
         r.subrequest('/daemon/unfinished', reply => {
             r.return(200, JSON.stringify({code:reply.status}));
@@ -498,13 +507,14 @@ $t->write_file('test.js', <<EOF);
                     sr_unavail_pr, sr_broken, sr_too_large, sr_in_sr,
                     sr_js_in_subrequest, sr_js_in_subrequest_pr, js_sub,
                     sr_in_sr_callback, sr_out_of_order, sr_except_not_a_func,
-                    sr_uri_except, sr_except_failed_to_convert_options_arg};
+                    sr_uri_except, sr_except_failed_to_convert_options_arg,
+                    sr_unsafe};
 
 EOF
 
 $t->write_file('t', '["SEE-THIS"]');
 
-$t->try_run('no njs available')->plan(32);
+$t->try_run('no njs available')->plan(33);
 $t->run_daemon(\&http_daemon);
 
 ###############################################################################
@@ -557,6 +567,13 @@ http_get('/sr_uri_except');
 is(get_json('/sr_in_sr_callback'),
 	'{"e":"subrequest can only be created for the primary request"}',
 	'subrequest for non-primary request');
+
+TODO: {
+local $TODO = 'not yet' unless has_version('0.8.4');
+
+like(http_get('/sr_unsafe'), qr/500/s, 'unsafe subrequest uri');
+
+}
 
 $t->stop();
 
@@ -631,6 +648,25 @@ sub http_daemon {
 			close($client);
 		}
 	}
+}
+
+###############################################################################
+
+sub has_version {
+	my $need = shift;
+
+	http_get('/njs') =~ /^([.0-9]+)$/m;
+
+	my @v = split(/\./, $1);
+	my ($n, $v);
+
+	for $n (split(/\./, $need)) {
+		$v = shift @v || 0;
+		return 0 if $n > $v;
+		return 1 if $v > $n;
+	}
+
+	return 1;
 }
 
 ###############################################################################
