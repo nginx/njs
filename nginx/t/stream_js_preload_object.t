@@ -66,16 +66,17 @@ EOF
 
 $t->write_file('lib.js', <<EOF);
     var res = '';
+    var acc, pup, fup, fdown;
 
     function access(s) {
-        res += g1.a;
+        acc = g1.a;
         s.allow();
     }
 
     function preread(s) {
         s.on('upload', function (data) {
-            res += g1.b[1];
-            if (res.length >= 3) {
+            pup = g1.b[1];
+            if (data.length > 0) {
                 s.done();
             }
         });
@@ -83,18 +84,16 @@ $t->write_file('lib.js', <<EOF);
 
     function filter(s) {
         s.on('upload', function(data, flags) {
+            fup = g1.c.prop[0].a;
             s.send(data);
-            res += g1.c.prop[0].a;
         });
 
         s.on('download', function(data, flags) {
-            if (!flags.last) {
-                res += g1.b[3];
-                s.send(data);
+            fdown = g1.b[3];
+            s.send(data);
 
-            } else {
-                res += g1.b[4];
-                s.send(res, {last:1});
+            if (flags.last) {
+                s.send(`\${acc}\${pup}\${fup}\${fdown}`, flags);
                 s.off('download');
             }
         });
@@ -117,6 +116,6 @@ $t->try_run('no js_preload_object available')->plan(2);
 ###############################################################################
 
 is(stream('127.0.0.1:' . port(8081))->read(), 'element', 'foo.bar.p');
-is(stream('127.0.0.1:' . port(8082))->io('0'), 'x122345', 'lib.access');
+is(stream('127.0.0.1:' . port(8082))->io('0'), 'x1234', 'filter chain');
 
 ###############################################################################
