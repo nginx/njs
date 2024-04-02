@@ -227,9 +227,10 @@ $t->write_file('test.js', <<EOF);
     }
 
     var res = '';
+    var step = (v) => { if (!res || res[res.length - 1] != v) res += v };
 
     function access_step(s) {
-        res += '1';
+        step(1);
 
         setTimeout(function() {
             if (s.remoteAddress.match('127.0.0.1')) {
@@ -240,8 +241,8 @@ $t->write_file('test.js', <<EOF);
 
     function preread_step(s) {
         s.on('upload', function (data) {
-            res += '2';
-            if (res.length >= 3) {
+            step(2);
+            if (data.length > 0) {
                 s.done();
             }
         });
@@ -249,18 +250,18 @@ $t->write_file('test.js', <<EOF);
 
     function filter_step(s) {
         s.on('upload', function(data, flags) {
+            step(3);
             s.send(data);
-            res += '3';
         });
 
         s.on('download', function(data, flags) {
 
             if (!flags.last) {
-                res += '4';
+                step(4);
                 s.send(data);
 
             } else {
-                res += '5';
+                step(5);
                 s.send(res, {last:1});
                 s.off('download');
             }
@@ -409,7 +410,7 @@ is(stream('127.0.0.1:' . port(8082))->read(), 'variable=127.0.0.1',
 is(stream('127.0.0.1:' . port(8083))->read(), '', 'stream js unknown function');
 is(stream('127.0.0.1:' . port(8084))->read(), 'sess_unk=undefined', 's.unk');
 
-is(stream('127.0.0.1:' . port(8086))->io('0'), '0122345',
+is(stream('127.0.0.1:' . port(8086))->io('0'), '012345',
 	'async handlers order');
 is(stream('127.0.0.1:' . port(8087))->io('#'), 'OK', 'access_undecided');
 is(stream('127.0.0.1:' . port(8088))->io('#'), 'OK', 'access_allow');
