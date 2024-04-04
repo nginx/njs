@@ -9,11 +9,11 @@ NJS_HAVE_QUICKJS=NO
 if [ $NJS_QUICKJS = YES ]; then
     njs_found=no
 
-    njs_feature="QuickJS library"
+    njs_feature="QuickJS library -lquickjs.lto"
     njs_feature_name=NJS_HAVE_QUICKJS
     njs_feature_run=yes
     njs_feature_incs=
-    njs_feature_libs=""
+    njs_feature_libs="-lquickjs.lto -lm -ldl -lpthread"
     njs_feature_test="#if defined(__GNUC__) && (__GNUC__ >= 8)
                       #pragma GCC diagnostic push
                       #pragma GCC diagnostic ignored \"-Wcast-function-type\"
@@ -31,7 +31,14 @@ if [ $NJS_QUICKJS = YES ]; then
     . auto/feature
 
     if [ $njs_found = no ]; then
-        njs_feature="QuickJS library -lquickjs.lto"
+        njs_feature="QuickJS library -lquickjs"
+        njs_feature_libs="-lquickjs -lm -ldl -lpthread"
+
+        . auto/feature
+    fi
+
+    if [ $njs_found = no ]; then
+        njs_feature="QuickJS library -I/usr/include/quickjs/ -L/usr/lib/quickjs/ -lquickjs.lto"
         njs_feature_incs="/usr/include/quickjs/"
         njs_feature_libs="-L/usr/lib/quickjs/ -lquickjs.lto -lm -ldl -lpthread"
 
@@ -39,7 +46,8 @@ if [ $NJS_QUICKJS = YES ]; then
     fi
 
     if [ $njs_found = no ]; then
-        njs_feature="QuickJS library -lquickjs"
+        njs_feature="QuickJS library -I/usr/include/quickjs/ -L/usr/lib/quickjs/ -lquickjs"
+        njs_feature_incs="/usr/include/quickjs/"
         njs_feature_libs="-L/usr/lib/quickjs/ -lquickjs -lm -ldl -lpthread"
 
         . auto/feature
