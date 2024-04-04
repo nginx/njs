@@ -44,6 +44,7 @@ default: "$NJS_LD_OPT"
   --no-pcre2                disables PCRE2 discovery for RegExp backend.
                             When this option is enabled only PCRE library
                             is discovered.
+  --no-quickjs              disables QuickJS engine discovery.
   --no-zlib                 disables zlib discovery. When this option is
                             enabled zlib dependant code is not built as a
                             part of libnjs.a.
