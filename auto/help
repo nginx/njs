@@ -48,4 +48,5 @@ default: "$NJS_LD_OPT"
   --no-zlib                 disables zlib discovery. When this option is
                             enabled zlib dependant code is not built as a
                             part of libnjs.a.
+  --with-quickjs            requires QuickJS engine.
 END

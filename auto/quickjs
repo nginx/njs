@@ -6,7 +6,7 @@
 NJS_QUICKJS_LIB=
 NJS_HAVE_QUICKJS=NO
 
-if [ $NJS_QUICKJS = YES ]; then
+if [ $NJS_TRY_QUICKJS = YES ]; then
     njs_found=no
 
     njs_feature="QuickJS library -lquickjs.lto"
@@ -40,7 +40,7 @@ if [ $NJS_QUICKJS = YES ]; then
     if [ $njs_found = no ]; then
         njs_feature="QuickJS library -I/usr/include/quickjs/ -L/usr/lib/quickjs/ -lquickjs.lto"
         njs_feature_incs="/usr/include/quickjs/"
-        njs_feature_libs="-L/usr/lib/quickjs/ -lquickjs.lto -lm -ldl -lpthread"
+        njs_feature_libs="-L/usr/lib/quickjs/ -lquijs.lto -lm -ldl -lpthread"
 
         . auto/feature
     fi
@@ -48,7 +48,7 @@ if [ $NJS_QUICKJS = YES ]; then
     if [ $njs_found = no ]; then
         njs_feature="QuickJS library -I/usr/include/quickjs/ -L/usr/lib/quickjs/ -lquickjs"
         njs_feature_incs="/usr/include/quickjs/"
-        njs_feature_libs="-L/usr/lib/quickjs/ -lquickjs -lm -ldl -lpthread"
+        njs_feature_libs="-L/usr/lib/quickjs/ -lquijs -lm -ldl -lpthread"
 
         . auto/feature
     fi
@@ -58,6 +58,13 @@ if [ $NJS_QUICKJS = YES ]; then
         NJS_QUICKJS_LIB="$njs_feature_libs"
         NJS_LIB_INCS="$NJS_LIB_INCS $njs_feature_incs"
         NJS_LIB_AUX_LIBS="$NJS_LIB_AUX_LIBS $njs_feature_libs"
+    fi
+
+    if [ $NJS_QUICKJS = YES -a $njs_found = no ]; then
+        echo
+        echo $0: error: no QuickJS library found.
+        echo
+        exit 1;
     fi
 
 fi

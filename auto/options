@@ -14,7 +14,8 @@ NJS_DEBUG_GENERATOR=NO
 NJS_ADDRESS_SANITIZER=NO
 NJS_ADDR2LINE=NO
 
-NJS_QUICKJS=YES
+NJS_QUICKJS=NO
+NJS_TRY_QUICKJS=YES
 NJS_OPENSSL=YES
 NJS_LIBXML2=YES
 NJS_ZLIB=YES
@@ -48,7 +49,7 @@ do
         --debug-opcode=*)                NJS_DEBUG_OPCODE="$value"           ;;
         --debug-generator=*)             NJS_DEBUG_GENERATOR="$value"        ;;
 
-        --no-quickjs)                    NJS_QUICKJS=NO                      ;;
+        --no-quickjs)                    NJS_TRY_QUICKJS=NO                  ;;
         --no-openssl)                    NJS_OPENSSL=NO                      ;;
         --no-libxml2)                    NJS_LIBXML2=NO                      ;;
         --no-zlib)                       NJS_ZLIB=NO                         ;;
@@ -57,6 +58,7 @@ do
         --no-pcre2)                      NJS_TRY_PCRE2=NO                    ;;
 
         --no-goto)                       NJS_TRY_GOTO=NO                     ;;
+        --with-quickjs)                  NJS_TRY_QUICKJS=YES; NJS_QUICKJS=YES ;;
 
         --help)
             . auto/help
