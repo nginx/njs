@@ -7,46 +7,15 @@ cat << END
 
 ./configure options:
 
-  --cc=FILE                 set C compiler filename, default: "$CC"
-  --cc-opt=OPTIONS          set additional C compiler options, \
-default: "$NJS_CC_OPT"
-  --ld-opt=OPTIONS          set additional linker options, \
-default: "$NJS_LD_OPT"
-  --ar=FILE                 set static linking program, default: "$AR"
-
-  --build-dir=DIR           set build directory, default: "$NJS_BUILD_DIR"
-
-  --no-pcre                 disables PCRE/PCRE2 discovery for RegExp
-                            backend. This flag allows to build PCRE/PCRE2
-                            outside of libnjs.a.  When this option is enabled
-                            functions described in njs_regex.h are not built.
-                            Instead this functions are expected to be provided
-                            while linking.
-
-  --no-pcre2                disables PCRE2 discovery for RegExp backend.
-                            When this option is enabled only PCRE library
-                            is discovered.
-
-  --no-goto                 disables computed goto discovery.
-                            When this option is enabled 'switch' statement
-                            will be always used in instead of computed goto.
-
-  --no-openssl              disables OpenSSL discovery. When this option is
-                            enabled OpenSSL dependant code is not built as a
-                            part of libnjs.a.
-
-  --no-libxml2              disabled libxml2 discovery. When this option is
-                            enabled libxml2 dependant code is not built as a
-                            part of libnjs.a.
-
-  --no-zlib                 disabled zlib discovery. When this option is
-                            enabled zlib dependant code is not built as a
-                            part of libnjs.a.
-
-  --address-sanitizer=YES   enables build with address sanitizer, \
-default: "$NJS_ADDRESS_SANITIZER"
   --addr2line=YES           enables native function symbolization, \
 default: "$NJS_ADDR2LINE"
+  --address-sanitizer=YES   enables build with address sanitizer, \
+default: "$NJS_ADDRESS_SANITIZER"
+  --ar=FILE                 sets static linking program, default: "$AR"
+  --build-dir=DIR           sets build directory, default: "$NJS_BUILD_DIR"
+  --cc=FILE                 sets C compiler filename, default: "$CC"
+  --cc-opt=OPTIONS          sets additional C compiler options, \
+default: "$NJS_CC_OPT"
   --debug=YES               enables additional runtime checks, \
 default: "$NJS_DEBUG"
   --debug-memory=YES        enables memory alloc debug, \
@@ -55,4 +24,27 @@ default: "$NJS_DEBUG_MEMORY"
 default: "$NJS_DEBUG_OPCODE"
   --debug-generator=YES     enables generator debug, \
 default: "$NJS_DEBUG_GENERATOR"
+  --ld-opt=OPTIONS          sets additional linker options, \
+default: "$NJS_LD_OPT"
+  --no-goto                 disables computed goto discovery.
+                            When this option is enabled 'switch' statement
+                            will be always used in instead of computed goto.
+  --no-libxml2              disables libxml2 discovery. When this option is
+                            enabled libxml2 dependant code is not built as a
+                            part of libnjs.a.
+  --no-openssl              disables OpenSSL discovery. When this option is
+                            enabled OpenSSL dependant code is not built as a
+                            part of libnjs.a.
+  --no-pcre                 disables PCRE/PCRE2 discovery for RegExp
+                            backend. This flag allows to build PCRE/PCRE2
+                            outside of libnjs.a.  When this option is enabled
+                            functions described in njs_regex.h are not built.
+                            Instead this functions are expected to be provided
+                            while linking.
+  --no-pcre2                disables PCRE2 discovery for RegExp backend.
+                            When this option is enabled only PCRE library
+                            is discovered.
+  --no-zlib                 disables zlib discovery. When this option is
+                            enabled zlib dependant code is not built as a
+                            part of libnjs.a.
 END
