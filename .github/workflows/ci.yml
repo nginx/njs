@@ -1,0 +1,94 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+env:
+  ENV_FILE_JSON: .github/workflows/environment.json
+
+jobs:
+  test:
+    runs-on: [ "${{ matrix.os }}-${{ matrix.arch }}" ]
+    strategy:
+      matrix:
+        os: [ ubuntu-22.04, ubuntu-20.04 ]
+        arch: [ amd64, arm64 ]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up environment
+        run: |
+          if [ "$(jq -r '."${{ matrix.os }}".eval' < ${{ env.ENV_FILE_JSON }})" == "true" ]; then
+              export DEB_BUILD_MAINT_OPTIONS=$(jq -r '."${{ matrix.os }}".DEB_BUILD_MAINT_OPTIONS' < ${{ env.ENV_FILE_JSON }})
+              export DEB_CFLAGS_MAINT_APPEND=$(jq -r '."${{ matrix.os }}".DEB_CFLAGS_MAINT_APPEND' < ${{ env.ENV_FILE_JSON }})
+              export DEB_LDFLAGS_MAINT_APPEND=$(jq -r '."${{ matrix.os }}".DEB_LDFLAGS_MAINT_APPEND' < ${{ env.ENV_FILE_JSON }})
+              CC_OPT=$(jq -r '."${{ matrix.os }}".CC_OPT' < ${{ env.ENV_FILE_JSON }})
+              echo CC_OPT=$($CC_OPT) >> $GITHUB_ENV
+              LD_OPT=$(jq -r '."${{ matrix.os }}".LD_OPT' < ${{ env.ENV_FILE_JSON }})
+              echo LD_OPT=$($LD_OPT) >> $GITHUB_ENV
+          else
+              echo CC_OPT=$(jq -r '."${{ matrix.os }}".CC_OPT' < ${{ env.ENV_FILE_JSON }}) >> $GITHUB_ENV
+              echo LD_OPT=$(jq -r '."${{ matrix.os }}".LD_OPT' < ${{ env.ENV_FILE_JSON }}) >> $GITHUB_ENV
+          fi
+          echo NGINX_CONFIGURE_CMD_FULL=$(jq -r '.NGINX_CONFIGURE_CMD_FULL' < ${{ env.ENV_FILE_JSON }}) >> $GITHUB_ENV
+
+      - name: Check out nginx
+        run: |
+          git clone https://github.com/nginx/nginx nginx-source
+
+      - name: Check out nginx tests
+        run: |
+          git clone https://github.com/nginx/nginx-tests
+
+      - name: Check out and build quickjs
+        run: |
+          git clone https://github.com/bellard/quickjs
+          cd quickjs && curl -OL http://pp.nginx.com/pluknet/quickjs.patch && git apply quickjs.patch
+          make -j$(nproc)
+
+      - name: Configure and make njs
+        run: |
+          ./configure \
+                    --cc-opt="$CC_OPT" \
+                    --ld-opt="$LD_OPT"
+          make -j$(nproc)
+
+      - name: Test njs
+        run: |
+          make test
+          make clean
+
+      - name: Configure and make njs with quickjs
+        run: |
+          ./configure \
+                    --with-quickjs \
+                    --cc-opt="$CC_OPT -Iquickjs" \
+                    --ld-opt="$LD_OPT -Lquickjs"
+          make -j$(nproc)
+
+      - name: Test njs with quickjs
+        run: |
+          make test
+          make clean
+
+      - name: Configure and build nginx and njs modules
+        run: |
+          cd nginx-source
+          $NGINX_CONFIGURE_CMD_FULL --with-cc-opt="$CC_OPT" --with-ld-opt="$LD_OPT" --add-dynamic-module=../nginx || cat objs/autoconf.err
+          make -j$(nproc) modules
+          make -j$(nproc)
+
+      - name: Test njs modules
+        run: |
+          ulimit -c unlimited
+          prove -v -j$(nproc) -Inginx-tests/lib --state=save nginx/t . || prove -v --state=failed
+        env:
+          TEST_NGINX_BINARY: "${{ github.workspace }}/nginx-source/objs/nginx"
+          TEST_NGINX_GLOBALS: "load_module ${{ github.workspace }}/nginx-source/objs/ngx_http_js_module.so; load_module ${{ github.workspace }}/nginx-source/objs/ngx_stream_js_module.so;"
+          TEST_NGINX_VERBOSE: 1
+
