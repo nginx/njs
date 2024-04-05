@@ -1,0 +1,11 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+
+jobs:
+  buildbot:
+    uses: nginx/ci-self-hosted/.github/workflows/njs-buildbot.yml@main
