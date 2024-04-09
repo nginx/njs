@@ -2217,6 +2217,12 @@ ngx_stream_js_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     *fname = value[2];
 
+    if (v->get_handler == ngx_stream_js_variable_set) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                           "variable \"%V\" is already declared", &value[1]);
+        return NGX_CONF_ERROR;
+    }
+
     v->get_handler = ngx_stream_js_variable_set;
     v->data = (uintptr_t) fname;
 
