@@ -2199,10 +2199,8 @@ static njs_int_t
 ngx_http_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
 {
-    njs_int_t            ret;
     njs_str_t            s;
     ngx_buf_t           *b;
-    uintptr_t            next;
     ngx_uint_t           n;
     ngx_chain_t         *out, *cl, **ll;
     ngx_http_js_ctx_t   *ctx;
@@ -2226,47 +2224,34 @@ ngx_http_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     ll = &out;
 
     for (n = 1; n < nargs; n++) {
-        next = 0;
-
-        for ( ;; ) {
-            ret = njs_vm_value_string_copy(vm, &s, njs_argument(args, n),
-                                           &next);
-
-            if (ret == NJS_DECLINED) {
-                break;
-            }
-
-            if (ret == NJS_ERROR) {
-                return NJS_ERROR;
-            }
-
-            if (s.length == 0) {
-                continue;
-            }
-
-            /* TODO: njs_value_release(vm, value) in buf completion */
-
-            b = ngx_calloc_buf(r->pool);
-            if (b == NULL) {
-                return NJS_ERROR;
-            }
-
-            b->start = s.start;
-            b->pos = b->start;
-            b->end = s.start + s.length;
-            b->last = b->end;
-            b->memory = 1;
-
-            cl = ngx_alloc_chain_link(r->pool);
-            if (cl == NULL) {
-                return NJS_ERROR;
-            }
-
-            cl->buf = b;
-
-            *ll = cl;
-            ll = &cl->next;
+        if (ngx_js_string(vm, njs_argument(args, n), &s) != NGX_OK) {
+            return NJS_ERROR;
         }
+
+        if (s.length == 0) {
+            continue;
+        }
+
+        b = ngx_calloc_buf(r->pool);
+        if (b == NULL) {
+            return NJS_ERROR;
+        }
+
+        b->start = s.start;
+        b->pos = b->start;
+        b->end = s.start + s.length;
+        b->last = b->end;
+        b->memory = 1;
+
+        cl = ngx_alloc_chain_link(r->pool);
+        if (cl == NULL) {
+            return NJS_ERROR;
+        }
+
+        cl->buf = b;
+
+        *ll = cl;
+        ll = &cl->next;
     }
 
     *ll = NULL;

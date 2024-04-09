@@ -112,6 +112,10 @@ http {
             js_content test.send;
         }
 
+        location /send_buffer {
+            js_content test.send_buffer;
+        }
+
         location /return_method {
             js_content test.return_method;
         }
@@ -219,6 +223,13 @@ $t->write_file('test.js', <<EOF);
         r.finish();
     }
 
+    function send_buffer(r) {
+        r.status = 200;
+        r.sendHeader();
+        r.send(Buffer.from("send_buffer"));
+        r.finish();
+    }
+
     function return_method(r) {
         r.return(Number(r.args.c), r.args.t);
     }
@@ -265,11 +276,11 @@ $t->write_file('test.js', <<EOF);
                     variable, global_obj, status, request_body, internal,
                     request_body_cache, send, return_method, sub_internal,
                     type, log, buffer_variable, except, content_except,
-                    content_empty};
+                    content_empty, send_buffer};
 
 EOF
 
-$t->try_run('no njs available')->plan(28);
+$t->try_run('no njs available')->plan(29);
 
 ###############################################################################
 
@@ -288,6 +299,13 @@ like(http_post_big('/body'), qr/200.*^(1234567890){1024}$/ms,
 
 like(http_get('/send?foo=12345&n=11&foo-2=bar&ndd=&foo-3=z'),
 	qr/n=foo, v=12 n=foo-2, v=ba n=foo-3, v=z/, 'r.send');
+
+TODO: {
+local $TODO = 'not yet' unless has_version('0.8.4');
+
+like(http_get('/send_buffer'), qr/send_buffer/, 'r.send accepts buffer');
+
+}
 
 like(http_get('/return_method?c=200'), qr/200 OK.*\x0d\x0a?\x0d\x0a?$/s,
 	'return code');
