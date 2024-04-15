@@ -1,3 +1,24 @@
+Changes with njs 0.8.4                                       16 Apr 2024
+
+    nginx modules:
+
+    *) Feature: allowing to set Server header for outgoing headers.
+
+    *) Improvement: validating URI and args arguments in r.subrequest().
+
+    *) Improvement: checking for duplicate js_set variables.
+
+    *) Bugfix: fixed clear() method of a shared dictionary without
+       timeout introduced in 0.8.3.
+
+    *) Bugfix: fixed r.send() with Buffer argument.
+
+    Core:
+
+    *) Feature: added QuickJS engine support in CLI.
+
+    *) Bugfix: fixed atob() with non-padded base64 strings.
+
 Changes with njs 0.8.3                                       07 Feb 2024
 
     nginx modules:
