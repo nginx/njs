@@ -40,7 +40,7 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
     if [ $njs_found = no ]; then
         njs_feature="QuickJS library -I/usr/include/quickjs/ -L/usr/lib/quickjs/ -lquickjs.lto"
         njs_feature_incs="/usr/include/quickjs/"
-        njs_feature_libs="-L/usr/lib/quickjs/ -lquijs.lto -lm -ldl -lpthread"
+        njs_feature_libs="-L/usr/lib/quickjs/ -lquickjs.lto -lm -ldl -lpthread"
 
         . auto/feature
     fi
@@ -48,7 +48,7 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
     if [ $njs_found = no ]; then
         njs_feature="QuickJS library -I/usr/include/quickjs/ -L/usr/lib/quickjs/ -lquickjs"
         njs_feature_incs="/usr/include/quickjs/"
-        njs_feature_libs="-L/usr/lib/quickjs/ -lquijs -lm -ldl -lpthread"
+        njs_feature_libs="-L/usr/lib/quickjs/ -lquickjs -lm -ldl -lpthread"
 
         . auto/feature
     fi
