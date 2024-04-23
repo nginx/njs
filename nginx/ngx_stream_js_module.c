@@ -2191,7 +2191,7 @@ invalid:
 static char *
 ngx_stream_js_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    ngx_str_t              *value, *fname;
+    ngx_str_t              *value, *fname, *prev;
     ngx_stream_variable_t  *v;
 
     value = cf->args->elts;
@@ -2218,9 +2218,16 @@ ngx_stream_js_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     *fname = value[2];
 
     if (v->get_handler == ngx_stream_js_variable_set) {
-        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                           "variable \"%V\" is already declared", &value[1]);
-        return NGX_CONF_ERROR;
+        prev = (ngx_str_t *) v->data;
+
+        if (fname->len != prev->len
+            || ngx_strncmp(fname->data, prev->data, fname->len) != 0)
+        {
+            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                               "variable \"%V\" is redeclared with "
+                               "different function name", &value[1]);
+            return NGX_CONF_ERROR;
+        }
     }
 
     v->get_handler = ngx_stream_js_variable_set;
