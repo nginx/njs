@@ -22352,6 +22352,13 @@ static njs_unit_test_t  njs_zlib_test[] =
       njs_str("eJwLd/R2BAAC+gEl,eJw7t/HcpnObAQ/sBIE=") },
 
     { njs_str("const zlib = require('zlib');"
+              "const buf = 'αβγ'.repeat(56);"
+              "const enc = zlib.deflateRawSync(buf, {chunkSize:64}).toString('base64');"
+              "const dec = zlib.inflateRawSync(Buffer.from(enc, 'base64')).toString();"
+              "buf == dec"),
+      njs_str("true") },
+
+    { njs_str("const zlib = require('zlib');"
               "['WAKA'.repeat(1024), 'αβγ'.repeat(1024)]"
               ".map(v => [v, zlib.deflateRawSync(v).toString('base64')])"
               ".every(pair => pair[0] == zlib.inflateRawSync(Buffer.from(pair[1], 'base64')).toString())"),

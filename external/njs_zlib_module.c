@@ -463,7 +463,7 @@ njs_zlib_ext_inflate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     njs_chb_init(&chain, njs_vm_memory_pool(vm));
 
-    while (stream.avail_in > 0) {
+    while (rc != Z_STREAM_END) {
         stream.next_out = njs_chb_reserve(&chain, chunk_size);
         if (njs_slow_path(stream.next_out == NULL)) {
             njs_vm_memory_error(vm);
