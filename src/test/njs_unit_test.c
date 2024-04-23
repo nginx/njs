@@ -22319,14 +22319,15 @@ static njs_unit_test_t  njs_zlib_test[] =
       njs_str("WAKA,αβγ") },
 
     { njs_str("const zlib = require('zlib');"
-              "['WAKA', 'αβγ']"
-              ".map(v => zlib.deflateRawSync(v).toString('base64'))"),
-      njs_str("C3f0dgQA,O7fx3KZzmwE=") },
+              "const enc = ['WAKA', 'αβγ'].map(v => zlib.deflateRawSync(v).toString('base64'));"
+              "enc.map(v => zlib.inflateRawSync(Buffer.from(v, 'base64')).toString())"),
+      njs_str("WAKA,αβγ") },
 
     { njs_str("const zlib = require('zlib');"
-              "['WAKA', 'αβγ']"
-              ".map(v => zlib.deflateRawSync(v, {dictionary: Buffer.from('WAKA')}).toString('base64'))"),
-      njs_str("CwdiAA==,O7fx3KZzmwE=") },
+              "const enc = ['WAKA', 'αβγ']"
+              ".map(v => zlib.deflateRawSync(v, {dictionary: Buffer.from('WAKA')}).toString('base64'));"
+              "enc.map(v => zlib.inflateRawSync(Buffer.from(v, 'base64'), {dictionary: Buffer.from('WAKA')}))"),
+      njs_str("WAKA,αβγ") },
 
     { njs_str("const zlib = require('zlib');"
               "['WAKA', 'αβγ']"
