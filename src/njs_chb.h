@@ -17,14 +17,29 @@ struct njs_chb_node_s {
     u_char                  *end;
 };
 
+typedef void *(*njs_chb_alloc_t)(void *pool, size_t size);
+typedef void (*njs_chb_free_t)(void *pool, void *p);
+
 typedef struct {
     njs_bool_t              error;
-    njs_mp_t                *pool;
+
+    void                    *pool;
+    njs_chb_alloc_t         alloc;
+    njs_chb_free_t          free;
+
     njs_chb_node_t          *nodes;
     njs_chb_node_t          *last;
 } njs_chb_t;
 
 
+void njs_chb_init(njs_chb_t *chain, void *pool, njs_chb_alloc_t alloc,
+    njs_chb_free_t free);
+#define NJS_CHB_MP_INIT(chain, vm)                                           \
+    njs_chb_init(chain, njs_vm_memory_pool(vm), (njs_chb_alloc_t) njs_mp_alloc,\
+    (njs_chb_free_t) njs_mp_free)
+#define NJS_CHB_CTX_INIT(chain, ctx)                                         \
+    njs_chb_init(chain, ctx, (njs_chb_alloc_t) js_malloc,                    \
+    (njs_chb_free_t) js_free)
 void njs_chb_append0(njs_chb_t *chain, const char *msg, size_t len);
 void njs_chb_vsprintf(njs_chb_t *chain, size_t size, const char *fmt,
     va_list args);
@@ -46,16 +61,6 @@ void njs_chb_destroy(njs_chb_t *chain);
 
 #define njs_chb_node_size(n) (size_t) ((n)->pos - (n)->start)
 #define njs_chb_node_room(n) (size_t) ((n)->end - (n)->pos)
-
-
-njs_inline void
-njs_chb_init(njs_chb_t *chain, njs_mp_t *pool)
-{
-    chain->error = 0;
-    chain->pool = pool;
-    chain->nodes = NULL;
-    chain->last = NULL;
-}
 
 
 njs_inline void

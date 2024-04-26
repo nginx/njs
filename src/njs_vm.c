@@ -233,7 +233,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
     }
 
     if (njs_slow_path(vm->options.ast)) {
-        njs_chb_init(&chain, vm->mem_pool);
+        NJS_CHB_MP_INIT(&chain, vm);
         ret = njs_parser_serialize_ast(parser.node, &chain);
         if (njs_slow_path(ret == NJS_ERROR)) {
             return ret;

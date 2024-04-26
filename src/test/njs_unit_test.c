@@ -24477,7 +24477,7 @@ njs_chb_test(njs_vm_t *vm, njs_opts_t *opts, njs_stat_t *stat)
 
     static const njs_str_t  expected = njs_str("arg: \"XYZ\" -5");
 
-    njs_chb_init(&chain, njs_vm_memory_pool(vm));
+    NJS_CHB_MP_INIT(&chain, vm);
 
     p = njs_chb_reserve(&chain, 513);
     if (p == NULL) {

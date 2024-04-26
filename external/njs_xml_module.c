@@ -1788,7 +1788,7 @@ njs_xml_ext_canonicalization(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    njs_chb_init(&chain, njs_vm_memory_pool(vm));
+    NJS_CHB_MP_INIT(&chain, vm);
 
     buf = xmlOutputBufferCreateIO(njs_xml_buf_write_cb, NULL, &chain, NULL);
     if (njs_slow_path(buf == NULL)) {

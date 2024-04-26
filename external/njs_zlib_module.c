@@ -320,7 +320,7 @@ njs_zlib_ext_deflate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    njs_chb_init(&chain, njs_vm_memory_pool(vm));
+    NJS_CHB_MP_INIT(&chain, vm);
 
     do {
         stream.next_out = njs_chb_reserve(&chain, chunk_size);
@@ -461,7 +461,7 @@ njs_zlib_ext_inflate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    njs_chb_init(&chain, njs_vm_memory_pool(vm));
+    NJS_CHB_MP_INIT(&chain, vm);
 
     while (rc != Z_STREAM_END) {
         stream.next_out = njs_chb_reserve(&chain, chunk_size);

@@ -2143,7 +2143,7 @@ njs_typed_array_prototype_join(njs_vm_t *vm, njs_value_t *args,
         return NJS_ERROR;
     }
 
-    njs_chb_init(&chain, vm->mem_pool);
+    NJS_CHB_MP_INIT(&chain, vm);
 
     length = njs_typed_array_to_chain(vm, &chain, array, separator);
     size = njs_chb_size(&chain);
