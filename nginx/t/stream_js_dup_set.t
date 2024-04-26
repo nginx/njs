@@ -46,7 +46,7 @@ stream {
 
     server {
         listen  127.0.0.1:8082;
-        js_set $test test.foo1;
+        js_set $test test.foo;
         return  8082:$test;
     }
 }
