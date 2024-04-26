@@ -786,6 +786,11 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     if (!has_host) {
         njs_chb_append_literal(&http->chain, "Host: ");
         njs_chb_append(&http->chain, u.host.data, u.host.len);
+
+        if (!u.no_port) {
+            njs_chb_sprintf(&http->chain, 32, ":%d", u.port);
+        }
+
         njs_chb_append_literal(&http->chain, CRLF);
     }
 
