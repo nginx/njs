@@ -21,7 +21,7 @@ NJS_AUTOCONF_ERR=$NJS_BUILD_DIR/autoconf.err
 NJS_AUTO_CONFIG_H=$NJS_BUILD_DIR/njs_auto_config.h
 NJS_MAKEFILE=$NJS_BUILD_DIR/Makefile
 
-NJS_LIB_INCS="src $NJS_BUILD_DIR"
+NJS_LIB_INCS="src external $NJS_BUILD_DIR"
 
 test -d $NJS_BUILD_DIR || mkdir $NJS_BUILD_DIR
 
@@ -59,6 +59,7 @@ NJS_LIB_AUX_LIBS=
 
 . auto/sources
 . auto/modules
+. auto/qjs_modules
 . auto/make
 . auto/expect
 . auto/summary

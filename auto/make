@@ -15,11 +15,6 @@ njs_modules_c=$NJS_BUILD_DIR/njs_modules.c
 
 NJS_LIB_SRCS="$NJS_LIB_SRCS $njs_modules_c"
 
-njs_incs=`echo $NJS_LIB_INCS \
-        | sed -e "s# *\([^ ]*\)#$njs_regex_cont-I\1#g"`
-njs_objs=`echo $NJS_LIB_SRCS \
-        | sed -e "s# *\([^ ]*\.\)c#$NJS_BUILD_DIR/\1o$njs_regex_cont#g"`
-
 cat << END                                    > $njs_modules_c
 
 #include <njs_main.h>
@@ -44,6 +39,43 @@ cat << END                                    >> $njs_modules_c
 };
 
 END
+
+if [ $NJS_HAVE_QUICKJS = YES ]; then
+
+qjs_modules_c=$NJS_BUILD_DIR/qjs_modules.c
+
+NJS_LIB_SRCS="$NJS_LIB_SRCS $qjs_modules_c"
+
+cat << END                                    > $qjs_modules_c
+
+#include <qjs.h>
+
+END
+
+for mod in $QJS_LIB_MODULES
+do
+    echo "extern qjs_module_t  $mod;"         >> $qjs_modules_c
+done
+
+echo                                          >> $qjs_modules_c
+echo 'qjs_module_t *qjs_modules[] = {'        >> $qjs_modules_c
+
+for mod in $QJS_LIB_MODULES
+do
+    echo "    &$mod,"                         >> $qjs_modules_c
+done
+
+cat << END                                    >> $qjs_modules_c
+    NULL
+};
+
+END
+fi
+
+njs_incs=`echo $NJS_LIB_INCS \
+        | sed -e "s# *\([^ ]*\)#$njs_regex_cont-I\1#g"`
+njs_objs=`echo $NJS_LIB_SRCS \
+        | sed -e "s# *\([^ ]*\.\)c#$NJS_BUILD_DIR/\1o$njs_regex_cont#g"`
 
 cat << END > $NJS_MAKEFILE
 

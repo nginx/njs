@@ -25,6 +25,7 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
                           JSRuntime *rt;
 
                           rt = JS_NewRuntime();
+                          (void) JS_GetClassID;
                           JS_FreeRuntime(rt);
                           return 0;
                      }"
@@ -54,6 +55,26 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
     fi
 
     if [ $njs_found = yes ]; then
+
+        njs_feature="QuickJS JS_NewTypedArray()"
+        njs_feature_test="#if defined(__GNUC__) && (__GNUC__ >= 8)
+                          #pragma GCC diagnostic push
+                          #pragma GCC diagnostic ignored \"-Wcast-function-type\"
+                          #endif
+
+                          #include <quickjs.h>
+
+                          int main() {
+                              (void) JS_NewTypedArray;
+                              return 0;
+                         }"
+
+        . auto/feature
+
+        if [ $njs_found = yes ]; then
+            njs_define=NJS_HAVE_QUICKJS_NEW_TYPED_ARRAY . auto/define
+        fi
+
         NJS_HAVE_QUICKJS=YES
         NJS_QUICKJS_LIB="$njs_feature_libs"
         NJS_LIB_INCS="$NJS_LIB_INCS $njs_feature_incs"

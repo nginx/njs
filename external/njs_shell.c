@@ -12,18 +12,7 @@
 #include <njs_rbtree.h>
 
 #if (NJS_HAVE_QUICKJS)
-#if defined(__GNUC__) && (__GNUC__ >= 8)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wcast-function-type"
-#endif
-
-#include <quickjs.h>
-
-#if defined(__GNUC__) && (__GNUC__ >= 8)
-#pragma GCC diagnostic pop
-#endif
-#define NJS_QUICKJS_VERSION  "Unknown version"
-#include <pthread.h>
+#include <qjs.h>
 #endif
 
 #if (!defined NJS_FUZZER_TARGET && defined NJS_HAVE_READLINE)
@@ -2822,7 +2811,7 @@ njs_engine_qjs_init(njs_engine_t *engine, njs_opts_t *opts)
         return NJS_ERROR;
     }
 
-    engine->u.qjs.ctx = JS_NewContext(engine->u.qjs.rt);
+    engine->u.qjs.ctx = qjs_new_context(engine->u.qjs.rt);
     if (engine->u.qjs.ctx == NULL) {
         njs_stderror("JS_NewContext() failed\n");
         return NJS_ERROR;

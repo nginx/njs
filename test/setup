@@ -38,7 +38,7 @@ njs_failed_list=""
 NJS_TESTS=""
 for arg in $NJS_TEST_PATHS; do
     if [ -d $arg ]; then
-        NJS_TESTS="$NJS_TESTS $(find $arg -name '*\.t\.js')"
+        NJS_TESTS="$NJS_TESTS $(find $arg -name '*\.t\.js' -o -name '*\.t\.mjs')"
     else
         NJS_TESTS="$NJS_TESTS $arg"
     fi

@@ -1,0 +1,6 @@
+# Copyright (C) Dmitry Volyntsev
+# Copyright (C) F5, Inc
+
+QJS_LIB_MODULES="$QJS_LIB_MODULES $njs_module_name"
+NJS_LIB_SRCS="$NJS_LIB_SRCS $njs_module_srcs"
+NJS_LIB_INCS="$NJS_LIB_INCS $njs_module_incs"

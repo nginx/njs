@@ -42,7 +42,15 @@ function merge(to, from) {
             r[v] = merge(r[v], from[v]);
 
         } else if (typeof from[v] == 'object') {
-            r[v] = Object.assign(Array.isArray(from[v]) ? [] : {}, from[v]);
+            if (Buffer.isBuffer(from[v])) {
+                r[v] = Buffer.from(from[v]);
+
+            } else if (from[v] instanceof Uint8Array) {
+                r[v] = new Uint8Array(from[v]);
+
+            } else {
+                r[v] = Object.assign(Array.isArray(from[v]) ? [] : {}, from[v]);
+            }
 
         } else {
             r[v] = from[v];

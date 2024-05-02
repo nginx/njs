@@ -21069,216 +21069,11 @@ static njs_unit_test_t  njs_buffer_module_test[] =
              "].every(args => Buffer.byteLength(args[0], args[1])  == args[2])"),
       njs_str("true") },
 
-    { njs_str("Buffer.from({length:5, 0:'A'.charCodeAt(0), 2:'X', 3:NaN,4:0xfd}).toString('hex')"),
-      njs_str("41000000fd") },
-
-    { njs_str("Buffer.from([1, 2, 0.23, '5', 'A']).toString('hex')"),
-      njs_str("0102000500") },
-
-    { njs_str("Buffer.from([NaN, Infinity]).toString('hex')"),
-      njs_str("0000") },
-
-    { njs_str("Buffer.from(new Uint8Array([0xff,0xde,0xba])).toString('hex')"),
-      njs_str("ffdeba") },
-
-    { njs_str("Buffer.from((new Uint8Array([0xff,0xde,0xba])).buffer).toString('hex')"),
-      njs_str("ffdeba") },
-
-    { njs_str("["
-             " ['', ''],"
-             " ['aa0', 'aa'],"
-             " ['00aabbcc', '00aabbcc'],"
-             " [new String('00aabbcc'), '00aabbcc'],"
-             " ['deadBEEF##', 'deadbeef'],"
-             "].every(args => { "
-             "    if (Buffer.from(args[0], 'hex').toString('hex') != args[1]) {"
-             "        throw `Buffer.from(\"${args[0]}\", 'hex').toString('hex') != \"${args[1]}\"`;"
-             "    }"
-             "    return true;"
-             "})"),
-      njs_str("true") },
-
-    { njs_str("["
-             " ['', ''],"
-             " ['#', ''],"
-             " ['Q', ''],"
-             " ['QQ', 'A'],"
-             " ['QQ=', 'A'],"
-             " ['QQ==', 'A'],"
-             " ['QUI=', 'AB'],"
-             " ['QUI', 'AB'],"
-             " ['QUJD', 'ABC'],"
-             " ['QUJDRA==', 'ABCD'],"
-             "].every(args => { "
-             "    if (Buffer.from(args[0], 'base64') != args[1]) {"
-             "        throw `Buffer.from(\"${args[0]}\", 'base64') != \"${args[1]}\"`;"
-             "    }"
-             "    return true;"
-             "})"),
-      njs_str("true") },
-
-    { njs_str("["
-             " ['', ''],"
-             " ['QQ', 'A'],"
-             " ['QUI', 'AB'],"
-             " ['QUJD', 'ABC'],"
-             " ['QUJDRA', 'ABCD'],"
-             " ['QUJDRA#', 'ABCD'],"
-             "].every(args => { "
-             "    if (Buffer.from(args[0], 'base64url') != args[1]) {"
-             "        throw `Buffer.from(\"${args[0]}\", 'base64url') != \"${args[1]}\"`;"
-             "    }"
-             "    return true;"
-             "})"),
-      njs_str("true") },
-
-    { njs_str("Buffer.from([0x62, 0x75, 0x66, 0x66, 0x65, 0x72])"),
-      njs_str("buffer") },
-
-    { njs_str(njs_declare_sparse_array("arr", 6)
-              "[0x62, 0x75, 0x66, 0x66, 0x65, 0x72].map((v, i) => {arr[i] = v;});"
-              "Buffer.from(arr)"),
-      njs_str("buffer") },
-
-    { njs_str("Buffer.from({length:3, 0:0x62, 1:0x75, 2:0x66})"),
-      njs_str("buf") },
-
-    { njs_str("njs.dump(Buffer.from([-1,1,255,22323,-Infinity,Infinity,NaN]))"),
-      njs_str("Buffer [255,1,255,51,0,0,0]") },
-
-    { njs_str("var buf = Buffer.from([0x62, 0x75, 0x66, 0x66, 0x65, 0x72]); njs.dump(buf)"),
-      njs_str("Buffer [98,117,102,102,101,114]") },
-
-    { njs_str("var buf = Buffer.from([1,2,3]); njs.dump(Buffer.from(buf.toJSON()))"),
-      njs_str("Buffer [1,2,3]") },
-
-    { njs_str("["
-              " {type: 'B'},"
-              " {type: undefined},"
-              " {type:'Buffer'},"
-              " {type:'Buffer', data:null},"
-              " {type:'Buffer', data:{}},"
-              "].every(v=>{ try { Buffer.from(v)} catch(e) {return e.name == 'TypeError'}})"),
-      njs_str("true") },
-
-    { njs_str("var foo = new Uint16Array(2);"
-              "foo[0] = 5000; foo[1] = 4000;"
-              "var buf = Buffer.from(foo.buffer);"
-              "foo[1] = 6000;"
-              "njs.dump(buf)"),
-      njs_str("Buffer [" njs_evar("136,19,112,23", "19,136,23,112") "]") },
-
-    { njs_str("var foo = new Uint16Array(2).fill(950);"
-              "var buf = Buffer.from(foo.buffer, 1); njs.dump(buf)"),
-      njs_str("Buffer [" njs_evar("3,182,3", "182,3,182") "]") },
-
-    { njs_str("var foo = new Uint16Array(2).fill(950);"
-              "var buf = Buffer.from(foo.buffer, -1); njs.dump(buf)"),
-      njs_str("RangeError: invalid index") },
-
-    { njs_str("var foo = new Uint16Array(2).fill(950);"
-              "var buf = Buffer.from(foo.buffer, 5); njs.dump(buf)"),
-      njs_str("RangeError: \"offset\" is outside of buffer bounds") },
-
-    { njs_str("var foo = new Uint16Array(2).fill(950);"
-              "var buf = Buffer.from(foo.buffer, 2, 1); njs.dump(buf)"),
-      njs_str("Buffer [" njs_evar("182", "3") "]") },
-
-    { njs_str("var foo = new Uint16Array(2).fill(950);"
-              "var buf = Buffer.from(foo.buffer, 2, -1); njs.dump(buf)"),
-      njs_str("Buffer []") },
-
-    { njs_str("var foo = new Uint16Array(2).fill(950);"
-              "var buf = Buffer.from(foo.buffer, 2, 3); njs.dump(buf)"),
-      njs_str("RangeError: \"length\" is outside of buffer bounds") },
-
-    { njs_str("var foo = new Uint16Array(2).fill(950);"
-              "var buf = Buffer.from(foo.buffer, 2, 0); njs.dump(buf)"),
-      njs_str("Buffer []") },
-
-    { njs_str("var foo = new Uint16Array(2).fill(950);"
-              "var buf = Buffer.from(foo.buffer, 2, 2); njs.dump(buf)"),
-      njs_str("Buffer [" njs_evar("182,3", "3,182") "]") },
-
-    { njs_str("var foo = new Uint16Array(2).fill(950);"
-              "var buf = Buffer.from(foo.buffer, '2', '2'); njs.dump(buf)"),
-      njs_str("Buffer [" njs_evar("182,3", "3,182") "]") },
-
-    { njs_str("var foo = new Uint32Array(1).fill(0xF1F2F3F4);"
-              "var buf = Buffer.from(foo); njs.dump(buf)"),
-      njs_str("Buffer [244]") },
-
-    { njs_str("var foo = new Uint32Array(2).fill(0xF1F2F3F4);"
-              "var buf = Buffer.from(foo); njs.dump(buf)"),
-      njs_str("Buffer [244,244]") },
-
     { njs_str("var foo = new Uint8Array(5);"
               "foo[0] = 1; foo[1] = 2; foo[2] = 3; foo[3] = 4; foo[4] = 5;"
               "foo = foo.subarray(1, 3);"
               "var buf = Buffer.from(foo); njs.dump(buf)"),
       njs_str("Buffer [2,3]") },
-
-    { njs_str("var buf = Buffer.from(''); njs.dump(buf)"),
-      njs_str("Buffer []") },
-
-    { njs_str("var buf = Buffer.from('α'); njs.dump(buf)"),
-      njs_str("Buffer [206,177]") },
-
-    { njs_str("var arr = new Array(1,2,3); arr.valueOf = () => arr;"
-              "njs.dump(Buffer.from(arr))"),
-      njs_str("Buffer [1,2,3]") },
-
-    { njs_str("var obj = new Object(); obj.valueOf = () => obj;"
-              "Buffer.from(obj)"),
-      njs_str("TypeError: first argument object is not a string or Buffer-like object") },
-
-    { njs_str("var obj = new Object(); obj.valueOf = () => undefined;"
-              "njs.dump(Buffer.from(obj))"),
-      njs_str("TypeError: first argument undefined is not a string or Buffer-like object") },
-
-    { njs_str("var arr = new Array(1,2,3); arr.valueOf = () => null;"
-              "njs.dump(Buffer.from(arr))"),
-      njs_str("Buffer [1,2,3]") },
-
-    { njs_str("var obj = new Object(); obj.valueOf = () => new Array(1,2,3);"
-              "njs.dump(Buffer.from(obj))"),
-      njs_str("Buffer [1,2,3]") },
-
-    { njs_str("njs.dump(Buffer.from(new String('test')))"),
-      njs_str("Buffer [116,101,115,116]") },
-
-    { njs_str("Buffer.from({ get type() { throw new Error('test'); } })"),
-      njs_str("Error: test") },
-
-    { njs_str("Buffer.from({ type: 'Buffer', get data() { throw new Error('test'); } })"),
-      njs_str("Error: test") },
-
-    { njs_str("var a = [1,2,3,4]; a[1] = { valueOf() { a.length = 3; return 1; } };"
-              "njs.dump(Buffer.from(a))"),
-      njs_str("Buffer [1,1,3,0]") },
-
-    { njs_str("var a = [1,2,3,4]; a[1] = { valueOf() { a.length = 4096; a.fill(13); return 1; } };"
-              "njs.dump(Buffer.from(a))"),
-      njs_str("Buffer [1,1,13,13]") },
-
-    { njs_str("["
-             " ['6576696c', 'hex'],"
-             " ['ZXZpbA==', 'base64'],"
-             " ['ZXZpbA==#', 'base64'],"
-             " ['ZXZpbA', 'base64url'],"
-             " ['ZXZpbA##', 'base64url'],"
-             "].every(args => Buffer.from(args[0], args[1]) == 'evil')"),
-      njs_str("true") },
-
-    { njs_str("var buf = Buffer.from($262.byteString([0xF3])); buf"),
-      njs_str("�") },
-
-    { njs_str("Buffer.from('', 'utf-128')"),
-      njs_str("TypeError: \"utf-128\" encoding is not supported") },
-
-    { njs_str("[Buffer.from('α'), new Uint8Array(10), {}, 1]"
-              ".map(v=>Buffer.isBuffer(v))"),
-      njs_str("true,false,false,false") },
 
     { njs_str("['utf8', 'utf-8', 'hex', 'base64', 'base64url', 'utf-88', '1hex']"
               ".map(v=>Buffer.isEncoding(v))"),
@@ -21760,12 +21555,6 @@ static njs_unit_test_t  njs_buffer_module_test[] =
               "Buffer [4,3,2,1,8,7,6,5],"
               "Buffer [8,7,6,5,4,3,2,1]") },
 
-    { njs_str("njs.dump(Buffer.from('αααα').toJSON())"),
-      njs_str("{type:'Buffer',data:[206,177,206,177,206,177,206,177]}") },
-
-    { njs_str("njs.dump(Buffer.from('').toJSON())"),
-      njs_str("{type:'Buffer',data:[]}") },
-
     { njs_str("["
               " [['base64'], 'ZXZpbA=='],"
               " [['base64url'], 'ZXZpbA'],"
@@ -21784,9 +21573,6 @@ static njs_unit_test_t  njs_buffer_module_test[] =
               "   return true;"
               "})"),
       njs_str("true") },
-
-    { njs_str("Buffer.from('evil').toString('utf-128')"),
-      njs_str("TypeError: \"utf-128\" encoding is not supported") },
 
     { njs_str("var buf = Buffer.allocUnsafe(4);"
               "var len = buf.write('ZXZpbA==', 'base64'); [len, buf]"),
@@ -22303,82 +22089,6 @@ static njs_unit_test_t  njs_xml_test[] =
               "doc.note.$tags = [doc2, doc.note.to];"
               "(new TextDecoder).decode(xml.c14n(doc))"),
       njs_str("<note xmlns:n0=\"http://a\"><n0:pdu></n0:pdu><to a=\"foo\" b=\"bar\">Tove</to></note>") },
-};
-
-
-static njs_unit_test_t  njs_zlib_test[] =
-{
-    { njs_str("const zlib = require('zlib');"
-              "['C3f0dgQA', 'O7fx3KZzmwE=']"
-              ".map(v => zlib.inflateRawSync(Buffer.from(v, 'base64')).toString())"),
-      njs_str("WAKA,αβγ") },
-
-    { njs_str("const zlib = require('zlib');"
-              "['eJwLd/R2BAAC+gEl', 'eJw7t/HcpnObAQ/sBIE=']"
-              ".map(v => zlib.inflateSync(Buffer.from(v, 'base64')).toString())"),
-      njs_str("WAKA,αβγ") },
-
-    { njs_str("const zlib = require('zlib');"
-              "const enc = ['WAKA', 'αβγ'].map(v => zlib.deflateRawSync(v).toString('base64'));"
-              "enc.map(v => zlib.inflateRawSync(Buffer.from(v, 'base64')).toString())"),
-      njs_str("WAKA,αβγ") },
-
-    { njs_str("const zlib = require('zlib');"
-              "const enc = ['WAKA', 'αβγ']"
-              ".map(v => zlib.deflateRawSync(v, {dictionary: Buffer.from('WAKA')}).toString('base64'));"
-              "enc.map(v => zlib.inflateRawSync(Buffer.from(v, 'base64'), {dictionary: Buffer.from('WAKA')}))"),
-      njs_str("WAKA,αβγ") },
-
-    { njs_str("const zlib = require('zlib');"
-              "['WAKA', 'αβγ']"
-              ".map(v => zlib.deflateRawSync(v, {level: zlib.constants.Z_NO_COMPRESSION}).toString('base64'))"),
-      njs_str("AQQA+/9XQUtB,AQYA+f/Osc6yzrM=") },
-
-    { njs_str("const zlib = require('zlib');"
-              "[zlib.constants.Z_FIXED,  zlib.constants.Z_RLE]"
-              ".map(v => zlib.deflateRawSync('WAKA'.repeat(10), {strategy: v}).toString('base64'))"),
-      njs_str("C3f0dgwnAgMA,BcExAQAAAMKgbNwLYP8mwmQymUwmk8lkcg==") },
-
-    { njs_str("const zlib = require('zlib');"
-              "[1, 8]"
-              ".map(v => zlib.deflateRawSync('WAKA'.repeat(35),"
-              "                              {strategy: zlib.constants.Z_RLE, memLevel: v})"
-              "          .toString('base64'))"),
-      njs_str("BMExAQAAAMKgbNwLYP8mwmQymUwmk8lkMplMJpPJZDKZTCaTyWQymUwmk+lzDHf0dgx39HYMd/R2BAA=,"
-              "BcExAQAAAMKgbNwLYP8mwmQymUwmk8lkMplMJpPJZDKZTCaTyWQymUwmk8lkMjk=") },
-
-    { njs_str("const zlib = require('zlib');"
-              "['WAKA', 'αβγ']"
-              ".map(v => zlib.deflateSync(v).toString('base64'))"),
-      njs_str("eJwLd/R2BAAC+gEl,eJw7t/HcpnObAQ/sBIE=") },
-
-    { njs_str("const zlib = require('zlib');"
-              "const buf = 'αβγ'.repeat(56);"
-              "const enc = zlib.deflateRawSync(buf, {chunkSize:64}).toString('base64');"
-              "const dec = zlib.inflateRawSync(Buffer.from(enc, 'base64')).toString();"
-              "buf == dec"),
-      njs_str("true") },
-
-    { njs_str("const zlib = require('zlib');"
-              "['WAKA'.repeat(1024), 'αβγ'.repeat(1024)]"
-              ".map(v => [v, zlib.deflateRawSync(v).toString('base64')])"
-              ".every(pair => pair[0] == zlib.inflateRawSync(Buffer.from(pair[1], 'base64')).toString())"),
-      njs_str("true") },
-
-    { njs_str("const zlib = require('zlib');"
-              "['WAKA'.repeat(1024), 'αβγ'.repeat(1024)]"
-              ".map(v => [v, zlib.deflateRawSync(v, {chunkSize:64}).toString('base64')])"
-              ".every(pair => pair[0] == zlib.inflateRawSync(Buffer.from(pair[1], 'base64'),"
-              "                                              {chunkSize:64}).toString())"),
-      njs_str("true") },
-
-    { njs_str("const zlib = require('zlib');"
-              "['WAKA', 'αβγ']"
-              ".map(v => [v, zlib.deflateRawSync(v, {dictionary: Buffer.from('WAKA')}).toString('base64')])"
-              ".every(pair => pair[0] == zlib.inflateRawSync(Buffer.from(pair[1], 'base64'),"
-              "                                              {dictionary: Buffer.from('WAKA')}).toString())"),
-      njs_str("true") },
-
 };
 
 
@@ -25113,17 +24823,6 @@ static njs_test_suite_t  njs_suites[] =
       { .externals = 1, .repeat = 1, .unsafe = 1 },
       njs_xml_test,
       njs_nitems(njs_xml_test),
-      njs_unit_test },
-
-    {
-#if (NJS_HAVE_ZLIB && !NJS_HAVE_MEMORY_SANITIZER)
-        njs_str("zlib"),
-#else
-        njs_str(""),
-#endif
-      { .externals = 1, .repeat = 1, .unsafe = 1 },
-      njs_zlib_test,
-      njs_nitems(njs_zlib_test),
       njs_unit_test },
 
     { njs_str("module"),
