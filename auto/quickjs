@@ -81,7 +81,7 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
         NJS_LIB_AUX_LIBS="$NJS_LIB_AUX_LIBS $njs_feature_libs"
     fi
 
-    if [ $NJS_QUICKJS = YES -a $njs_found = no ]; then
+    if [ $NJS_QUICKJS = YES -a $NJS_HAVE_QUICKJS = NO ]; then
         echo
         echo $0: error: no QuickJS library found.
         echo
