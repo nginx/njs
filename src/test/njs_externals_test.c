@@ -158,7 +158,7 @@ njs_unit_test_r_uri(njs_vm_t *vm, njs_object_prop_t *prop,
         return njs_vm_value_to_bytes(vm, field, setval);
     }
 
-    return njs_vm_value_string_set(vm, retval, field->start, field->length);
+    return njs_vm_value_string_create(vm, retval, field->start, field->length);
 }
 
 
@@ -178,7 +178,7 @@ njs_unit_test_r_a(njs_vm_t *vm, njs_object_prop_t *prop,
 
     p = njs_sprintf(buf, buf + njs_length(buf), "%uD", r->a);
 
-    return njs_vm_value_string_set(vm, retval, buf, p - buf);
+    return njs_vm_value_string_create(vm, retval, buf, p - buf);
 }
 
 
@@ -214,7 +214,7 @@ static njs_int_t
 njs_unit_test_r_host(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
-    return njs_vm_value_string_set(vm, retval, (u_char *) "АБВГДЕЁЖЗИЙ", 22);
+    return njs_vm_value_string_create(vm, retval, (u_char *) "АБВГДЕЁЖЗИЙ", 22);
 }
 
 
@@ -264,7 +264,7 @@ njs_unit_test_r_vars(njs_vm_t *vm, njs_object_prop_t *self,
 
     if (setval != NULL) {
         /* Set. */
-        njs_vm_value_string_set(vm, &name, lhq.key.start, lhq.key.length);
+        njs_vm_value_string_create(vm, &name, lhq.key.start, lhq.key.length);
         prop = lvlhsh_unit_test_alloc(vm->mem_pool, &name, setval);
         if (prop == NULL) {
             njs_memory_error(vm);
@@ -313,24 +313,22 @@ static njs_int_t
 njs_unit_test_r_header(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *unused, njs_value_t *retval)
 {
-    u_char     *p;
-    uint32_t   size;
     njs_int_t  ret;
     njs_str_t  h;
+    njs_chb_t  chain;
 
     ret = njs_vm_prop_name(vm, prop, &h);
     if (ret == NJS_OK) {
-        size = 7 + h.length;
+        NJS_CHB_MP_INIT(&chain, vm);
 
-        p = njs_vm_value_string_alloc(vm, retval, size);
-        if (p == NULL) {
-            return NJS_ERROR;
-        }
+        njs_chb_append(&chain, h.start, h.length);
+        njs_chb_append(&chain, (u_char *) "|АБВ", njs_length("|АБВ"));
 
-        p = njs_cpymem(p, h.start, h.length);
-        *p++ = '|';
-        memcpy(p, "АБВ", njs_length("АБВ"));
-        return NJS_OK;
+        ret = njs_vm_value_string_create_chb(vm, retval, &chain);
+
+        njs_chb_destroy(&chain);
+
+        return ret;
     }
 
     njs_value_undefined_set(retval);
@@ -360,7 +358,7 @@ njs_unit_test_r_header_keys(njs_vm_t *vm, njs_value_t *value, njs_value_t *keys)
             return NJS_ERROR;
         }
 
-        (void) njs_vm_value_string_set(vm, push, k, 2);
+        (void) njs_vm_value_string_create(vm, push, k, 2);
 
         k[1]++;
     }
@@ -385,7 +383,8 @@ njs_unit_test_r_method(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     ret = njs_vm_value_to_bytes(vm, &s, njs_arg(args, nargs, 1));
     if (ret == NJS_OK && s.length == 3 && memcmp(s.start, "YES", 3) == 0) {
-        return njs_vm_value_string_set(vm, retval, r->uri.start, r->uri.length);
+        return njs_vm_value_string_create(vm, retval, r->uri.start,
+                                          r->uri.length);
     }
 
     njs_set_undefined(retval);
@@ -638,7 +637,8 @@ static njs_int_t
 njs_unit_test_error_name(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
-    return njs_vm_value_string_set(vm, retval, (u_char *) "ExternalError", 13);
+    return njs_vm_value_string_create(vm, retval, (u_char *) "ExternalError",
+                                      13);
 }
 
 
@@ -646,7 +646,7 @@ static njs_int_t
 njs_unit_test_error_message(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
-    return njs_vm_value_string_set(vm, retval, (u_char *) "", 0);
+    return njs_vm_value_string_create(vm, retval, (u_char *) "", 0);
 }
 
 

@@ -946,14 +946,6 @@ njs_value_string_get(njs_value_t *value, njs_str_t *dst)
 
 
 njs_int_t
-njs_vm_value_string_set(njs_vm_t *vm, njs_value_t *value, const u_char *start,
-    uint32_t size)
-{
-    return njs_string_set(vm, value, start, size);
-}
-
-
-njs_int_t
 njs_vm_value_array_buffer_set(njs_vm_t *vm, njs_value_t *value,
     const u_char *start, uint32_t size)
 {
@@ -978,13 +970,6 @@ njs_vm_value_buffer_set(njs_vm_t *vm, njs_value_t *value, const u_char *start,
     uint32_t size)
 {
     return njs_buffer_set(vm, value, start, size);
-}
-
-
-u_char *
-njs_vm_value_string_alloc(njs_vm_t *vm, njs_value_t *value, uint32_t size)
-{
-    return njs_string_alloc(vm, value, size, 0);
 }
 
 
@@ -1342,7 +1327,7 @@ njs_vm_object_prop(njs_vm_t *vm, njs_value_t *value, const njs_str_t *prop,
         return NULL;
     }
 
-    ret = njs_vm_value_string_set(vm, &key, prop->start, prop->length);
+    ret = njs_vm_value_string_create(vm, &key, prop->start, prop->length);
     if (njs_slow_path(ret != NJS_OK)) {
         return NULL;
     }
@@ -1368,7 +1353,7 @@ njs_vm_object_prop_set(njs_vm_t *vm, njs_value_t *value, const njs_str_t *prop,
         return NJS_ERROR;
     }
 
-    ret = njs_vm_value_string_set(vm, &key, prop->start, prop->length);
+    ret = njs_vm_value_string_create(vm, &key, prop->start, prop->length);
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }

@@ -22169,13 +22169,13 @@ static njs_unit_test_t  njs_externals_test[] =
       njs_str("АБВαβγ") },
 
     { njs_str("var a = $r.uri; a +' '+ a.length +' '+ a"),
-      njs_str("АБВ 6 АБВ") },
+      njs_str("АБВ 3 АБВ") },
 
     { njs_str("$r.uri = 'αβγ'; var a = $r.uri; a.length +' '+ a"),
-      njs_str("6 αβγ") },
+      njs_str("3 αβγ") },
 
     { njs_str("$r.uri.length +' '+ $r.uri"),
-      njs_str("6 АБВ") },
+      njs_str("3 АБВ") },
 
     { njs_str("var t; "
               "switch ($r3.uri) {"
@@ -22187,8 +22187,8 @@ static njs_unit_test_t  njs_externals_test[] =
               "}; t"),
       njs_str("A") },
 
-    { njs_str("$r.uri = $r.uri.substr(2); $r.uri.length +' '+ $r.uri"),
-      njs_str("4 БВ") },
+    { njs_str("$r.uri = $r.uri.substr(1); $r.uri.length +' '+ $r.uri"),
+      njs_str("2 БВ") },
 
     { njs_str("'' + $r.props.a + $r2.props.a + $r.props.a"),
       njs_str("121") },
@@ -22263,13 +22263,13 @@ static njs_unit_test_t  njs_externals_test[] =
       njs_str("undefined") },
 
     { njs_str("var a = $r.host; a +' '+ a.length +' '+ a"),
-      njs_str("АБВГДЕЁЖЗИЙ 22 АБВГДЕЁЖЗИЙ") },
+      njs_str("АБВГДЕЁЖЗИЙ 11 АБВГДЕЁЖЗИЙ") },
 
-    { njs_str("var a = $r.host; a.substr(2, 2)"),
+    { njs_str("var a = $r.host; a.substr(1, 1)"),
       njs_str("Б") },
 
     { njs_str("var a = $r.header['User-Agent']; a +' '+ a.length +' '+ a"),
-      njs_str("User-Agent|АБВ 17 User-Agent|АБВ") },
+      njs_str("User-Agent|АБВ 14 User-Agent|АБВ") },
 
     { njs_str("var a='', p;"
                  "for (p in $r.header) { a += p +':'+ $r.header[p] +',' }"
@@ -24141,10 +24141,10 @@ njs_vm_object_alloc_test(njs_vm_t *vm, njs_opts_t *opts, njs_stat_t *stat)
     njs_value_number_set(njs_value_arg(&args[0]), 1);
     njs_value_boolean_set(njs_value_arg(&args[0]), 0);
 
-    (void) njs_vm_value_string_set(vm, njs_value_arg(&num_key),
-                                   (u_char *) "num", 3);
-    (void) njs_vm_value_string_set(vm, njs_value_arg(&bool_key),
-                                   (u_char *) "bool", 4);
+    (void) njs_vm_value_string_create(vm, njs_value_arg(&num_key),
+                                     (u_char *) "num", 3);
+    (void) njs_vm_value_string_create(vm, njs_value_arg(&bool_key),
+                                     (u_char *) "bool", 4);
 
     ret = njs_vm_object_alloc(vm, njs_value_arg(&obj), NULL);
     if (ret != NJS_OK) {
@@ -24486,9 +24486,9 @@ njs_string_to_index_test(njs_vm_t *vm, njs_opts_t *opts, njs_stat_t *stat)
     };
 
     for (i = 0; i < njs_nitems(tests); i++) {
-            (void) njs_vm_value_string_set(vm, njs_value_arg(&input),
-                                           tests[i].value.start,
-                                           tests[i].value.length);
+            (void) njs_vm_value_string_create(vm, njs_value_arg(&input),
+                                             tests[i].value.start,
+                                             tests[i].value.length);
 
             num = njs_string_to_index(njs_value_arg(&input));
             njs_value_number_set(njs_value_arg(&value), num);

@@ -1579,8 +1579,8 @@ njs_engine_njs_complete(njs_engine_t *engine, njs_str_t *expression)
 
         while (p < end && *p != '.') { p++; }
 
-        ret = njs_vm_value_string_set(vm, njs_value_arg(&key), start,
-                                      p - start);
+        ret = njs_vm_value_string_create(vm, njs_value_arg(&key), start,
+                                         p - start);
         if (njs_slow_path(ret != NJS_OK)) {
             return NULL;
         }

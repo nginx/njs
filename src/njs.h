@@ -400,14 +400,6 @@ NJS_EXPORT njs_int_t njs_value_to_integer(njs_vm_t *vm, njs_value_t *value,
 
 /*  Gets string value, no copy. */
 NJS_EXPORT void njs_value_string_get(njs_value_t *value, njs_str_t *dst);
-/*
- * Sets a byte string value.
- *   start data is not copied and should not be freed.
- */
-NJS_EXPORT njs_int_t njs_vm_value_string_set(njs_vm_t *vm, njs_value_t *value,
-    const u_char *start, uint32_t size);
-NJS_EXPORT u_char *njs_vm_value_string_alloc(njs_vm_t *vm, njs_value_t *value,
-    uint32_t size);
 NJS_EXPORT njs_int_t njs_vm_value_string_create(njs_vm_t *vm,
     njs_value_t *value, const u_char *start, uint32_t size);
 NJS_EXPORT njs_int_t njs_vm_value_string_create_chb(njs_vm_t *vm,

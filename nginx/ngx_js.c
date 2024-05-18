@@ -668,7 +668,7 @@ ngx_js_ext_string(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
 
     field = (ngx_str_t *) (p + njs_vm_prop_magic32(prop));
 
-    return njs_vm_value_string_set(vm, retval, field->data, field->len);
+    return njs_vm_value_string_create(vm, retval, field->data, field->len);
 }
 
 
@@ -745,15 +745,15 @@ njs_int_t
 ngx_js_ext_build(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval)
 {
-    return njs_vm_value_string_set(vm, retval,
+    return njs_vm_value_string_create(vm, retval,
 #ifdef NGX_BUILD
-                                   (u_char *) NGX_BUILD,
-                                   njs_strlen(NGX_BUILD)
+                                      (u_char *) NGX_BUILD,
+                                      njs_strlen(NGX_BUILD)
 #else
-                                   (u_char *) "",
-                                   0
+                                      (u_char *) "",
+                                      0
 #endif
-                                   );
+                                     );
 }
 
 
@@ -761,8 +761,8 @@ njs_int_t
 ngx_js_ext_conf_file_path(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
-    return njs_vm_value_string_set(vm, retval, ngx_cycle->conf_file.data,
-                                   ngx_cycle->conf_file.len);
+    return njs_vm_value_string_create(vm, retval, ngx_cycle->conf_file.data,
+                                      ngx_cycle->conf_file.len);
 }
 
 
@@ -770,8 +770,8 @@ njs_int_t
 ngx_js_ext_conf_prefix(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
-    return njs_vm_value_string_set(vm, retval, ngx_cycle->conf_prefix.data,
-                                   ngx_cycle->conf_prefix.len);
+    return njs_vm_value_string_create(vm, retval, ngx_cycle->conf_prefix.data,
+                                      ngx_cycle->conf_prefix.len);
 }
 
 
@@ -779,8 +779,8 @@ njs_int_t
 ngx_js_ext_error_log_path(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
-    return njs_vm_value_string_set(vm, retval, ngx_cycle->error_log.data,
-                                   ngx_cycle->error_log.len);
+    return njs_vm_value_string_create(vm, retval, ngx_cycle->error_log.data,
+                                      ngx_cycle->error_log.len);
 }
 
 
@@ -788,8 +788,8 @@ njs_int_t
 ngx_js_ext_prefix(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval)
 {
-    return njs_vm_value_string_set(vm, retval, ngx_cycle->prefix.data,
-                                   ngx_cycle->prefix.len);
+    return njs_vm_value_string_create(vm, retval, ngx_cycle->prefix.data,
+                                      ngx_cycle->prefix.len);
 }
 
 
@@ -797,8 +797,8 @@ njs_int_t
 ngx_js_ext_version(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval)
 {
-    return njs_vm_value_string_set(vm, retval, (u_char *) NGINX_VERSION,
-                                   njs_strlen(NGINX_VERSION));
+    return njs_vm_value_string_create(vm, retval, (u_char *) NGINX_VERSION,
+                                      njs_strlen(NGINX_VERSION));
 }
 
 

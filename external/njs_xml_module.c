@@ -584,8 +584,8 @@ njs_xml_node_ext_prop_keys(njs_vm_t *vm, njs_value_t *value, njs_value_t *keys)
             return NJS_ERROR;
         }
 
-        ret = njs_vm_value_string_set(vm, push, (u_char *) "$name",
-                                      njs_length("$name"));
+        ret = njs_vm_value_string_create(vm, push, (u_char *) "$name",
+                                         njs_length("$name"));
         if (njs_slow_path(ret != NJS_OK)) {
             return NJS_ERROR;
         }
@@ -597,8 +597,8 @@ njs_xml_node_ext_prop_keys(njs_vm_t *vm, njs_value_t *value, njs_value_t *keys)
             return NJS_ERROR;
         }
 
-        ret = njs_vm_value_string_set(vm, push, (u_char *) "$ns",
-                                      njs_length("$ns"));
+        ret = njs_vm_value_string_create(vm, push, (u_char *) "$ns",
+                                         njs_length("$ns"));
         if (njs_slow_path(ret != NJS_OK)) {
             return NJS_ERROR;
         }
@@ -610,8 +610,8 @@ njs_xml_node_ext_prop_keys(njs_vm_t *vm, njs_value_t *value, njs_value_t *keys)
             return NJS_ERROR;
         }
 
-        ret = njs_vm_value_string_set(vm, push, (u_char *) "$attrs",
-                                      njs_length("$attrs"));
+        ret = njs_vm_value_string_create(vm, push, (u_char *) "$attrs",
+                                         njs_length("$attrs"));
         if (njs_slow_path(ret != NJS_OK)) {
             return NJS_ERROR;
         }
@@ -623,8 +623,8 @@ njs_xml_node_ext_prop_keys(njs_vm_t *vm, njs_value_t *value, njs_value_t *keys)
             return NJS_ERROR;
         }
 
-        ret = njs_vm_value_string_set(vm, push, (u_char *) "$text",
-                                      njs_length("$text"));
+        ret = njs_vm_value_string_create(vm, push, (u_char *) "$text",
+                                         njs_length("$text"));
         if (njs_slow_path(ret != NJS_OK)) {
             return NJS_ERROR;
         }
@@ -640,8 +640,8 @@ njs_xml_node_ext_prop_keys(njs_vm_t *vm, njs_value_t *value, njs_value_t *keys)
             return NJS_ERROR;
         }
 
-        ret = njs_vm_value_string_set(vm, push, (u_char *) "$tags",
-                                      njs_length("$tags"));
+        ret = njs_vm_value_string_create(vm, push, (u_char *) "$tags",
+                                         njs_length("$tags"));
         if (njs_slow_path(ret != NJS_OK)) {
             return NJS_ERROR;
         }

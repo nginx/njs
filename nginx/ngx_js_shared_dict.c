@@ -423,8 +423,8 @@ njs_js_ext_global_shared_keys(njs_vm_t *vm, njs_value_t *unused,
             return NJS_ERROR;
         }
 
-        rc = njs_vm_value_string_set(vm, value, shm_zone->shm.name.data,
-                                     shm_zone->shm.name.len);
+        rc = njs_vm_value_string_create(vm, value, shm_zone->shm.name.data,
+                                        shm_zone->shm.name.len);
         if (rc != NJS_OK) {
             return NJS_ERROR;
         }
@@ -698,8 +698,8 @@ njs_js_ext_shared_dict_keys(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             goto fail;
         }
 
-        rc = njs_vm_value_string_set(vm, value, node->sn.str.data,
-                                     node->sn.str.len);
+        rc = njs_vm_value_string_create(vm, value, node->sn.str.data,
+                                        node->sn.str.len);
         if (rc != NJS_OK) {
             goto fail;
         }
@@ -853,8 +853,8 @@ njs_js_ext_shared_dict_items(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             goto fail;
         }
 
-        rc = njs_vm_value_string_set(vm, value, node->sn.str.data,
-                                     node->sn.str.len);
+        rc = njs_vm_value_string_create(vm, value, node->sn.str.data,
+                                        node->sn.str.len);
         if (rc != NJS_OK) {
             goto fail;
         }
@@ -896,8 +896,8 @@ njs_js_ext_shared_dict_name(njs_vm_t *vm, njs_object_prop_t *prop,
         return NJS_DECLINED;
     }
 
-    return njs_vm_value_string_set(vm, retval, shm_zone->shm.name.data,
-                                   shm_zone->shm.name.len);
+    return njs_vm_value_string_create(vm, retval, shm_zone->shm.name.data,
+                                      shm_zone->shm.name.len);
 }
 
 
@@ -1063,7 +1063,7 @@ njs_js_ext_shared_dict_type(njs_vm_t *vm, njs_object_prop_t *prop,
         break;
     }
 
-    return njs_vm_value_string_set(vm, retval, type.start, type.length);
+    return njs_vm_value_string_create(vm, retval, type.start, type.length);
 }
 
 
@@ -1406,7 +1406,8 @@ ngx_js_dict_copy_value_locked(njs_vm_t *vm, ngx_js_dict_t *dict,
             return NGX_ERROR;
         }
 
-        ret = njs_vm_value_string_set(vm, retval, string.start, string.length);
+        ret = njs_vm_value_string_create(vm, retval, string.start,
+                                         string.length);
         if (ret != NJS_OK) {
             return NGX_ERROR;
         }
@@ -1493,8 +1494,8 @@ static njs_int_t
 ngx_js_dict_shared_error_name(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
-    return njs_vm_value_string_set(vm, retval, (u_char *) "SharedMemoryError",
-                                   17);
+    return njs_vm_value_string_create(vm, retval,
+                                      (u_char *) "SharedMemoryError", 17);
 }
 
 

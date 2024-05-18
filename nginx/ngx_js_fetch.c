@@ -3237,8 +3237,8 @@ ngx_headers_js_get(njs_vm_t *vm, njs_value_t *value, njs_str_t *name,
                 return NJS_ERROR;
             }
 
-            rc = njs_vm_value_string_set(vm, value, ph->value.data,
-                                         ph->value.len);
+            rc = njs_vm_value_string_create(vm, value, ph->value.data,
+                                            ph->value.len);
             if (rc != NJS_OK) {
                 return NJS_ERROR;
             }
@@ -3283,7 +3283,7 @@ ngx_headers_js_get(njs_vm_t *vm, njs_value_t *value, njs_str_t *name,
         h = h->next;
     }
 
-    return njs_vm_value_string_set(vm, retval, data, p - data);
+    return njs_vm_value_string_create(vm, retval, data, p - data);
 }
 
 
@@ -3574,8 +3574,8 @@ ngx_headers_js_ext_keys(njs_vm_t *vm, njs_value_t *value, njs_value_t *keys)
                 return NJS_ERROR;
             }
 
-            rc = njs_vm_value_string_set(vm, value, h[i].key.data,
-                                         h[i].key.len);
+            rc = njs_vm_value_string_create(vm, value, h[i].key.data,
+                                            h[i].key.len);
             if (rc != NJS_OK) {
                 return NJS_ERROR;
             }
@@ -3709,9 +3709,9 @@ ngx_request_js_ext_body(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     case NGX_JS_BODY_JSON:
     case NGX_JS_BODY_TEXT:
     default:
-        ret = njs_vm_value_string_set(vm, njs_value_arg(&result),
-                                      request->body.start,
-                                      request->body.length);
+        ret = njs_vm_value_string_create(vm, njs_value_arg(&result),
+                                         request->body.start,
+                                         request->body.length);
         if (ret != NJS_OK) {
             njs_vm_memory_error(vm);
             return NJS_ERROR;
@@ -3869,8 +3869,8 @@ ngx_response_js_ext_body(njs_vm_t *vm, njs_value_t *args,
     case NGX_JS_BODY_JSON:
     case NGX_JS_BODY_TEXT:
     default:
-        ret = njs_vm_value_string_set(vm, njs_value_arg(&result),
-                                      string.start, string.length);
+        ret = njs_vm_value_string_create(vm, njs_value_arg(&result),
+                                         string.start, string.length);
         if (ret != NJS_OK) {
             njs_vm_memory_error(vm);
             return NJS_ERROR;
@@ -3985,8 +3985,8 @@ ngx_response_js_ext_status_text(njs_vm_t *vm, njs_object_prop_t *prop,
         return NJS_DECLINED;
     }
 
-    njs_vm_value_string_set(vm, retval, response->status_text.start,
-                            response->status_text.length);
+    njs_vm_value_string_create(vm, retval, response->status_text.start,
+                               response->status_text.length);
 
     return NJS_OK;
 }
@@ -4004,8 +4004,8 @@ ngx_response_js_ext_type(njs_vm_t *vm, njs_object_prop_t *prop,
         return NJS_DECLINED;
     }
 
-    return njs_vm_value_string_set(vm, retval, (u_char *) "basic",
-                                   njs_length("basic"));
+    return njs_vm_value_string_create(vm, retval, (u_char *) "basic",
+                                      njs_length("basic"));
 }
 
 
@@ -4017,8 +4017,8 @@ ngx_fetch_flag(njs_vm_t *vm, const ngx_js_entry_t *entries, njs_int_t value,
 
     for (e = entries; e->name.length != 0; e++) {
         if (e->value == value) {
-            return njs_vm_value_string_set(vm, retval, e->name.start,
-                                           e->name.length);
+            return njs_vm_value_string_create(vm, retval, e->name.start,
+                                              e->name.length);
         }
     }
 

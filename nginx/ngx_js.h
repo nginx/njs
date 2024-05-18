@@ -175,7 +175,7 @@ struct ngx_js_ctx_s {
 
 
 #define ngx_js_prop(vm, type, value, start, len)                              \
-    ((type == NGX_JS_STRING) ? njs_vm_value_string_set(vm, value, start, len) \
+    ((type == NGX_JS_STRING) ? njs_vm_value_string_create(vm, value, start, len) \
                              : njs_vm_value_buffer_set(vm, value, start, len))
 
 

@@ -694,7 +694,7 @@ njs_query_string_stringify(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     object = njs_arg(args, nargs, 1);
 
     if (njs_slow_path(!njs_value_is_object(object))) {
-        njs_vm_value_string_set(vm, retval, (u_char *) "", 0);
+        njs_vm_value_string_create(vm, retval, (u_char *) "", 0);
         return NJS_OK;
     }
 

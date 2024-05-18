@@ -1241,8 +1241,8 @@ ngx_stream_js_ext_get_remote_address(njs_vm_t *vm,
 
     c = s->connection;
 
-    return njs_vm_value_string_set(vm, retval, c->addr_text.data,
-                                   c->addr_text.len);
+    return njs_vm_value_string_create(vm, retval, c->addr_text.data,
+                                      c->addr_text.len);
 }
 
 

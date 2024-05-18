@@ -188,10 +188,10 @@ njs_benchmark_test(njs_vm_t *parent, njs_opts_t *opts, njs_value_t *report,
         goto done;
     }
 
-    ret = njs_vm_value_string_set(parent, &name, (u_char *) test->name,
-                                  njs_strlen(test->name));
+    ret = njs_vm_value_string_create(parent, &name, (u_char *) test->name,
+                                     njs_strlen(test->name));
     if (ret != NJS_OK) {
-        njs_printf("njs_vm_value_string_set() failed\n");
+        njs_printf("njs_vm_value_string_create() failed\n");
         goto done;
     }
 
@@ -595,10 +595,10 @@ main(int argc, char **argv)
     }
 
     if (opts.previous) {
-        ret = njs_vm_value_string_set(vm, &args[0], (u_char *) opts.previous,
-                                      njs_strlen(opts.previous));
+        ret = njs_vm_value_string_create(vm, &args[0], (u_char *) opts.previous,
+                                         njs_strlen(opts.previous));
         if (ret != NJS_OK) {
-            njs_printf("njs_vm_value_string_set() failed\n");
+            njs_printf("njs_vm_value_string_create() failed\n");
             goto done;
         }
 
