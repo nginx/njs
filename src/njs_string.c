@@ -130,7 +130,19 @@ njs_int_t
 njs_string_create(njs_vm_t *vm, njs_value_t *value, const char *src,
     size_t size)
 {
+    u_char     *p, *p_end;
     njs_str_t  str;
+
+    p = (u_char *) src;
+    p_end = p + size;
+
+    while (p < p_end && *p < 0x80) {
+          p++;
+    }
+
+    if (p == p_end) {
+        return njs_string_new(vm, value, (u_char *) src, size, size);
+    }
 
     str.start = (u_char *) src;
     str.length = size;
