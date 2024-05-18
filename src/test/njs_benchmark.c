@@ -29,10 +29,50 @@ typedef struct {
 } njs_opts_t;
 
 
+static njs_int_t njs_benchmark_preinit(njs_vm_t *vm);
+static njs_int_t njs_benchmark_init(njs_vm_t *vm);
+static njs_int_t njs_benchmark_string(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
+
+
+static njs_external_t  njs_benchmark_external[] = {
+
+    {
+        .flags = NJS_EXTERN_PROPERTY | NJS_EXTERN_SYMBOL,
+        .name.symbol = NJS_SYMBOL_TO_STRING_TAG,
+        .u.property = {
+            .value = "Benchmark",
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("string"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = njs_benchmark_string,
+        }
+    },
+};
+
+
+njs_module_t  njs_benchmark_module = {
+    .name = njs_str("benchmark"),
+    .preinit = njs_benchmark_preinit,
+    .init = njs_benchmark_init,
+};
+
+
 njs_module_t *njs_benchmark_addon_external_modules[] = {
     &njs_unit_test_external_module,
-    NULL,
+    &njs_benchmark_module,
+    NULL
 };
+
+
+static njs_int_t    njs_benchmark_proto_id;
 
 
 static uint64_t
@@ -224,6 +264,46 @@ static njs_benchmark_test_t  njs_test[] =
               "sum"),
       njs_str("4"),
       100000 },
+
+    { "string set 'abcdefABCDEF'",
+      njs_str("benchmark.string('set', 'abcdef', 1000000)"),
+      njs_str("undefined"),
+      1 },
+
+    { "string set 'АБВГДЕ'",
+      njs_str("benchmark.string('set', 'АБВГДЕ', 1000000)"),
+      njs_str("undefined"),
+      1 },
+
+    { "string set 'x'.repeat(24)",
+      njs_str("benchmark.string('set', 'x'.repeat(32), 1000000)"),
+      njs_str("undefined"),
+      1 },
+
+    { "string set 'Д'.repeat(12)",
+      njs_str("benchmark.string('set', 'А'.repeat(16), 1000000)"),
+      njs_str("undefined"),
+      1 },
+
+    { "string create 'abcdefABCDEF'",
+      njs_str("benchmark.string('create', 'abcdef', 1000000)"),
+      njs_str("undefined"),
+      1 },
+
+    { "string create 'АБВГДЕ'",
+      njs_str("benchmark.string('create', 'АБВГДЕ', 1000000)"),
+      njs_str("undefined"),
+      1 },
+
+    { "string create 'x'.repeat(24)",
+      njs_str("benchmark.string('create', 'x'.repeat(32), 1000000)"),
+      njs_str("undefined"),
+      1 },
+
+    { "string create 'Д'.repeat(12)",
+      njs_str("benchmark.string('create', 'А'.repeat(16), 1000000)"),
+      njs_str("undefined"),
+      1 },
 
     { "JSON.parse",
       njs_str("JSON.parse('{\"a\":123, \"XXX\":[3,4,null]}').a"),
@@ -569,4 +649,81 @@ invalid_options:
                  argv[0]);
 
     return EXIT_FAILURE;
+}
+
+
+static njs_int_t
+njs_benchmark_preinit(njs_vm_t *vm)
+{
+    njs_benchmark_proto_id = njs_vm_external_prototype(vm,
+                                           njs_benchmark_external,
+                                           njs_nitems(njs_benchmark_external));
+    if (njs_slow_path(njs_benchmark_proto_id < 0)) {
+        njs_printf("njs_vm_external_prototype() failed\n");
+        return NJS_ERROR;
+    }
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+njs_benchmark_init(njs_vm_t *vm)
+{
+    njs_int_t           ret;
+    njs_opaque_value_t  value;
+
+    static const njs_str_t  benchmark = njs_str("benchmark");
+
+    ret = njs_vm_external_create(vm, njs_value_arg(&value),
+                                 njs_benchmark_proto_id, NULL, 1);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    ret = njs_vm_bind(vm, &benchmark, njs_value_arg(&value), 1);
+    if (njs_slow_path(ret != NJS_OK)) {
+        njs_printf("njs_vm_bind() failed\n");
+        return NJS_ERROR;
+    }
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+njs_benchmark_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused, njs_value_t *retval)
+{
+    int64_t      i, n;
+    njs_str_t    s, mode;
+    njs_value_t  value;
+
+    njs_value_string_get(njs_arg(args, nargs, 1), &mode);
+
+    njs_value_string_get(njs_arg(args, nargs, 2), &s);
+
+    if (njs_value_to_integer(vm, njs_arg(args, nargs, 3), &n) != NJS_OK) {
+        return NJS_ERROR;
+    }
+
+    if (memcmp(mode.start, "set", 3) == 0) {
+        for (i = 0; i < n; i++) {
+            njs_string_set(vm, &value, s.start, s.length);
+        }
+
+    } else if (memcmp(mode.start, "create", 6) == 0) {
+
+        for (i = 0; i < n; i++) {
+            njs_string_create(vm, &value, (char *) s.start, s.length);
+        }
+
+    } else {
+        njs_type_error(vm, "unknown mode \"%V\"", &mode);
+        return NJS_ERROR;
+    }
+
+    njs_value_undefined_set(retval);
+
+    return NJS_OK;
 }
