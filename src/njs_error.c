@@ -147,7 +147,7 @@ njs_error_stack_new(njs_vm_t *vm, njs_object_t *error, njs_value_t *retval)
         return ret;
     }
 
-    return njs_string_set(vm, retval, string.start, string.length);
+    return njs_string_create(vm, retval, string.start, string.length);
 }
 
 

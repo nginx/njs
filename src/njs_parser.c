@@ -9242,7 +9242,7 @@ njs_parser_error(njs_vm_t *vm, njs_object_type_t type, njs_str_t *file,
     njs_value_property_set(vm, &error, njs_value_arg(&line_number), &value);
 
     if (file->length != 0) {
-        ret = njs_string_set(vm, &value, file->start, file->length);
+        ret = njs_string_create(vm, &value, file->start, file->length);
         if (ret == NJS_OK) {
             njs_value_property_set(vm, &error, njs_value_arg(&file_name),
                                    &value);

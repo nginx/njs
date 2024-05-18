@@ -1144,8 +1144,8 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_value_t *r, njs_utf8_t utf8,
         do {
             group = &pattern->groups[i];
 
-            ret = njs_string_set(vm, &name, group->name.start,
-                                 group->name.length);
+            ret = njs_string_create(vm, &name, group->name.start,
+                                    group->name.length);
             if (njs_slow_path(ret != NJS_OK)) {
                 goto fail;
             }

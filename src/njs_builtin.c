@@ -1201,8 +1201,8 @@ njs_process_object_argv(njs_vm_t *vm, njs_object_prop_t *pr,
     i = 0;
 
     for (arg = vm->options.argv; i < vm->options.argc; arg++) {
-        njs_string_set(vm, &argv->start[i++], (u_char *) *arg,
-                       njs_strlen(*arg));
+        njs_string_create(vm, &argv->start[i++], (u_char *) *arg,
+                          njs_strlen(*arg));
     }
 
     prop = njs_object_prop_alloc(vm, &argv_string, &njs_value_undefined, 1);
@@ -1265,7 +1265,7 @@ njs_env_hash_init(njs_vm_t *vm, njs_lvlhsh_t *hash, char **environment)
             continue;
         }
 
-        ret = njs_string_create(vm, &prop->name, (char *) entry, val - entry);
+        ret = njs_string_create(vm, &prop->name, entry, val - entry);
         if (njs_slow_path(ret != NJS_OK)) {
             return NJS_ERROR;
         }
@@ -1285,8 +1285,7 @@ njs_env_hash_init(njs_vm_t *vm, njs_lvlhsh_t *hash, char **environment)
 
         val++;
 
-        ret = njs_string_create(vm, njs_prop_value(prop), (char *) val,
-                                njs_strlen(val));
+        ret = njs_string_create(vm, njs_prop_value(prop), val, njs_strlen(val));
         if (njs_slow_path(ret != NJS_OK)) {
             return NJS_ERROR;
         }

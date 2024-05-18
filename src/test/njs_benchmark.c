@@ -715,7 +715,7 @@ njs_benchmark_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     } else if (memcmp(mode.start, "create", 6) == 0) {
 
         for (i = 0; i < n; i++) {
-            njs_string_create(vm, &value, (char *) s.start, s.length);
+            njs_string_create(vm, &value, s.start, s.length);
         }
 
     } else {

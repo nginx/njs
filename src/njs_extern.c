@@ -74,8 +74,9 @@ njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
             lhq.key_hash = external->name.symbol;
 
         } else {
-            ret = njs_string_set(vm, &prop->name, external->name.string.start,
-                                 external->name.string.length);
+            ret = njs_string_create(vm, &prop->name,
+                                    external->name.string.start,
+                                    external->name.string.length);
             if (njs_slow_path(ret != NJS_OK)) {
                 return NJS_ERROR;
             }

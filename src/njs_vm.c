@@ -843,7 +843,7 @@ njs_vm_value(njs_vm_t *vm, const njs_str_t *path, njs_value_t *retval)
             return NJS_ERROR;
         }
 
-        ret = njs_string_set(vm, &key, start, size);
+        ret = njs_string_create(vm, &key, start, size);
         if (njs_slow_path(ret != NJS_OK)) {
             return NJS_ERROR;
         }
@@ -977,7 +977,7 @@ njs_int_t
 njs_vm_value_string_create(njs_vm_t *vm, njs_value_t *value,
     const u_char *start, uint32_t size)
 {
-    return njs_string_create(vm, value, (const char *) start, size);
+    return njs_string_create(vm, value, start, size);
 }
 
 

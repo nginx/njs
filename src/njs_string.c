@@ -127,7 +127,7 @@ njs_string_set(njs_vm_t *vm, njs_value_t *value, const u_char *start,
 
 
 njs_int_t
-njs_string_create(njs_vm_t *vm, njs_value_t *value, const char *src,
+njs_string_create(njs_vm_t *vm, njs_value_t *value, const u_char *src,
     size_t size)
 {
     u_char     *p, *p_end;
@@ -3152,7 +3152,7 @@ njs_string_get_substitution(njs_vm_t *vm, njs_value_t *matched,
 
             p += 2;
 
-            ret = njs_string_create(vm, &name, (const char *) p, r - p);
+            ret = njs_string_create(vm, &name, p, r - p);
             if (njs_slow_path(ret != NJS_OK)) {
                 goto exception;
             }
