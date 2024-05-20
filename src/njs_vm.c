@@ -1602,6 +1602,12 @@ njs_vm_value_to_bytes(njs_vm_t *vm, njs_str_t *dst, njs_value_t *src)
         }
 
         if (njs_slow_path(njs_is_detached_buffer(buffer))) {
+            if (length == 0) {
+                dst->length = 0;
+                dst->start = NULL;
+                return NJS_OK;
+            }
+
             njs_type_error(vm, "detached buffer");
             return NJS_ERROR;
         }
