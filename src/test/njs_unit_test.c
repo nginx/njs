@@ -4372,10 +4372,9 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("["
               "  'α'.repeat(33),"
-              "  $262.byteString(Array(16).fill(0x9d)),"
               "]"
               ".map(v=>{var out = ['β', 'γ'].join(v); return out.length})"),
-      njs_str("35,20") },
+      njs_str("35") },
 
     { njs_str("["
               "  [],"
@@ -4392,9 +4391,6 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var a = ['β','γ']; a.join('').length"),
       njs_str("2") },
-
-    { njs_str("var a = ['β', $262.byteString([0x9d]),'γ']; a.join('').length"),
-      njs_str("5") },
 
     { njs_str("var a = []; a[5] = 5; a.join()"),
       njs_str(",,,,,5") },
@@ -4763,9 +4759,6 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("Array.prototype.slice.call('αβZγ')"),
       njs_str("α,β,Z,γ") },
-
-    { njs_str("Array.prototype.slice.call($262.byteString(Array(16).fill(0x9d)))[0].charCodeAt(0)"),
-      njs_str("157") },
 
     { njs_str("Array.prototype.slice.call('αβZγ', 1)"),
       njs_str("β,Z,γ") },
@@ -9941,10 +9934,6 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'abc'.padEnd(10, Symbol())"),
       njs_str("TypeError: Cannot convert a Symbol value to a string") },
 
-    { njs_str("[undefined, null, Symbol()]"
-              ".every(v=> { try {$262.byteString(v);} catch(e) {return e.name == 'TypeError'} })"),
-      njs_str("true") },
-
     { njs_str("encodeURI.name"),
       njs_str("encodeURI")},
 
@@ -11796,10 +11785,6 @@ static njs_unit_test_t  njs_test[] =
       njs_str("3 БВ бв 2 /бв/gi") },
 #endif
 
-    { njs_str("var r = /_/g; var index = r.exec($262.byteString([255,149,15,97,95])).index;"
-              "[index, r.lastIndex]"),
-      njs_str("4,5") },
-
     { njs_str("var descs = Object.getOwnPropertyDescriptors(RegExp('a'));"
               "Object.keys(descs)"),
       njs_str("lastIndex") },
@@ -12102,13 +12087,6 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("Error('e').name + ': ' + Error('e').message"),
       njs_str("Error: e") },
-
-    { njs_str("Error($262.byteString(Array(1).fill(0x9d))).toString().length"),
-      njs_str("8") },
-
-    { njs_str("var e = Error('α'); e.name = $262.byteString(Array(1).fill(0x9d)); "
-              "e.toString().length"),
-      njs_str("5") },
 
     { njs_str("Error(1)"),
       njs_str("Error: 1") },
@@ -18565,9 +18543,6 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("JSON.stringify('абв'.repeat(100)).length"),
       njs_str("302") },
 
-    { njs_str("JSON.stringify($262.byteString([0xCE, 0xB1, 0xC2, 0xB6]))"),
-      njs_str("\"α¶\"") },
-
     /* Optional arguments. */
 
     { njs_str("JSON.stringify(undefined, undefined, 1)"),
@@ -18600,9 +18575,6 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("JSON.stringify([1], null, '!!βββββββββββββββββ').length"),
       njs_str("15") },
-
-    { njs_str("JSON.stringify([1], null, $262.byteString([0x9d])).length"),
-      njs_str("InternalError: space argument cannot be a byte string") },
 
     { njs_str("JSON.stringify([1], null, 11)"),
       njs_str("[\n          1\n]") },

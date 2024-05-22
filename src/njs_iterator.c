@@ -355,7 +355,7 @@ njs_object_iterate(njs_vm_t *vm, njs_iterator_args_t *args,
         end = p + string_prop.size;
 
         if ((size_t) length == string_prop.size) {
-            /* Byte or ASCII string. */
+            /* ASCII string. */
 
             for (i = from; i < to; i++) {
                 /* This cannot fail. */

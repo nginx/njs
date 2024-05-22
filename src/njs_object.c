@@ -741,7 +741,7 @@ njs_object_enumerate_string(njs_vm_t *vm, const njs_value_t *value,
 
     case NJS_ENUM_VALUES:
         if (str_prop.size == (size_t) len) {
-            /* Byte or ASCII string. */
+            /* ASCII string. */
 
             for (i = 0; i < len; i++) {
                 begin = njs_string_short_start(item);
@@ -774,7 +774,7 @@ njs_object_enumerate_string(njs_vm_t *vm, const njs_value_t *value,
 
     case NJS_ENUM_BOTH:
         if (str_prop.size == (size_t) len) {
-            /* Byte or ASCII string. */
+            /* ASCII string. */
 
             for (i = 0; i < len; i++) {
 

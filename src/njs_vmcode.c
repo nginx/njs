@@ -2318,15 +2318,6 @@ njs_string_concat(njs_vm_t *vm, njs_value_t *val1, njs_value_t *val2,
     (void) njs_string_prop(&string2, val2);
 
     length = string1.length + string2.length;
-
-    /*
-     * A result of concatenation of Byte and ASCII or UTF-8 strings
-     * is a Byte string.
-     */
-    if (njs_is_byte_string(&string1) || njs_is_byte_string(&string2)) {
-        length = 0;
-    }
-
     size = string1.size + string2.size;
 
     start = njs_string_alloc(vm, retval, size, length);

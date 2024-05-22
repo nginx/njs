@@ -186,6 +186,8 @@ njs_string_new(njs_vm_t *vm, njs_value_t *value, const u_char *start,
 {
     u_char  *p;
 
+    njs_assert((size == 0 && length == 0) || (size != 0 && length != 0));
+
     p = njs_string_alloc(vm, value, size, length);
 
     if (njs_fast_path(p != NULL)) {
@@ -880,10 +882,6 @@ njs_string_prototype_concat(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
         size += string.size;
         length += string.length;
-
-        if (njs_is_byte_string(&string)) {
-            mask = 0;
-        }
     }
 
     length &= mask;
@@ -1238,14 +1236,9 @@ njs_string_slice_string_prop(njs_string_prop_t *dst,
     start = string->start;
 
     if (string->size == slice->string_length) {
-        /* Byte or ASCII string. */
+        /* ASCII string. */
         start += slice->start;
         size = slice->length;
-
-        if (string->length == 0) {
-            /* Byte string. */
-            length = 0;
-        }
 
     } else {
         /* UTF-8 string. */
@@ -1327,7 +1320,7 @@ njs_string_prototype_char_code_at(njs_vm_t *vm, njs_value_t *args,
     }
 
     if (length == string.size) {
-        /* Byte or ASCII string. */
+        /* ASCII string. */
         code = string.start[index];
 
     } else {
@@ -1715,20 +1708,20 @@ njs_string_index_of(njs_string_prop_t *string, njs_string_prop_t *search,
     size_t        index, length, search_length;
     const u_char  *p, *end;
 
-    length = (string->length == 0) ? string->size : string->length;
+    length = string->length;
 
-    if (njs_slow_path(search->size == 0)) {
+    if (njs_slow_path(search->length == 0)) {
         return (from < length) ? from : length;
     }
 
     index = from;
-    search_length = (search->length == 0) ? search->size : search->length;
+    search_length = search->length;
 
     if (length - index >= search_length) {
         end = string->start + string->size;
 
         if (string->size == length) {
-            /* Byte or ASCII string. */
+            /* ASCII string. */
 
             end -= (search->size - 1);
 
@@ -1863,7 +1856,7 @@ njs_string_prototype_last_index_of(njs_vm_t *vm, njs_value_t *args,
     end = string.start + string.size;
 
     if (string.size == (size_t) length) {
-        /* Byte or ASCII string. */
+        /* ASCII string. */
 
         p = &string.start[index];
 
@@ -2209,7 +2202,7 @@ njs_string_prototype_to_lower_case(njs_vm_t *vm, njs_value_t *args,
 
     (void) njs_string_prop(&string, njs_argument(args, 0));
 
-    if (njs_is_byte_or_ascii_string(&string)) {
+    if (njs_is_ascii_string(&string)) {
 
         p = njs_string_alloc(vm, retval, string.size, string.length);
         if (njs_slow_path(p == NULL)) {
@@ -2280,7 +2273,7 @@ njs_string_prototype_to_upper_case(njs_vm_t *vm, njs_value_t *args,
 
     (void) njs_string_prop(&string, njs_argument(args, 0));
 
-    if (njs_is_byte_or_ascii_string(&string)) {
+    if (njs_is_ascii_string(&string)) {
 
         p = njs_string_alloc(vm, retval, string.size, string.length);
         if (njs_slow_path(p == NULL)) {
@@ -2343,7 +2336,7 @@ njs_string_trim(const njs_value_t *value, njs_string_prop_t *string,
     start = string->start;
     end = string->start + string->size;
 
-    if (njs_is_byte_or_ascii_string(string)) {
+    if (njs_is_ascii_string(string)) {
 
         if (mode & NJS_TRIM_START) {
             for ( ;; ) {
@@ -2831,14 +2824,13 @@ njs_string_match_multiple(njs_vm_t *vm, njs_value_t *args,
 
     (void) njs_string_prop(&string, &args[0]);
 
-    utf8 = NJS_STRING_BYTE;
+    utf8 = NJS_STRING_ASCII;
     type = NJS_REGEXP_BYTE;
 
     if (string.length != 0) {
-        utf8 = NJS_STRING_ASCII;
         type = NJS_REGEXP_UTF8;
 
-        if (string.length != string.size) {
+        if (!njs_is_ascii_string(&string)) {
             utf8 = NJS_STRING_UTF8;
         }
     }
@@ -2877,7 +2869,7 @@ njs_string_match_multiple(njs_vm_t *vm, njs_value_t *args,
 
             if (c1 == 0) {
                 if (start < end) {
-                    p = (utf8 != NJS_STRING_BYTE) ? njs_utf8_next(start, end)
+                    p = (utf8 == NJS_STRING_UTF8) ? njs_utf8_next(start, end)
                                                   : start + 1;
                     string.size = end - p;
 
@@ -3006,12 +2998,10 @@ njs_string_prototype_split(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         goto done;
     }
 
-    utf8 = NJS_STRING_BYTE;
+    utf8 = NJS_STRING_ASCII;
 
     if (string.length != 0) {
-        utf8 = NJS_STRING_ASCII;
-
-        if (string.length != string.size) {
+        if (!njs_is_ascii_string(&string)) {
             utf8 = NJS_STRING_UTF8;
         }
     }
@@ -3037,7 +3027,7 @@ found:
         /* Empty split string. */
 
         if (p == next) {
-            p = (utf8 != NJS_STRING_BYTE) ? njs_utf8_next(p, end)
+            p = (utf8 == NJS_STRING_UTF8) ? njs_utf8_next(p, end)
                                           : p + 1;
             next = p;
         }
@@ -3241,7 +3231,7 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_int_t          ret;
     njs_str_t          str;
     njs_chb_t          chain;
-    njs_bool_t         is_byte_or_ascii_string;
+    njs_bool_t         is_ascii_string;
     njs_value_t        *this, *search, *replace;
     njs_value_t        search_lvalue, replace_lvalue, replacer, value,
                        arguments[3];
@@ -3372,13 +3362,6 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         size = string.size + ret_string.size - s.size;
         length = string.length + ret_string.length - s.length;
 
-        if (njs_is_byte_string(&string)
-            || njs_is_byte_string(&s)
-            || njs_is_byte_string(&ret_string))
-        {
-            length = 0;
-        }
-
         r = njs_string_alloc(vm, retval, size, length);
         if (njs_slow_path(r == NULL)) {
             return NJS_ERROR;
@@ -3395,7 +3378,7 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     p_start = string.start;
     increment = s.length != 0 ? s.length : 1;
-    is_byte_or_ascii_string = njs_is_byte_or_ascii_string(&string);
+    is_ascii_string = njs_is_ascii_string(&string);
 
     do {
         if (func_replace == NULL) {
@@ -3422,7 +3405,7 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             }
         }
 
-        if (is_byte_or_ascii_string) {
+        if (is_ascii_string) {
             p = string.start + pos;
 
         } else {
@@ -3815,7 +3798,7 @@ njs_string_encode_uri(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     src = string.start;
     end = src + string.size;
 
-    if (njs_is_byte_or_ascii_string(&string)) {
+    if (njs_is_ascii_string(&string)) {
 
         while (src < end) {
             byte = *src++;
@@ -3871,7 +3854,7 @@ njs_string_encode_uri(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     src = string.start;
 
-    if (njs_is_byte_or_ascii_string(&string)) {
+    if (njs_is_ascii_string(&string)) {
         (void) njs_string_encode(escape, string.size, src, dst);
         return NJS_OK;
     }

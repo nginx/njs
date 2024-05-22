@@ -226,13 +226,6 @@ njs_json_stringify(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     switch (space->type) {
     case NJS_STRING:
         length = njs_string_prop(&prop, space);
-
-        if (njs_is_byte_string(&prop)) {
-            njs_internal_error(vm, "space argument cannot be"
-                               " a byte string");
-            return NJS_ERROR;
-        }
-
         p = njs_string_offset(&prop, njs_min(length, 10));
 
         stringify->space.start = prop.start;
@@ -1552,7 +1545,7 @@ njs_json_append_string(njs_chb_t *chain, const njs_value_t *value, char quote)
             dst = njs_utf8_copy(dst, &p, end);
 
         } else {
-            /* Byte or ASCII string. */
+            /* ASCII string. */
             *dst++ = *p++;
         }
 

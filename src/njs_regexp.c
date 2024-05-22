@@ -748,12 +748,6 @@ njs_regexp_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     size = source_string.size + flags_string.size + njs_length("//");
     length = source_string.length + flags_string.length + njs_length("//");
 
-    if (njs_is_byte_string(&source_string)
-        || njs_is_byte_string(&flags_string))
-    {
-        length = 0;
-    }
-
     p = njs_string_alloc(vm, retval, size, length);
     if (njs_slow_path(p == NULL)) {
         return NJS_ERROR;
@@ -908,13 +902,13 @@ njs_regexp_builtin_exec(njs_vm_t *vm, njs_value_t *r, njs_value_t *s,
         goto not_found;
     }
 
-    utf8 = NJS_STRING_BYTE;
+    utf8 = NJS_STRING_ASCII;
     type = NJS_REGEXP_BYTE;
 
     if (string.length != 0) {
         type = NJS_REGEXP_UTF8;
 
-        if (string.length != string.size) {
+        if (!njs_is_ascii_string(&string)) {
             utf8 = NJS_STRING_UTF8;
         }
     }
@@ -1693,7 +1687,7 @@ njs_regexp_prototype_symbol_split(njs_vm_t *vm, njs_value_t *args,
     arguments[0] = *rx;
 
     if (!sticky) {
-        length = njs_is_byte_string(&s) ? 0 : s.length + 1;
+        length = s.length + 1;
 
         dst = njs_string_alloc(vm, &arguments[1], s.size + 1, length);
         if (njs_slow_path(dst == NULL)) {
@@ -1749,9 +1743,9 @@ njs_regexp_prototype_symbol_split(njs_vm_t *vm, njs_value_t *args,
         goto single;
     }
 
-    utf8 = NJS_STRING_BYTE;
+    utf8 = NJS_STRING_ASCII;
 
-    if (!njs_is_byte_or_ascii_string(&s)) {
+    if (!njs_is_ascii_string(&s)) {
         utf8 = NJS_STRING_UTF8;
     }
 

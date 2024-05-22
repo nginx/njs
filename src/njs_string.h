@@ -91,8 +91,7 @@ typedef struct {
 
 
 typedef enum {
-    NJS_STRING_BYTE = 0,
-    NJS_STRING_ASCII,
+    NJS_STRING_ASCII = 0,
     NJS_STRING_UTF8,
 } njs_utf8_t;
 
@@ -179,16 +178,9 @@ njs_int_t njs_string_get_substitution(njs_vm_t *vm, njs_value_t *matched,
 
 
 njs_inline njs_bool_t
-njs_is_byte_string(njs_string_prop_t *string)
+njs_is_ascii_string(njs_string_prop_t *string)
 {
-    return (string->length == 0 && string->size != 0);
-}
-
-
-njs_inline njs_bool_t
-njs_is_byte_or_ascii_string(njs_string_prop_t *string)
-{
-    return (string->length == 0 || string->length == string->size);
+    return string->length == string->size;
 }
 
 
@@ -198,10 +190,6 @@ njs_string_calc_length(njs_utf8_t utf8, const u_char *start, size_t size)
     ssize_t  length;
 
     switch (utf8) {
-
-    case NJS_STRING_BYTE:
-        return 0;
-
     case NJS_STRING_ASCII:
         return size;
 
@@ -251,7 +239,7 @@ njs_string_encode(const uint32_t *escape, size_t size, const u_char *src,
 njs_inline const u_char *
 njs_string_offset(njs_string_prop_t *string, int64_t index)
 {
-    if (njs_is_byte_or_ascii_string(string)) {
+    if (njs_is_ascii_string(string)) {
         return string->start + index;
     }
 
