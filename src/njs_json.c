@@ -548,7 +548,6 @@ njs_json_parse_string(njs_json_parse_ctx_t *ctx, njs_value_t *value,
 {
     u_char        ch, *s, *dst;
     size_t        size, surplus;
-    ssize_t       length;
     uint32_t      utf, utf_low;
     njs_int_t     ret;
     const u_char  *start, *last;
@@ -742,12 +741,7 @@ njs_json_parse_string(njs_json_parse_ctx_t *ctx, njs_value_t *value,
         start = dst;
     }
 
-    length = njs_utf8_length(start, size);
-    if (njs_slow_path(length < 0)) {
-        length = 0;
-    }
-
-    ret = njs_string_new(ctx->vm, value, (u_char *) start, size, length);
+    ret = njs_string_create(ctx->vm, value, (u_char *) start, size);
     if (njs_slow_path(ret != NJS_OK)) {
         return NULL;
     }

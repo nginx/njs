@@ -388,7 +388,7 @@ njs_builtin_traverse(njs_vm_t *vm, njs_traverse_t *traverse, void *data)
         return NJS_ERROR;
     }
 
-    ret = njs_string_new(vm, &prop->name, buf, p - buf, 0);
+    ret = njs_string_create(vm, &prop->name, buf, p - buf);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -590,7 +590,7 @@ njs_ext_dump(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    return njs_string_new(vm, retval, str.start, str.length, 0);
+    return njs_string_create(vm, retval, str.start, str.length);
 }
 
 

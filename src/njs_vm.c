@@ -874,7 +874,7 @@ njs_vm_bind2(njs_vm_t *vm, const njs_str_t *var_name, njs_object_prop_t *prop,
     njs_lvlhsh_t        *hash;
     njs_lvlhsh_query_t  lhq;
 
-    ret = njs_string_new(vm, &prop->name, var_name->start, var_name->length, 0);
+    ret = njs_string_create(vm, &prop->name, var_name->start, var_name->length);
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
