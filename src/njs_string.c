@@ -1710,8 +1710,8 @@ njs_string_index_of(njs_string_prop_t *string, njs_string_prop_t *search,
 
     length = string->length;
 
-    if (njs_slow_path(search->length == 0)) {
-        return (from < length) ? from : length;
+    if (search->length == 0 && from <= length) {
+        return from;
     }
 
     index = from;
