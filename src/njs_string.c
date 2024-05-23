@@ -3228,7 +3228,7 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t replaceAll, njs_value_t *retval)
 {
     u_char             *r;
-    size_t             length, size, increment, end_of_last_match;
+    size_t             length, size, end_of_last_match;
     int64_t            pos;
     njs_int_t          ret;
     njs_str_t          str;
@@ -3236,7 +3236,7 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_value_t        *this, *search, *replace;
     njs_value_t        search_lvalue, replace_lvalue, replacer, value,
                        arguments[3];
-    const u_char       *p, *p_start;
+    const u_char       *start, *end;
     njs_function_t     *func_replace;
     njs_string_prop_t  string, s, ret_string;
 
@@ -3331,7 +3331,6 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (!replaceAll) {
-
         if (func_replace == NULL) {
             ret = njs_string_get_substitution(vm, search, this, pos, NULL, 0,
                                               NULL, replace, &value);
@@ -3356,7 +3355,7 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             }
         }
 
-        p = njs_string_offset(&string, pos);
+        end = njs_string_offset(&string, pos);
 
         (void) njs_string_prop(&ret_string, &value);
 
@@ -3368,17 +3367,16 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             return NJS_ERROR;
         }
 
-        r = njs_cpymem(r, string.start, p - string.start);
+        r = njs_cpymem(r, string.start, end - string.start);
         r = njs_cpymem(r, ret_string.start, ret_string.size);
-        memcpy(r, p + s.size, string.size - s.size - (p - string.start));
+        memcpy(r, end + s.size, string.size - s.size - (end - string.start));
 
         return NJS_OK;
     }
 
     NJS_CHB_MP_INIT(&chain, vm);
 
-    p_start = string.start;
-    increment = s.length != 0 ? s.length : 1;
+    start = string.start;
 
     do {
         if (func_replace == NULL) {
@@ -3405,20 +3403,30 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             }
         }
 
-        p = njs_string_offset(&string, pos);
+        end = njs_string_offset(&string, pos);
         (void) njs_string_prop(&ret_string, &value);
 
-        njs_chb_append(&chain, p_start, p - p_start);
+        njs_chb_append(&chain, start, end - start);
         njs_chb_append(&chain, ret_string.start, ret_string.size);
 
-        p_start = p + s.size;
-        end_of_last_match = pos + increment;
+        start = end + s.size;
+        end_of_last_match = pos + s.length;
 
-        pos = njs_string_index_of(&string, &s, end_of_last_match);
+        if (njs_slow_path(s.length == 0)) {
+            if (end_of_last_match >= string.length) {
+                pos = -1;
 
-    } while (pos >= 0 && end_of_last_match <= string.length);
+            } else {
+                pos = end_of_last_match + 1;
+            }
 
-    njs_chb_append(&chain, p_start, string.start + string.size - p_start);
+        } else {
+            pos = njs_string_index_of(&string, &s, end_of_last_match);
+        }
+
+    } while (pos >= 0);
+
+    njs_chb_append(&chain, start, string.start + string.size - start);
 
     ret = njs_string_create_chb(vm, retval, &chain);
     if (njs_slow_path(ret != NJS_OK)) {
