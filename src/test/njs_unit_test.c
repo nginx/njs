@@ -5181,6 +5181,12 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'/A/B/C/D/'.split('/').toSpliced(1,1).join('/')"),
       njs_str("/B/C/D/") },
 
+    { njs_str("let r, arr = new Array(4);"
+              "Object.defineProperty(arr, 0, { get: () => { throw 'Oops'; } });"
+              "try { r = arr.toSpliced(0, 0); } catch (e) { }"
+              "r.toString()"),
+      njs_str("TypeError: cannot get property \"toString\" of undefined") },
+
     { njs_str("var a = []; a.reverse()"),
       njs_str("") },
 
@@ -5236,6 +5242,12 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("Array.prototype[0] = 0; var x = [,1]; x.reverse(); x"),
       njs_str("1,0") },
+
+    { njs_str("let r, arr = new Array(4);"
+              "Object.defineProperty(arr, 0, { get: () => { throw 'Oops'; } });"
+              "try { r = arr.toReversed(0, 0); } catch (e) { }"
+              "r.toString()"),
+      njs_str("TypeError: cannot get property \"toString\" of undefined") },
 
     { njs_str("var a = [,3,2,1]; njs.dump([a.toReversed(),a])"),
       njs_str("[[1,2,3,undefined],[<empty>,3,2,1]]") },
