@@ -8888,6 +8888,12 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var r = 'αβγ'.replaceAll('', 'X'); [r, r.length]"),
       njs_str("XαXβXγX,7") },
 
+    { njs_str("var r = ''.replaceAll('', 'z'); [r, r.length]"),
+      njs_str("z,1") },
+
+    { njs_str("var r = 'α'.padStart(32).replaceAll('', 'z'); [r, r.length]"),
+      njs_str("z z z z z z z z z z z z z z z z z z z z z z z z z z z z z z z zαz,65") },
+
     { njs_str("'abc'.replace('b', (m, o, s) => `|${s}|${o}|${m}|`)"),
       njs_str("a|abc|1|b|c") },
 

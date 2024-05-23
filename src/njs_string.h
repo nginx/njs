@@ -245,6 +245,10 @@ njs_string_offset(njs_string_prop_t *string, int64_t index)
 
     /* UTF-8 string. */
 
+    if (index == (int64_t) string->length) {
+        return string->start + string->size;
+    }
+
     return njs_string_utf8_offset(string->start, string->start + string->size,
                                   index);
 }

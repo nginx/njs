@@ -1736,7 +1736,9 @@ njs_string_index_of(njs_string_prop_t *string, njs_string_prop_t *search,
         } else {
             /* UTF-8 string. */
 
-            p = njs_string_utf8_offset(string->start, end, index);
+            p = (index < string->length)
+                    ? njs_string_utf8_offset(string->start, end, index)
+                    : end;
             end -= search->size - 1;
 
             while (p < end) {
@@ -3231,7 +3233,6 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_int_t          ret;
     njs_str_t          str;
     njs_chb_t          chain;
-    njs_bool_t         is_ascii_string;
     njs_value_t        *this, *search, *replace;
     njs_value_t        search_lvalue, replace_lvalue, replacer, value,
                        arguments[3];
@@ -3378,7 +3379,6 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     p_start = string.start;
     increment = s.length != 0 ? s.length : 1;
-    is_ascii_string = njs_is_ascii_string(&string);
 
     do {
         if (func_replace == NULL) {
@@ -3405,14 +3405,7 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             }
         }
 
-        if (is_ascii_string) {
-            p = string.start + pos;
-
-        } else {
-            p = njs_string_utf8_offset(string.start, string.start + string.size,
-                                       pos);
-        }
-
+        p = njs_string_offset(&string, pos);
         (void) njs_string_prop(&ret_string, &value);
 
         njs_chb_append(&chain, p_start, p - p_start);
