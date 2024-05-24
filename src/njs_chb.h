@@ -96,6 +96,8 @@ njs_chb_size(njs_chb_t *chain)
 njs_inline int64_t
 njs_chb_utf8_length(njs_chb_t *chain)
 {
+    u_char          *p, *p_end;
+    size_t          size;
     int64_t         len, length;
     njs_chb_node_t  *n;
 
@@ -106,6 +108,23 @@ njs_chb_utf8_length(njs_chb_t *chain)
     n = chain->nodes;
 
     length = 0;
+
+    while (n != NULL) {
+        p = n->start;
+        size = njs_chb_node_size(n);
+        p_end = p + size;
+
+        while (p < p_end && *p < 0x80) {
+              p++;
+        }
+
+        if (p != p_end) {
+            break;
+        }
+
+        length += size;
+        n = n->next;
+    }
 
     while (n != NULL) {
         len = njs_utf8_length(n->start, njs_chb_node_size(n));

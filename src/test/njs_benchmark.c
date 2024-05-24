@@ -305,6 +305,21 @@ static njs_benchmark_test_t  njs_test[] =
       njs_str("undefined"),
       1 },
 
+    { "string create chb 'x'.repeat(256)",
+      njs_str("benchmark.string('chb', 'x'.repeat(256), 10000)"),
+      njs_str("undefined"),
+      1 },
+
+    { "string create chb 'Д'.repeat(128)",
+      njs_str("benchmark.string('chb', 'Д'.repeat(128), 10000)"),
+      njs_str("undefined"),
+      1 },
+
+    { "string create chb 'x'.repeat(128) + 'Д'.repeat(64)",
+      njs_str("benchmark.string('chb', 'x'.repeat(128) + 'Д'.repeat(64), 10000)"),
+      njs_str("undefined"),
+      1 },
+
     { "JSON.parse",
       njs_str("JSON.parse('{\"a\":123, \"XXX\":[3,4,null]}').a"),
       njs_str("123"),
@@ -696,6 +711,7 @@ njs_benchmark_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
 {
     int64_t      i, n;
+    njs_chb_t    chain;
     njs_str_t    s, mode;
     njs_value_t  value;
 
@@ -717,6 +733,23 @@ njs_benchmark_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         for (i = 0; i < n; i++) {
             njs_string_create(vm, &value, s.start, s.length);
         }
+
+    } else if (memcmp(mode.start, "chb", 3) == 0) {
+
+        NJS_CHB_MP_INIT(&chain, vm);
+
+        njs_chb_append_literal(&chain, "abc");
+        njs_chb_append(&chain, s.start, s.length);
+        njs_chb_append_literal(&chain, "abc");
+        njs_chb_append(&chain, s.start, s.length);
+        njs_chb_append_literal(&chain, "abc");
+        njs_chb_append(&chain, s.start, s.length);
+
+        for (i = 0; i < n; i++) {
+            njs_string_create_chb(vm, &value, &chain);
+        }
+
+        njs_chb_destroy(&chain);
 
     } else {
         njs_type_error(vm, "unknown mode \"%V\"", &mode);
