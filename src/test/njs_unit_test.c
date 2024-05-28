@@ -9321,6 +9321,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'ABCB'.replaceAll(/(?<b>B)/g, '|$<BB$$|>@')"),
       njs_str("A|@C|@") },
 
+    { njs_str("'α'.repeat(8).replace(/()/g, '$`') == 'α'.repeat(44)"),
+      njs_str("true") },
+
     { njs_str("('β' + 'α'.repeat(33)+'β').replace(/(α+)(β+)/, (m, p1) => p1[32])"),
       njs_str("βα") },
 
