@@ -3,6 +3,8 @@ includes: [compatFs.js, compatBuffer.js, runTsuite.js]
 flags: [async]
 ---*/
 
+let unique = 0;
+
 function p(args, default_opts) {
     let params = Object.assign({}, default_opts, args);
 
@@ -10,7 +12,7 @@ function p(args, default_opts) {
         let fname = params.args[0];
 
         if (fname[0] == '@') {
-            let gen = `${test_dir}/fs_test_${Math.round(Math.random() * 1000000)}`;
+            let gen = `${test_dir}/fs_test_${unique++}`;
             params.args = params.args.map(v => v);
             params.args[0] = gen + fname.slice(1);
         }
