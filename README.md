@@ -27,13 +27,7 @@ NGINX JavaScript, also known as [NJS](https://nginx.org/en/docs/njs/), is a dyna
   - [Supported deployment environments](#supported-deployment-environments)
   - [Supported NGINX versions](#supported-nginx-versions)
   - [Sizing recommendations](#sizing-recommendations)
-- [Community](#community)
-  - [Ask questions](#ask-questions)
-  - [Report issues](#report-issues)
-- [Contributing](#contributing)
-  - [Coding styles and guidelines](#coding-styles-and-guidelines)
-  - [Commit messages](#commit-messages)
-  - [Submitting pull requests](#submitting-pull-requests)
+- [Asking questions, reporting issues, and contributing](#asking-questions-reporting-issues-and-contributing)
 - [Change log](#change-log)
 - [License](#license)
 
@@ -355,38 +349,8 @@ See [Tested Operating Systems and Platforms](https://nginx.org/en/#tested_os_and
 ## Supported NGINX versions
 NGINX JavaScript is supported by all NGINX Open Source versions starting with nginx-1.14 and all NGINX Plus versions starting with NGINX Plus R15.
 
-# Community
-We encourage you to engage via the following channels:
-
-## Ask questions
-- GitHub: https://github.com/nginx/njs/issues
-- Slack: https://nginxcommunity.slack.com/archives/C02MFGJQ7GU
-- General NGINX mailing list: nginx-devel@nginx.org [[Subscribe](https://mailman.nginx.org/mailman/listinfo/nginx-devel) | [Archive](https://mailman.nginx.org/pipermail/nginx-devel/)]
-
-## Report issues
-GitHub: https://github.com/nginx/njs/issues
-
-# Contributing
-Please ensure to follow these prescribed guidelines and procedures when contributing to the NJS codebase. Submitting changes implies granting permission to use them by the project under the defined [license](LICENSE).
-
-> [!NOTE]  
-> These guidelines where adapted from the main [NGINX Contribution Guidelines](https://nginx.org/en/docs/contributing_changes.html).
-
-## Coding styles and guidelines
-Please refer to the [Code Style](https://nginx.org/en/docs/dev/development_guide.html#code_style) section of the NGINX Development Guide for acceptable coding guidelines.
-
-Sometimes, there is no clear rule; in such cases examine how existing nginx sources are formatted and mimic this style. Changes are more likely to be accepted if their style corresponds to exiting code.
-
-## Commit messages
-Commit messages should contain a single-line synopsis, followed by an empty line and verbose description thereafter. Ideally, the first line (synopsis) is no longer than 67 characters.
-
-## Submitting pull requests
-You may submit [Pull Requests](https://github.com/nginx/njs/pulls) containing your commits. When doing so, please ensure that your correct e-mail address and real name are associated with the Github account used to submit the Pull Requests.
-
-The following **must** be considered prior to submitting Pull Requests:
-- The proposed changes must be tested for proper operation on all [supported platforms](https://nginx.org/en/index.html#tested_os_and_platforms).
-- It should be clear why the proposed change is needed. Provide a use case, if possible.
-- Passing your changes through the test suite is a good way to ensure that they do not cause a regression.
+# Asking questions, reporting issues, and contributing
+We encourage you to engage with us. Please see the [Contributing](CONTRIBUTING.md) guide for information on how to ask questions, report issues and contribute code.
 
 # Change log
 See our [release page](https://nginx.org/en/docs/njs/changes.html) to keep track of updates.
