@@ -1,4 +1,4 @@
-![NGINX JavaScript Banner](docs/NGINX-js-1660x332.png "NGINX JavaScript Banner")
+![NGINX JavaScript Banner](NGINX-js-1660x332.png "NGINX JavaScript Banner")
 
 # NGINX JavaScript
 NGINX JavaScript, also known as [NJS](https://nginx.org/en/docs/njs/), is a dynamic module for [NGINX](https://nginx.org/en/download.html) that enables the extension of built-in functionality using familiar JavaScript syntax. The NJS language is a subset of JavaScript, compliant with [ES5](https://262.ecma-international.org/5.1/) (ECMAScript 5.1 [Strict Variant](https://262.ecma-international.org/5.1/#sec-4.2.2)) with some [ES6](https://262.ecma-international.org/6.0/) (ECMAScript 6) and newer extensions. See [compatibility](https://nginx.org/en/docs/njs/compatibility.html) for more details.
