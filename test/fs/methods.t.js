@@ -484,7 +484,8 @@ let stat_tests = () => [
 
         /* making symbolic link. */
 
-        try { fs.unlinkSync(fname); fs.unlinkSync(lname); } catch (e) {}
+        try { fs.unlinkSync(fname); } catch (e) {}
+        try { fs.unlinkSync(lname); } catch (e) {}
 
         fs.writeFileSync(fname, fname);
 
