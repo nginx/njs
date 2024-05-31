@@ -180,6 +180,10 @@ http {
             js_content test.sr_in_sr_callback;
         }
 
+        location /sr_error_in_callback {
+            js_content test.sr_error_in_callback;
+        }
+
         location /sr_uri_except {
             js_content test.sr_uri_except;
         }
@@ -417,6 +421,12 @@ $t->write_file('test.js', <<EOF);
         .then(body_fwd_cb);
     }
 
+    function sr_error_in_callback(r) {
+        r.subrequest("/sub1", () => {});
+        r.subrequest("/sub1", () => { throw "Oops!"; });
+        r.return(200);
+    }
+
     function sr_in_sr_callback(r) {
         r.subrequest('/return', function (reply) {
                 try {
@@ -508,7 +518,7 @@ $t->write_file('test.js', <<EOF);
                     sr_js_in_subrequest, sr_js_in_subrequest_pr, js_sub,
                     sr_in_sr_callback, sr_out_of_order, sr_except_not_a_func,
                     sr_uri_except, sr_except_failed_to_convert_options_arg,
-                    sr_unsafe};
+                    sr_unsafe, sr_error_in_callback};
 
 EOF
 
@@ -572,6 +582,13 @@ TODO: {
 local $TODO = 'not yet' unless has_version('0.8.4');
 
 like(http_get('/sr_unsafe'), qr/500/s, 'unsafe subrequest uri');
+
+}
+
+TODO: {
+local $TODO = 'not yet' unless has_version('0.8.5');
+
+http_get('/sr_error_in_callback');
 
 }
 

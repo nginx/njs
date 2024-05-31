@@ -276,8 +276,8 @@ static void ngx_http_js_event_finalize(ngx_http_request_t *r, ngx_int_t rc);
 static ngx_js_ctx_t *ngx_http_js_ctx(njs_vm_t *vm, ngx_http_request_t *r);
 
 static void ngx_http_js_periodic_handler(ngx_event_t *ev);
-static void ngx_http_js_periodic_write_event_handler(ngx_http_request_t *r);
 static void ngx_http_js_periodic_shutdown_handler(ngx_event_t *ev);
+static void ngx_http_js_periodic_write_handler(ngx_event_t *ev);
 static void ngx_http_js_periodic_finalize(ngx_http_request_t *r, ngx_int_t rc);
 static void ngx_http_js_periodic_destroy(ngx_http_request_t *r,
     ngx_js_periodic_t *periodic);
@@ -4220,7 +4220,10 @@ ngx_http_js_periodic_handler(ngx_event_t *ev)
     c->data = r;
     c->destroyed = 0;
     c->pool = r->pool;
+    c->read->log = &periodic->log;
     c->read->handler = ngx_http_js_periodic_shutdown_handler;
+    c->write->log = &periodic->log;
+    c->write->handler = ngx_http_js_periodic_write_handler;
 
     periodic->connection = c;
     periodic->log_ctx.request = r;
@@ -4234,7 +4237,6 @@ ngx_http_js_periodic_handler(ngx_event_t *ev)
     r->valid_unparsed_uri = 1;
 
     r->health_check = 1;
-    r->write_event_handler = ngx_http_js_periodic_write_event_handler;
 
     rc = ngx_http_js_init_vm(r, ngx_http_js_periodic_session_proto_id);
 
@@ -4263,12 +4265,17 @@ ngx_http_js_periodic_handler(ngx_event_t *ev)
 
 
 static void
-ngx_http_js_periodic_write_event_handler(ngx_http_request_t *r)
+ngx_http_js_periodic_write_handler(ngx_event_t *ev)
 {
-    ngx_http_js_ctx_t  *ctx;
+    ngx_connection_t    *c;
+    ngx_http_js_ctx_t   *ctx;
+    ngx_http_request_t  *r;
 
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
-                   "http js periodic write event handler");
+    c = ev->data;
+    r = c->data;
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                   "http js periodic write handler");
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
@@ -4340,6 +4347,10 @@ ngx_http_js_periodic_destroy(ngx_http_request_t *r, ngx_js_periodic_t *periodic)
     c->fd = (ngx_socket_t) -1;
     c->pool = NULL;
     c->destroyed = 1;
+
+    if (c->write->posted) {
+        ngx_delete_posted_event(c->write);
+    }
 }
 
 
@@ -4451,10 +4462,8 @@ ngx_http_js_event_finalize(ngx_http_request_t *r, ngx_int_t rc)
     }
 
     if (rc == NGX_OK) {
-        ngx_http_post_request(r, NULL);
+        ngx_post_event(r->connection->write, &ngx_posted_events);
     }
-
-    ngx_http_run_posted_requests(r->connection);
 }
 
 
