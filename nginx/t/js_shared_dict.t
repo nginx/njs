@@ -40,7 +40,7 @@ http {
 
     js_shared_dict_zone zone=foo:32k timeout=2s evict;
     js_shared_dict_zone zone=bar:64k type=string;
-    js_shared_dict_zone zone=waka:32k type=number;
+    js_shared_dict_zone zone=waka:32k timeout=1000s type=number;
     js_shared_dict_zone zone=no_timeout:32k;
 
     server {
@@ -146,7 +146,14 @@ $t->write_file('test.js', <<'EOF');
     function add(r) {
         var dict = ngx.shared[r.args.dict];
         var value = convertToValue(dict, r.args.value);
-        r.return(200, dict.add(r.args.key, value));
+
+        if (r.args.timeout) {
+            var timeout = Number(r.args.timeout);
+            r.return(200, dict.add(r.args.key, value, timeout));
+
+        } else {
+            r.return(200, dict.add(r.args.key, value));
+        }
     }
 
     function capacity(r) {
@@ -200,8 +207,16 @@ $t->write_file('test.js', <<'EOF');
     function incr(r) {
         var dict = ngx.shared[r.args.dict];
         var def = r.args.def ? parseInt(r.args.def) : 0;
-        var val = dict.incr(r.args.key, parseInt(r.args.by), def);
-        r.return(200, val);
+
+        if (r.args.timeout) {
+            var timeout = Number(r.args.timeout);
+            var val = dict.incr(r.args.key, parseInt(r.args.by), def, timeout);
+            r.return(200, val);
+
+        } else {
+            var val = dict.incr(r.args.key, parseInt(r.args.by), def);
+            r.return(200, val);
+        }
     }
 
     function keys(r) {
@@ -256,7 +271,14 @@ $t->write_file('test.js', <<'EOF');
     function set(r) {
         var dict = ngx.shared[r.args.dict];
         var value = convertToValue(dict, r.args.value);
-        r.return(200, dict.set(r.args.key, value) === dict);
+
+        if (r.args.timeout) {
+            var timeout = Number(r.args.timeout);
+            r.return(200, dict.set(r.args.key, value, timeout) === dict);
+
+        } else {
+            r.return(200, dict.set(r.args.key, value) === dict);
+        }
     }
 
     function size(r) {
@@ -283,7 +305,7 @@ $t->write_file('test.js', <<'EOF');
                      set_clear, size, zones };
 EOF
 
-$t->try_run('no js_shared_dict_zone')->plan(44);
+$t->try_run('no js_shared_dict_zone')->plan(51);
 
 ###############################################################################
 
@@ -347,6 +369,27 @@ like(http_get('/items?dict=bar'), qr/\[\['FOO','zzz'],\['FOO2','aaa']]/,
 	'bar items');
 like(http_get('/items?dict=waka'),
 	qr/\[\['FOO',47],\['FOO2',7779],\['FOO3',3338]]/, 'waka items');
+
+}
+
+TODO: {
+local $TODO = 'not yet' unless has_version('0.8.5');
+
+http_get('/clear?dict=waka');
+like(http_get('/set?dict=waka&key=BAR&value=1&timeout=1'), qr/true/,
+	'set waka.BAR');
+like(http_get('/add?dict=waka&key=BAR2&value=1&timeout=1'), qr/true/,
+	'add waka.BAR2');
+like(http_get('/incr?dict=waka&key=BAR3&by=42&timeout=1'), qr/42/,
+	'incr waka.BAR3');
+like(http_get('/set?dict=waka&key=FOO&value=42&timeout=1000'), qr/true/,
+	'set waka.FOO');
+like(http_get('/add?dict=waka&key=FOO2&value=42&timeout=1000'), qr/true/,
+	'add waka.FOO2');
+like(http_get('/incr?dict=waka&key=FOO3&by=42&timeout=1000'), qr/42/,
+	'incr waka.FOO3');
+
+like(http_get('/keys?dict=waka'), qr/\[FOO\,FOO2\,FOO3]/, 'waka keys');
 
 }
 

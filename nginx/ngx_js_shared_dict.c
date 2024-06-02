@@ -85,15 +85,16 @@ static ngx_js_dict_node_t *ngx_js_dict_lookup(ngx_js_dict_t *dict,
 #define NGX_JS_DICT_FLAG_MUST_NOT_EXIST   2
 
 static ngx_int_t ngx_js_dict_set(njs_vm_t *vm, ngx_js_dict_t *dict,
-    njs_str_t *key, njs_value_t *value, unsigned flags);
+    njs_str_t *key, njs_value_t *value, ngx_msec_t timeout, unsigned flags);
 static ngx_int_t ngx_js_dict_add(ngx_js_dict_t *dict, njs_str_t *key,
-    njs_value_t *value, ngx_msec_t now);
+    njs_value_t *value, ngx_msec_t timeout, ngx_msec_t now);
 static ngx_int_t ngx_js_dict_update(ngx_js_dict_t *dict,
-    ngx_js_dict_node_t *node, njs_value_t *value, ngx_msec_t now);
+    ngx_js_dict_node_t *node, njs_value_t *value, ngx_msec_t timeout,
+    ngx_msec_t now);
 static ngx_int_t ngx_js_dict_get(njs_vm_t *vm, ngx_js_dict_t *dict,
     njs_str_t *key, njs_value_t *retval);
 static ngx_int_t ngx_js_dict_incr(ngx_js_dict_t *dict, njs_str_t *key,
-    njs_value_t *delta, njs_value_t *init, double *value);
+    njs_value_t *delta, njs_value_t *init, double *value, ngx_msec_t timeout);
 static ngx_int_t ngx_js_dict_delete(njs_vm_t *vm, ngx_js_dict_t *dict,
     njs_str_t *key, njs_value_t *retval);
 static ngx_int_t ngx_js_dict_copy_value_locked(njs_vm_t *vm,
@@ -726,7 +727,8 @@ njs_js_ext_shared_dict_incr(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     double               value;
     ngx_int_t            rc;
     njs_str_t            key;
-    njs_value_t         *delta, *init;
+    ngx_msec_t           timeout;
+    njs_value_t         *delta, *init, *timeo;
     ngx_js_dict_t       *dict;
     ngx_shm_zone_t      *shm_zone;
     njs_opaque_value_t   lvalue;
@@ -765,7 +767,30 @@ njs_js_ext_shared_dict_incr(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         njs_value_number_set(init, 0);
     }
 
-    rc = ngx_js_dict_incr(shm_zone->data, &key, delta, init, &value);
+    timeo = njs_arg(args, nargs, 4);
+    if (!njs_value_is_undefined(timeo)) {
+        if (!njs_value_is_number(timeo)) {
+            njs_vm_type_error(vm, "timeout is not a number");
+            return NJS_ERROR;
+        }
+
+        if (!dict->timeout) {
+            njs_vm_type_error(vm, "shared dict must be declared with timeout");
+            return NJS_ERROR;
+        }
+
+        timeout = (ngx_msec_t) njs_value_number(timeo);
+
+        if (timeout < 1) {
+            njs_vm_type_error(vm, "timeout must be greater than or equal to 1");
+            return NJS_ERROR;
+        }
+
+    } else {
+        timeout = dict->timeout;
+    }
+
+    rc = ngx_js_dict_incr(shm_zone->data, &key, delta, init, &value, timeout);
     if (rc == NGX_ERROR) {
         njs_vm_error(vm, "failed to increment value in shared dict");
         return NJS_ERROR;
@@ -936,7 +961,8 @@ njs_js_ext_shared_dict_set(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 {
     njs_str_t        key;
     ngx_int_t        rc;
-    njs_value_t     *value;
+    ngx_msec_t       timeout;
+    njs_value_t     *value, *timeo;
     ngx_js_dict_t   *dict;
     ngx_shm_zone_t  *shm_zone;
 
@@ -967,7 +993,30 @@ njs_js_ext_shared_dict_set(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    rc = ngx_js_dict_set(vm, shm_zone->data, &key, value, flags);
+    timeo = njs_arg(args, nargs, 3);
+    if (!njs_value_is_undefined(timeo)) {
+        if (!njs_value_is_number(timeo)) {
+            njs_vm_type_error(vm, "timeout is not a number");
+            return NJS_ERROR;
+        }
+
+        if (!dict->timeout) {
+            njs_vm_type_error(vm, "shared dict must be declared with timeout");
+            return NJS_ERROR;
+        }
+
+        timeout = (ngx_msec_t) njs_value_number(timeo);
+
+        if (timeout < 1) {
+            njs_vm_type_error(vm, "timeout must be greater than or equal to 1");
+            return NJS_ERROR;
+        }
+
+    } else {
+        timeout = dict->timeout;
+    }
+
+    rc = ngx_js_dict_set(vm, shm_zone->data, &key, value, timeout, flags);
     if (rc == NGX_ERROR) {
         return NJS_ERROR;
     }
@@ -1118,7 +1167,7 @@ ngx_js_dict_node_free(ngx_js_dict_t *dict, ngx_js_dict_node_t *node)
 
 static ngx_int_t
 ngx_js_dict_set(njs_vm_t *vm, ngx_js_dict_t *dict, njs_str_t *key,
-    njs_value_t *value, unsigned flags)
+    njs_value_t *value, ngx_msec_t timeout, unsigned flags)
 {
     ngx_msec_t           now;
     ngx_time_t          *tp;
@@ -1137,7 +1186,7 @@ ngx_js_dict_set(njs_vm_t *vm, ngx_js_dict_t *dict, njs_str_t *key,
             return NGX_DECLINED;
         }
 
-        if (ngx_js_dict_add(dict, key, value, now) != NGX_OK) {
+        if (ngx_js_dict_add(dict, key, value, timeout, now) != NGX_OK) {
             goto memory_error;
         }
 
@@ -1149,7 +1198,7 @@ ngx_js_dict_set(njs_vm_t *vm, ngx_js_dict_t *dict, njs_str_t *key,
             }
         }
 
-        if (ngx_js_dict_update(dict, node, value, now) != NGX_OK) {
+        if (ngx_js_dict_update(dict, node, value, timeout, now) != NGX_OK) {
             goto memory_error;
         }
     }
@@ -1170,7 +1219,7 @@ memory_error:
 
 static ngx_int_t
 ngx_js_dict_add(ngx_js_dict_t *dict, njs_str_t *key, njs_value_t *value,
-    ngx_msec_t now)
+    ngx_msec_t timeout, ngx_msec_t now)
 {
     size_t               n;
     uint32_t             hash;
@@ -1214,7 +1263,7 @@ ngx_js_dict_add(ngx_js_dict_t *dict, njs_str_t *key, njs_value_t *value,
     ngx_rbtree_insert(&dict->sh->rbtree, &node->sn.node);
 
     if (dict->timeout) {
-        node->expire.key = now + dict->timeout;
+        node->expire.key = now + timeout;
         ngx_rbtree_insert(&dict->sh->rbtree_expire, &node->expire);
     }
 
@@ -1224,7 +1273,7 @@ ngx_js_dict_add(ngx_js_dict_t *dict, njs_str_t *key, njs_value_t *value,
 
 static ngx_int_t
 ngx_js_dict_update(ngx_js_dict_t *dict, ngx_js_dict_node_t *node,
-    njs_value_t *value, ngx_msec_t now)
+    njs_value_t *value, ngx_msec_t timeout, ngx_msec_t now)
 {
     u_char     *p;
     njs_str_t   string;
@@ -1249,7 +1298,7 @@ ngx_js_dict_update(ngx_js_dict_t *dict, ngx_js_dict_node_t *node,
 
     if (dict->timeout) {
         ngx_rbtree_delete(&dict->sh->rbtree_expire, &node->expire);
-        node->expire.key = now + dict->timeout;
+        node->expire.key = now + timeout;
         ngx_rbtree_insert(&dict->sh->rbtree_expire, &node->expire);
     }
 
@@ -1306,7 +1355,7 @@ ngx_js_dict_delete(njs_vm_t *vm, ngx_js_dict_t *dict, njs_str_t *key,
 
 static ngx_int_t
 ngx_js_dict_incr(ngx_js_dict_t *dict, njs_str_t *key, njs_value_t *delta,
-    njs_value_t *init, double *value)
+    njs_value_t *init, double *value, ngx_msec_t timeout)
 {
     ngx_msec_t           now;
     ngx_time_t          *tp;
@@ -1322,7 +1371,7 @@ ngx_js_dict_incr(ngx_js_dict_t *dict, njs_str_t *key, njs_value_t *delta,
     if (node == NULL) {
         njs_value_number_set(init, njs_value_number(init)
                                    + njs_value_number(delta));
-        if (ngx_js_dict_add(dict, key, init, now) != NGX_OK) {
+        if (ngx_js_dict_add(dict, key, init, timeout, now) != NGX_OK) {
             ngx_rwlock_unlock(&dict->sh->rwlock);
             return NGX_ERROR;
         }
@@ -1335,7 +1384,7 @@ ngx_js_dict_incr(ngx_js_dict_t *dict, njs_str_t *key, njs_value_t *delta,
 
         if (dict->timeout) {
             ngx_rbtree_delete(&dict->sh->rbtree_expire, &node->expire);
-            node->expire.key = now + dict->timeout;
+            node->expire.key = now + timeout;
             ngx_rbtree_insert(&dict->sh->rbtree_expire, &node->expire);
         }
     }
