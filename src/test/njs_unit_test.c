@@ -10016,13 +10016,17 @@ static njs_unit_test_t  njs_test[] =
               " '%',"
               " '%0',"
               " '%QQ',"
+              " '%C0%' + '0',"
               " '%C0%10',"
+              " '%C0%80',"
               " '%DC%C7',"
               " '%80%81%82',"
               " '%EF%5C%A0',"
               " '%EF%A0%5E',"
+              " '%E0%EF%' + '0',"
               " '%E0%EF%A0',"
               " '%E0%A0%EF',"
+              " '%F0%A2%95%' + '0',"
               " '%FF%A2%95%BB',"
               "].every(v=>{try { decodeURI(v)} catch(e) {return e.name == 'URIError'}})"),
       njs_str("true")},
