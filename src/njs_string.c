@@ -4074,7 +4074,7 @@ njs_string_decode_uri(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             n++;
         } while (((cp << n) & 0x80));
 
-        if (njs_slow_path(n > 4)) {
+        if (njs_slow_path(n > 4 || src + njs_length("%00") * (n - 1)  > end)) {
             goto uri_error;
         }
 
