@@ -16285,6 +16285,12 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Date.parse('2011-06-24T06:01:02.6255555Z')"),
       njs_str("1308895262625") },
 
+    { njs_str("Date.parse('2011-06-24T06:01:02.625555555Z')"),
+      njs_str("1308895262625") },
+
+    { njs_str("Date.parse('2011-06-24T06:01:02.62555555599999Z')"),
+      njs_str("1308895262625") },
+
     { njs_str("Date.parse('2011-06-24T06:01:02.625555Z5')"),
       njs_str("NaN") },
 

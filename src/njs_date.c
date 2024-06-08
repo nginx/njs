@@ -676,8 +676,10 @@ njs_date_string_parse(njs_value_t *date)
             }
         }
 
-        p = njs_date_number_parse(&tm[NJS_DATE_MSEC], p, end, ms_length);
-        if (njs_slow_path(p == NULL)) {
+        if (njs_slow_path(njs_date_number_parse(&tm[NJS_DATE_MSEC], p, end,
+                                                njs_min(ms_length, 3))
+                          == NULL))
+        {
             return NAN;
         }
 
@@ -686,12 +688,9 @@ njs_date_string_parse(njs_value_t *date)
 
         } else if (ms_length == 2) {
             tm[NJS_DATE_MSEC] *= 10;
-
-        } else if (ms_length >= 4) {
-            for (ms_length -= 3; ms_length > 0; ms_length--) {
-                tm[NJS_DATE_MSEC] /= 10;
-            }
         }
+
+        p += ms_length;
 
         if (p < end) {
             utc_off = njs_date_utc_offset_parse(p, end);
