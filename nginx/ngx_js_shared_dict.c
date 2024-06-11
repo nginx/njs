@@ -1440,23 +1440,13 @@ ngx_js_dict_copy_value_locked(njs_vm_t *vm, ngx_js_dict_t *dict,
     ngx_js_dict_node_t *node, njs_value_t *retval)
 {
     njs_int_t   ret;
-    njs_str_t   string;
     ngx_uint_t  type;
-    ngx_pool_t  *pool;
 
     type = dict->type;
 
     if (type == NGX_JS_DICT_TYPE_STRING) {
-        pool = ngx_external_pool(vm, njs_vm_external_ptr(vm));
-
-        string.length = node->u.value.len;
-        string.start = ngx_pstrdup(pool, &node->u.value);
-        if (string.start == NULL) {
-            return NGX_ERROR;
-        }
-
-        ret = njs_vm_value_string_create(vm, retval, string.start,
-                                         string.length);
+        ret = njs_vm_value_string_create(vm, retval, node->u.value.data,
+                                         node->u.value.len);
         if (ret != NJS_OK) {
             return NGX_ERROR;
         }
