@@ -24,7 +24,8 @@ typedef struct {
 
 
 typedef struct {
-    void                *promise;
+    void                *promise_obj;
+    njs_opaque_value_t   promise;
     njs_opaque_value_t   message;
 } ngx_js_rejected_promise_t;
 
@@ -42,6 +43,19 @@ typedef struct {
     char                path[NGX_MAX_PATH + 1];
 } njs_module_info_t;
 
+
+static ngx_int_t ngx_engine_njs_init(ngx_engine_t *engine,
+    ngx_engine_opts_t *opts);
+static ngx_int_t ngx_engine_njs_compile(ngx_js_loc_conf_t *conf, ngx_log_t *log,
+    u_char *start, size_t size);
+static ngx_int_t ngx_engine_njs_call(ngx_js_ctx_t *ctx, ngx_str_t *fname,
+    njs_opaque_value_t *args, njs_uint_t nargs);
+static void *ngx_engine_njs_external(ngx_engine_t *engine);
+static ngx_int_t ngx_engine_njs_pending(ngx_engine_t *engine);
+static ngx_int_t ngx_engine_njs_string(ngx_engine_t *e,
+    njs_opaque_value_t *value, ngx_str_t *str);
+static void ngx_engine_njs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
+    ngx_js_loc_conf_t *conf);
 
 static njs_int_t ngx_js_ext_build(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
@@ -70,6 +84,15 @@ static njs_int_t njs_set_immediate(njs_vm_t *vm, njs_value_t *args,
 static njs_int_t njs_clear_timeout(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t ngx_js_unhandled_rejection(ngx_js_ctx_t *ctx);
+static void ngx_js_rejection_tracker(njs_vm_t *vm, njs_external_ptr_t unused,
+    njs_bool_t is_handled, njs_value_t *promise, njs_value_t *reason);
+static njs_mod_t *ngx_js_module_loader(njs_vm_t *vm,
+    njs_external_ptr_t external, njs_str_t *name);
+static njs_int_t ngx_js_module_lookup(ngx_js_loc_conf_t *conf,
+    njs_module_info_t *info);
+static njs_int_t ngx_js_module_read(njs_mp_t *mp, int fd, njs_str_t *text);
+static njs_int_t ngx_js_set_cwd(njs_mp_t *mp, ngx_js_loc_conf_t *conf,
+    njs_str_t *path);
 static void ngx_js_cleanup_vm(void *data);
 
 static njs_int_t ngx_js_core_init(njs_vm_t *vm);
@@ -354,15 +377,338 @@ njs_module_t *njs_js_addon_modules_shared[] = {
 static njs_int_t      ngx_js_console_proto_id;
 
 
+static ngx_engine_t *
+ngx_create_engine(ngx_engine_opts_t *opts)
+{
+    njs_mp_t      *mp;
+    ngx_int_t      rc;
+    ngx_engine_t  *engine;
+
+    mp = njs_mp_fast_create(2 * getpagesize(), 128, 512, 16);
+    if (mp == NULL) {
+        return NULL;
+    }
+
+    engine = njs_mp_zalloc(mp, sizeof(ngx_engine_t));
+    if (engine == NULL) {
+        return NULL;
+    }
+
+    engine->pool = mp;
+    engine->clone = opts->clone;
+
+    switch (opts->engine) {
+    case NGX_ENGINE_NJS:
+        rc = ngx_engine_njs_init(engine, opts);
+        if (rc != NGX_OK) {
+            return NULL;
+        }
+
+        engine->name = "njs";
+        engine->type = NGX_ENGINE_NJS;
+        engine->compile = ngx_engine_njs_compile;
+        engine->call = ngx_engine_njs_call;
+        engine->external = ngx_engine_njs_external;
+        engine->pending = ngx_engine_njs_pending;
+        engine->string = ngx_engine_njs_string;
+        engine->destroy = opts->destroy ? opts->destroy
+                                        : ngx_engine_njs_destroy;
+        break;
+
+    default:
+        return NULL;
+    }
+
+    return engine;
+}
+
+
+static ngx_int_t
+ngx_engine_njs_init(ngx_engine_t *engine, ngx_engine_opts_t *opts)
+{
+    njs_vm_t      *vm;
+    ngx_int_t      rc;
+    njs_vm_opt_t   vm_options;
+
+    njs_vm_opt_init(&vm_options);
+
+    vm_options.backtrace = 1;
+    vm_options.addons = opts->u.njs.addons;
+    vm_options.metas = opts->u.njs.metas;
+    vm_options.file = opts->file;
+    vm_options.argv = ngx_argv;
+    vm_options.argc = ngx_argc;
+
+    vm = njs_vm_create(&vm_options);
+    if (vm == NULL) {
+        return NGX_ERROR;
+    }
+
+    njs_vm_set_rejection_tracker(vm, ngx_js_rejection_tracker, NULL);
+
+    rc = ngx_js_set_cwd(njs_vm_memory_pool(vm), opts->conf, &vm_options.file);
+    if (rc != NGX_OK) {
+        return NGX_ERROR;
+    }
+
+    njs_vm_set_module_loader(vm, ngx_js_module_loader, opts->conf);
+
+    engine->u.njs.vm = vm;
+
+    return NJS_OK;
+}
+
+
+static ngx_int_t
+ngx_engine_njs_compile(ngx_js_loc_conf_t *conf, ngx_log_t *log, u_char *start,
+    size_t size)
+{
+    u_char               *end;
+    njs_vm_t             *vm;
+    njs_int_t             rc;
+    njs_str_t             text;
+    ngx_uint_t            i;
+    njs_value_t          *value;
+    njs_opaque_value_t    exception, lvalue;
+    ngx_js_named_path_t  *import;
+
+    static const njs_str_t line_number_key = njs_str("lineNumber");
+    static const njs_str_t file_name_key = njs_str("fileName");
+
+    vm = conf->engine->u.njs.vm;
+    end = start + size;
+
+    rc = njs_vm_compile(vm, &start, end);
+
+    if (rc != NJS_OK) {
+        njs_vm_exception_get(vm, njs_value_arg(&exception));
+        njs_vm_value_string(vm, &text, njs_value_arg(&exception));
+
+        value = njs_vm_object_prop(vm, njs_value_arg(&exception),
+                                   &file_name_key, &lvalue);
+        if (value == NULL) {
+            value = njs_vm_object_prop(vm, njs_value_arg(&exception),
+                                       &line_number_key, &lvalue);
+
+            if (value != NULL) {
+                i = njs_value_number(value) - 1;
+
+                if (i < conf->imports->nelts) {
+                    import = conf->imports->elts;
+                    ngx_log_error(NGX_LOG_EMERG, log, 0,
+                                  "%*s, included in %s:%ui", text.length,
+                                  text.start, import[i].file, import[i].line);
+                    return NGX_ERROR;
+                }
+            }
+        }
+
+        ngx_log_error(NGX_LOG_EMERG, log, 0, "%*s", text.length, text.start);
+        return NGX_ERROR;
+    }
+
+    if (start != end) {
+        ngx_log_error(NGX_LOG_EMERG, log, 0,
+                      "extra characters in js script: \"%*s\"",
+                      end - start, start);
+        return NGX_ERROR;
+    }
+
+    return NGX_OK;
+}
+
+
+ngx_engine_t *
+ngx_njs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
+{
+    njs_vm_t             *vm;
+    njs_int_t             rc;
+    njs_str_t             key;
+    ngx_str_t             exception;
+    ngx_uint_t            i;
+    ngx_engine_t         *engine;
+    njs_opaque_value_t    retval;
+    ngx_js_named_path_t  *preload;
+
+    vm = njs_vm_clone(cf->engine->u.njs.vm, external);
+    if (vm == NULL) {
+        return NULL;
+    }
+
+    engine = njs_mp_alloc(njs_vm_memory_pool(vm), sizeof(ngx_engine_t));
+    if (engine == NULL) {
+        return NULL;
+    }
+
+    memcpy(engine, cf->engine, sizeof(ngx_engine_t));
+    engine->pool = njs_vm_memory_pool(vm);
+    engine->u.njs.vm = vm;
+
+    /* bind objects from preload vm */
+
+    if (cf->preload_objects != NGX_CONF_UNSET_PTR) {
+        preload = cf->preload_objects->elts;
+
+        for (i = 0; i < cf->preload_objects->nelts; i++) {
+            key.start = preload[i].name.data;
+            key.length = preload[i].name.len;
+
+            rc = njs_vm_value(cf->preload_vm, &key, njs_value_arg(&retval));
+            if (rc != NJS_OK) {
+                return NULL;
+            }
+
+            rc = njs_vm_bind(vm, &key, njs_value_arg(&retval), 0);
+            if (rc != NJS_OK) {
+                return NULL;
+            }
+        }
+    }
+
+    if (njs_vm_start(vm, njs_value_arg(&retval)) == NJS_ERROR) {
+        ngx_js_exception(vm, &exception);
+
+        ngx_log_error(NGX_LOG_ERR, ctx->log, 0, "js exception: %V", &exception);
+
+        return NULL;
+    }
+
+    return engine;
+}
+
+
+static ngx_int_t
+ngx_engine_njs_call(ngx_js_ctx_t *ctx, ngx_str_t *fname,
+    njs_opaque_value_t *args, njs_uint_t nargs)
+{
+    njs_vm_t        *vm;
+    njs_int_t        ret;
+    njs_str_t        name;
+    ngx_str_t        exception;
+    njs_function_t  *func;
+
+    name.start = fname->data;
+    name.length = fname->len;
+
+    vm = ctx->engine->u.njs.vm;
+
+    func = njs_vm_function(vm, &name);
+    if (func == NULL) {
+        ngx_log_error(NGX_LOG_ERR, ctx->log, 0,
+                      "js function \"%V\" not found", fname);
+        return NGX_ERROR;
+    }
+
+    ret = njs_vm_invoke(vm, func, njs_value_arg(args), nargs,
+                        njs_value_arg(&ctx->retval));
+    if (ret == NJS_ERROR) {
+        ngx_js_exception(vm, &exception);
+
+        ngx_log_error(NGX_LOG_ERR, ctx->log, 0,
+                      "js exception: %V", &exception);
+
+        return NGX_ERROR;
+    }
+
+    for ( ;; ) {
+        ret = njs_vm_execute_pending_job(vm);
+        if (ret <= NJS_OK) {
+            if (ret == NJS_ERROR) {
+                ngx_js_exception(vm, &exception);
+
+                ngx_log_error(NGX_LOG_ERR, ctx->log, 0,
+                              "js job exception: %V", &exception);
+                return NGX_ERROR;
+            }
+
+            break;
+        }
+    }
+
+    if (ngx_js_unhandled_rejection(ctx)) {
+        ngx_js_exception(vm, &exception);
+
+        ngx_log_error(NGX_LOG_ERR, ctx->log, 0, "js exception: %V", &exception);
+        return NGX_ERROR;
+    }
+
+    return njs_rbtree_is_empty(&ctx->waiting_events) ? NGX_OK : NGX_AGAIN;
+}
+
+
+static void *
+ngx_engine_njs_external(ngx_engine_t *engine)
+{
+    return njs_vm_external_ptr(engine->u.njs.vm);
+}
+
+static ngx_int_t
+ngx_engine_njs_pending(ngx_engine_t *e)
+{
+    return njs_vm_pending(e->u.njs.vm);
+}
+
+
+static ngx_int_t
+ngx_engine_njs_string(ngx_engine_t *e, njs_opaque_value_t *value,
+    ngx_str_t *str)
+{
+    ngx_int_t  rc;
+    njs_str_t  s;
+
+    rc = ngx_js_string(e->u.njs.vm, njs_value_arg(value), &s);
+
+    str->data = s.start;
+    str->len = s.length;
+
+    return rc;
+}
+
+
+static void
+ngx_engine_njs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
+    ngx_js_loc_conf_t *conf)
+{
+    ngx_js_event_t     *event;
+    njs_rbtree_node_t  *node;
+
+    if (ctx != NULL) {
+        node = njs_rbtree_min(&ctx->waiting_events);
+
+        while (njs_rbtree_is_there_successor(&ctx->waiting_events, node)) {
+            event = (ngx_js_event_t *) ((u_char *) node
+                                        - offsetof(ngx_js_event_t, node));
+
+            if (event->destructor != NULL) {
+                event->destructor(event);
+            }
+
+            node = njs_rbtree_node_successor(&ctx->waiting_events, node);
+        }
+    }
+
+    njs_vm_destroy(e->u.njs.vm);
+
+    /*
+     * when ctx !=NULL e->pool is vm pool, in such case it is destroyed
+     * by njs_vm_destroy().
+     */
+
+    if (ctx == NULL) {
+        njs_mp_destroy(e->pool);
+    }
+}
+
+
 ngx_int_t
-ngx_js_call(njs_vm_t *vm, njs_function_t *func, njs_value_t *args,
+ngx_js_call(njs_vm_t *vm, njs_function_t *func, njs_opaque_value_t *args,
     njs_uint_t nargs)
 {
     njs_int_t          ret;
     ngx_str_t          exception;
     ngx_connection_t  *c;
 
-    ret = njs_vm_call(vm, func, args, nargs);
+    ret = njs_vm_call(vm, func, njs_value_arg(args), nargs);
     if (ret == NJS_ERROR) {
         ngx_js_exception(vm, &exception);
 
@@ -391,75 +737,6 @@ ngx_js_call(njs_vm_t *vm, njs_function_t *func, njs_value_t *args,
     }
 
     return NGX_OK;
-}
-
-
-ngx_int_t
-ngx_js_name_call(njs_vm_t *vm, ngx_str_t *fname, ngx_log_t *log,
-    njs_opaque_value_t *args, njs_uint_t nargs)
-{
-    njs_opaque_value_t  unused;
-
-    return ngx_js_name_invoke(vm, fname, log, args, nargs, &unused);
-}
-
-
-ngx_int_t
-ngx_js_name_invoke(njs_vm_t *vm, ngx_str_t *fname, ngx_log_t *log,
-    njs_opaque_value_t *args, njs_uint_t nargs, njs_opaque_value_t *retval)
-{
-    njs_int_t        ret;
-    njs_str_t        name;
-    ngx_str_t        exception;
-    ngx_js_ctx_t    *ctx;
-    njs_function_t  *func;
-
-    name.start = fname->data;
-    name.length = fname->len;
-
-    func = njs_vm_function(vm, &name);
-    if (func == NULL) {
-        ngx_log_error(NGX_LOG_ERR, log, 0,
-                      "js function \"%V\" not found", fname);
-        return NGX_ERROR;
-    }
-
-    ret = njs_vm_invoke(vm, func, njs_value_arg(args), nargs,
-                        njs_value_arg(retval));
-    if (ret == NJS_ERROR) {
-        ngx_js_exception(vm, &exception);
-
-        ngx_log_error(NGX_LOG_ERR, log, 0,
-                      "js exception: %V", &exception);
-
-        return NGX_ERROR;
-    }
-
-    for ( ;; ) {
-        ret = njs_vm_execute_pending_job(vm);
-        if (ret <= NJS_OK) {
-            if (ret == NJS_ERROR) {
-                ngx_js_exception(vm, &exception);
-
-                ngx_log_error(NGX_LOG_ERR, log, 0,
-                              "js job exception: %V", &exception);
-                return NGX_ERROR;
-            }
-
-            break;
-        }
-    }
-
-    ctx = ngx_external_ctx(vm, njs_vm_external_ptr(vm));
-
-    if (ngx_js_unhandled_rejection(ctx)) {
-        ngx_js_exception(vm, &exception);
-
-        ngx_log_error(NGX_LOG_ERR, log, 0, "js exception: %V", &exception);
-        return NGX_ERROR;
-    }
-
-    return njs_rbtree_is_empty(&ctx->waiting_events) ? NGX_OK : NGX_AGAIN;
 }
 
 
@@ -554,33 +831,18 @@ ngx_js_event_rbtree_compare(njs_rbtree_node_t *node1, njs_rbtree_node_t *node2)
 
 
 void
-ngx_js_ctx_init(ngx_js_ctx_t *ctx)
+ngx_js_ctx_init(ngx_js_ctx_t *ctx, ngx_log_t *log)
 {
+    ctx->log = log;
     ctx->event_id = 0;
     njs_rbtree_init(&ctx->waiting_events, ngx_js_event_rbtree_compare);
 }
 
 
 void
-ngx_js_ctx_destroy(ngx_js_ctx_t *ctx)
+ngx_js_ctx_destroy(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *conf)
 {
-    ngx_js_event_t     *event;
-    njs_rbtree_node_t  *node;
-
-    node = njs_rbtree_min(&ctx->waiting_events);
-
-    while (njs_rbtree_is_there_successor(&ctx->waiting_events, node)) {
-        event = (ngx_js_event_t *) ((u_char *) node
-                                    - offsetof(ngx_js_event_t, node));
-
-        if (event->destructor != NULL) {
-            event->destructor(njs_vm_external_ptr(event->vm), event);
-        }
-
-        node = njs_rbtree_node_successor(&ctx->waiting_events, node);
-    }
-
-    njs_vm_destroy(ctx->vm);
+    ctx->engine->destroy(ctx->engine, ctx, conf);
 }
 
 
@@ -1047,9 +1309,10 @@ ngx_js_timer_handler(ngx_event_t *ev)
 
     event = (ngx_js_event_t *) ((u_char *) ev - offsetof(ngx_js_event_t, ev));
 
-    vm = event->vm;
+    vm = event->ctx;
 
-    rc = ngx_js_call(vm, event->function, event->args, event->nargs);
+    rc = ngx_js_call(vm, njs_value_function(njs_value_arg(&event->function)),
+                     event->args, event->nargs);
 
     ctx = ngx_external_ctx(vm, njs_vm_external_ptr(vm));
     ngx_js_del_event(ctx, event);
@@ -1059,7 +1322,7 @@ ngx_js_timer_handler(ngx_event_t *ev)
 
 
 static void
-ngx_js_clear_timer(njs_external_ptr_t external, ngx_js_event_t *event)
+ngx_js_clear_timer(ngx_js_event_t *event)
 {
     if (event->ev.timer_set) {
         ngx_del_timer(&event->ev);
@@ -1106,10 +1369,10 @@ njs_set_timer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    event->vm = vm;
-    event->function = njs_value_function(njs_argument(args, 1));
+    event->ctx = vm;
+    njs_value_assign(&event->function, njs_argument(args, 1));
     event->nargs = nargs;
-    event->args = (njs_value_t *) ((u_char *) event + sizeof(ngx_js_event_t));
+    event->args = (njs_opaque_value_t *) &event[1];
     event->destructor = ngx_js_clear_timer;
 
     ctx = ngx_external_ctx(vm, njs_vm_external_ptr(vm));
@@ -1344,6 +1607,47 @@ ngx_js_import(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
 
 char *
+ngx_js_engine(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+{
+    char  *p = conf;
+
+    ngx_str_t           *value;
+    ngx_uint_t          *type, m;
+    ngx_conf_bitmask_t  *mask;
+
+    type = (size_t *) (p + cmd->offset);
+    if (*type != NGX_CONF_UNSET_UINT) {
+        return "is duplicate";
+    }
+
+    value = cf->args->elts;
+    mask = cmd->post;
+
+    for (m = 0; mask[m].name.len != 0; m++) {
+
+        if (mask[m].name.len != value[1].len
+            || ngx_strcasecmp(mask[m].name.data, value[1].data) != 0)
+        {
+            continue;
+        }
+
+        *type = mask[m].mask;
+
+        break;
+    }
+
+    if (mask[m].name.len == 0) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                           "invalid value \"%s\"", value[1].data);
+
+        return NGX_CONF_ERROR;
+    }
+
+    return NGX_CONF_OK;
+}
+
+
+char *
 ngx_js_preload_object(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
     ngx_js_loc_conf_t    *jscf = conf;
@@ -1552,14 +1856,16 @@ ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
     ngx_js_named_path_t  *import, *pi, *pij, *preload;
 
     if (conf->imports == NGX_CONF_UNSET_PTR
+        && conf->type == NGX_CONF_UNSET_UINT
         && conf->paths == NGX_CONF_UNSET_PTR
         && conf->preload_objects == NGX_CONF_UNSET_PTR)
     {
-        if (prev->vm != NULL) {
+        if (prev->engine != NULL) {
             conf->preload_objects = prev->preload_objects;
             conf->imports = prev->imports;
+            conf->type = prev->type;
             conf->paths = prev->paths;
-            conf->vm = prev->vm;
+            conf->engine = prev->engine;
 
             conf->preload_vm = prev->preload_vm;
 
@@ -1703,9 +2009,10 @@ ngx_js_rejection_tracker(njs_vm_t *vm, njs_external_ptr_t unused,
         promise_obj = njs_value_ptr(promise);
 
         for (i = 0; i < length; i++) {
-            if (rejected_promise[i].promise == promise_obj) {
-                njs_arr_remove(ctx->rejected_promises,
-                               &rejected_promise[i]);
+            if (njs_value_ptr(njs_value_arg(&rejected_promise[i].promise))
+                == promise_obj)
+            {
+                njs_arr_remove(ctx->rejected_promises, &rejected_promise[i]);
 
                 break;
             }
@@ -1727,7 +2034,7 @@ ngx_js_rejection_tracker(njs_vm_t *vm, njs_external_ptr_t unused,
         return;
     }
 
-    rejected_promise->promise = njs_value_ptr(promise);
+    njs_value_assign(&rejected_promise->promise, promise);
     njs_value_assign(&rejected_promise->message, reason);
 }
 
@@ -1918,13 +2225,13 @@ current_dir:
 
 
 static njs_int_t
-ngx_js_set_cwd(njs_vm_t *vm, ngx_js_loc_conf_t *conf, njs_str_t *path)
+ngx_js_set_cwd(njs_mp_t *mp, ngx_js_loc_conf_t *conf, njs_str_t *path)
 {
     ngx_str_t  cwd;
 
     ngx_js_file_dirname(path, &cwd);
 
-    conf->cwd.data = njs_mp_alloc(njs_vm_memory_pool(vm), cwd.len);
+    conf->cwd.data = njs_mp_alloc(mp, cwd.len);
     if (conf->cwd.data == NULL) {
         return NJS_ERROR;
     }
@@ -1969,7 +2276,7 @@ ngx_js_module_loader(njs_vm_t *vm, njs_external_ptr_t external, njs_str_t *name)
 
     prev_cwd = conf->cwd;
 
-    ret = ngx_js_set_cwd(vm, conf, &info.file);
+    ret = ngx_js_set_cwd(njs_vm_memory_pool(vm), conf, &info.file);
     if (ret != NJS_OK) {
         njs_vm_internal_error(vm, "while setting cwd for \"%V\" module",
                               &info.file);
@@ -1992,21 +2299,14 @@ ngx_js_module_loader(njs_vm_t *vm, njs_external_ptr_t external, njs_str_t *name)
 
 ngx_int_t
 ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
-    njs_vm_opt_t *options)
+    ngx_engine_opts_t *options)
 {
+    u_char               *start, *p;
     size_t                size;
-    u_char               *start, *end, *p;
     ngx_str_t            *m, file;
-    njs_int_t             rc;
-    njs_str_t             text;
     ngx_uint_t            i;
-    njs_value_t          *value;
     ngx_pool_cleanup_t   *cln;
-    njs_opaque_value_t    lvalue, exception;
     ngx_js_named_path_t  *import;
-
-    static const njs_str_t line_number_key = njs_str("lineNumber");
-    static const njs_str_t file_name_key = njs_str("fileName");
 
     if (conf->preload_objects != NGX_CONF_UNSET_PTR) {
        if (ngx_js_init_preload_vm(cf, (ngx_js_loc_conf_t *)conf) != NGX_OK) {
@@ -2054,9 +2354,10 @@ ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
 
     options->file.start = file.data;
     options->file.length = file.len;
+    options->conf = conf;
 
-    conf->vm = njs_vm_create(options);
-    if (conf->vm == NULL) {
+    conf->engine = ngx_create_engine(options);
+    if (conf->engine == NULL) {
         ngx_log_error(NGX_LOG_EMERG, cf->log, 0, "failed to create js VM");
         return NGX_ERROR;
     }
@@ -2069,17 +2370,6 @@ ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
     cln->handler = ngx_js_cleanup_vm;
     cln->data = conf;
 
-    njs_vm_set_rejection_tracker(conf->vm, ngx_js_rejection_tracker,
-                                 NULL);
-
-    rc = ngx_js_set_cwd(conf->vm, conf, &options->file);
-    if (rc != NJS_OK) {
-        ngx_log_error(NGX_LOG_EMERG, cf->log, 0, "failed to set cwd");
-        return NGX_ERROR;
-    }
-
-    njs_vm_set_module_loader(conf->vm, ngx_js_module_loader, conf);
-
     if (conf->paths != NGX_CONF_UNSET_PTR) {
         m = conf->paths->elts;
 
@@ -2090,52 +2380,14 @@ ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
         }
     }
 
-    end = start + size;
-
-    rc = njs_vm_compile(conf->vm, &start, end);
-
-    if (rc != NJS_OK) {
-        njs_vm_exception_get(conf->vm, njs_value_arg(&exception));
-        njs_vm_value_string(conf->vm, &text, njs_value_arg(&exception));
-
-        value = njs_vm_object_prop(conf->vm, njs_value_arg(&exception),
-                                   &file_name_key, &lvalue);
-        if (value == NULL) {
-            value = njs_vm_object_prop(conf->vm, njs_value_arg(&exception),
-                                       &line_number_key, &lvalue);
-
-            if (value != NULL) {
-                i = njs_value_number(value) - 1;
-
-                if (i < conf->imports->nelts) {
-                    import = conf->imports->elts;
-                    ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
-                                  "%*s, included in %s:%ui", text.length,
-                                  text.start, import[i].file, import[i].line);
-                    return NGX_ERROR;
-                }
-            }
-        }
-
-        ngx_log_error(NGX_LOG_EMERG, cf->log, 0, "%*s", text.length,
-                      text.start);
-        return NGX_ERROR;
-    }
-
-    if (start != end) {
-        ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
-                      "extra characters in js script: \"%*s\"",
-                      end - start, start);
-        return NGX_ERROR;
-    }
-
-    return NGX_OK;
+    return conf->engine->compile(conf, cf->log, start, size);
 }
 
 
 static njs_int_t
 ngx_js_unhandled_rejection(ngx_js_ctx_t *ctx)
 {
+    njs_vm_t                   *vm;
     njs_int_t                   ret;
     njs_str_t                   message;
     ngx_js_rejected_promise_t  *rejected_promise;
@@ -2146,15 +2398,16 @@ ngx_js_unhandled_rejection(ngx_js_ctx_t *ctx)
         return 0;
     }
 
+    vm = ctx->engine->u.njs.vm;
     rejected_promise = ctx->rejected_promises->start;
 
-    ret = njs_vm_value_to_string(ctx->vm, &message,
+    ret = njs_vm_value_to_string(vm, &message,
                                  njs_value_arg(&rejected_promise->message));
     if (njs_slow_path(ret != NJS_OK)) {
         return -1;
     }
 
-    njs_vm_error(ctx->vm, "unhandled promise rejection: %V", &message);
+    njs_vm_error(vm, "unhandled promise rejection: %V", &message);
 
     njs_arr_destroy(ctx->rejected_promises);
     ctx->rejected_promises = NULL;
@@ -2168,7 +2421,7 @@ ngx_js_cleanup_vm(void *data)
 {
     ngx_js_loc_conf_t  *jscf = data;
 
-    njs_vm_destroy(jscf->vm);
+    jscf->engine->destroy(jscf->engine, NULL, NULL);
 
     if (jscf->preload_objects != NGX_CONF_UNSET_PTR) {
         njs_vm_destroy(jscf->preload_vm);
@@ -2187,6 +2440,7 @@ ngx_js_create_conf(ngx_conf_t *cf, size_t size)
     }
 
     conf->paths = NGX_CONF_UNSET_PTR;
+    conf->type = NGX_CONF_UNSET_UINT;
     conf->imports = NGX_CONF_UNSET_PTR;
     conf->preload_objects = NGX_CONF_UNSET_PTR;
 
@@ -2251,6 +2505,7 @@ ngx_js_merge_conf(ngx_conf_t *cf, void *parent, void *child,
     ngx_js_loc_conf_t *prev = parent;
     ngx_js_loc_conf_t *conf = child;
 
+    ngx_conf_merge_uint_value(conf->type, prev->type, NGX_ENGINE_NJS);
     ngx_conf_merge_msec_value(conf->timeout, prev->timeout, 60000);
     ngx_conf_merge_size_value(conf->buffer_size, prev->buffer_size, 16384);
     ngx_conf_merge_size_value(conf->max_response_body_size,

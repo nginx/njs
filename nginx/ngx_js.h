@@ -20,6 +20,8 @@
 #include "ngx_js_shared_dict.h"
 
 
+#define NGX_ENGINE_NJS      1
+
 #define NGX_JS_UNSET        0
 #define NGX_JS_DEPRECATED   1
 #define NGX_JS_STRING       2
@@ -36,9 +38,11 @@
 #define ngx_js_buffer_type(btype) ((btype) & ~NGX_JS_DEPRECATED)
 
 
+typedef struct ngx_js_loc_conf_s ngx_js_loc_conf_t;
 typedef struct ngx_js_event_s ngx_js_event_t;
 typedef struct ngx_js_dict_s  ngx_js_dict_t;
 typedef struct ngx_js_ctx_s  ngx_js_ctx_t;
+typedef struct ngx_engine_s  ngx_engine_t;
 
 
 typedef ngx_pool_t *(*ngx_external_pool_pt)(njs_external_ptr_t e);
@@ -60,14 +64,13 @@ typedef struct {
 
 
 struct ngx_js_event_s {
-    njs_vm_t            *vm;
-    njs_function_t      *function;
-    njs_value_t         *args;
+    void                *ctx;
+    njs_opaque_value_t   function;
+    njs_opaque_value_t  *args;
     ngx_socket_t         fd;
     NJS_RBTREE_NODE     (node);
     njs_uint_t           nargs;
-    void               (*destructor)(njs_external_ptr_t external,
-                                     ngx_js_event_t *event);
+    void               (*destructor)(ngx_js_event_t *event);
     ngx_event_t          ev;
     void                *data;
 };
@@ -79,7 +82,8 @@ struct ngx_js_event_s {
 
 
 #define _NGX_JS_COMMON_LOC_CONF                                               \
-    njs_vm_t              *vm;                                                \
+    ngx_uint_t             type;                                              \
+    ngx_engine_t          *engine;                                            \
     ngx_str_t              cwd;                                               \
     ngx_array_t           *imports;                                           \
     ngx_array_t           *paths;                                             \
@@ -109,7 +113,10 @@ struct ngx_js_event_s {
 
 
 #define NGX_JS_COMMON_CTX                                                     \
-    njs_vm_t              *vm;                                                \
+    ngx_engine_t          *engine;                                            \
+    ngx_log_t             *log;                                               \
+    njs_opaque_value_t     args[3];                                           \
+    njs_opaque_value_t     retval;                                            \
     njs_arr_t             *rejected_promises;                                 \
     njs_rbtree_t           waiting_events;                                    \
     ngx_socket_t           event_id
@@ -122,7 +129,7 @@ struct ngx_js_event_s {
 #define ngx_js_del_event(ctx, event)                                          \
     do {                                                                      \
         if ((event)->destructor) {                                            \
-            (event)->destructor(njs_vm_external_ptr((event)->vm), event);     \
+            (event)->destructor(event);                                       \
         }                                                                     \
                                                                               \
         njs_rbtree_delete(&(ctx)->waiting_events, &(event)->node);            \
@@ -134,9 +141,9 @@ typedef struct {
 } ngx_js_main_conf_t;
 
 
-typedef struct {
+struct ngx_js_loc_conf_s {
     NGX_JS_COMMON_LOC_CONF;
-} ngx_js_loc_conf_t;
+};
 
 
 typedef struct {
@@ -147,6 +154,54 @@ typedef struct {
 
 struct ngx_js_ctx_s {
     NGX_JS_COMMON_CTX;
+};
+
+
+typedef struct ngx_engine_opts_s {
+    unsigned                    engine;
+    union {
+        struct {
+            njs_vm_meta_t      *metas;
+            njs_module_t      **addons;
+        } njs;
+    } u;
+
+    njs_str_t                   file;
+    ngx_js_loc_conf_t          *conf;
+    ngx_engine_t             *(*clone)(ngx_js_ctx_t *ctx,
+                                        ngx_js_loc_conf_t *cf, njs_int_t pr_id,
+                                        void *external);
+    void                      (*destroy)(ngx_engine_t *e, ngx_js_ctx_t *ctx,
+                                        ngx_js_loc_conf_t *conf);
+} ngx_engine_opts_t;
+
+
+struct ngx_engine_s {
+    union {
+        struct {
+            njs_vm_t           *vm;
+        } njs;
+    } u;
+
+    ngx_int_t                 (*compile)(ngx_js_loc_conf_t *conf, ngx_log_t *lg,
+                                         u_char *start, size_t size);
+    ngx_int_t                 (*call)(ngx_js_ctx_t *ctx, ngx_str_t *fname,
+                                      njs_opaque_value_t *args,
+                                      njs_uint_t nargs);
+    ngx_engine_t             *(*clone)(ngx_js_ctx_t *ctx,
+                                       ngx_js_loc_conf_t *cf, njs_int_t pr_id,
+                                       void *external);
+    void                     *(*external)(ngx_engine_t *e);
+    ngx_int_t                 (*pending)(ngx_engine_t *e);
+    ngx_int_t                 (*string)(ngx_engine_t *e,
+                                        njs_opaque_value_t *value,
+                                        ngx_str_t *str);
+    void                      (*destroy)(ngx_engine_t *e, ngx_js_ctx_t *ctx,
+                                         ngx_js_loc_conf_t *conf);
+
+    unsigned                    type;
+    const char                 *name;
+    njs_mp_t                   *pool;
 };
 
 
@@ -182,19 +237,21 @@ struct ngx_js_ctx_s {
                              : njs_vm_value_buffer_set(vm, value, start, len))
 
 
-#define ngx_vm_pending(ctx)                                                   \
-    (njs_vm_pending((ctx)->vm) || !njs_rbtree_is_empty(&(ctx)->waiting_events))
+void ngx_js_ctx_init(ngx_js_ctx_t *ctx, ngx_log_t *log);
 
+#define ngx_js_ctx_pending(ctx)                                               \
+    ((ctx)->engine->pending(ctx->engine)                                      \
+     || !njs_rbtree_is_empty(&(ctx)->waiting_events))
 
-void ngx_js_ctx_init(ngx_js_ctx_t *ctx);
-void ngx_js_ctx_destroy(ngx_js_ctx_t *ctx);
-ngx_int_t ngx_js_call(njs_vm_t *vm, njs_function_t *func, njs_value_t *args,
-    njs_uint_t nargs);
-ngx_int_t ngx_js_name_call(njs_vm_t *vm, ngx_str_t *fname, ngx_log_t *log,
+#define ngx_js_ctx_external(ctx)                                              \
+    ((ctx)->engine->external(ctx->engine))
+
+void ngx_js_ctx_destroy(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *conf);
+ngx_int_t ngx_js_call(njs_vm_t *vm, njs_function_t *func,
     njs_opaque_value_t *args, njs_uint_t nargs);
-ngx_int_t ngx_js_name_invoke(njs_vm_t *vm, ngx_str_t *fname, ngx_log_t *log,
-    njs_opaque_value_t *args, njs_uint_t nargs, njs_opaque_value_t *retval);
 ngx_int_t ngx_js_exception(njs_vm_t *vm, ngx_str_t *s);
+ngx_engine_t *ngx_njs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf,
+    void *external);
 
 njs_int_t ngx_js_ext_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t level, njs_value_t *retval);
@@ -203,13 +260,14 @@ void ngx_js_log(njs_vm_t *vm, njs_external_ptr_t external,
 void ngx_js_logger(ngx_connection_t *c, ngx_uint_t level,
     const u_char *start, size_t length);
 char * ngx_js_import(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
+char * ngx_js_engine(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 char * ngx_js_preload_object(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 ngx_int_t ngx_js_init_preload_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf);
 ngx_int_t ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
     ngx_js_loc_conf_t *prev,
     ngx_int_t (*init_vm)(ngx_conf_t *cf, ngx_js_loc_conf_t *conf));
 ngx_int_t ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
-    njs_vm_opt_t *options);
+    ngx_engine_opts_t *opt);
 ngx_js_loc_conf_t *ngx_js_create_conf(ngx_conf_t *cf, size_t size);
 char * ngx_js_merge_conf(ngx_conf_t *cf, void *parent, void *child,
    ngx_int_t (*init_vm)(ngx_conf_t *cf, ngx_js_loc_conf_t *conf));
