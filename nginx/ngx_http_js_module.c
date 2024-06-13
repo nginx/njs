@@ -3153,7 +3153,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
-    if (ctx->vm != vm) {
+    if (r->main != r) {
         njs_vm_error(vm, "subrequest can only be created for "
                          "the primary request");
         return NJS_ERROR;
@@ -3511,7 +3511,7 @@ ngx_http_js_ext_get_parent(njs_vm_t *vm, njs_object_prop_t *prop,
     ctx = r->parent ? ngx_http_get_module_ctx(r->parent, ngx_http_js_module)
                     : NULL;
 
-    if (ctx == NULL || ctx->vm != vm) {
+    if (ctx == NULL) {
         njs_value_undefined_set(retval);
         return NJS_DECLINED;
     }

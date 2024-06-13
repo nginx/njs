@@ -590,6 +590,9 @@ local $TODO = 'not yet' unless has_version('0.8.5');
 
 http_get('/sr_error_in_callback');
 
+ok(index($t->read_file('error.log'), 'subrequest can only be created for') > 0,
+   'subrequest creation failed');
+
 }
 
 $t->stop();
@@ -602,8 +605,6 @@ ok(index($t->read_file('error.log'), 'failed to convert options.args') > 0,
 	'subrequest invalid args exception');
 ok(index($t->read_file('error.log'), 'too big subrequest response') > 0,
 	'subrequest too large body');
-ok(index($t->read_file('error.log'), 'subrequest creation failed') > 0,
-	'subrequest creation failed');
 ok(index($t->read_file('error.log'),
 		'js subrequest: failed to get the parent context') > 0,
 	'zero parent ctx');
