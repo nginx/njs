@@ -46,6 +46,10 @@ http {
             js_content test.njs;
         }
 
+        location /engine {
+            js_content test.engine;
+        }
+
         location /validate {
             js_content test.validate;
         }
@@ -97,6 +101,10 @@ my $p = port(8080);
 $t->write_file('test.js', <<EOF);
     function test_njs(r) {
         r.return(200, njs.version);
+    }
+
+    function engine(r) {
+        r.return(200, njs.engine);
     }
 
     function validate(r) {
@@ -158,10 +166,14 @@ $t->write_file('test.js', <<EOF);
     }
 
     export default {njs: test_njs, validate, preread_verify, filter_verify,
-                    access_ok, access_nok};
+                    access_ok, access_nok, engine};
 EOF
 
-$t->try_run('no stream njs available')->plan(9);
+$t->try_run('no stream njs available');
+
+plan(skip_all => 'not yet') if http_get('/engine') =~ /QuickJS$/m;
+
+$t->plan(9);
 
 $t->run_daemon(\&stream_daemon, port(8090), port(8091));
 $t->waitforsocket('127.0.0.1:' . port(8090));

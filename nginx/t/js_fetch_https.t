@@ -48,6 +48,10 @@ http {
             js_content test.njs;
         }
 
+        location /engine {
+            js_content test.engine;
+        }
+
         location /https {
             js_content test.https;
         }
@@ -102,6 +106,10 @@ $t->write_file('test.js', <<EOF);
         r.return(200, njs.version);
     }
 
+    function engine(r) {
+        r.return(200, njs.engine);
+    }
+
     function https(r) {
         var url = `https://\${r.args.domain}:$p1/loc`;
         var opt = {};
@@ -116,7 +124,7 @@ $t->write_file('test.js', <<EOF);
         .catch(e => r.return(501, e.message))
     }
 
-    export default {njs: test_njs, https};
+    export default {njs: test_njs, https, engine};
 EOF
 
 my $d = $t->testdir();
@@ -186,7 +194,11 @@ foreach my $name ('default.example.com', '1.example.com') {
 		. $t->read_file('intermediate.crt'));
 }
 
-$t->try_run('no njs.fetch')->plan(7);
+$t->try_run('no njs.fetch');
+
+plan(skip_all => 'not yet') if http_get('/engine') =~ /QuickJS$/m;
+
+$t->plan(7);
 
 $t->run_daemon(\&dns_daemon, port(8981), $t);
 $t->waitforfile($t->testdir . '/' . port(8981));

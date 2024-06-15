@@ -46,6 +46,7 @@ typedef struct {
 #define NJS_HEADER_SEMICOLON   0x1
 #define NJS_HEADER_SINGLE      0x2
 #define NJS_HEADER_ARRAY       0x4
+#define NJS_HEADER_GET         0x8
 
 
 typedef struct ngx_http_js_ctx_s  ngx_http_js_ctx_t;
@@ -86,6 +87,20 @@ typedef njs_int_t (*njs_http_js_header_handler_t)(njs_vm_t *vm,
 typedef njs_int_t (*njs_http_js_header_handler122_t)(njs_vm_t *vm,
     ngx_http_request_t *r, ngx_list_t *headers, njs_str_t *name,
     njs_value_t *setval, njs_value_t *retval);
+#if (NJS_HAVE_QUICKJS)
+typedef int (*njs_http_qjs_header_handler_t)(JSContext *cx,
+    ngx_http_request_t *r, ngx_str_t *name, JSPropertyDescriptor *pdesc,
+    JSValue *value, unsigned flags);
+
+
+typedef struct {
+    ngx_http_request_t  *request;
+    JSValue              args;
+    JSValue              request_body;
+    JSValue              response_body;
+} ngx_http_qjs_request_t;
+
+#endif
 
 
 typedef struct {
@@ -260,6 +275,88 @@ static njs_int_t ngx_http_js_server(njs_vm_t *vm, ngx_http_request_t *r,
     unsigned flags, njs_str_t *name, njs_value_t *setval,
     njs_value_t *retval);
 
+#if (NJS_HAVE_QUICKJS)
+static JSValue ngx_http_qjs_ext_to_string_tag(JSContext *cx,
+    JSValueConst this_val);
+static JSValue ngx_http_qjs_ext_args(JSContext *cx, JSValueConst this_val);
+static JSValue ngx_http_qjs_ext_done(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv);
+static JSValue ngx_http_qjs_ext_finish(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv);
+static JSValue ngx_http_qjs_ext_headers_in(JSContext *cx,
+    JSValueConst this_val);
+static JSValue ngx_http_qjs_ext_headers_out(JSContext *cx,
+    JSValueConst this_val);
+static JSValue ngx_http_qjs_ext_http_version(JSContext *cx,
+    JSValueConst this_val);
+static JSValue ngx_http_qjs_ext_internal(JSContext *cx, JSValueConst this_val);
+static JSValue ngx_http_qjs_ext_internal_redirect(JSContext *cx,
+    JSValueConst this_val, int argc, JSValueConst *argv);
+static JSValue ngx_http_qjs_ext_log(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv, int level);
+static JSValue ngx_http_qjs_ext_periodic_to_string_tag(JSContext *cx,
+    JSValueConst this_val);
+static JSValue ngx_http_qjs_ext_periodic_variables(JSContext *cx,
+    JSValueConst this_val, int type);
+static JSValue ngx_http_qjs_ext_parent(JSContext *cx, JSValueConst this_val);
+static JSValue ngx_http_qjs_ext_remote_address(JSContext *cx,
+    JSValueConst this_val);
+static JSValue ngx_http_qjs_ext_request_body(JSContext *cx,
+    JSValueConst this_val, int type);
+static JSValue ngx_http_qjs_ext_response_body(JSContext *cx,
+    JSValueConst this_val, int type);
+static JSValue ngx_http_qjs_ext_return(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv);
+static JSValue ngx_http_qjs_ext_send(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv);
+static JSValue ngx_http_qjs_ext_send_buffer(JSContext *cx,
+    JSValueConst this_val, int argc, JSValueConst *argv);
+static JSValue ngx_http_qjs_ext_send_header(JSContext *cx,
+    JSValueConst this_val, int argc, JSValueConst *argv);
+static JSValue ngx_http_qjs_ext_set_return_value(JSContext *cx,
+    JSValueConst this_val, int argc, JSValueConst *argv);
+static JSValue ngx_http_qjs_ext_status_get(JSContext *cx,
+    JSValueConst this_val);
+static JSValue ngx_http_qjs_ext_status_set(JSContext *cx, JSValueConst this_val,
+    JSValueConst value);
+static JSValue ngx_http_qjs_ext_string(JSContext *cx, JSValueConst this_val,
+    int offset);
+static JSValue ngx_http_qjs_ext_subrequest(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv);
+static JSValue ngx_http_qjs_ext_raw_headers(JSContext *cx,
+    JSValueConst this_val, int out);
+static JSValue ngx_http_qjs_ext_variables(JSContext *cx,
+    JSValueConst this_val, int type);
+
+static int ngx_http_qjs_variables_own_property(JSContext *cx,
+    JSPropertyDescriptor *pdesc, JSValueConst obj, JSAtom prop);
+static int ngx_http_qjs_variables_set_property(JSContext *cx, JSValueConst obj,
+    JSAtom atom, JSValueConst value, JSValueConst receiver, int flags);
+
+static int ngx_http_qjs_headers_in_own_property(JSContext *cx,
+    JSPropertyDescriptor *pdesc, JSValueConst obj, JSAtom prop);
+static int ngx_http_qjs_headers_in_own_property_names(JSContext *ctx,
+    JSPropertyEnum **ptab, uint32_t *plen, JSValueConst obj);
+
+static int ngx_http_qjs_headers_out_own_property(JSContext *cx,
+    JSPropertyDescriptor *pdesc, JSValueConst obj, JSAtom prop);
+static int ngx_http_qjs_headers_out_own_property_names(JSContext *cx,
+    JSPropertyEnum **ptab, uint32_t *plen, JSValueConst obj);
+static int ngx_http_qjs_headers_out_set_property(JSContext *cx,
+    JSValueConst obj, JSAtom atom, JSValueConst value, JSValueConst receiver,
+    int flags);
+static int ngx_http_qjs_headers_out_define_own_property(JSContext *cx,
+    JSValueConst this_obj, JSAtom prop, JSValueConst val, JSValueConst getter,
+    JSValueConst setter, int flags);
+static int ngx_http_qjs_headers_out_delete_property(JSContext *cx,
+    JSValueConst obj, JSAtom prop);
+
+static ngx_http_request_t *ngx_http_qjs_request(JSValueConst val);
+static JSValue ngx_http_qjs_request_make(JSContext *cx, ngx_int_t proto_id,
+    ngx_http_request_t *r);
+static void ngx_http_qjs_request_finalizer(JSRuntime *rt, JSValue val);
+#endif
+
 static ngx_pool_t *ngx_http_js_pool(ngx_http_request_t *r);
 static ngx_resolver_t *ngx_http_js_resolver(ngx_http_request_t *r);
 static ngx_msec_t ngx_http_js_resolver_timeout(ngx_http_request_t *r);
@@ -304,6 +401,9 @@ static ngx_int_t ngx_http_js_parse_unsafe_uri(ngx_http_request_t *r,
 
 static ngx_conf_bitmask_t  ngx_http_js_engines[] = {
     { ngx_string("njs"), NGX_ENGINE_NJS },
+#if (NJS_HAVE_QUICKJS)
+    { ngx_string("qjs"), NGX_ENGINE_QJS },
+#endif
     { ngx_null_string, 0 }
 };
 
@@ -327,6 +427,13 @@ static ngx_command_t  ngx_http_js_commands[] = {
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(ngx_http_js_loc_conf_t, type),
       &ngx_http_js_engines },
+
+    { ngx_string("js_context_reuse"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_size_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_js_loc_conf_t, reuse),
+      NULL },
 
     { ngx_string("js_import"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE13,
@@ -497,8 +604,8 @@ static ngx_http_output_header_filter_pt  ngx_http_next_header_filter;
 static ngx_http_output_body_filter_pt    ngx_http_next_body_filter;
 
 
-static njs_int_t    ngx_http_js_request_proto_id;
-static njs_int_t    ngx_http_js_periodic_session_proto_id;
+static njs_int_t    ngx_http_js_request_proto_id = 1;
+static njs_int_t    ngx_http_js_periodic_session_proto_id = 2;
 
 
 static njs_external_t  ngx_http_js_ext_request[] = {
@@ -922,6 +1029,125 @@ static ngx_http_js_entry_t ngx_http_methods[] = {
     { ngx_string("PATCH"),     NGX_HTTP_PATCH },
     { ngx_string("TRACE"),     NGX_HTTP_TRACE },
 };
+
+
+#if (NJS_HAVE_QUICKJS)
+
+static const JSCFunctionListEntry ngx_http_qjs_ext_request[] = {
+    JS_CGETSET_DEF("[Symbol.toStringTag]", ngx_http_qjs_ext_to_string_tag,
+                   NULL),
+    JS_CGETSET_DEF("args", ngx_http_qjs_ext_args, NULL),
+    JS_CFUNC_DEF("done", 0, ngx_http_qjs_ext_done),
+    JS_CFUNC_MAGIC_DEF("error", 1, ngx_http_qjs_ext_log, NGX_LOG_ERR),
+    JS_CFUNC_DEF("finish", 0, ngx_http_qjs_ext_finish),
+    JS_CGETSET_DEF("headersIn", ngx_http_qjs_ext_headers_in, NULL),
+    JS_CGETSET_DEF("headersOut", ngx_http_qjs_ext_headers_out, NULL),
+    JS_CGETSET_DEF("httpVersion", ngx_http_qjs_ext_http_version, NULL),
+    JS_CGETSET_DEF("internal", ngx_http_qjs_ext_internal, NULL),
+    JS_CFUNC_DEF("internalRedirect", 1, ngx_http_qjs_ext_internal_redirect),
+    JS_CFUNC_MAGIC_DEF("log", 1, ngx_http_qjs_ext_log, NGX_LOG_INFO),
+    JS_CGETSET_MAGIC_DEF("method", ngx_http_qjs_ext_string, NULL,
+                         offsetof(ngx_http_request_t, method_name)),
+    JS_CGETSET_DEF("parent", ngx_http_qjs_ext_parent, NULL),
+    JS_CGETSET_MAGIC_DEF("rawHeadersIn", ngx_http_qjs_ext_raw_headers, NULL, 0),
+    JS_CGETSET_MAGIC_DEF("rawHeadersOut", ngx_http_qjs_ext_raw_headers, NULL,
+                         1),
+    JS_CGETSET_MAGIC_DEF("rawVariables", ngx_http_qjs_ext_variables,
+                   NULL, NGX_JS_BUFFER),
+    JS_CGETSET_DEF("remoteAddress", ngx_http_qjs_ext_remote_address, NULL),
+    JS_CGETSET_MAGIC_DEF("requestBuffer", ngx_http_qjs_ext_request_body, NULL,
+                         NGX_JS_BUFFER),
+    JS_CGETSET_MAGIC_DEF("requestText", ngx_http_qjs_ext_request_body, NULL,
+                         NGX_JS_STRING),
+    JS_CGETSET_MAGIC_DEF("responseBuffer", ngx_http_qjs_ext_response_body, NULL,
+                         NGX_JS_BUFFER),
+    JS_CGETSET_MAGIC_DEF("responseText", ngx_http_qjs_ext_response_body, NULL,
+                         NGX_JS_STRING),
+    JS_CFUNC_DEF("return", 2, ngx_http_qjs_ext_return),
+    JS_CFUNC_DEF("send", 1, ngx_http_qjs_ext_send),
+    JS_CFUNC_DEF("sendBuffer", 2, ngx_http_qjs_ext_send_buffer),
+    JS_CFUNC_DEF("sendHeader", 0, ngx_http_qjs_ext_send_header),
+    JS_CFUNC_DEF("setReturnValue", 1, ngx_http_qjs_ext_set_return_value),
+    JS_CGETSET_DEF("status", ngx_http_qjs_ext_status_get,
+                   ngx_http_qjs_ext_status_set),
+    JS_CFUNC_DEF("subrequest", 3, ngx_http_qjs_ext_subrequest),
+    JS_CGETSET_MAGIC_DEF("uri", ngx_http_qjs_ext_string, NULL,
+                         offsetof(ngx_http_request_t, uri)),
+    JS_CGETSET_MAGIC_DEF("variables", ngx_http_qjs_ext_variables,
+                         NULL, NGX_JS_STRING),
+    JS_CFUNC_MAGIC_DEF("warn", 1, ngx_http_qjs_ext_log, NGX_LOG_WARN),
+};
+
+
+static const JSCFunctionListEntry ngx_http_qjs_ext_periodic[] = {
+    JS_CGETSET_DEF("[Symbol.toStringTag]",
+                   ngx_http_qjs_ext_periodic_to_string_tag, NULL),
+    JS_CGETSET_MAGIC_DEF("rawVariables", ngx_http_qjs_ext_periodic_variables,
+                   NULL, NGX_JS_BUFFER),
+    JS_CGETSET_MAGIC_DEF("variables", ngx_http_qjs_ext_periodic_variables,
+                         NULL, NGX_JS_STRING),
+};
+
+
+static JSClassDef ngx_http_qjs_request_class = {
+    "Request",
+    .finalizer = ngx_http_qjs_request_finalizer,
+};
+
+
+static JSClassDef ngx_http_qjs_periodic_class = {
+    "PeriodicSession",
+    .finalizer = NULL,
+};
+
+
+static JSClassDef ngx_http_qjs_variables_class = {
+    "Variables",
+    .finalizer = NULL,
+    .exotic = & (JSClassExoticMethods) {
+        .get_own_property = ngx_http_qjs_variables_own_property,
+        .set_property = ngx_http_qjs_variables_set_property,
+    },
+};
+
+
+static JSClassDef ngx_http_qjs_headers_in_class = {
+    "headersIn",
+    .finalizer = NULL,
+    .exotic = & (JSClassExoticMethods) {
+        .get_own_property = ngx_http_qjs_headers_in_own_property,
+        .get_own_property_names = ngx_http_qjs_headers_in_own_property_names,
+    },
+};
+
+
+static JSClassDef ngx_http_qjs_headers_out_class = {
+    "headersOut",
+    .finalizer = NULL,
+    .exotic = & (JSClassExoticMethods) {
+        .get_own_property = ngx_http_qjs_headers_out_own_property,
+        .get_own_property_names = ngx_http_qjs_headers_out_own_property_names,
+        .set_property = ngx_http_qjs_headers_out_set_property,
+        .define_own_property = ngx_http_qjs_headers_out_define_own_property,
+        .delete_property = ngx_http_qjs_headers_out_delete_property,
+    },
+};
+
+
+qjs_module_t *njs_http_qjs_addon_modules[] = {
+    &ngx_qjs_ngx_module,
+    /*
+     * Shared addons should be in the same order and the same positions
+     * in all nginx modules.
+     */
+#ifdef NJS_HAVE_ZLIB
+    &qjs_zlib_module,
+#endif
+    NULL,
+};
+
+
+#endif
 
 
 static ngx_int_t
@@ -1426,6 +1652,14 @@ ngx_http_js_cleanup_ctx(void *data)
                    ctx->engine);
 
     r = ngx_js_ctx_external(ctx);
+
+    /*
+     * Restoring the original module context, because it can be reset
+     * by internalRedirect() method. Proper ctx is required for
+     * ngx_http_qjs_request_finalizer() to work correctly.
+     */
+    ngx_http_set_ctx(r, ctx, ngx_http_js_module);
+
     jlcf = ngx_http_get_module_loc_conf(r, ngx_http_js_module);
 
     ngx_js_ctx_destroy((ngx_js_ctx_t *) ctx, (ngx_js_loc_conf_t *) jlcf);
@@ -4447,6 +4681,2859 @@ ngx_engine_njs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf,
 }
 
 
+#if (NJS_HAVE_QUICKJS)
+
+static ngx_int_t
+ngx_http_qjs_query_string_decode(njs_chb_t *chain, const u_char *start,
+    size_t size)
+{
+    u_char                *dst;
+    uint32_t               cp;
+    const u_char          *p, *end;
+    njs_unicode_decode_t   ctx;
+
+    static const int8_t  hex[256]
+        njs_aligned(32) =
+    {
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, -1, -1, -1, -1, -1, -1,
+        -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    };
+
+    njs_utf8_decode_init(&ctx);
+
+    cp = 0;
+
+    p = start;
+    end = p + size;
+
+    while (p < end) {
+        if (*p == '%' && end - p > 2 && hex[p[1]] >= 0 && hex[p[2]] >= 0) {
+            cp = njs_utf8_consume(&ctx, (hex[p[1]] << 4) | hex[p[2]]);
+            p += 3;
+
+        } else {
+            if (*p == '+') {
+                cp = ' ';
+                p++;
+
+            } else {
+                cp = njs_utf8_decode(&ctx, &p, end);
+            }
+        }
+
+        if (cp > NJS_UNICODE_MAX_CODEPOINT) {
+            if (cp == NJS_UNICODE_CONTINUE) {
+                continue;
+            }
+
+            cp = NJS_UNICODE_REPLACEMENT;
+        }
+
+        dst = njs_chb_reserve(chain, 4);
+        if (dst == NULL) {
+            return NGX_ERROR;
+        }
+
+        njs_chb_written(chain, njs_utf8_encode(dst, cp) - dst);
+    }
+
+    if (cp == NJS_UNICODE_CONTINUE) {
+        dst = njs_chb_reserve(chain, 3);
+        if (dst == NULL) {
+            return NGX_ERROR;
+        }
+
+        njs_chb_written(chain,
+                        njs_utf8_encode(dst, NJS_UNICODE_REPLACEMENT) - dst);
+    }
+
+    return NGX_OK;
+}
+
+
+static JSValue
+ngx_http_qjs_ext_to_string_tag(JSContext *cx,
+    JSValueConst this_val)
+{
+    return JS_NewString(cx, "Request");
+}
+
+
+static JSValue
+ngx_http_qjs_ext_args(JSContext *cx, JSValueConst this_val)
+{
+    u_char                  *start, *end, *p, *v;
+    uint32_t                 len;
+    JSAtom                   key;
+    JSValue                  args, val, prev, length, arr;
+    njs_str_t                decoded;
+    njs_int_t                ret;
+    ngx_int_t                rc;
+    njs_chb_t                chain;
+    ngx_http_request_t      *r;
+    ngx_http_qjs_request_t  *req;
+
+    req = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_HTTP_REQUEST);
+    if (req == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+    }
+
+    if (!JS_IsUndefined(req->args)) {
+        return JS_DupValue(cx, req->args);
+    }
+
+    args = JS_NewObject(cx);
+    if (JS_IsException(args)) {
+        return JS_EXCEPTION;
+    }
+
+    NJS_CHB_CTX_INIT(&chain, cx);
+
+    r = req->request;
+
+    rc = ngx_http_qjs_query_string_decode(&chain, r->args.data, r->args.len);
+    if (rc != NGX_OK) {
+        njs_chb_destroy(&chain);
+        return JS_ThrowOutOfMemory(cx);
+    }
+
+    ret = njs_chb_join(&chain, &decoded);
+    njs_chb_destroy(&chain);
+
+    if (ret != NJS_OK) {
+        return JS_ThrowOutOfMemory(cx);
+    }
+
+    start = decoded.start;
+    end = start + decoded.length;
+
+    while (start < end) {
+        p = ngx_strlchr(start, end, '&');
+        if (p == NULL) {
+            p = end;
+        }
+
+        v = ngx_strlchr(start, p, '=');
+        if (v == NULL) {
+            v = p;
+        }
+
+        if (v == start) {
+            start = p + 1;
+            continue;
+        }
+
+        key = JS_NewAtomLen(cx, (const char *) start, v - start);
+        if (key == JS_ATOM_NULL) {
+            chain.free(cx, decoded.start);
+            return JS_EXCEPTION;
+        }
+
+        val = qjs_string_create(cx, v + 1, p - v - 1);
+        if (JS_IsException(val)) {
+            chain.free(cx, decoded.start);
+            JS_FreeAtom(cx, key);
+            return JS_EXCEPTION;
+        }
+
+        prev = JS_GetProperty(cx, args, key);
+        if (JS_IsException(prev)) {
+            chain.free(cx, decoded.start);
+            JS_FreeAtom(cx, key);
+            JS_FreeValue(cx, val);
+            return JS_EXCEPTION;
+        }
+
+        if (JS_IsUndefined(prev)) {
+            if (JS_SetProperty(cx, args, key, val) < 0) {
+                goto exception;
+            }
+
+        } else if (JS_IsArray(cx, prev)) {
+            length = JS_GetPropertyStr(cx, prev, "length");
+
+            if (JS_ToUint32(cx, &len, length)) {
+                goto exception;
+            }
+
+            JS_FreeValue(cx, length);
+
+            if (JS_SetPropertyUint32(cx, prev, len, val) < 0) {
+                goto exception;
+            }
+
+            JS_FreeValue(cx, prev);
+
+        } else {
+
+            arr = JS_NewArray(cx);
+            if (JS_IsException(arr)) {
+                goto exception;
+            }
+
+            if (JS_SetPropertyUint32(cx, arr, 0, prev) < 0) {
+                goto exception;
+            }
+
+            if (JS_SetPropertyUint32(cx, arr, 1, val) < 0) {
+                goto exception;
+            }
+
+            if (JS_SetProperty(cx, args, key, arr) < 0) {
+                goto exception;
+            }
+        }
+
+        JS_FreeAtom(cx, key);
+        start = p + 1;
+    }
+
+    chain.free(cx, decoded.start);
+    req->args = args;
+
+    return JS_DupValue(cx, args);
+
+exception:
+
+    chain.free(cx, decoded.start);
+    JS_FreeAtom(cx, key);
+    JS_FreeValue(cx, val);
+    JS_FreeValue(cx, prev);
+
+    return JS_EXCEPTION;
+}
+
+
+static JSValue
+ngx_http_qjs_ext_done(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv)
+{
+    ngx_http_js_ctx_t   *ctx;
+    ngx_http_request_t  *r;
+
+    r = ngx_http_qjs_request(this_val);
+    if (r == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    if (!ctx->filter) {
+        return JS_ThrowTypeError(cx, "cannot set done while not filtering");
+    }
+
+    ctx->done = 1;
+
+    return JS_UNDEFINED;
+}
+
+
+static JSValue
+ngx_http_qjs_ext_finish(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv)
+{
+    ngx_http_js_ctx_t   *ctx;
+    ngx_http_request_t  *r;
+
+    r = ngx_http_qjs_request(this_val);
+    if (r == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+    }
+
+    if (ngx_http_send_special(r, NGX_HTTP_LAST) == NGX_ERROR) {
+        return JS_ThrowInternalError(cx, "failed to send response");
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    ctx->status = NGX_OK;
+
+    return JS_UNDEFINED;
+}
+
+
+static JSValue
+ngx_http_qjs_ext_headers_in(JSContext *cx, JSValueConst this_val)
+{
+    JSValue              obj;
+    ngx_http_request_t  *r;
+
+    r = ngx_http_qjs_request(this_val);
+    if (r == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+    }
+
+    obj = JS_NewObjectProtoClass(cx, JS_NULL, NGX_QJS_CLASS_ID_HTTP_HEADERS_IN);
+
+    JS_SetOpaque(obj, r);
+
+    return obj;
+}
+
+
+static JSValue
+ngx_http_qjs_ext_headers_out(JSContext *cx, JSValueConst this_val)
+{
+    JSValue              obj;
+    ngx_http_request_t  *r;
+
+    r = ngx_http_qjs_request(this_val);
+    if (r == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+    }
+
+    obj = JS_NewObjectProtoClass(cx, JS_NULL,
+                                 NGX_QJS_CLASS_ID_HTTP_HEADERS_OUT);
+
+    JS_SetOpaque(obj, r);
+
+    return obj;
+}
+
+
+static JSValue
+ngx_http_qjs_ext_http_version(JSContext *cx, JSValueConst this_val)
+{
+    ngx_str_t            v;
+    ngx_http_request_t  *r;
+
+    r = ngx_http_qjs_request(this_val);
+    if (r == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+    }
+
+    switch (r->http_version) {
+    case NGX_HTTP_VERSION_9:
+        ngx_str_set(&v, "0.9");
+        break;
+
+    case NGX_HTTP_VERSION_10:
+        ngx_str_set(&v, "1.0");
+        break;
+
+    case NGX_HTTP_VERSION_11:
+        ngx_str_set(&v, "1.1");
+        break;
+
+    case NGX_HTTP_VERSION_20:
+        ngx_str_set(&v, "2.0");
+        break;
+
+#if (NGX_HTTP_VERSION_30)
+    case NGX_HTTP_VERSION_30:
+        ngx_str_set(&v, "3.0");
+        break;
+#endif
+
+    default:
+        ngx_str_set(&v, "");
+        break;
+    }
+
+    return qjs_string_create(cx, v.data, v.len);
+}
+
+
+static JSValue
+ngx_http_qjs_ext_internal(JSContext *cx, JSValueConst this_val)
+{
+    ngx_http_request_t  *r;
+
+    r = ngx_http_qjs_request(this_val);
+    if (r == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+    }
+
+    return JS_NewBool(cx, r->internal);
+}
+
+
+static JSValue
+ngx_http_qjs_ext_internal_redirect(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv)
+{
+    ngx_http_js_ctx_t   *ctx;
+    ngx_http_request_t  *r;
+
+    r = ngx_http_qjs_request(this_val);
+    if (r == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+    }
+
+    if (r->parent != NULL) {
+        return JS_ThrowTypeError(cx,
+                         "internalRedirect cannot be called from a subrequest");
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    if (ctx->filter) {
+        return JS_ThrowTypeError(cx,
+                         "internalRedirect cannot be called while filtering");
+    }
+
+    if (ngx_qjs_string(ctx->engine, argv[0], &ctx->redirect_uri) != NGX_OK) {
+        return JS_EXCEPTION;
+    }
+
+    ctx->status = NGX_DONE;
+
+    return JS_UNDEFINED;
+}
+
+
+static JSValue
+ngx_http_qjs_ext_log(JSContext *cx, JSValueConst this_val, int argc,
+    JSValueConst *argv, int level)
+{
+    int                  n;
+    const char          *msg;
+    ngx_http_request_t  *r;
+
+    r = ngx_http_qjs_request(this_val);
+    if (r == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+    }
+
+    for (n = 0; n < argc; n++) {
+        msg = JS_ToCString(cx, argv[n]);
+
+        ngx_js_logger(r->connection, level, (u_char *) msg, ngx_strlen(msg));
+
+        JS_FreeCString(cx, msg);
+    }
+
+    return JS_UNDEFINED;
+}
+
+
+static JSValue
+ngx_http_qjs_ext_periodic_to_string_tag(JSContext *cx,
+    JSValueConst this_val)
+{
+    return JS_NewString(cx, "PeriodicSession");
+}
+
+
+static JSValue
+ngx_http_qjs_ext_periodic_variables(JSContext *cx,
+    JSValueConst this_val, int type)
+{
+    JSValue                  obj;
+    ngx_http_qjs_request_t  *req;
+
+    req = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_HTTP_PERIODIC);
+    if (req == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a periodic object");
+    }
+
+    obj = JS_NewObjectProtoClass(cx, JS_NULL, NGX_QJS_CLASS_ID_HTTP_VARS);
+
+    /*
+     * Using lowest bit of the pointer to store the buffer type.
+     */
+    type = (type == NGX_JS_BUFFER) ? 1 : 0;
+    JS_SetOpaque(obj, (void *) ((uintptr_t) req->request | (uintptr_t) type));
+
+    return obj;
+}
+
+
+static JSValue
+ngx_http_qjs_ext_parent(JSContext *cx, JSValueConst this_val)
+{
+    ngx_http_js_ctx_t   *ctx;
+    ngx_http_request_t  *r;
+
+    r = ngx_http_qjs_request(this_val);
+    if (r == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+    }
+
+    ctx = r->parent ? ngx_http_get_module_ctx(r->parent, ngx_http_js_module)
+                    : NULL;
+
+    if (ctx == NULL) {
+        return JS_UNDEFINED;
+    }
+
+    return JS_DupValue(cx, ngx_qjs_arg(ctx->args[0]));
+}
+
+
+static JSValue
+ngx_http_qjs_ext_remote_address(JSContext *cx, JSValueConst this_val)
+{
+    ngx_connection_t    *c;
+    ngx_http_request_t  *r;
+
+    r = ngx_http_qjs_request(this_val);
+    if (r == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+    }
+
+    c = r->connection;
+
+    return qjs_string_create(cx, c->addr_text.data, c->addr_text.len);
+}
+
+
+static JSValue
+ngx_http_qjs_ext_response_body(JSContext *cx, JSValueConst this_val, int type)
+{
+    u_char                  *p;
+    size_t                   len;
+    uint32_t                 buffer_type;
+    ngx_buf_t               *b;
+    JSValue                  body;
+    ngx_http_request_t      *r;
+    ngx_http_qjs_request_t  *req;
+
+    req = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_HTTP_REQUEST);
+    if (req == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+    }
+
+    buffer_type = ngx_js_buffer_type(type);
+
+    if (!JS_IsUndefined(req->response_body)) {
+        if ((buffer_type == NGX_JS_STRING) == JS_IsString(req->response_body)) {
+            return JS_DupValue(cx, req->response_body);
+        }
+    }
+
+    r = req->request;
+
+    b = r->out ? r->out->buf : NULL;
+
+    if (b == NULL) {
+        return JS_UNDEFINED;
+    }
+
+    len = b->last - b->pos;
+
+    p = ngx_pnalloc(r->pool, len);
+    if (p == NULL) {
+        return JS_ThrowOutOfMemory(cx);
+    }
+
+    if (len) {
+        ngx_memcpy(p, b->pos, len);
+    }
+
+    body = ngx_qjs_prop(cx, buffer_type, p, len);
+    if (JS_IsException(body)) {
+        return JS_EXCEPTION;
+    }
+
+    req->response_body = body;
+
+    return JS_DupValue(cx, req->response_body);
+}
+
+
+static JSValue
+ngx_http_qjs_ext_request_body(JSContext *cx, JSValueConst this_val, int type)
+{
+    u_char                  *p, *data;
+    size_t                   len;
+    JSValue                  body;
+    uint32_t                 buffer_type;
+    ngx_buf_t               *buf;
+    ngx_chain_t             *cl;
+    ngx_http_request_t      *r;
+    ngx_http_qjs_request_t  *req;
+
+    req = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_HTTP_REQUEST);
+    if (req == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+    }
+
+    buffer_type = ngx_js_buffer_type(type);
+
+    if (!JS_IsUndefined(req->request_body)) {
+        if ((buffer_type == NGX_JS_STRING) == JS_IsString(req->request_body)) {
+            return JS_DupValue(cx, req->request_body);
+        }
+
+        JS_FreeValue(cx, req->request_body);
+    }
+
+    r = req->request;
+
+    if (r->request_body == NULL || r->request_body->bufs == NULL) {
+        return JS_UNDEFINED;
+    }
+
+    if (r->request_body->temp_file) {
+        return JS_ThrowTypeError(cx, "request body is in a file");
+    }
+
+    cl = r->request_body->bufs;
+    buf = cl->buf;
+
+    if (cl->next == NULL) {
+        len = buf->last - buf->pos;
+        data = buf->pos;
+
+        goto done;
+    }
+
+    len = buf->last - buf->pos;
+    cl = cl->next;
+
+    for ( /* void */ ; cl; cl = cl->next) {
+        buf = cl->buf;
+        len += buf->last - buf->pos;
+    }
+
+    p = ngx_pnalloc(r->pool, len);
+    if (p == NULL) {
+        return JS_ThrowOutOfMemory(cx);
+    }
+
+    data = p;
+    cl = r->request_body->bufs;
+
+    for ( /* void */ ; cl; cl = cl->next) {
+        buf = cl->buf;
+        p = ngx_cpymem(p, buf->pos, buf->last - buf->pos);
+    }
+
+done:
+
+    body = ngx_qjs_prop(cx, buffer_type, data, len);
+    if (JS_IsException(body)) {
+        return JS_EXCEPTION;
+    }
+
+    req->request_body = body;
+
+    return JS_DupValue(cx, req->request_body);
+}
+
+
+static JSValue
+ngx_http_qjs_ext_return(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv)
+{
+    ngx_str_t                  body;
+    ngx_int_t                  status;
+    ngx_http_js_ctx_t         *ctx;
+    ngx_http_request_t        *r;
+    ngx_http_complex_value_t   cv;
+
+    r = ngx_http_qjs_request(this_val);
+    if (r == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+    }
+
+    if (ngx_qjs_integer(cx, argv[0], &status) != NGX_OK) {
+        return JS_EXCEPTION;
+    }
+
+    if (status < 0 || status > 999) {
+        return JS_ThrowRangeError(cx, "code is out of range");
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    if (ngx_qjs_string(ctx->engine, argv[1], &body) != NGX_OK) {
+        return JS_ThrowOutOfMemory(cx);
+    }
+
+    if (status < NGX_HTTP_BAD_REQUEST || body.len) {
+        ngx_memzero(&cv, sizeof(ngx_http_complex_value_t));
+
+        cv.value.data = body.data;
+        cv.value.len = body.len;
+
+        ctx->status = ngx_http_send_response(r, status, NULL, &cv);
+
+        if (ctx->status == NGX_ERROR) {
+            return JS_ThrowTypeError(cx, "failed to send response");
+        }
+
+    } else {
+        ctx->status = status;
+    }
+
+    return JS_UNDEFINED;
+}
+
+
+static JSValue
+ngx_http_qjs_ext_status_get(JSContext *cx, JSValueConst this_val)
+{
+    ngx_http_request_t  *r;
+
+    r = ngx_http_qjs_request(this_val);
+    if (r == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+    }
+
+    return JS_NewInt32(cx, r->headers_out.status);
+}
+
+
+static JSValue
+ngx_http_qjs_ext_status_set(JSContext *cx, JSValueConst this_val,
+    JSValueConst value)
+{
+    ngx_int_t            n;
+    ngx_http_request_t  *r;
+
+    r = ngx_http_qjs_request(this_val);
+    if (r == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+    }
+
+    if (ngx_qjs_integer(cx, value, &n) != NGX_OK) {
+        return JS_EXCEPTION;
+    }
+
+    r->headers_out.status = n;
+    r->headers_out.status_line.len = 0;
+
+    return JS_UNDEFINED;
+}
+
+
+static JSValue
+ngx_http_qjs_ext_string(JSContext *cx, JSValueConst this_val, int offset)
+{
+    ngx_str_t           *field;
+    ngx_http_request_t  *r;
+
+    r = ngx_http_qjs_request(this_val);
+    if (r == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+    }
+
+    field = (ngx_str_t *) ((u_char *) r + offset);
+
+    return qjs_string_create(cx, field->data, field->len);
+}
+
+
+static JSValue
+ngx_http_qjs_ext_send(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv)
+{
+    ngx_str_t            s;
+    ngx_buf_t           *b;
+    ngx_uint_t           n;
+    ngx_chain_t         *out, *cl, **ll;
+    ngx_http_js_ctx_t   *ctx;
+    ngx_http_request_t  *r;
+
+    r = ngx_http_qjs_request(this_val);
+    if (r == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    if (ctx->filter) {
+        return JS_ThrowTypeError(cx, "cannot send while in body filter");
+    }
+
+    out = NULL;
+    ll = &out;
+
+    for (n = 0; n < (ngx_uint_t) argc; n++) {
+        if (ngx_qjs_string(ctx->engine, argv[n], &s) != NGX_OK) {
+            return JS_ThrowTypeError(cx, "failed to convert arg");
+        }
+
+        if (s.len == 0) {
+            continue;
+        }
+
+        b = ngx_calloc_buf(r->pool);
+        if (b == NULL) {
+            return JS_ThrowInternalError(cx, "failed to allocate buffer");
+        }
+
+        b->start = s.data;
+        b->pos = b->start;
+        b->end = s.data + s.len;
+        b->last = b->end;
+        b->memory = 1;
+
+        cl = ngx_alloc_chain_link(r->pool);
+        if (cl == NULL) {
+            return JS_ThrowInternalError(cx, "failed to allocate chain link");
+        }
+
+        cl->buf = b;
+
+        *ll = cl;
+        ll = &cl->next;
+    }
+
+    *ll = NULL;
+
+    if (ngx_http_output_filter(r, out) == NGX_ERROR) {
+        return JS_ThrowInternalError(cx, "failed to send response");
+    }
+
+    return JS_UNDEFINED;
+}
+
+
+static JSValue
+ngx_http_qjs_ext_send_buffer(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv)
+{
+    unsigned             last_buf, flush;
+    JSValue              flags, value;
+    ngx_str_t            buffer;
+    ngx_buf_t           *b;
+    ngx_chain_t         *cl;
+    ngx_http_js_ctx_t   *ctx;
+    ngx_http_request_t  *r;
+
+    r = ngx_http_qjs_request(this_val);
+    if (r == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    if (!ctx->filter) {
+        return JS_ThrowTypeError(cx, "cannot send buffer while not filtering");
+    }
+
+    if (ngx_qjs_string(ctx->engine, argv[0], &buffer) != NGX_OK) {
+        return JS_ThrowTypeError(cx, "failed get buffer arg");
+    }
+
+    flush = ctx->buf->flush;
+    last_buf = ctx->buf->last_buf;
+
+    flags = argv[1];
+
+    if (JS_IsObject(flags)) {
+        value = JS_GetPropertyStr(cx, flags, "flush");
+        if (JS_IsException(value)) {
+            return JS_EXCEPTION;
+        }
+
+        flush = JS_ToBool(cx, value);
+        JS_FreeValue(cx, value);
+
+        value = JS_GetPropertyStr(cx, flags, "last");
+        if (JS_IsException(value)) {
+            return JS_EXCEPTION;
+        }
+
+        last_buf = JS_ToBool(cx, value);
+        JS_FreeValue(cx, value);
+    }
+
+    cl = ngx_chain_get_free_buf(r->pool, &ctx->free);
+    if (cl == NULL) {
+        return JS_ThrowOutOfMemory(cx);
+    }
+
+    b = cl->buf;
+
+    b->flush = flush;
+    b->last_buf = last_buf;
+
+    b->memory = (buffer.len ? 1 : 0);
+    b->sync = (buffer.len ? 0 : 1);
+    b->tag = (ngx_buf_tag_t) &ngx_http_js_module;
+
+    b->start = buffer.data;
+    b->end = buffer.data + buffer.len;
+    b->pos = b->start;
+    b->last = b->end;
+
+    *ctx->last_out = cl;
+    ctx->last_out = &cl->next;
+
+    return JS_UNDEFINED;
+}
+
+
+static JSValue
+ngx_http_qjs_ext_send_header(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv)
+{
+    ngx_http_request_t  *r;
+
+    r = ngx_http_qjs_request(this_val);
+    if (r == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+    }
+
+    if (ngx_http_set_content_type(r) != NGX_OK) {
+        return JS_ThrowInternalError(cx, "failed to set content type");
+    }
+
+    if (ngx_http_send_header(r) == NGX_ERROR) {
+        return JS_ThrowInternalError(cx, "failed to send header");
+    }
+
+    return JS_UNDEFINED;
+}
+
+
+static JSValue
+ngx_http_qjs_ext_set_return_value(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv)
+{
+    ngx_js_ctx_t        *ctx;
+    ngx_http_request_t  *r;
+
+    r = ngx_http_qjs_request(this_val);
+    if (r == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    JS_FreeValue(cx, ngx_qjs_arg(ctx->retval));
+    ngx_qjs_arg(ctx->retval) = JS_DupValue(cx, argv[0]);
+
+    return JS_UNDEFINED;
+}
+
+
+static ngx_int_t
+ngx_http_qjs_subrequest_done(ngx_http_request_t *r, void *data, ngx_int_t rc)
+{
+    ngx_qjs_event_t  *event = data;
+
+    JSValue              reply;
+    JSContext           *cx;
+    ngx_http_js_ctx_t   *ctx, *sctx;
+
+    if (rc != NGX_OK || r->connection->error || r->buffered) {
+        return rc;
+    }
+
+    sctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    if (sctx && sctx->done) {
+        return NGX_OK;
+    }
+
+    if (sctx == NULL) {
+        sctx = ngx_pcalloc(r->pool, sizeof(ngx_http_js_ctx_t));
+        if (sctx == NULL) {
+            return NGX_ERROR;
+        }
+
+        ngx_http_set_ctx(r, sctx, ngx_http_js_module);
+
+        ngx_qjs_arg(sctx->response_body) = JS_UNDEFINED;
+    }
+
+    sctx->done = 1;
+
+    ctx = ngx_http_get_module_ctx(r->parent, ngx_http_js_module);
+
+    ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "js subrequest done s: %ui parent ctx: %p",
+                   r->headers_out.status, ctx);
+
+    if (ctx == NULL) {
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                      "js subrequest: failed to get the parent context");
+
+        return NGX_ERROR;
+    }
+
+    cx = ctx->engine->u.qjs.ctx;
+
+    if (!JS_IsObject(ngx_qjs_arg(sctx->args[0]))) {
+        reply = ngx_http_qjs_request_make(cx, NGX_QJS_CLASS_ID_HTTP_REQUEST, r);
+        if (JS_IsException(reply)) {
+            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                          "js subrequest reply creation failed");
+            return NGX_ERROR;
+        }
+
+
+    } else {
+        reply = JS_DupValue(cx, ngx_qjs_arg(sctx->args[0]));
+    }
+
+    rc = ngx_qjs_call((ngx_js_ctx_t *) ctx, event->function, &reply, 1);
+
+    JS_FreeValue(cx, reply);
+    ngx_js_del_event(ctx, event);
+
+    ngx_http_js_event_finalize(r->parent, rc);
+
+    return NGX_OK;
+}
+
+
+static void
+ngx_http_js_subrequest_event_destructor(ngx_qjs_event_t *event)
+{
+    JSContext  *cx;
+
+    cx = event->ctx;
+
+    JS_FreeValue(cx, event->function);
+    JS_FreeValue(cx, event->args[0]);
+    JS_FreeValue(cx, event->args[1]);
+}
+
+
+static JSValue
+ngx_http_qjs_ext_subrequest(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv)
+{
+    JSValue                      arg, options, callback, value, retval;
+    ngx_int_t                    rc;
+    ngx_str_t                    uri, args, method_name, body_arg;
+    ngx_uint_t                   method, methods_max, has_body, detached, flags,
+                                 promise;
+    ngx_qjs_event_t             *event;
+    ngx_http_js_ctx_t           *ctx;
+    ngx_http_request_t          *r, *sr;
+    ngx_http_request_body_t     *rb;
+    ngx_http_post_subrequest_t  *ps;
+
+    r = ngx_http_qjs_request(this_val);
+    if (r == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    if (r->main != r) {
+        return JS_ThrowTypeError(cx, "subrequest can only be created for "
+                                     "the primary request");
+    }
+
+    if (ngx_qjs_string(ctx->engine, argv[0], &uri) != NGX_OK) {
+        return JS_ThrowTypeError(cx, "failed to convert uri arg");
+    }
+
+    if (uri.len == 0) {
+        return JS_ThrowTypeError(cx, "uri is empty");
+    }
+
+    options = JS_UNDEFINED;
+    callback = JS_UNDEFINED;
+
+    method = 0;
+    methods_max = sizeof(ngx_http_methods) / sizeof(ngx_http_methods[0]);
+
+    args.len = 0;
+    args.data = NULL;
+
+    method_name.len = 0;
+    method_name.data = NULL;
+
+    has_body = 0;
+    detached = 0;
+
+    arg = argv[1];
+
+    if (JS_IsString(arg)) {
+        if (ngx_qjs_string(ctx->engine, arg, &args) != NGX_OK) {
+            return JS_ThrowTypeError(cx, "failed to convert args");
+        }
+
+    } else if (JS_IsFunction(cx, arg)) {
+        callback = arg;
+
+    } else if (JS_IsObject(arg)) {
+        options = arg;
+
+    } else if (!JS_IsNullOrUndefined(arg)) {
+        return JS_ThrowTypeError(cx, "failed to convert args");
+    }
+
+    if (!JS_IsUndefined(options)) {
+        value = JS_GetPropertyStr(cx, options, "args");
+        if (JS_IsException(value)) {
+            return JS_EXCEPTION;
+        }
+
+        if (!JS_IsUndefined(value)) {
+            rc = ngx_qjs_string(ctx->engine, value, &args);
+            JS_FreeValue(cx, value);
+
+            if (rc != NGX_OK) {
+                return JS_ThrowTypeError(cx, "failed to convert options.args");
+            }
+        }
+
+        value = JS_GetPropertyStr(cx, options, "detached");
+        if (JS_IsException(value)) {
+            return JS_EXCEPTION;
+        }
+
+        if (!JS_IsUndefined(value)) {
+            detached = JS_ToBool(cx, value);
+            JS_FreeValue(cx, value);
+        }
+
+        value = JS_GetPropertyStr(cx, options, "method");
+        if (JS_IsException(value)) {
+            return JS_EXCEPTION;
+        }
+
+        if (!JS_IsUndefined(value)) {
+            rc = ngx_qjs_string(ctx->engine, value, &method_name);
+            JS_FreeValue(cx, value);
+
+            if (rc != NGX_OK) {
+                return JS_ThrowTypeError(cx, "failed to convert option.method");
+            }
+
+            while (method < methods_max) {
+                if (method_name.len == ngx_http_methods[method].name.len
+                    && ngx_memcmp(method_name.data,
+                                  ngx_http_methods[method].name.data,
+                                  method_name.len)
+                       == 0)
+                {
+                    break;
+                }
+
+                method++;
+            }
+        }
+
+        value = JS_GetPropertyStr(cx, options, "body");
+        if (JS_IsException(value)) {
+            return JS_EXCEPTION;
+        }
+
+        if (!JS_IsUndefined(value)) {
+            rc = ngx_qjs_string(ctx->engine, value, &body_arg);
+            JS_FreeValue(cx, value);
+
+            if (rc != NGX_OK) {
+                return JS_ThrowTypeError(cx, "failed to convert option.body");
+            }
+
+            has_body = 1;
+        }
+    }
+
+    flags = NGX_HTTP_LOG_UNSAFE;
+
+    if (ngx_http_parse_unsafe_uri(r, &uri, &args, &flags) != NGX_OK) {
+        return JS_ThrowTypeError(cx, "unsafe uri");
+    }
+
+    arg = argv[2];
+
+    if (JS_IsUndefined(callback) && !JS_IsNullOrUndefined(arg)) {
+        if (!JS_IsFunction(cx, arg)) {
+            return JS_ThrowTypeError(cx, "callback is not a function");
+        }
+
+        callback = arg;
+    }
+
+    if (detached && !JS_IsUndefined(callback)) {
+        return JS_ThrowTypeError(cx, "detached flag and callback are mutually "
+                                     "exclusive");
+    }
+
+    promise = 0;
+    retval = JS_UNDEFINED;
+    flags = NGX_HTTP_SUBREQUEST_BACKGROUND;
+
+    if (!detached) {
+        ps = ngx_palloc(r->pool, sizeof(ngx_http_post_subrequest_t));
+        if (ps == NULL) {
+            return JS_ThrowOutOfMemory(cx);
+        }
+
+        promise = !!JS_IsUndefined(callback);
+
+        event = ngx_pcalloc(r->pool, sizeof(ngx_qjs_event_t)
+                                     + sizeof(JSValue) * 2);
+        if (event == NULL) {
+            return JS_ThrowOutOfMemory(cx);
+        }
+
+        event->ctx = cx;
+        event->fd = ctx->event_id++;
+        event->args = (JSValue *) &event[1];
+        event->destructor = ngx_http_js_subrequest_event_destructor;
+
+        if (promise) {
+            retval = JS_NewPromiseCapability(cx, &event->args[0]);
+            if (JS_IsException(retval)) {
+                return JS_EXCEPTION;
+            }
+
+            callback = event->args[0];
+
+        } else {
+            event->args[0] = JS_UNDEFINED;
+            event->args[1] = JS_UNDEFINED;
+        }
+
+        event->function = JS_DupValue(cx, callback);
+
+        ps->handler = ngx_http_qjs_subrequest_done;
+        ps->data = event;
+
+        flags |= NGX_HTTP_SUBREQUEST_IN_MEMORY;
+
+    } else {
+        ps = NULL;
+        event = NULL;
+    }
+
+    if (ngx_http_subrequest(r, &uri, args.len ? &args : NULL, &sr, ps, flags)
+        != NGX_OK)
+    {
+        return JS_ThrowInternalError(cx, "subrequest creation failed");
+    }
+
+    if (event != NULL) {
+        ngx_js_add_event(ctx, event);
+    }
+
+    if (method != methods_max) {
+        sr->method = ngx_http_methods[method].value;
+        sr->method_name = ngx_http_methods[method].name;
+
+    } else {
+        sr->method = NGX_HTTP_UNKNOWN;
+        sr->method_name = method_name;
+    }
+
+    sr->header_only = (sr->method == NGX_HTTP_HEAD) || JS_IsUndefined(callback);
+
+    if (has_body) {
+        rb = ngx_pcalloc(r->pool, sizeof(ngx_http_request_body_t));
+        if (rb == NULL) {
+            goto memory_error;
+        }
+
+        if (body_arg.len != 0) {
+            rb->bufs = ngx_alloc_chain_link(r->pool);
+            if (rb->bufs == NULL) {
+                goto memory_error;
+            }
+
+            rb->bufs->next = NULL;
+
+            rb->bufs->buf = ngx_calloc_buf(r->pool);
+            if (rb->bufs->buf == NULL) {
+                goto memory_error;
+            }
+
+            rb->bufs->buf->memory = 1;
+            rb->bufs->buf->last_buf = 1;
+
+            rb->bufs->buf->pos = body_arg.data;
+            rb->bufs->buf->last = body_arg.data + body_arg.len;
+        }
+
+        sr->request_body = rb;
+        sr->headers_in.content_length_n = body_arg.len;
+        sr->headers_in.chunked = 0;
+    }
+
+    return retval;
+
+memory_error:
+
+    return JS_ThrowOutOfMemory(cx);
+}
+
+
+static JSValue
+ngx_http_qjs_ext_raw_headers(JSContext *cx, JSValueConst this_val, int out)
+{
+    JSValue              array, elem, key, val;
+    uint32_t             idx;
+    ngx_uint_t           i;
+    ngx_list_t          *headers;
+    ngx_list_part_t     *part;
+    ngx_table_elt_t     *header, *h;
+    ngx_http_request_t  *r;
+
+    r = ngx_http_qjs_request(this_val);
+    if (r == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+    }
+
+    headers = (out) ? &r->headers_out.headers : &r->headers_in.headers;
+
+    array = JS_NewArray(cx);
+    if (JS_IsException(array)) {
+        return JS_EXCEPTION;
+    }
+
+    idx = 0;
+    part = &headers->part;
+    header = part->elts;
+
+    for (i = 0; /* void */ ; i++) {
+
+        if (i >= part->nelts) {
+            if (part->next == NULL) {
+                break;
+            }
+
+            part = part->next;
+            header = part->elts;
+            i = 0;
+        }
+
+        h = &header[i];
+
+        if (h->hash == 0) {
+            continue;
+        }
+
+        elem = JS_NewArray(cx);
+        if (JS_IsException(elem)) {
+            JS_FreeValue(cx, array);
+            return JS_EXCEPTION;
+        }
+
+        if (JS_DefinePropertyValueUint32(cx, array, idx++, elem,
+                                         JS_PROP_C_W_E) < 0)
+        {
+            JS_FreeValue(cx, elem);
+            JS_FreeValue(cx, array);
+            return JS_EXCEPTION;
+        }
+
+        key = qjs_string_create(cx, h->key.data, h->key.len);
+        if (JS_IsException(key)) {
+            JS_FreeValue(cx, array);
+            return JS_EXCEPTION;
+        }
+
+        if (JS_DefinePropertyValueUint32(cx, elem, 0, key, JS_PROP_C_W_E) < 0) {
+            JS_FreeValue(cx, key);
+            JS_FreeValue(cx, array);
+            return JS_EXCEPTION;
+        }
+
+        val = qjs_string_create(cx, h->value.data, h->value.len);
+        if (JS_IsException(val)) {
+            JS_FreeValue(cx, array);
+            return JS_EXCEPTION;
+        }
+
+        if (JS_DefinePropertyValueUint32(cx, elem, 1, val, JS_PROP_C_W_E) < 0) {
+            JS_FreeValue(cx, val);
+            JS_FreeValue(cx, array);
+            return JS_EXCEPTION;
+        }
+    }
+
+    return array;
+}
+
+
+static JSValue
+ngx_http_qjs_ext_variables(JSContext *cx, JSValueConst this_val, int type)
+{
+    JSValue              obj;
+    ngx_http_request_t  *r;
+
+    r = ngx_http_qjs_request(this_val);
+    if (r == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+    }
+
+    obj = JS_NewObjectProtoClass(cx, JS_NULL, NGX_QJS_CLASS_ID_HTTP_VARS);
+
+    /*
+     * Using lowest bit of the pointer to store the buffer type.
+     */
+    type = (type == NGX_JS_BUFFER) ? 1 : 0;
+    JS_SetOpaque(obj, (void *) ((uintptr_t) r | (uintptr_t) type));
+
+    return obj;
+}
+
+
+static int
+ngx_http_qjs_variables_own_property(JSContext *cx, JSPropertyDescriptor *pdesc,
+    JSValueConst obj, JSAtom prop)
+{
+    uint32_t                    buffer_type;
+    ngx_str_t                   name;
+    ngx_uint_t                  i, key, start, length, is_capture;
+    ngx_http_request_t         *r;
+    ngx_http_variable_value_t  *vv;
+
+    r = JS_GetOpaque(obj, NGX_QJS_CLASS_ID_HTTP_VARS);
+
+    buffer_type = ((uintptr_t) r & 1) ? NGX_JS_BUFFER : NGX_JS_STRING;
+    r = (ngx_http_request_t *) ((uintptr_t) r & ~(uintptr_t) 1);
+
+    if (r == NULL) {
+        (void) JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return -1;
+    }
+
+    name.data = (u_char *) JS_AtomToCString(cx, prop);
+    if (name.data == NULL) {
+        return -1;
+    }
+
+    name.len = ngx_strlen(name.data);
+
+    is_capture = 1;
+    for (i = 0; i < name.len; i++) {
+        if (name.data[i] < '0' || name.data[i] > '9') {
+            is_capture = 0;
+            break;
+        }
+    }
+
+    if (is_capture) {
+        key = ngx_atoi(name.data, name.len) * 2;
+        JS_FreeCString(cx, (char *) name.data);
+        if (r->captures == NULL || r->captures_data == NULL
+            || r->ncaptures <= key)
+        {
+            return 0;
+        }
+
+
+        if (pdesc != NULL) {
+            pdesc->flags = JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE;
+            pdesc->getter = JS_UNDEFINED;
+            pdesc->setter = JS_UNDEFINED;
+
+            start = r->captures[key];
+            length = r->captures[key + 1] - start;
+            pdesc->value = ngx_qjs_prop(cx, buffer_type,
+                                        &r->captures_data[start], length);
+        }
+
+        return 1;
+    }
+
+    key = ngx_hash_strlow(name.data, name.data, name.len);
+
+    vv = ngx_http_get_variable(r, &name, key);
+    JS_FreeCString(cx, (char *) name.data);
+    if (vv == NULL || vv->not_found) {
+        return 0;
+    }
+
+    if (pdesc != NULL) {
+        pdesc->flags = JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE;
+        pdesc->getter = JS_UNDEFINED;
+        pdesc->setter = JS_UNDEFINED;
+        pdesc->value = ngx_qjs_prop(cx, buffer_type, vv->data, vv->len);
+    }
+
+    return 1;
+}
+
+
+static int
+ngx_http_qjs_variables_set_property(JSContext *cx, JSValueConst obj,
+    JSAtom prop, JSValueConst value, JSValueConst receiver, int flags)
+{
+    ngx_str_t                   name, s;
+    ngx_uint_t                  key;
+    ngx_http_js_ctx_t          *ctx;
+    ngx_http_request_t         *r;
+    ngx_http_variable_t        *v;
+    ngx_http_variable_value_t  *vv;
+    ngx_http_core_main_conf_t  *cmcf;
+
+    r = JS_GetOpaque(obj, NGX_QJS_CLASS_ID_HTTP_VARS);
+
+    r = (ngx_http_request_t *) ((uintptr_t) r & ~(uintptr_t) 1);
+
+    if (r == NULL) {
+        (void) JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return -1;
+    }
+
+    name.data = (u_char *) JS_AtomToCString(cx, prop);
+    if (name.data == NULL) {
+        return -1;
+    }
+
+    name.len = ngx_strlen(name.data);
+
+    key = ngx_hash_strlow(name.data, name.data, name.len);
+
+    cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
+
+    v = ngx_hash_find(&cmcf->variables_hash, key, name.data, name.len);
+    JS_FreeCString(cx, (char *) name.data);
+
+    if (v == NULL) {
+        (void) JS_ThrowInternalError(cx, "variable not found");
+        return -1;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    if (ngx_qjs_string(ctx->engine, value, &s) != NGX_OK) {
+        return -1;
+    }
+
+    if (v->set_handler != NULL) {
+        vv = ngx_pcalloc(r->pool, sizeof(ngx_http_variable_value_t));
+        if (vv == NULL) {
+            (void) JS_ThrowOutOfMemory(cx);
+            return -1;
+        }
+
+        vv->valid = 1;
+        vv->not_found = 0;
+        vv->data = s.data;
+        vv->len = s.len;
+
+        v->set_handler(r, vv, v->data);
+
+        return 1;
+    }
+
+    if (!(v->flags & NGX_HTTP_VAR_INDEXED)) {
+        (void) JS_ThrowTypeError(cx, "variable is not writable");
+        return -1;
+    }
+
+    vv = &r->variables[v->index];
+
+    vv->valid = 1;
+    vv->not_found = 0;
+
+    vv->data = ngx_pnalloc(r->pool, s.len);
+    if (vv->data == NULL) {
+        vv->valid = 0;
+        (void) JS_ThrowOutOfMemory(cx);
+        return -1;
+    }
+
+    vv->len = s.len;
+    ngx_memcpy(vv->data, s.data, vv->len);
+
+    return 1;
+}
+
+
+static int
+ngx_http_qjs_ext_keys_header(JSContext *cx, ngx_list_t *headers, JSValue keys,
+    JSPropertyEnum **ptab, uint32_t *plen)
+{
+    JSAtom            key;
+    ngx_uint_t        item;
+    ngx_list_part_t  *part;
+    ngx_table_elt_t  *header, *h;
+
+    part = &headers->part;
+    item = 0;
+
+    while (part) {
+        if (item >= part->nelts) {
+            part = part->next;
+            item = 0;
+            continue;
+        }
+
+        header = part->elts;
+        h = &header[item++];
+
+        if (h->hash == 0) {
+            continue;
+        }
+
+        key = JS_NewAtomLen(cx, (const char *) h->key.data, h->key.len);
+        if (key == JS_ATOM_NULL) {
+            return -1;
+        }
+
+        if (JS_DefinePropertyValue(cx, keys, key, JS_UNDEFINED,
+                                   JS_PROP_ENUMERABLE) < 0)
+        {
+            JS_FreeAtom(cx, key);
+            return -1;
+        }
+
+        JS_FreeAtom(cx, key);
+    }
+
+    return JS_GetOwnPropertyNames(cx, ptab, plen, keys, JS_GPN_STRING_MASK);
+}
+
+
+static int
+ngx_http_qjs_headers_in_own_property_names(JSContext *cx,
+    JSPropertyEnum **ptab, uint32_t *plen, JSValueConst obj)
+{
+    int                  ret;
+    JSValue              keys;
+    ngx_http_request_t  *r;
+
+    r = JS_GetOpaque(obj, NGX_QJS_CLASS_ID_HTTP_HEADERS_IN);
+    if (r == NULL) {
+        (void) JS_ThrowInternalError(cx, "\"this\" is not a headers_in object");
+        return -1;
+    }
+
+    keys = JS_NewObject(cx);
+    if (JS_IsException(keys)) {
+        return -1;
+    }
+
+    ret = ngx_http_qjs_ext_keys_header(cx, &r->headers_in.headers, keys, ptab,
+                                       plen);
+    JS_FreeValue(cx, keys);
+
+    return ret;
+}
+
+
+static njs_int_t
+ngx_http_qjs_header_generic(JSContext *cx, ngx_http_request_t *r,
+    ngx_list_t *headers, ngx_table_elt_t **ph, ngx_str_t *name,
+    JSPropertyDescriptor *pdesc, unsigned flags)
+{
+    int               ret;
+    u_char            sep;
+    njs_chb_t         chain;
+    JSValue           val;
+    ngx_uint_t        i;
+    ngx_list_part_t  *part;
+    ngx_table_elt_t  *header, *h;
+
+    if (ph == NULL) {
+        /* iterate over all headers */
+
+        ph = &header;
+        part = &headers->part;
+        h = part->elts;
+
+        for (i = 0; /* void */ ; i++) {
+
+            if (i >= part->nelts) {
+                if (part->next == NULL) {
+                    break;
+                }
+
+                part = part->next;
+                h = part->elts;
+                i = 0;
+            }
+
+            if (h[i].hash == 0
+                || name->len != h[i].key.len
+                || ngx_strncasecmp(name->data, h[i].key.data, name->len)
+                   != 0)
+            {
+                continue;
+            }
+
+            *ph = &h[i];
+            ph = &h[i].next;
+        }
+
+        *ph = NULL;
+        ph = &header;
+    }
+
+    if (*ph == NULL) {
+        return 0;
+    }
+
+    if (flags & NJS_HEADER_ARRAY) {
+        if (pdesc == NULL) {
+            return 1;
+        }
+
+        pdesc->flags = JS_PROP_ENUMERABLE;
+        pdesc->getter = JS_UNDEFINED;
+        pdesc->setter = JS_UNDEFINED;
+        pdesc->value = JS_NewArray(cx);
+        if (JS_IsException(pdesc->value)) {
+            return -1;
+        }
+
+        for (h = *ph, i = 0; h; h = h->next, i++) {
+            val = qjs_string_create(cx, h->value.data, h->value.len);
+            if (JS_IsException(val)) {
+                JS_FreeValue(cx, pdesc->value);
+                return -1;
+            }
+
+            if (JS_DefinePropertyValueUint32(cx, pdesc->value, i, val,
+                                             JS_PROP_ENUMERABLE) < 0)
+            {
+                JS_FreeValue(cx, pdesc->value);
+                return -1;
+            }
+        }
+
+        return 1;
+    }
+
+    if ((*ph)->next == NULL || flags & NJS_HEADER_SINGLE) {
+        if (pdesc != NULL) {
+            pdesc->flags = JS_PROP_ENUMERABLE;
+            pdesc->getter = JS_UNDEFINED;
+            pdesc->setter = JS_UNDEFINED;
+            pdesc->value = qjs_string_create(cx, (*ph)->value.data,
+                                             (*ph)->value.len);
+            if (JS_IsException(pdesc->value)) {
+                return -1;
+            }
+        }
+
+        return 1;
+    }
+
+    NJS_CHB_CTX_INIT(&chain, cx);
+
+    sep = flags & NJS_HEADER_SEMICOLON ? ';' : ',';
+
+    for (h = *ph; h; h = h->next) {
+        njs_chb_append(&chain, h->value.data, h->value.len);
+        njs_chb_append(&chain, &sep, 1);
+        njs_chb_append_literal(&chain, " ");
+    }
+
+    ret = 1;
+
+    if (pdesc != NULL) {
+        pdesc->flags = JS_PROP_ENUMERABLE;
+        pdesc->getter = JS_UNDEFINED;
+        pdesc->setter = JS_UNDEFINED;
+        pdesc->value = qjs_string_create_chb(cx, &chain);
+        if (JS_IsException(pdesc->value)) {
+            ret = -1;
+            goto done;
+        }
+    }
+
+done:
+
+    njs_chb_destroy(&chain);
+
+    return ret;
+}
+
+
+static int
+ngx_http_qjs_header_in(JSContext *cx, ngx_http_request_t *r, unsigned flags,
+    ngx_str_t *name, JSPropertyDescriptor *pdesc)
+{
+    u_char                      *lowcase_key;
+    ngx_uint_t                   hash;
+    ngx_table_elt_t            **ph;
+    ngx_http_header_t           *hh;
+    ngx_http_core_main_conf_t   *cmcf;
+
+    /* look up hashed headers */
+
+    lowcase_key = ngx_pnalloc(r->pool, name->len);
+    if (lowcase_key == NULL) {
+        (void) JS_ThrowOutOfMemory(cx);
+        return -1;
+    }
+
+    hash = ngx_hash_strlow(lowcase_key, name->data, name->len);
+
+    cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
+
+    hh = ngx_hash_find(&cmcf->headers_in_hash, hash, lowcase_key,
+                       name->len);
+
+    ph = NULL;
+
+    if (hh) {
+        if (hh->offset == offsetof(ngx_http_headers_in_t, cookie)) {
+            flags |= NJS_HEADER_SEMICOLON;
+        }
+
+        ph = (ngx_table_elt_t **) ((char *) &r->headers_in + hh->offset);
+    }
+
+    return ngx_http_qjs_header_generic(cx, r, &r->headers_in.headers, ph, name,
+                                       pdesc, flags);
+}
+
+
+static int
+ngx_http_qjs_headers_in_own_property(JSContext *cx, JSPropertyDescriptor *pdesc,
+    JSValueConst obj, JSAtom prop)
+{
+    int                  ret;
+    unsigned             flags;
+    ngx_str_t            name, *h;
+    ngx_http_request_t  *r;
+
+    static ngx_str_t single_headers_in[] = {
+        ngx_string("Content-Type"),
+        ngx_string("ETag"),
+        ngx_string("From"),
+        ngx_string("Max-Forwards"),
+        ngx_string("Referer"),
+        ngx_string("Proxy-Authorization"),
+        ngx_string("User-Agent"),
+        ngx_string(""),
+    };
+
+    r = JS_GetOpaque(obj, NGX_QJS_CLASS_ID_HTTP_HEADERS_IN);
+    if (r == NULL) {
+        (void) JS_ThrowInternalError(cx, "\"this\" is not a headers_in object");
+        return -1;
+    }
+
+    name.data = (u_char *) JS_AtomToCString(cx, prop);
+    if (name.data == NULL) {
+        return -1;
+    }
+
+    name.len = ngx_strlen(name.data);
+
+    flags = 0;
+
+    for (h = single_headers_in; h->len > 0; h++) {
+        if (h->len == name.len
+            && ngx_strncasecmp(h->data, name.data, name.len) == 0)
+        {
+            flags |= NJS_HEADER_SINGLE;
+            break;
+        }
+    }
+
+    ret = ngx_http_qjs_header_in(cx, r, flags, &name, pdesc);
+    JS_FreeCString(cx, (char *) name.data);
+
+    return ret;
+}
+
+
+static int
+ngx_http_qjs_headers_out_own_property_names(JSContext *cx,
+    JSPropertyEnum **ptab, uint32_t *plen, JSValueConst obj)
+{
+    int                  ret;
+    JSAtom               key;
+    JSValue              keys;
+    ngx_http_request_t  *r;
+
+    r = JS_GetOpaque(obj, NGX_QJS_CLASS_ID_HTTP_HEADERS_OUT);
+    if (r == NULL) {
+        (void) JS_ThrowInternalError(cx, "\"this\" is not a headers_out"
+                                     " object");
+        return -1;
+    }
+
+    keys = JS_NewObject(cx);
+    if (JS_IsException(keys)) {
+        return -1;
+    }
+
+    if (r->headers_out.content_type.len) {
+        key = JS_NewAtomLen(cx, "Content-Type", njs_length("Content-Type"));
+        if (key == JS_ATOM_NULL) {
+            return -1;
+        }
+
+        if (JS_DefinePropertyValue(cx, keys, key, JS_UNDEFINED,
+                                   JS_PROP_ENUMERABLE) < 0)
+        {
+            JS_FreeAtom(cx, key);
+            return -1;
+        }
+
+        JS_FreeAtom(cx, key);
+    }
+
+    if (r->headers_out.content_length == NULL
+        && r->headers_out.content_length_n >= 0)
+    {
+        key = JS_NewAtomLen(cx, "Content-Length", njs_length("Content-Length"));
+        if (key == JS_ATOM_NULL) {
+            return -1;
+        }
+
+        if (JS_DefinePropertyValue(cx, keys, key, JS_UNDEFINED,
+                                   JS_PROP_ENUMERABLE) < 0)
+        {
+            JS_FreeAtom(cx, key);
+            return -1;
+        }
+
+        JS_FreeAtom(cx, key);
+    }
+
+    ret = ngx_http_qjs_ext_keys_header(cx, &r->headers_out.headers, keys, ptab,
+                                       plen);
+    JS_FreeValue(cx, keys);
+
+    return ret;
+}
+
+
+static int
+ngx_http_qjs_headers_out_handler(JSContext *cx, ngx_http_request_t *r,
+    ngx_str_t *name, JSPropertyDescriptor *pdesc, JSValue *value,
+    unsigned flags)
+{
+    u_char              *p;
+    int64_t              length;
+    uint32_t             i;
+    ngx_int_t            rc;
+    ngx_str_t            s;
+    JSValue              v;
+    ngx_list_part_t     *part;
+    ngx_table_elt_t     *header, *h, **ph;
+    ngx_http_js_ctx_t   *ctx;
+
+    if (flags & NJS_HEADER_GET) {
+        return ngx_http_qjs_header_generic(cx, r, &r->headers_out.headers, NULL,
+                                           name, pdesc, flags);
+    }
+
+    part = &r->headers_out.headers.part;
+    header = part->elts;
+
+    for (i = 0; /* void */ ; i++) {
+
+        if (i >= part->nelts) {
+            if (part->next == NULL) {
+                break;
+            }
+
+            part = part->next;
+            header = part->elts;
+            i = 0;
+        }
+
+        h = &header[i];
+
+        if (h->hash == 0
+            || h->key.len != name->len
+            || ngx_strncasecmp(h->key.data, name->data, name->len) != 0)
+        {
+            continue;
+        }
+
+        h->hash = 0;
+        h->next = NULL;
+    }
+
+    if (value == NULL) {
+        return 1;
+    }
+
+    if (JS_IsArray(cx, *value)) {
+        v = JS_GetPropertyStr(cx, *value, "length");
+        if (JS_IsException(v)) {
+            return -1;
+        }
+
+        if (JS_ToInt64(cx, &length, v) < 0) {
+            JS_FreeValue(cx, v);
+            return -1;
+        }
+
+        JS_FreeValue(cx, v);
+
+    } else {
+        v = *value;
+        length = 1;
+    }
+
+    ph = &header;
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    for (i = 0; i < (uint32_t) length; i++) {
+        if (JS_IsArray(cx, *value)) {
+            v = JS_GetPropertyUint32(cx, *value, i);
+            if (JS_IsException(v)) {
+                return -1;
+            }
+        }
+
+        rc = ngx_qjs_string(ctx->engine, v, &s);
+
+        if (JS_IsArray(cx, *value)) {
+            JS_FreeValue(cx, v);
+        }
+
+        if (rc != NGX_OK) {
+            return -1;
+        }
+
+        if (s.len == 0) {
+            continue;
+        }
+
+        h = ngx_list_push(&r->headers_out.headers);
+        if (h == NULL) {
+            (void) JS_ThrowOutOfMemory(cx);
+            return -1;
+        }
+
+        p = ngx_pnalloc(r->pool, name->len);
+        if (p == NULL) {
+            h->hash = 0;
+            (void) JS_ThrowOutOfMemory(cx);
+            return -1;
+        }
+
+        ngx_memcpy(p, name->data, name->len);
+
+        h->key.data = p;
+        h->key.len = name->len;
+
+        p = ngx_pnalloc(r->pool, s.len);
+        if (p == NULL) {
+            h->hash = 0;
+            (void) JS_ThrowOutOfMemory(cx);
+            return -1;
+        }
+
+        ngx_memcpy(p, s.data, s.len);
+
+        h->value.data = p;
+        h->value.len = s.len;
+        h->hash = 1;
+
+        *ph = h;
+        ph = &h->next;
+    }
+
+    *ph = NULL;
+
+    return NJS_OK;
+}
+
+
+static int
+ngx_http_qjs_headers_out_special_handler(JSContext *cx, ngx_http_request_t *r,
+    ngx_str_t *name, JSPropertyDescriptor *pdesc, JSValue *value,
+    unsigned flags, ngx_table_elt_t **hh)
+{
+    u_char              *p;
+    uint32_t             length;
+    JSValue              len, setval;
+    ngx_str_t            s;
+    ngx_uint_t           i, rc;
+    ngx_list_t          *headers;
+    ngx_list_part_t     *part;
+    ngx_table_elt_t     *header, *h;
+    ngx_http_js_ctx_t   *ctx;
+
+    if (flags & NJS_HEADER_GET) {
+        return ngx_http_qjs_headers_out_handler(cx, r, name, pdesc, NULL,
+                                                flags | NJS_HEADER_SINGLE);
+    }
+
+    if (value != NULL) {
+        if (JS_IsArray(cx, *value)) {
+            len = JS_GetPropertyStr(cx, *value, "length");
+            if (JS_IsException(len)) {
+                return -1;
+            }
+
+            if (JS_ToUint32(cx, &length, len) < 0) {
+                JS_FreeValue(cx, len);
+                return -1;
+            }
+
+            JS_FreeValue(cx, len);
+
+            setval = JS_GetPropertyUint32(cx, *value, length - 1);
+            if (JS_IsException(setval)) {
+                return -1;
+            }
+
+        } else {
+            setval = *value;
+        }
+
+    } else {
+        setval = JS_UNDEFINED;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    rc = ngx_qjs_string(ctx->engine, setval, &s);
+
+    if (value != NULL && JS_IsArray(cx, *value)) {
+        JS_FreeValue(cx, setval);
+    }
+
+    if (rc != NGX_OK) {
+        return -1;
+    }
+
+    headers = &r->headers_out.headers;
+    part = &headers->part;
+    header = part->elts;
+
+    for (i = 0; /* void */ ; i++) {
+
+        if (i >= part->nelts) {
+            if (part->next == NULL) {
+                break;
+            }
+
+            part = part->next;
+            header = part->elts;
+            i = 0;
+        }
+
+        h = &header[i];
+
+        if (h->hash == 0) {
+            continue;
+        }
+
+        if (h->key.len == name->len
+            && ngx_strncasecmp(h->key.data, name->data, name->len) == 0)
+        {
+            goto done;
+        }
+    }
+
+    h = NULL;
+
+done:
+
+    if (h != NULL && s.len == 0) {
+        h->hash = 0;
+        h = NULL;
+    }
+
+    if (h == NULL && s.len != 0) {
+        h = ngx_list_push(headers);
+        if (h == NULL) {
+            (void) JS_ThrowOutOfMemory(cx);
+            return -1;
+        }
+
+        p = ngx_pnalloc(r->pool, name->len);
+        if (p == NULL) {
+            h->hash = 0;
+            (void) JS_ThrowOutOfMemory(cx);
+            return -1;
+        }
+
+        ngx_memcpy(p, name->data, name->len);
+
+        h->key.data = p;
+        h->key.len = name->len;
+    }
+
+    if (h != NULL) {
+        p = ngx_pnalloc(r->pool, s.len);
+        if (p == NULL) {
+            h->hash = 0;
+            (void) JS_ThrowOutOfMemory(cx);
+            return -1;
+        }
+
+        ngx_memcpy(p, s.data, s.len);
+
+        h->value.data = p;
+        h->value.len = s.len;
+        h->hash = 1;
+    }
+
+    if (hh != NULL) {
+        *hh = h;
+    }
+
+    return 1;
+}
+
+
+static int
+ngx_http_qjs_headers_out_content_encoding(JSContext *cx, ngx_http_request_t *r,
+    ngx_str_t *name, JSPropertyDescriptor *pdesc, JSValue *value,
+    unsigned flags)
+{
+    int               ret;
+    ngx_table_elt_t  *h;
+
+    ret = ngx_http_qjs_headers_out_special_handler(cx, r, name, pdesc, value,
+                                                   flags, &h);
+    if (ret < 0) {
+        return -1;
+    }
+
+    if (!(flags & NJS_HEADER_GET)) {
+        r->headers_out.content_encoding = h;
+    }
+
+    return ret;
+}
+
+
+static int
+ngx_http_qjs_headers_out_content_length(JSContext *cx, ngx_http_request_t *r,
+    ngx_str_t *name, JSPropertyDescriptor *pdesc, JSValue *value,
+    unsigned flags)
+{
+    int               ret;
+    u_char           *p;
+    ngx_int_t         n;
+    ngx_table_elt_t  *h;
+    u_char            content_len[NGX_OFF_T_LEN];
+
+    if (flags & NJS_HEADER_GET) {
+        if (r->headers_out.content_length == NULL
+            && r->headers_out.content_length_n >= 0)
+        {
+            p = ngx_sprintf(content_len, "%O", r->headers_out.content_length_n);
+
+            if (pdesc != NULL) {
+                pdesc->flags = JS_PROP_C_W_E;
+                pdesc->getter = JS_UNDEFINED;
+                pdesc->setter = JS_UNDEFINED;
+                pdesc->value = qjs_string_create(cx, content_len,
+                                                p - content_len);
+                if (JS_IsException(pdesc->value)) {
+                    return -1;
+                }
+            }
+
+            return 1;
+        }
+    }
+
+    ret = ngx_http_qjs_headers_out_special_handler(cx, r, name, pdesc, value,
+                                                   flags, &h);
+    if (ret < 0) {
+        return -1;
+    }
+
+    if (!(flags & NJS_HEADER_GET)) {
+        if (h != NULL) {
+            n = ngx_atoi(h->value.data, h->value.len);
+            if (n == NGX_ERROR) {
+                h->hash = 0;
+                (void) JS_ThrowInternalError(cx, "failed converting argument "
+                                             "to positive integer");
+                return -1;
+            }
+
+            r->headers_out.content_length = h;
+            r->headers_out.content_length_n = n;
+
+        } else {
+            ngx_http_clear_content_length(r);
+        }
+    }
+
+    return ret;
+}
+
+
+static int
+ngx_http_qjs_headers_out_content_type(JSContext *cx, ngx_http_request_t *r,
+    ngx_str_t *name, JSPropertyDescriptor *pdesc, JSValue *value,
+    unsigned flags)
+{
+    uint32_t     length;
+    JSValue     len, setval;
+    ngx_int_t   rc;
+    ngx_str_t  *hdr, s;
+    ngx_http_js_ctx_t  *ctx;
+
+    if (flags & NJS_HEADER_GET) {
+        hdr = &r->headers_out.content_type;
+
+        if (pdesc != NULL) {
+            pdesc->flags = JS_PROP_C_W_E;
+            pdesc->getter = JS_UNDEFINED;
+            pdesc->setter = JS_UNDEFINED;
+
+            if (hdr->len == 0) {
+                pdesc->value = JS_UNDEFINED;
+                return 1;
+            }
+
+            pdesc->value = qjs_string_create(cx, hdr->data, hdr->len);
+            if (JS_IsException(pdesc->value)) {
+                return -1;
+            }
+        }
+
+        return 1;
+    }
+
+    if (value == NULL) {
+        r->headers_out.content_type.len = 0;
+        r->headers_out.content_type_len = 0;
+        r->headers_out.content_type.data = NULL;
+        r->headers_out.content_type_lowcase = NULL;
+        return 1;
+    }
+
+    if (JS_IsArray(cx, *value)) {
+        len = JS_GetPropertyStr(cx, *value, "length");
+        if (JS_IsException(len)) {
+            return -1;
+        }
+
+        if (JS_ToUint32(cx, &length, len) < 0) {
+            JS_FreeValue(cx, len);
+            return -1;
+        }
+
+        JS_FreeValue(cx, len);
+
+        setval = JS_GetPropertyUint32(cx, *value, length - 1);
+        if (JS_IsException(setval)) {
+            return -1;
+        }
+
+    } else {
+        setval = *value;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    rc = ngx_qjs_string(ctx->engine, setval, &s);
+
+    if (JS_IsArray(cx, *value)) {
+        JS_FreeValue(cx, setval);
+    }
+
+    if (rc != NGX_OK) {
+        return -1;
+    }
+
+    r->headers_out.content_type.len = s.len;
+    r->headers_out.content_type_len = r->headers_out.content_type.len;
+    r->headers_out.content_type.data = s.data;
+    r->headers_out.content_type_lowcase = NULL;
+
+    return 1;
+}
+
+
+static int
+ngx_http_qjs_headers_out_date(JSContext *cx, ngx_http_request_t *r,
+    ngx_str_t *name, JSPropertyDescriptor *pdesc, JSValue *value,
+    unsigned flags)
+{
+    int               ret;
+    ngx_table_elt_t  *h;
+
+    ret = ngx_http_qjs_headers_out_special_handler(cx, r, name, pdesc, value,
+                                                   flags, &h);
+    if (ret < 0) {
+        return -1;
+    }
+
+    if (!(flags & NJS_HEADER_GET)) {
+        r->headers_out.date = h;
+    }
+
+    return ret;
+}
+
+
+static int
+ngx_http_qjs_headers_out_last_modified(JSContext *cx, ngx_http_request_t *r,
+    ngx_str_t *name, JSPropertyDescriptor *pdesc, JSValue *value,
+    unsigned flags)
+{
+    int               ret;
+    ngx_table_elt_t  *h;
+
+    ret = ngx_http_qjs_headers_out_special_handler(cx, r, name, pdesc, value,
+                                                   flags, &h);
+    if (ret < 0) {
+        return -1;
+    }
+
+    if (!(flags & NJS_HEADER_GET)) {
+        r->headers_out.last_modified = h;
+    }
+
+    return ret;
+}
+
+
+static int
+ngx_http_qjs_headers_out_location(JSContext *cx, ngx_http_request_t *r,
+    ngx_str_t *name, JSPropertyDescriptor *pdesc, JSValue *value,
+    unsigned flags)
+{
+    int               ret;
+    ngx_table_elt_t  *h;
+
+    ret = ngx_http_qjs_headers_out_special_handler(cx, r, name, pdesc, value,
+                                                   flags, &h);
+    if (ret < 0) {
+        return -1;
+    }
+
+    if (!(flags & NJS_HEADER_GET)) {
+        r->headers_out.location = h;
+    }
+
+    return ret;
+}
+
+
+static int
+ngx_http_qjs_headers_out_server(JSContext *cx, ngx_http_request_t *r,
+    ngx_str_t *name, JSPropertyDescriptor *pdesc, JSValue *value,
+    unsigned flags)
+{
+    int               ret;
+    ngx_table_elt_t  *h;
+
+    ret = ngx_http_qjs_headers_out_special_handler(cx, r, name, pdesc, value,
+                                                   flags, &h);
+    if (ret < 0) {
+        return -1;
+    }
+
+    if (!(flags & NJS_HEADER_GET)) {
+        r->headers_out.server = h;
+    }
+
+    return ret;
+}
+
+
+static int
+ngx_http_qjs_headers_out(JSContext *cx, ngx_http_request_t *r,
+    ngx_str_t *name, JSPropertyDescriptor *pdesc, JSValue *value,
+    unsigned flags)
+{
+    ngx_http_js_header_t  *h;
+
+    static ngx_http_js_header_t headers_out[] = {
+#define header(name, fl, h) { njs_str(name), fl, (uintptr_t) h }
+        header("Age", NJS_HEADER_SINGLE, ngx_http_qjs_headers_out_handler),
+        header("Content-Encoding", 0, ngx_http_qjs_headers_out_content_encoding),
+        header("Content-Length", 0, ngx_http_qjs_headers_out_content_length),
+        header("Content-Type", 0, ngx_http_qjs_headers_out_content_type),
+        header("Date", 0, ngx_http_qjs_headers_out_date),
+        header("Etag", NJS_HEADER_SINGLE, ngx_http_qjs_headers_out_handler),
+        header("Expires", NJS_HEADER_SINGLE, ngx_http_qjs_headers_out_handler),
+        header("Last-Modified", 0, ngx_http_qjs_headers_out_last_modified),
+        header("Location", 0, ngx_http_qjs_headers_out_location),
+        header("Server", 0, ngx_http_qjs_headers_out_server),
+        header("Set-Cookie", NJS_HEADER_ARRAY,
+               ngx_http_qjs_headers_out_handler),
+        header("Retry-After", NJS_HEADER_SINGLE,
+               ngx_http_qjs_headers_out_handler),
+        header("", 0, ngx_http_qjs_headers_out_handler),
+#undef header
+    };
+
+    for (h = headers_out; h->name.len > 0; h++) {
+        if (h->name.len == name->len
+            && ngx_strncasecmp(h->name.data, name->data, name->len) == 0)
+        {
+            break;
+        }
+    }
+
+    return ((njs_http_qjs_header_handler_t) h->handler)(cx,
+                                      r, name, pdesc, value, h->flags | flags);
+}
+
+
+static int
+ngx_http_qjs_headers_out_own_property(JSContext *cx,
+    JSPropertyDescriptor *pdesc, JSValueConst obj, JSAtom prop)
+{
+    int                   ret;
+    ngx_str_t             name;
+    ngx_http_request_t   *r;
+
+    r = JS_GetOpaque(obj, NGX_QJS_CLASS_ID_HTTP_HEADERS_OUT);
+    if (r == NULL) {
+        (void) JS_ThrowInternalError(cx, "\"this\" is not a headers_out"
+                                     " object");
+        return -1;
+    }
+
+    name.data = (u_char *) JS_AtomToCString(cx, prop);
+    if (name.data == NULL) {
+        return -1;
+    }
+
+    name.len = ngx_strlen(name.data);
+
+    ret = ngx_http_qjs_headers_out(cx, r, &name, pdesc, NULL, NJS_HEADER_GET);
+    JS_FreeCString(cx, (char *) name.data);
+
+    return ret;
+}
+
+
+static int
+ngx_http_qjs_headers_out_set_property(JSContext *cx,
+    JSValueConst obj, JSAtom atom, JSValueConst value, JSValueConst receiver,
+    int flags)
+{
+    return ngx_http_qjs_headers_out_define_own_property(cx, obj, atom, value,
+                                JS_UNDEFINED, JS_UNDEFINED, flags);
+}
+
+
+static int
+ngx_http_qjs_headers_out_define_own_property(JSContext *cx,
+    JSValueConst obj, JSAtom prop, JSValueConst value, JSValueConst getter,
+    JSValueConst setter, int flags)
+{
+    int                   ret;
+    ngx_str_t             name;
+    ngx_http_request_t   *r;
+
+    r = JS_GetOpaque(obj, NGX_QJS_CLASS_ID_HTTP_HEADERS_OUT);
+    if (r == NULL) {
+        (void) JS_ThrowInternalError(cx, "\"this\" is not a headers_out"
+                                     " object");
+        return -1;
+    }
+
+    if (!JS_IsUndefined(setter) || !JS_IsUndefined(getter)) {
+        (void) JS_ThrowTypeError(cx, "cannot define getter or setter");
+        return -1;
+    }
+
+    name.data = (u_char *) JS_AtomToCString(cx, prop);
+    if (name.data == NULL) {
+        return -1;
+    }
+
+    name.len = ngx_strlen(name.data);
+
+    if (r->header_sent) {
+        ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
+                      "ignored setting of response header \"%V\" because"
+                      " headers were already sent", &name);
+    }
+
+    ret = ngx_http_qjs_headers_out(cx, r, &name, NULL, &value, 0);
+    JS_FreeCString(cx, (char *) name.data);
+
+    return ret;
+}
+
+
+static int
+ngx_http_qjs_headers_out_delete_property(JSContext *cx,
+    JSValueConst obj, JSAtom prop)
+{
+    int                   ret;
+    ngx_str_t             name;
+    ngx_http_request_t   *r;
+
+    r = JS_GetOpaque(obj, NGX_QJS_CLASS_ID_HTTP_HEADERS_OUT);
+    if (r == NULL) {
+        (void) JS_ThrowInternalError(cx, "\"this\" is not a headers_out"
+                                     " object");
+        return -1;
+    }
+
+    name.data = (u_char *) JS_AtomToCString(cx, prop);
+    if (name.data == NULL) {
+        return -1;
+    }
+
+    name.len = ngx_strlen(name.data);
+
+    ret = ngx_http_qjs_headers_out(cx, r, &name, NULL, NULL, 0);
+    JS_FreeCString(cx, (char *) name.data);
+
+    return ret;
+}
+
+
+static ngx_int_t
+ngx_http_qjs_body_filter(ngx_http_request_t *r, ngx_http_js_loc_conf_t *jlcf,
+    ngx_http_js_ctx_t *ctx, ngx_chain_t *in)
+{
+    size_t             len;
+    u_char            *p;
+    JSAtom             last_key;
+    JSValue            arguments[3], last;
+    ngx_int_t          rc;
+    njs_int_t          pending;
+    ngx_buf_t         *b;
+    ngx_chain_t       *cl;
+    JSContext         *cx;
+    ngx_connection_t  *c;
+
+    c = r->connection;
+    cx = ctx->engine->u.qjs.ctx;
+
+    arguments[0] = ngx_qjs_arg(ctx->args[0]);
+
+    last_key = JS_NewAtom(cx, "last");
+    if (last_key == JS_ATOM_NULL) {
+        return NGX_ERROR;
+    }
+
+    while (in != NULL) {
+        ctx->buf = in->buf;
+        b = ctx->buf;
+
+        if (!ctx->done) {
+            len = b->last - b->pos;
+
+            p = ngx_pnalloc(r->pool, len);
+            if (p == NULL) {
+                return NJS_ERROR;
+            }
+
+            if (len) {
+                ngx_memcpy(p, b->pos, len);
+            }
+
+            arguments[1] = ngx_qjs_prop(cx, jlcf->buffer_type, p, len);
+            if (JS_IsException(arguments[1])) {
+                JS_FreeAtom(cx, last_key);
+                return NGX_ERROR;
+            }
+
+            last = JS_NewBool(cx, b->last_buf);
+
+            arguments[2] = JS_NewObject(cx);
+            if (JS_IsException(arguments[2])) {
+                JS_FreeAtom(cx, last_key);
+                JS_FreeValue(cx, arguments[1]);
+                return NGX_ERROR;
+            }
+
+            if (JS_SetProperty(cx, arguments[2], last_key, last) < 0) {
+                JS_FreeAtom(cx, last_key);
+                JS_FreeValue(cx, arguments[1]);
+                JS_FreeValue(cx, arguments[2]);
+                return NGX_ERROR;
+            }
+
+            pending = ngx_js_ctx_pending(ctx);
+
+            ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
+                           "http js body call \"%V\"", &jlcf->body_filter);
+
+            rc = ctx->engine->call((ngx_js_ctx_t *) ctx, &jlcf->body_filter,
+                                   (njs_opaque_value_t *) &arguments[0], 3);
+
+            JS_FreeAtom(cx, last_key);
+            JS_FreeValue(cx, arguments[1]);
+            JS_FreeValue(cx, arguments[2]);
+
+            if (rc == NGX_ERROR) {
+                return NGX_ERROR;
+            }
+
+            if (!pending && rc == NGX_AGAIN) {
+                ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                              "async operation inside \"%V\" body filter",
+                              &jlcf->body_filter);
+                return NGX_ERROR;
+            }
+
+            ctx->buf->pos = ctx->buf->last;
+
+        } else {
+            cl = ngx_alloc_chain_link(c->pool);
+            if (cl == NULL) {
+                return NGX_ERROR;
+            }
+
+            cl->buf = b;
+
+            *ctx->last_out = cl;
+            ctx->last_out = &cl->next;
+        }
+
+        in = in->next;
+    }
+
+    return NGX_OK;
+}
+
+
+static ngx_http_request_t *
+ngx_http_qjs_request(JSValueConst val)
+{
+    ngx_http_qjs_request_t  *req;
+
+    req = JS_GetOpaque(val, NGX_QJS_CLASS_ID_HTTP_REQUEST);
+    if (req == NULL) {
+        return NULL;
+    }
+
+    return req->request;
+}
+
+
+static JSValue
+ngx_http_qjs_request_make(JSContext *cx, ngx_int_t proto_id,
+    ngx_http_request_t *r)
+{
+    JSValue                  request;
+    ngx_http_qjs_request_t  *req;
+
+    request = JS_NewObjectClass(cx, proto_id);
+    if (JS_IsException(request)) {
+        return JS_EXCEPTION;
+    }
+
+    req = js_malloc(cx, sizeof(ngx_http_qjs_request_t));
+    if (req == NULL) {
+        return JS_ThrowOutOfMemory(cx);
+    }
+
+    req->request = r;
+    req->args = JS_UNDEFINED;
+    req->request_body = JS_UNDEFINED;
+    req->response_body = JS_UNDEFINED;
+
+    JS_SetOpaque(request, req);
+
+    return request;
+}
+
+
+static void
+ngx_http_qjs_request_finalizer(JSRuntime *rt, JSValue val)
+{
+    ngx_http_qjs_request_t  *req;
+
+    req = JS_GetOpaque(val, NGX_QJS_CLASS_ID_HTTP_REQUEST);
+    if (req == NULL) {
+        return;
+    }
+
+    JS_FreeValueRT(rt, req->args);
+    JS_FreeValueRT(rt, req->request_body);
+    JS_FreeValueRT(rt, req->response_body);
+
+    js_free_rt(rt, req);
+}
+
+
+static ngx_engine_t *
+ngx_engine_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf,
+    njs_int_t proto_id, void *external)
+{
+    JSValue             proto;
+    JSContext          *cx;
+    ngx_engine_t       *engine;
+    ngx_http_js_ctx_t  *hctx;
+
+    engine = ngx_qjs_clone(ctx, cf, external);
+    if (engine == NULL) {
+        return NULL;
+    }
+
+    cx = engine->u.qjs.ctx;
+
+    if (!JS_IsRegisteredClass(JS_GetRuntime(cx),
+                              NGX_QJS_CLASS_ID_HTTP_REQUEST))
+    {
+        if (JS_NewClass(JS_GetRuntime(cx), NGX_QJS_CLASS_ID_HTTP_REQUEST,
+                        &ngx_http_qjs_request_class) < 0)
+        {
+            return NULL;
+        }
+
+        proto = JS_NewObject(cx);
+        if (JS_IsException(proto)) {
+            return NULL;
+        }
+
+        JS_SetPropertyFunctionList(cx, proto, ngx_http_qjs_ext_request,
+                                   njs_nitems(ngx_http_qjs_ext_request));
+
+        JS_SetClassProto(cx, NGX_QJS_CLASS_ID_HTTP_REQUEST, proto);
+
+        if (JS_NewClass(JS_GetRuntime(cx), NGX_QJS_CLASS_ID_HTTP_PERIODIC,
+                        &ngx_http_qjs_periodic_class) < 0)
+        {
+            return NULL;
+        }
+
+        proto = JS_NewObject(cx);
+        if (JS_IsException(proto)) {
+            return NULL;
+        }
+
+        JS_SetPropertyFunctionList(cx, proto, ngx_http_qjs_ext_periodic,
+                                   njs_nitems(ngx_http_qjs_ext_periodic));
+
+        JS_SetClassProto(cx, NGX_QJS_CLASS_ID_HTTP_PERIODIC, proto);
+
+        if (JS_NewClass(JS_GetRuntime(cx), NGX_QJS_CLASS_ID_HTTP_VARS,
+                        &ngx_http_qjs_variables_class) < 0)
+        {
+            return NULL;
+        }
+
+        if (JS_NewClass(JS_GetRuntime(cx), NGX_QJS_CLASS_ID_HTTP_HEADERS_IN,
+                        &ngx_http_qjs_headers_in_class) < 0)
+        {
+            return NULL;
+        }
+
+        if (JS_NewClass(JS_GetRuntime(cx), NGX_QJS_CLASS_ID_HTTP_HEADERS_OUT,
+                        &ngx_http_qjs_headers_out_class) < 0)
+        {
+            return NULL;
+        }
+    }
+
+    hctx = (ngx_http_js_ctx_t *) ctx;
+    hctx->body_filter = ngx_http_qjs_body_filter;
+
+    if (proto_id == ngx_http_js_request_proto_id) {
+        proto_id = NGX_QJS_CLASS_ID_HTTP_REQUEST;
+
+    } else if (proto_id == ngx_http_js_periodic_session_proto_id) {
+        proto_id = NGX_QJS_CLASS_ID_HTTP_PERIODIC;
+    }
+
+    ngx_qjs_arg(hctx->args[0]) = ngx_http_qjs_request_make(cx, proto_id,
+                                                           external);
+    if (JS_IsException(ngx_qjs_arg(hctx->args[0]))) {
+        return NULL;
+    }
+
+    return engine;
+}
+
+#endif
+
+
 static ngx_int_t
 ngx_http_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf)
 {
@@ -4457,14 +7544,22 @@ ngx_http_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf)
 
     options.engine = conf->type;
 
-    if (conf->type == NGX_ENGINE_NJS) {
-        jmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_js_module);
-        ngx_http_js_uptr[NGX_JS_MAIN_CONF_INDEX] = (uintptr_t) jmcf;
+    jmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_js_module);
+    ngx_http_js_uptr[NGX_JS_MAIN_CONF_INDEX] = (uintptr_t) jmcf;
 
+    if (conf->type == NGX_ENGINE_NJS) {
         options.u.njs.metas = &ngx_http_js_metas;
         options.u.njs.addons = njs_http_js_addon_modules;
         options.clone = ngx_engine_njs_clone;
     }
+
+#if (NJS_HAVE_QUICKJS)
+    else if (conf->type == NGX_ENGINE_QJS) {
+        options.u.qjs.metas = ngx_http_js_uptr;
+        options.u.qjs.addons = njs_http_qjs_addon_modules;
+        options.clone = ngx_engine_qjs_clone;
+    }
+#endif
 
     return ngx_js_init_conf_vm(cf, conf, &options);
 }

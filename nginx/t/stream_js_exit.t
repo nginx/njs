@@ -45,6 +45,10 @@ http {
         location /njs {
             js_content test.njs;
         }
+
+        location /engine {
+            js_content test.engine;
+        }
     }
 }
 
@@ -74,6 +78,10 @@ $t->write_file('test.js', <<EOF);
         r.return(200, njs.version);
     }
 
+    function engine(r) {
+        r.return(200, njs.engine);
+    }
+
     function access(s) {
         njs.on('exit', () => {
             var v = s.variables;
@@ -95,10 +103,14 @@ $t->write_file('test.js', <<EOF);
         });
     }
 
-    export default {njs: test_njs, access, filter};
+    export default {njs: test_njs, engine, access, filter};
 EOF
 
-$t->try_run('no stream njs available')->plan(2);
+$t->try_run('no stream njs available');
+
+plan(skip_all => 'not yet') if http_get('/engine') =~ /QuickJS$/m;
+
+$t->plan(2);
 
 $t->run_daemon(\&stream_daemon, port(8090));
 $t->waitforsocket('127.0.0.1:' . port(8090));

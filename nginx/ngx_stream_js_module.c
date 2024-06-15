@@ -75,6 +75,21 @@ struct ngx_stream_js_ctx_s {
 };
 
 
+#if (NJS_HAVE_QUICKJS)
+
+typedef struct {
+    ngx_str_t               name;
+    ngx_uint_t              data_type;
+    ngx_uint_t              id;
+} ngx_stream_qjs_event_t;
+
+typedef struct {
+    ngx_stream_session_t   *session;
+    JSValue                 callbacks[NGX_JS_EVENT_MAX];
+} ngx_stream_qjs_session_t;
+
+#endif
+
 #define ngx_stream_pending(ctx)                                               \
     (ngx_js_ctx_pending(ctx) || ngx_stream_js_pending_events(ctx))
 
@@ -128,6 +143,57 @@ static njs_int_t ngx_stream_js_periodic_variables(njs_vm_t *vm,
     njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval);
 
+#if (NJS_HAVE_QUICKJS)
+
+static JSValue ngx_stream_qjs_ext_to_string_tag(JSContext *cx,
+    JSValueConst this_val);
+static JSValue ngx_stream_qjs_ext_done(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv, int magic);
+static JSValue ngx_stream_qjs_ext_log(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv, int level);
+static JSValue ngx_stream_qjs_ext_on(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv);
+static JSValue ngx_stream_qjs_ext_off(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv);
+static JSValue ngx_stream_qjs_ext_periodic_to_string_tag(JSContext *cx,
+    JSValueConst this_val);
+static JSValue ngx_stream_qjs_ext_periodic_variables(JSContext *cx,
+    JSValueConst this_val, int type);
+static JSValue ngx_stream_qjs_ext_remote_address(JSContext *cx,
+    JSValueConst this_val);
+static JSValue ngx_stream_qjs_ext_send(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv, int from_upstream);
+static JSValue ngx_stream_qjs_ext_set_return_value(JSContext *cx,
+    JSValueConst this_val, int argc, JSValueConst *argv);
+static JSValue ngx_stream_qjs_ext_variables(JSContext *cx,
+    JSValueConst this_val, int type);
+static JSValue ngx_stream_qjs_ext_uint(JSContext *cx, JSValueConst this_val,
+    int offset);
+static JSValue ngx_stream_qjs_ext_flag(JSContext *cx, JSValueConst this_val,
+    int mask);
+
+static int ngx_stream_qjs_variables_own_property(JSContext *cx,
+    JSPropertyDescriptor *pdesc, JSValueConst obj, JSAtom prop);
+static int ngx_stream_qjs_variables_set_property(JSContext *cx,
+    JSValueConst obj, JSAtom atom, JSValueConst value, JSValueConst receiver,
+    int flags);
+static int ngx_stream_qjs_variables_define_own_property(JSContext *cx,
+    JSValueConst obj, JSAtom prop, JSValueConst value, JSValueConst getter,
+    JSValueConst setter, int flags);
+
+static ngx_int_t ngx_stream_qjs_run_event(ngx_stream_session_t *s,
+    ngx_stream_js_ctx_t *ctx, ngx_stream_js_ev_t *event,
+    ngx_uint_t from_upstream);
+static ngx_int_t ngx_stream_qjs_body_filter(ngx_stream_session_t *s,
+    ngx_stream_js_ctx_t *ctx, ngx_chain_t *in, ngx_uint_t from_upstream);
+
+static ngx_stream_session_t *ngx_stream_qjs_session(JSValueConst val);
+static JSValue ngx_stream_qjs_session_make(JSContext *cx, ngx_int_t proto_id,
+    ngx_stream_session_t *s);
+static void ngx_stream_qjs_session_finalizer(JSRuntime *rt, JSValue val);
+
+#endif
+
 static ngx_pool_t *ngx_stream_js_pool(ngx_stream_session_t *s);
 static ngx_resolver_t *ngx_stream_js_resolver(ngx_stream_session_t *s);
 static ngx_msec_t ngx_stream_js_resolver_timeout(ngx_stream_session_t *s);
@@ -167,6 +233,9 @@ static ngx_flag_t ngx_stream_js_ssl_verify(ngx_stream_session_t *s);
 
 static ngx_conf_bitmask_t  ngx_stream_js_engines[] = {
     { ngx_string("njs"), NGX_ENGINE_NJS },
+#if (NJS_HAVE_QUICKJS)
+    { ngx_string("qjs"), NGX_ENGINE_QJS },
+#endif
     { ngx_null_string, 0 }
 };
 
@@ -190,6 +259,13 @@ static ngx_command_t  ngx_stream_js_commands[] = {
       NGX_STREAM_SRV_CONF_OFFSET,
       offsetof(ngx_stream_js_srv_conf_t, type),
       &ngx_stream_js_engines },
+
+    { ngx_string("js_context_reuse"),
+      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_size_slot,
+      NGX_STREAM_SRV_CONF_OFFSET,
+      offsetof(ngx_stream_js_srv_conf_t, reuse),
+      NULL },
 
     { ngx_string("js_import"),
       NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_TAKE13,
@@ -649,9 +725,9 @@ static njs_vm_meta_t ngx_stream_js_metas = {
 static ngx_stream_filter_pt  ngx_stream_next_filter;
 
 
-static njs_int_t    ngx_stream_js_session_proto_id;
-static njs_int_t    ngx_stream_js_periodic_session_proto_id;
-static njs_int_t    ngx_stream_js_session_flags_proto_id;
+static njs_int_t    ngx_stream_js_session_proto_id = 1;
+static njs_int_t    ngx_stream_js_periodic_session_proto_id  = 2;
+static njs_int_t    ngx_stream_js_session_flags_proto_id = 3;
 
 
 njs_module_t  ngx_js_stream_module = {
@@ -681,6 +757,96 @@ njs_module_t *njs_stream_js_addon_modules[] = {
     &ngx_js_stream_module,
     NULL,
 };
+
+#if (NJS_HAVE_QUICKJS)
+
+static const JSCFunctionListEntry ngx_stream_qjs_ext_session[] = {
+    JS_CGETSET_DEF("[Symbol.toStringTag]", ngx_stream_qjs_ext_to_string_tag,
+                   NULL),
+    JS_CFUNC_MAGIC_DEF("allow", 1, ngx_stream_qjs_ext_done, NGX_OK),
+    JS_CFUNC_MAGIC_DEF("decline", 1, ngx_stream_qjs_ext_done, -NGX_DECLINED),
+    JS_CFUNC_MAGIC_DEF("deny", 1, ngx_stream_qjs_ext_done, -NGX_DONE),
+    JS_CFUNC_MAGIC_DEF("done", 1, ngx_stream_qjs_ext_done, NGX_OK),
+    JS_CFUNC_MAGIC_DEF("error", 1, ngx_stream_qjs_ext_log, NGX_LOG_ERR),
+    JS_CFUNC_MAGIC_DEF("log", 1, ngx_stream_qjs_ext_log, NGX_LOG_INFO),
+    JS_CFUNC_DEF("on", 2, ngx_stream_qjs_ext_on),
+    JS_CFUNC_DEF("off", 1, ngx_stream_qjs_ext_off),
+    JS_CGETSET_MAGIC_DEF("rawVariables", ngx_stream_qjs_ext_variables,
+                   NULL, NGX_JS_BUFFER),
+    JS_CGETSET_DEF("remoteAddress", ngx_stream_qjs_ext_remote_address, NULL),
+    JS_CFUNC_MAGIC_DEF("send", 2, ngx_stream_qjs_ext_send, NGX_JS_BOOL_UNSET),
+    JS_CFUNC_MAGIC_DEF("sendDownstream", 1, ngx_stream_qjs_ext_send,
+                       NGX_JS_BOOL_TRUE),
+    JS_CFUNC_MAGIC_DEF("sendUpstream", 1, ngx_stream_qjs_ext_send,
+                       NGX_JS_BOOL_FALSE),
+    JS_CFUNC_DEF("setReturnValue", 1, ngx_stream_qjs_ext_set_return_value),
+    JS_CGETSET_MAGIC_DEF("status", ngx_stream_qjs_ext_uint, NULL,
+                         offsetof(ngx_stream_session_t, status)),
+    JS_CGETSET_MAGIC_DEF("variables", ngx_stream_qjs_ext_variables,
+                         NULL, NGX_JS_STRING),
+    JS_CFUNC_MAGIC_DEF("warn", 1, ngx_stream_qjs_ext_log, NGX_LOG_WARN),
+};
+
+
+static const JSCFunctionListEntry ngx_stream_qjs_ext_periodic[] = {
+    JS_CGETSET_DEF("[Symbol.toStringTag]",
+                   ngx_stream_qjs_ext_periodic_to_string_tag, NULL),
+    JS_CGETSET_MAGIC_DEF("rawVariables", ngx_stream_qjs_ext_periodic_variables,
+                   NULL, NGX_JS_BUFFER),
+    JS_CGETSET_MAGIC_DEF("variables", ngx_stream_qjs_ext_periodic_variables,
+                         NULL, NGX_JS_STRING),
+};
+
+
+static const JSCFunctionListEntry ngx_stream_qjs_ext_flags[] = {
+    JS_CGETSET_MAGIC_DEF("from_upstream", ngx_stream_qjs_ext_flag, NULL,
+                         2),
+    JS_CGETSET_MAGIC_DEF("last", ngx_stream_qjs_ext_flag, NULL, 1),
+};
+
+
+static JSClassDef ngx_stream_qjs_session_class = {
+    "Session",
+    .finalizer = ngx_stream_qjs_session_finalizer,
+};
+
+
+static JSClassDef ngx_stream_qjs_periodic_class = {
+    "Periodic",
+    .finalizer = NULL,
+};
+
+
+static JSClassDef ngx_stream_qjs_flags_class = {
+    "Stream Flags",
+    .finalizer = NULL,
+};
+
+
+static JSClassDef ngx_stream_qjs_variables_class = {
+    "Variables",
+    .finalizer = NULL,
+    .exotic = & (JSClassExoticMethods) {
+        .get_own_property = ngx_stream_qjs_variables_own_property,
+        .set_property = ngx_stream_qjs_variables_set_property,
+        .define_own_property = ngx_stream_qjs_variables_define_own_property,
+    },
+};
+
+
+qjs_module_t *njs_stream_qjs_addon_modules[] = {
+    &ngx_qjs_ngx_module,
+    /*
+     * Shared addons should be in the same order and the same positions
+     * in all nginx modules.
+     */
+#ifdef NJS_HAVE_ZLIB
+    &qjs_zlib_module,
+#endif
+    NULL,
+};
+
+#endif
 
 
 static ngx_int_t
@@ -783,7 +949,6 @@ ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
 {
     ngx_int_t                  rc;
     ngx_chain_t               *out;
-    ngx_connection_t          *c;
     ngx_stream_js_ctx_t       *ctx;
     ngx_stream_js_srv_conf_t  *jscf;
 
@@ -792,10 +957,8 @@ ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
         return ngx_stream_next_filter(s, in, from_upstream);
     }
 
-    c = s->connection;
-
-    ngx_log_debug1(NGX_LOG_DEBUG_STREAM, c->log, 0, "stream js filter u:%ui",
-                   from_upstream);
+    ngx_log_debug1(NGX_LOG_DEBUG_STREAM, s->connection->log, 0,
+                   "stream js filter u:%ui", from_upstream);
 
     rc = ngx_stream_js_init_vm(s, ngx_stream_js_session_proto_id);
 
@@ -810,7 +973,7 @@ ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
     ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
 
     if (!ctx->filter) {
-        ngx_log_debug1(NGX_LOG_DEBUG_STREAM, c->log, 0,
+        ngx_log_debug1(NGX_LOG_DEBUG_STREAM, s->connection->log, 0,
                        "stream js filter call \"%V\"" , &jscf->filter);
 
         rc = ctx->engine->call((ngx_js_ctx_t *) ctx, &jscf->filter,
@@ -990,9 +1153,9 @@ ngx_stream_js_init_vm(ngx_stream_session_t *s, njs_int_t proto_id)
         return NGX_ERROR;
     }
 
-    ngx_log_debug2(NGX_LOG_DEBUG_STREAM, ctx->log, 0,
-                   "stream js vm clone: %p from: %p", ctx->engine,
-                   jscf->engine);
+    ngx_log_debug3(NGX_LOG_DEBUG_STREAM, ctx->log, 0,
+                   "stream js vm clone %s: %p from: %p", jscf->engine->name,
+                   ctx->engine, jscf->engine);
 
     cln = ngx_pool_cleanup_add(s->connection->pool, 0);
     if (cln == NULL) {
@@ -1806,6 +1969,922 @@ ngx_engine_njs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf,
 }
 
 
+#if (NJS_HAVE_QUICKJS)
+
+static JSValue
+ngx_stream_qjs_ext_to_string_tag(JSContext *cx, JSValueConst this_val)
+{
+    return JS_NewString(cx, "Stream Session");
+}
+
+
+static JSValue
+ngx_stream_qjs_ext_done(JSContext *cx, JSValueConst this_val, int argc,
+    JSValueConst *argv, int magic)
+{
+    ngx_int_t              status;
+    ngx_stream_js_ctx_t   *ctx;
+    ngx_stream_session_t  *s;
+
+    s = ngx_stream_qjs_session(this_val);
+    if (s == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a session object");
+    }
+
+    status = (ngx_int_t) magic;
+    status = -status;
+
+    if (status == NGX_DONE) {
+        status = NGX_STREAM_FORBIDDEN;
+    }
+
+    if (!JS_IsUndefined(argv[0])) {
+        if (ngx_qjs_integer(cx, argv[0], &status) != NGX_OK) {
+            return JS_EXCEPTION;
+        }
+
+        if (status < NGX_ABORT || status > NGX_STREAM_SERVICE_UNAVAILABLE) {
+            return JS_ThrowInternalError(cx, "code is out of range");
+        }
+    }
+
+    ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
+
+    if (ctx->filter) {
+        return JS_ThrowInternalError(cx, "should not be called while "
+                                     "filtering");
+    }
+
+    ngx_log_debug1(NGX_LOG_DEBUG_STREAM, s->connection->log, 0,
+                   "stream js set status: %i", status);
+
+    ctx->status = status;
+
+    ngx_stream_js_drop_events(ctx);
+
+    return JS_UNDEFINED;
+}
+
+
+static JSValue
+ngx_stream_qjs_ext_log(JSContext *cx, JSValueConst this_val, int argc,
+    JSValueConst *argv, int level)
+{
+    int                    n;
+    const char            *msg;
+    ngx_stream_session_t  *s;
+
+    s = ngx_stream_qjs_session(this_val);
+    if (s == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a session object");
+    }
+
+    for (n = 0; n < argc; n++) {
+        msg = JS_ToCString(cx, argv[n]);
+
+        ngx_js_logger(s->connection, level, (u_char *) msg, ngx_strlen(msg));
+
+        JS_FreeCString(cx, msg);
+    }
+
+    return JS_UNDEFINED;
+}
+
+
+static const ngx_stream_qjs_event_t *
+ngx_stream_qjs_event(ngx_stream_session_t *s, JSContext *cx, ngx_str_t *event)
+{
+    ngx_uint_t            i, n, type;
+    ngx_stream_js_ctx_t  *ctx;
+
+    static const ngx_stream_qjs_event_t events[] = {
+        {
+            ngx_string("upload"),
+            NGX_JS_STRING,
+            NGX_JS_EVENT_UPLOAD,
+        },
+
+        {
+            ngx_string("download"),
+            NGX_JS_STRING,
+            NGX_JS_EVENT_DOWNLOAD,
+        },
+
+        {
+            ngx_string("upstream"),
+            NGX_JS_BUFFER,
+            NGX_JS_EVENT_UPLOAD,
+        },
+
+        {
+            ngx_string("downstream"),
+            NGX_JS_BUFFER,
+            NGX_JS_EVENT_DOWNLOAD,
+        },
+    };
+
+    ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
+
+    i = 0;
+    n = sizeof(events) / sizeof(events[0]);
+
+    while (i < n) {
+        if (event->len == events[i].name.len
+            && ngx_memcmp(event->data, events[i].name.data, event->len)
+               == 0)
+        {
+            break;
+        }
+
+        i++;
+    }
+
+    if (i == n) {
+        (void) JS_ThrowInternalError(cx, "unknown event \"%*s\"",
+                                     (int) event->len, event->data);
+        return NULL;
+    }
+
+    ctx->events[events[i].id].data_type = events[i].data_type;
+
+    for (n = 0; n < NGX_JS_EVENT_MAX; n++) {
+        type = ctx->events[n].data_type;
+        if (type != NGX_JS_UNSET && type != events[i].data_type) {
+            (void) JS_ThrowInternalError(cx, "mixing string and buffer"
+                                         " events is not allowed");
+            return NULL;
+        }
+    }
+
+    return &events[i];
+}
+
+
+static JSValue
+ngx_stream_qjs_ext_on(JSContext *cx, JSValueConst this_val, int argc,
+    JSValueConst *argv)
+{
+    ngx_str_t                      name;
+    ngx_stream_js_ctx_t           *ctx;
+    ngx_stream_qjs_session_t      *ses;
+    const ngx_stream_qjs_event_t  *e;
+
+    ses = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_STREAM_SESSION);
+    if (ses == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a session object");
+    }
+
+    ctx = ngx_stream_get_module_ctx(ses->session, ngx_stream_js_module);
+
+    if (ngx_qjs_string(ctx->engine, argv[0], &name) != NGX_OK) {
+        return JS_EXCEPTION;
+    }
+
+    e = ngx_stream_qjs_event(ses->session, cx, &name);
+    if (e == NULL) {
+        return JS_EXCEPTION;
+    }
+
+    if (JS_IsFunction(cx, ngx_qjs_arg(ctx->events[e->id].function))) {
+        return JS_ThrowInternalError(cx, "event handler \"%s\" is already set",
+                                     name.data);
+    }
+
+    if (!JS_IsFunction(cx, argv[1])) {
+        return JS_ThrowTypeError(cx, "callback is not a function");
+    }
+
+    ngx_qjs_arg(ctx->events[e->id].function) = argv[1];
+
+    JS_FreeValue(cx, ses->callbacks[e->id]);
+    ses->callbacks[e->id] = JS_DupValue(cx, argv[1]);
+
+    return JS_UNDEFINED;
+}
+
+
+static JSValue
+ngx_stream_qjs_ext_off(JSContext *cx, JSValueConst this_val, int argc,
+    JSValueConst *argv)
+{
+    ngx_str_t                      name;
+    ngx_stream_js_ctx_t           *ctx;
+    ngx_stream_session_t          *s;
+    const ngx_stream_qjs_event_t  *e;
+
+    s = ngx_stream_qjs_session(this_val);
+    if (s == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a session object");
+    }
+
+    ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
+
+    if (ngx_qjs_string(ctx->engine, argv[0], &name) != NGX_OK) {
+        return JS_EXCEPTION;
+    }
+
+    e = ngx_stream_qjs_event(s, cx, &name);
+    if (e == NULL) {
+        return JS_EXCEPTION;
+    }
+
+    ngx_qjs_arg(ctx->events[e->id].function) = JS_NULL;
+    ctx->events[e->id].data_type = NGX_JS_UNSET;
+
+    return JS_UNDEFINED;
+}
+
+
+static JSValue
+ngx_stream_qjs_ext_periodic_to_string_tag(JSContext *cx,
+    JSValueConst this_val)
+{
+    return JS_NewString(cx, "PeriodicSession");
+}
+
+
+static JSValue
+ngx_stream_qjs_ext_periodic_variables(JSContext *cx,
+    JSValueConst this_val, int type)
+{
+    JSValue                    obj;
+    ngx_stream_qjs_session_t  *ses;
+
+    ses = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_STREAM_PERIODIC);
+    if (ses == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a periodic object");
+    }
+
+    obj = JS_NewObjectProtoClass(cx, JS_NULL, NGX_QJS_CLASS_ID_STREAM_VARS);
+
+    /*
+     * Using lowest bit of the pointer to store the buffer type.
+     */
+    type = (type == NGX_JS_BUFFER) ? 1 : 0;
+    JS_SetOpaque(obj, (void *) ((uintptr_t) ses->session | (uintptr_t) type));
+
+    return obj;
+}
+
+
+static JSValue
+ngx_stream_qjs_ext_remote_address(JSContext *cx, JSValueConst this_val)
+{
+    ngx_connection_t      *c;
+    ngx_stream_session_t  *s;
+
+    s = ngx_stream_qjs_session(this_val);
+    if (s == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a session object");
+    }
+
+    c = s->connection;
+
+    return qjs_string_create(cx, c->addr_text.data, c->addr_text.len);
+}
+
+
+static JSValue
+ngx_stream_qjs_ext_send(JSContext *cx, JSValueConst this_val, int argc,
+    JSValueConst *argv, int from_upstream)
+{
+    JSValue                val;
+    unsigned               last_buf, flush;
+    ngx_str_t              buffer;
+    ngx_buf_t             *b;
+    ngx_chain_t           *cl;
+    ngx_connection_t      *c;
+    ngx_stream_js_ctx_t   *ctx;
+    ngx_stream_session_t  *s;
+
+    s = ngx_stream_qjs_session(this_val);
+    if (s == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a session object");
+    }
+
+    c = s->connection;
+
+    ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
+
+    if (!ctx->filter) {
+        return JS_ThrowInternalError(cx, "cannot send buffer in this handler");
+    }
+
+    if (ngx_qjs_string(ctx->engine, argv[0], &buffer) != NGX_OK) {
+        return JS_EXCEPTION;
+    }
+
+    /*
+     * ctx->buf != NULL when s.send() is called while processing incoming
+     * data chunks, otherwise s.send() is called asynchronously
+     */
+
+    if (ctx->buf != NULL) {
+        flush = ctx->buf->flush;
+        last_buf = ctx->buf->last_buf;
+
+    } else {
+        flush = 0;
+        last_buf = 0;
+    }
+
+    if (JS_IsObject(argv[1])) {
+        val = JS_GetPropertyStr(cx, argv[1], "flush");
+        if (JS_IsException(val)) {
+            return JS_EXCEPTION;
+        }
+
+        if (!JS_IsUndefined(val)) {
+            flush = JS_ToBool(cx, val);
+            JS_FreeValue(cx, val);
+        }
+
+        val = JS_GetPropertyStr(cx, argv[1], "last");
+        if (JS_IsException(val)) {
+            return JS_EXCEPTION;
+        }
+
+        if (!JS_IsUndefined(val)) {
+            last_buf = JS_ToBool(cx, val);
+            JS_FreeValue(cx, val);
+        }
+
+        if (from_upstream == NGX_JS_BOOL_UNSET) {
+            val = JS_GetPropertyStr(cx, argv[1], "from_upstream");
+            if (JS_IsException(val)) {
+                return JS_EXCEPTION;
+            }
+
+            if (!JS_IsUndefined(val)) {
+                from_upstream = JS_ToBool(cx, val);
+                JS_FreeValue(cx, val);
+            }
+
+            if (from_upstream == NGX_JS_BOOL_UNSET && ctx->buf == NULL) {
+                return JS_ThrowInternalError(cx, "from_upstream flag is "
+                                             "expected when called "
+                                             "asynchronously");
+            }
+        }
+    }
+
+    cl = ngx_chain_get_free_buf(c->pool, &ctx->free);
+    if (cl == NULL) {
+        return JS_ThrowInternalError(cx, "memory error");
+    }
+
+    b = cl->buf;
+
+    b->flush = flush;
+    b->last_buf = last_buf;
+
+    b->memory = (buffer.len ? 1 : 0);
+    b->sync = (buffer.len ? 0 : 1);
+    b->tag = (ngx_buf_tag_t) &ngx_stream_js_module;
+
+    b->start = buffer.data;
+    b->end = buffer.data + buffer.len;
+
+    b->pos = b->start;
+    b->last = b->end;
+
+    if (from_upstream == NGX_JS_BOOL_UNSET) {
+        *ctx->last_out = cl;
+        ctx->last_out = &cl->next;
+
+    } else {
+
+        if (ngx_stream_js_next_filter(s, ctx, cl, from_upstream) == NGX_ERROR) {
+            return JS_ThrowInternalError(cx, "ngx_stream_js_next_filter() "
+                                         "failed");
+        }
+    }
+
+    return JS_UNDEFINED;
+}
+
+
+static JSValue
+ngx_stream_qjs_ext_set_return_value(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv)
+{
+    ngx_js_ctx_t          *ctx;
+    ngx_stream_session_t  *s;
+
+    s = ngx_stream_qjs_session(this_val);
+    if (s == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a session object");
+    }
+
+    ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
+
+    JS_FreeValue(cx, ngx_qjs_arg(ctx->retval));
+    ngx_qjs_arg(ctx->retval) = JS_DupValue(cx, argv[0]);
+
+    return JS_UNDEFINED;
+}
+
+
+static JSValue
+ngx_stream_qjs_ext_variables(JSContext *cx, JSValueConst this_val, int type)
+{
+    JSValue                obj;
+    ngx_stream_session_t  *s;
+
+    s = ngx_stream_qjs_session(this_val);
+    if (s == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a session object");
+    }
+
+    obj = JS_NewObjectProtoClass(cx, JS_NULL, NGX_QJS_CLASS_ID_STREAM_VARS);
+
+    /*
+     * Using lowest bit of the pointer to store the buffer type.
+     */
+    type = (type == NGX_JS_BUFFER) ? 1 : 0;
+    JS_SetOpaque(obj, (void *) ((uintptr_t) s | (uintptr_t) type));
+
+    return obj;
+}
+
+
+static JSValue
+ngx_stream_qjs_ext_uint(JSContext *cx, JSValueConst this_val, int offset)
+{
+    ngx_uint_t            *field;
+    ngx_stream_session_t  *s;
+
+    s = ngx_stream_qjs_session(this_val);
+    if (s == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a session object");
+    }
+
+    field = (ngx_uint_t *) ((u_char *) s + offset);
+
+    return JS_NewUint32(cx, *field);
+}
+
+
+static JSValue
+ngx_stream_qjs_ext_flag(JSContext *cx, JSValueConst this_val, int mask)
+{
+    uintptr_t  flags;
+
+    flags = (uintptr_t) JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_STREAM_FLAGS);
+
+    return JS_NewBool(cx, flags & mask);
+}
+
+
+static int
+ngx_stream_qjs_variables_own_property(JSContext *cx,
+    JSPropertyDescriptor *pdesc, JSValueConst obj, JSAtom prop)
+{
+    uint32_t                      buffer_type;
+    ngx_str_t                     name;
+    ngx_uint_t                    key;
+    ngx_stream_session_t         *s;
+    ngx_stream_variable_value_t  *vv;
+
+    s = JS_GetOpaque(obj, NGX_QJS_CLASS_ID_STREAM_VARS);
+
+    buffer_type = ((uintptr_t) s & 1) ? NGX_JS_BUFFER : NGX_JS_STRING;
+    s = (ngx_stream_session_t *) ((uintptr_t) s & ~(uintptr_t) 1);
+
+    if (s == NULL) {
+        (void) JS_ThrowInternalError(cx, "\"this\" is not a session object");
+        return -1;
+    }
+
+    name.data = (u_char *) JS_AtomToCString(cx, prop);
+    if (name.data == NULL) {
+        return -1;
+    }
+
+    name.len = ngx_strlen(name.data);
+
+    key = ngx_hash_strlow(name.data, name.data, name.len);
+
+    vv = ngx_stream_get_variable(s, &name, key);
+    JS_FreeCString(cx, (char *) name.data);
+    if (vv == NULL || vv->not_found) {
+        return 0;
+    }
+
+    if (pdesc != NULL) {
+        pdesc->flags = JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE;
+        pdesc->getter = JS_UNDEFINED;
+        pdesc->setter = JS_UNDEFINED;
+        pdesc->value = ngx_qjs_prop(cx, buffer_type, vv->data, vv->len);
+    }
+
+    return 1;
+}
+
+
+static int
+ngx_stream_qjs_variables_set_property(JSContext *cx, JSValueConst obj,
+    JSAtom prop, JSValueConst value, JSValueConst receiver, int flags)
+{
+    ngx_str_t                     name, val;
+    ngx_uint_t                    key;
+    ngx_js_ctx_t                 *ctx;
+    ngx_stream_session_t         *s;
+    ngx_stream_variable_t        *v;
+    ngx_stream_variable_value_t  *vv;
+    ngx_stream_core_main_conf_t  *cmcf;
+
+    s = JS_GetOpaque(obj, NGX_QJS_CLASS_ID_STREAM_VARS);
+
+    s = (ngx_stream_session_t *) ((uintptr_t) s & ~(uintptr_t) 1);
+
+    if (s == NULL) {
+        (void) JS_ThrowInternalError(cx, "\"this\" is not a session object");
+        return -1;
+    }
+
+    name.data = (u_char *) JS_AtomToCString(cx, prop);
+    if (name.data == NULL) {
+        return -1;
+    }
+
+    name.len = ngx_strlen(name.data);
+
+    key = ngx_hash_strlow(name.data, name.data, name.len);
+
+    cmcf = ngx_stream_get_module_main_conf(s, ngx_stream_core_module);
+
+    v = ngx_hash_find(&cmcf->variables_hash, key, name.data, name.len);
+    JS_FreeCString(cx, (char *) name.data);
+
+    if (v == NULL) {
+        (void) JS_ThrowInternalError(cx, "variable not found");
+        return -1;
+    }
+
+    ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
+
+    if (ngx_qjs_string(ctx->engine, value, &val) != NGX_OK) {
+        return -1;
+    }
+
+    if (v->set_handler != NULL) {
+        vv = ngx_pcalloc(s->connection->pool,
+                         sizeof(ngx_stream_variable_value_t));
+        if (vv == NULL) {
+            (void) JS_ThrowOutOfMemory(cx);
+            return -1;
+        }
+
+        vv->valid = 1;
+        vv->not_found = 0;
+        vv->data = val.data;
+        vv->len = val.len;
+
+        v->set_handler(s, vv, v->data);
+
+        return 1;
+    }
+
+    if (!(v->flags & NGX_STREAM_VAR_INDEXED)) {
+        (void) JS_ThrowTypeError(cx, "variable is not writable");
+        return -1;
+    }
+
+    vv = &s->variables[v->index];
+
+    vv->valid = 1;
+    vv->not_found = 0;
+
+    vv->data = ngx_pnalloc(s->connection->pool, val.len);
+    if (vv->data == NULL) {
+        vv->valid = 0;
+        (void) JS_ThrowOutOfMemory(cx);
+        return -1;
+    }
+
+    vv->len = val.len;
+    ngx_memcpy(vv->data, val.data, vv->len);
+
+    return 1;
+}
+
+
+static int
+ngx_stream_qjs_variables_define_own_property(JSContext *cx,
+    JSValueConst obj, JSAtom prop, JSValueConst value, JSValueConst getter,
+    JSValueConst setter, int flags)
+{
+    if (!JS_IsUndefined(setter) || !JS_IsUndefined(getter)) {
+        (void) JS_ThrowTypeError(cx, "cannot define getter or setter");
+        return -1;
+    }
+
+    return ngx_stream_qjs_variables_set_property(cx, obj, prop, value, obj,
+                                                 flags);
+}
+
+
+static ngx_int_t
+ngx_stream_qjs_run_event(ngx_stream_session_t *s, ngx_stream_js_ctx_t *ctx,
+    ngx_stream_js_ev_t *event, ngx_uint_t from_upstream)
+{
+    size_t             len;
+    u_char            *p;
+    JSContext         *cx;
+    ngx_int_t          rc;
+    ngx_str_t          exception;
+    ngx_buf_t         *b;
+    uintptr_t          flags;
+    ngx_connection_t  *c;
+    JSValue            argv[2];
+
+    cx = ctx->engine->u.qjs.ctx;
+
+    if (!JS_IsFunction(cx, ngx_qjs_arg(event->function))) {
+        return NGX_OK;
+    }
+
+    c = s->connection;
+    b = ctx->filter ? ctx->buf : c->buffer;
+
+    len = b ? b->last - b->pos : 0;
+
+    p = ngx_pnalloc(c->pool, len);
+    if (p == NULL) {
+        (void) JS_ThrowOutOfMemory(cx);
+        goto error;
+    }
+
+    if (len) {
+        ngx_memcpy(p, b->pos, len);
+    }
+
+    argv[0] = ngx_qjs_prop(cx, event->data_type, p, len);
+    if (JS_IsException(argv[0])) {
+        goto error;
+    }
+
+    argv[1] = JS_NewObjectClass(cx, NGX_QJS_CLASS_ID_STREAM_FLAGS);
+    if (JS_IsException(argv[1])) {
+        JS_FreeValue(cx, argv[0]);
+        goto error;
+    }
+
+    flags = from_upstream << 1 | (uintptr_t) (b && b->last_buf);
+
+    JS_SetOpaque(argv[1], (void *) flags);
+
+    rc = ngx_qjs_call((ngx_js_ctx_t *) ctx, ngx_qjs_arg(event->function),
+                      &argv[0], 2);
+    JS_FreeValue(cx, argv[0]);
+    JS_FreeValue(cx, argv[1]);
+
+    if (rc == NGX_ERROR) {
+error:
+        ngx_qjs_exception(ctx->engine, &exception);
+
+        ngx_log_error(NGX_LOG_ERR, c->log, 0, "js exception: %V",
+                      &exception);
+
+        return NGX_ERROR;
+    }
+
+    return NGX_OK;
+}
+
+
+static ngx_int_t
+ngx_stream_qjs_body_filter(ngx_stream_session_t *s, ngx_stream_js_ctx_t *ctx,
+    ngx_chain_t *in, ngx_uint_t from_upstream)
+{
+    ngx_int_t            rc;
+    JSContext           *cx;
+    ngx_chain_t         *cl;
+    ngx_stream_js_ev_t  *event;
+
+    cx = ctx->engine->u.qjs.ctx;
+
+    while (in != NULL) {
+        ctx->buf = in->buf;
+
+        event = ngx_stream_event(from_upstream);
+
+        if (JS_IsFunction(cx, ngx_qjs_arg(event->function))) {
+            rc = ngx_stream_qjs_run_event(s, ctx, event, from_upstream);
+            if (rc != NGX_OK) {
+                return NGX_ERROR;
+            }
+
+            ctx->buf->pos = ctx->buf->last;
+
+        } else {
+            cl = ngx_alloc_chain_link(s->connection->pool);
+            if (cl == NULL) {
+                return NGX_ERROR;
+            }
+
+            cl->buf = ctx->buf;
+
+            *ctx->last_out = cl;
+            ctx->last_out = &cl->next;
+        }
+
+        in = in->next;
+    }
+
+    return NGX_OK;
+}
+
+
+static ngx_stream_session_t *
+ngx_stream_qjs_session(JSValueConst val)
+{
+    ngx_stream_qjs_session_t  *ses;
+
+    ses = JS_GetOpaque(val, NGX_QJS_CLASS_ID_STREAM_SESSION);
+    if (ses == NULL) {
+        return NULL;
+    }
+
+    return ses->session;
+}
+
+
+static JSValue
+ngx_stream_qjs_session_make(JSContext *cx, ngx_int_t proto_id,
+    ngx_stream_session_t *s)
+{
+    JSValue                    session;
+    ngx_uint_t                 i;
+    ngx_stream_qjs_session_t  *ses;
+
+    session = JS_NewObjectClass(cx, proto_id);
+    if (JS_IsException(session)) {
+        return JS_EXCEPTION;
+    }
+
+    ses = js_malloc(cx, sizeof(ngx_stream_qjs_session_t));
+    if (ses == NULL) {
+        return JS_ThrowOutOfMemory(cx);
+    }
+
+    ses->session = s;
+
+    for (i = 0; i < NGX_JS_EVENT_MAX; i++) {
+        ses->callbacks[i] = JS_UNDEFINED;
+    }
+
+    JS_SetOpaque(session, ses);
+
+    return session;
+}
+
+
+static void
+ngx_stream_qjs_session_finalizer(JSRuntime *rt, JSValue val)
+{
+    ngx_uint_t                 i;
+    ngx_stream_qjs_session_t  *ses;
+
+    ses = JS_GetOpaque(val, NGX_QJS_CLASS_ID_STREAM_SESSION);
+    if (ses == NULL) {
+        return;
+    }
+
+    for (i = 0; i < NGX_JS_EVENT_MAX; i++) {
+        JS_FreeValueRT(rt, ses->callbacks[i]);
+    }
+
+    js_free_rt(rt, ses);
+}
+
+
+static ngx_engine_t *
+ngx_engine_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf,
+    njs_int_t proto_id, void *external)
+{
+    JSValue               proto;
+    JSContext            *cx;
+    ngx_engine_t         *engine;
+    ngx_stream_js_ctx_t  *sctx;
+
+    engine = ngx_qjs_clone(ctx, cf, external);
+    if (engine == NULL) {
+        return NULL;
+    }
+
+    cx = engine->u.qjs.ctx;
+
+    if (!JS_IsRegisteredClass(JS_GetRuntime(cx),
+                              NGX_QJS_CLASS_ID_STREAM_SESSION))
+    {
+        if (JS_NewClass(JS_GetRuntime(cx), NGX_QJS_CLASS_ID_STREAM_SESSION,
+                        &ngx_stream_qjs_session_class) < 0)
+        {
+            return NULL;
+        }
+
+        proto = JS_NewObject(cx);
+        if (JS_IsException(proto)) {
+            return NULL;
+        }
+
+        JS_SetPropertyFunctionList(cx, proto, ngx_stream_qjs_ext_session,
+                                   njs_nitems(ngx_stream_qjs_ext_session));
+
+        JS_SetClassProto(cx, NGX_QJS_CLASS_ID_STREAM_SESSION, proto);
+
+        if (JS_NewClass(JS_GetRuntime(cx), NGX_QJS_CLASS_ID_STREAM_PERIODIC,
+                        &ngx_stream_qjs_periodic_class) < 0)
+        {
+            return NULL;
+        }
+
+        proto = JS_NewObject(cx);
+        if (JS_IsException(proto)) {
+            return NULL;
+        }
+
+        JS_SetPropertyFunctionList(cx, proto, ngx_stream_qjs_ext_periodic,
+                                   njs_nitems(ngx_stream_qjs_ext_periodic));
+
+        JS_SetClassProto(cx, NGX_QJS_CLASS_ID_STREAM_PERIODIC, proto);
+
+        if (JS_NewClass(JS_GetRuntime(cx), NGX_QJS_CLASS_ID_STREAM_FLAGS,
+                        &ngx_stream_qjs_flags_class) < 0)
+        {
+            return NULL;
+        }
+
+        proto = JS_NewObject(cx);
+        if (JS_IsException(proto)) {
+            return NULL;
+        }
+
+        JS_SetPropertyFunctionList(cx, proto, ngx_stream_qjs_ext_flags,
+                                   njs_nitems(ngx_stream_qjs_ext_flags));
+
+        JS_SetClassProto(cx, NGX_QJS_CLASS_ID_STREAM_FLAGS, proto);
+
+        if (JS_NewClass(JS_GetRuntime(cx), NGX_QJS_CLASS_ID_STREAM_VARS,
+                        &ngx_stream_qjs_variables_class) < 0)
+        {
+            return NULL;
+        }
+    }
+
+    sctx = (ngx_stream_js_ctx_t *) ctx;
+    sctx->run_event = ngx_stream_qjs_run_event;
+    sctx->body_filter = ngx_stream_qjs_body_filter;
+
+    if (proto_id == ngx_stream_js_session_proto_id) {
+        proto_id = NGX_QJS_CLASS_ID_STREAM_SESSION;
+
+    } else if (proto_id == ngx_stream_js_periodic_session_proto_id) {
+        proto_id = NGX_QJS_CLASS_ID_STREAM_PERIODIC;
+    }
+
+    ngx_qjs_arg(ctx->args[0]) = ngx_stream_qjs_session_make(cx, proto_id,
+                                                            external);
+    if (JS_IsException(ngx_qjs_arg(ctx->args[0]))) {
+        return NULL;
+    }
+
+    return engine;
+}
+
+
+static void
+ngx_stream_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
+    ngx_js_loc_conf_t *conf)
+{
+    ngx_uint_t                 i;
+    JSValue                    cb;
+    ngx_stream_qjs_session_t  *ses;
+
+    if (ctx != NULL) {
+        /*
+         * explicitly freeing the callback functions
+         * to avoid circular references with the session object.
+         */
+        ses = JS_GetOpaque(ngx_qjs_arg(ctx->args[0]),
+                           NGX_QJS_CLASS_ID_STREAM_SESSION);
+        if (ses != NULL) {
+            for (i = 0; i < NGX_JS_EVENT_MAX; i++) {
+                cb = ses->callbacks[i];
+                ses->callbacks[i] = JS_UNDEFINED;
+                JS_FreeValue(e->u.qjs.ctx, cb);
+            }
+        }
+    }
+
+    ngx_engine_qjs_destroy(e, ctx, conf);
+}
+
+#endif
+
+
 static ngx_int_t
 ngx_stream_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf)
 {
@@ -1816,14 +2895,23 @@ ngx_stream_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf)
 
     options.engine = conf->type;
 
-    if (conf->type == NGX_ENGINE_NJS) {
-        jmcf = ngx_stream_conf_get_module_main_conf(cf, ngx_stream_js_module);
-        ngx_stream_js_uptr[NGX_JS_MAIN_CONF_INDEX] = (uintptr_t) jmcf;
+    jmcf = ngx_stream_conf_get_module_main_conf(cf, ngx_stream_js_module);
+    ngx_stream_js_uptr[NGX_JS_MAIN_CONF_INDEX] = (uintptr_t) jmcf;
 
+    if (conf->type == NGX_ENGINE_NJS) {
         options.u.njs.metas = &ngx_stream_js_metas;
         options.u.njs.addons = njs_stream_js_addon_modules;
         options.clone = ngx_engine_njs_clone;
     }
+
+#if (NJS_HAVE_QUICKJS)
+    else if (conf->type == NGX_ENGINE_QJS) {
+        options.u.qjs.metas = ngx_stream_js_uptr;
+        options.u.qjs.addons = njs_stream_qjs_addon_modules;
+        options.clone = ngx_engine_qjs_clone;
+        options.destroy = ngx_stream_qjs_destroy;
+    }
+#endif
 
     return ngx_js_init_conf_vm(cf, conf, &options);
 }
@@ -2392,7 +3480,6 @@ ngx_stream_js_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_stream_js_srv_conf_t *prev = parent;
     ngx_stream_js_srv_conf_t *conf = child;
 
-    ngx_conf_merge_uint_value(conf->type, prev->type, NGX_ENGINE_NJS);
     ngx_conf_merge_str_value(conf->access, prev->access, "");
     ngx_conf_merge_str_value(conf->preread, prev->preread, "");
     ngx_conf_merge_str_value(conf->filter, prev->filter, "");

@@ -84,3 +84,68 @@ jobs:
           TEST_NGINX_BINARY: "${{ github.workspace }}/nginx-source/objs/nginx"
           TEST_NGINX_GLOBALS: "load_module ${{ github.workspace }}/nginx-source/objs/ngx_http_js_module.so; load_module ${{ github.workspace }}/nginx-source/objs/ngx_stream_js_module.so;"
           TEST_NGINX_VERBOSE: 1
+
+      - name: Create LSAN suppression file
+        run: |
+          cat << EOF > lsan_suppressions.txt
+          leak:ngx_event_process_init
+          EOF
+
+      - name: Configure and build nginx and njs modules with quickjs, static modules
+        run: |
+          cd nginx-source
+          $NGINX_CONFIGURE_CMD --with-cc-opt="$CC_OPT -I${{ github.workspace }}/quickjs -fsanitize=address" --with-ld-opt="$LD_OPT -L${{ github.workspace }}/quickjs -fsanitize=address" --add-module=../nginx || cat objs/autoconf.err
+          $MAKE_UTILITY -j$(nproc)
+
+      - name: Test njs modules, static modules
+        run: |
+          ulimit -c unlimited
+          prove -v -j$(nproc) -Inginx-tests/lib --state=save nginx/t . || prove -v -Inginx-tests/lib --state=failed
+        env:
+          TEST_NGINX_BINARY: "${{ github.workspace }}/nginx-source/objs/nginx"
+          TEST_NGINX_VERBOSE: 1
+          ASAN_OPTIONS: "detect_odr_violation=0:report_globals=0"
+          LSAN_OPTIONS: "suppressions=${{ github.workspace }}/lsan_suppressions.txt"
+
+      - name: Test njs modules (js_engine qjs), static modules
+        run: |
+          ulimit -c unlimited
+          prove -v -j$(nproc) -Inginx-tests/lib --state=save nginx/t . || prove -v -Inginx-tests/lib --state=failed
+        env:
+          TEST_NGINX_BINARY: "${{ github.workspace }}/nginx-source/objs/nginx"
+          TEST_NGINX_GLOBALS_HTTP: "js_engine qjs;"
+          TEST_NGINX_GLOBALS_STREAM: "js_engine qjs;"
+          TEST_NGINX_VERBOSE: 1
+          ASAN_OPTIONS: "detect_odr_violation=0:report_globals=0"
+          LSAN_OPTIONS: "suppressions=${{ github.workspace }}/lsan_suppressions.txt"
+
+      - name: Configure and build nginx and njs modules with quickjs, dynamic modules
+        run: |
+          cd nginx-source
+          $NGINX_CONFIGURE_CMD --with-debug --with-cc-opt="$CC_OPT -I${{ github.workspace }}/quickjs -fsanitize=address" --with-ld-opt="$LD_OPT -L${{ github.workspace }}/quickjs -fsanitize=address" --add-dynamic-module=../nginx || cat objs/autoconf.err
+          $MAKE_UTILITY -j$(nproc) modules
+          $MAKE_UTILITY -j$(nproc)
+
+      - name: Test njs modules, dynamic modules
+        run: |
+          ulimit -c unlimited
+          prove -v -j$(nproc) -Inginx-tests/lib --state=save nginx/t . || prove -v -Inginx-tests/lib --state=failed
+        env:
+          TEST_NGINX_BINARY: "${{ github.workspace }}/nginx-source/objs/nginx"
+          TEST_NGINX_GLOBALS: "load_module ${{ github.workspace }}/nginx-source/objs/ngx_http_js_module.so; load_module ${{ github.workspace }}/nginx-source/objs/ngx_stream_js_module.so;"
+          TEST_NGINX_VERBOSE: 1
+          ASAN_OPTIONS: "detect_odr_violation=0:report_globals=0:fast_unwind_on_malloc=0"
+          LSAN_OPTIONS: "suppressions=${{ github.workspace }}/lsan_suppressions.txt"
+
+      - name: Test njs modules (js_engine qjs), dynamic modules
+        run: |
+          ulimit -c unlimited
+          prove -v -j$(nproc) -Inginx-tests/lib --state=save nginx/t . || prove -v -Inginx-tests/lib --state=failed
+        env:
+          TEST_NGINX_BINARY: "${{ github.workspace }}/nginx-source/objs/nginx"
+          TEST_NGINX_GLOBALS: "load_module ${{ github.workspace }}/nginx-source/objs/ngx_stream_js_module.so; load_module ${{ github.workspace }}/nginx-source/objs/ngx_http_js_module.so;"
+          TEST_NGINX_GLOBALS_HTTP: "js_engine qjs;"
+          TEST_NGINX_GLOBALS_STREAM: "js_engine qjs;"
+          TEST_NGINX_VERBOSE: 1
+          ASAN_OPTIONS: "detect_odr_violation=0:report_globals=0:fast_unwind_on_malloc=0"
+          LSAN_OPTIONS: "suppressions=${{ github.workspace }}/lsan_suppressions.txt"

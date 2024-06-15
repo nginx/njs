@@ -41,6 +41,10 @@ http {
         listen       127.0.0.1:8080;
         server_name  localhost;
 
+        location /engine {
+            js_content test.engine;
+        }
+
         location /dump {
             js_content test.dump;
         }
@@ -74,6 +78,10 @@ http {
 EOF
 
 $t->write_file('test.js', <<EOF);
+    function engine(r) {
+        r.return(200, njs.engine);
+    }
+
     function l(r, method) {
         const data = Buffer.from(r.args.data, 'base64');
         const object = JSON.parse(data);
@@ -116,13 +124,15 @@ $t->write_file('test.js', <<EOF);
         l(r, 'warn');
     }
 
-    export default {dump, error, info, log, time, time_test, warn};
+    export default {engine, dump, error, info, log, time, time_test, warn};
 
 EOF
 
 $t->try_run('no njs console')->plan(7);
 
 ###############################################################################
+
+my $engine = http_get('/engine');
 
 http_get('/dump?data=eyJhIjpbMiwzXX0');
 http_get('/error?data=IldBS0Ei');
@@ -136,8 +146,16 @@ $t->stop();
 
 like($t->read_file('error.log'), qr/\[error\].*js: WAKA/, 'console.error');
 like($t->read_file('error.log'), qr/\[info\].*js: BAR/, 'console.info');
+
+SKIP: {
+	skip "QuickJS has no console.dump() method.", 1
+		if $engine =~ /QuickJS$/m;
+
 like($t->read_file('error.log'), qr/\[info\].*js: \{a:\['B','C'\]\}/,
 	'console.log with object');
+
+}
+
 like($t->read_file('error.log'), qr/\[warn\].*js: FOO/, 'console.warn');
 like($t->read_file('error.log'), qr/\[info\].*js: foo: \d+\.\d\d\d\d\d\dms/,
 	'console.time foo');
