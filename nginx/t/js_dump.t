@@ -42,6 +42,10 @@ http {
         listen       127.0.0.1:8080;
         server_name  localhost;
 
+        location /engine {
+            js_content test.engine;
+        }
+
         location /dump {
             js_content test.dump;
         }
@@ -63,6 +67,10 @@ http {
 EOF
 
 $t->write_file('test.js', <<EOF);
+    function engine(r) {
+        r.return(200, njs.engine);
+    }
+
     function dump(r) {
         r.headersOut.baz = 'bar';
         r.return(200, njs.dump(r));
@@ -80,7 +88,7 @@ $t->write_file('test.js', <<EOF);
         });
     }
 
-    export default {dump, stringify, stringify_subrequest};
+    export default {engine, dump, stringify, stringify_subrequest};
 
 EOF
 
@@ -88,12 +96,22 @@ $t->try_run('no njs dump')->plan(3);
 
 ###############################################################################
 
+SKIP: {
+	skip "QuickJS has no njs.dump() method.", 1
+		if http_get('/engine') =~ /QuickJS$/m;
+
 like(http(
 	'GET /dump?v=1&t=x HTTP/1.0' . CRLF
 	. 'Foo: bar' . CRLF
 	. 'Foo2: bar2' . CRLF
 	. 'Host: localhost' . CRLF . CRLF
 ), qr/method:'GET'/, 'njs.dump(r)');
+
+}
+
+TODO: {
+	local $TODO = 'in QuickJS these are non-enumerable getter/setter props'
+		if http_get('/engine') =~ /^(QuickJS)$/m;
 
 like(http(
 	'GET /stringify?v=1&t=x HTTP/1.0' . CRLF
@@ -106,5 +124,7 @@ like(http(
 	'GET /stringify_subrequest HTTP/1.0' . CRLF
 	. 'Host: localhost' . CRLF . CRLF
 ), qr/"status":201/, 'JSON.stringify(reply)');
+
+}
 
 ###############################################################################

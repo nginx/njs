@@ -33,6 +33,21 @@ daemon off;
 events {
 }
 
+http {
+    %%TEST_GLOBALS_HTTP%%
+
+    js_import main.js;
+
+    server {
+        listen       127.0.0.1:8080;
+        server_name  localhost;
+
+        location /engine {
+            js_content main.engine;
+        }
+    }
+}
+
 stream {
     %%TEST_GLOBALS_STREAM%%
 
@@ -104,14 +119,22 @@ $t->write_file('lib.js', <<EOF);
 EOF
 
 $t->write_file('main.js', <<EOF);
-    export default {bar: {p(s) {return g1.b[2]}}};
+    function engine(r) {
+        r.return(200, njs.engine);
+    }
+
+    export default {engine, bar: {p(s) {return g1.b[2]}}};
 
 EOF
 
 $t->write_file('g.json',
 	'{"a":1, "b":[1,2,"element",4,5], "c":{"prop":[{"a":3}]}}');
 
-$t->try_run('no js_preload_object available')->plan(2);
+$t->try_run('no js_preload_object available');
+
+plan(skip_all => 'not yet') if http_get('/engine') =~ /QuickJS$/m;
+
+$t->plan(2);
 
 ###############################################################################
 

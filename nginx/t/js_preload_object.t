@@ -45,6 +45,10 @@ http {
         js_import lib.js;
         js_preload_object lx from l.json;
 
+        location /engine {
+            js_content lib.engine;
+        }
+
         location /test {
             js_content lib.test;
         }
@@ -81,6 +85,10 @@ EOF
 $t->write_file('lib.js', <<EOF);
     function test(r) {
         r.return(200, ga + ' ' + g1.c.prop[0].a + ' ' + lx);
+    }
+
+    function engine(r) {
+        r.return(200, njs.engine);
     }
 
     function test_var(r) {
@@ -123,7 +131,7 @@ $t->write_file('lib.js', <<EOF);
         r.return(200, gg);
     }
 
-    export default {test, test_var, mutate, suffix};
+    export default {engine, test, test_var, mutate, suffix};
 
 EOF
 
@@ -151,7 +159,11 @@ $t->write_file('ga.json', '"ga loaded"');
 $t->write_file('l.json', '"l loaded"');
 $t->write_file('no_suffix', '"no_suffix loaded"');
 
-$t->try_run('no js_preload_object available')->plan(12);
+$t->try_run('no js_preload_object available');
+
+plan(skip_all => 'not yet') if http_get('/engine') =~ /QuickJS$/m;
+
+$t->plan(12);
 
 ###############################################################################
 

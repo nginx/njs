@@ -33,6 +33,12 @@
 #include <pthread.h>
 
 
+#define QJS_CORE_CLASS_ID_OFFSET  64
+#define QJS_CORE_CLASS_ID_BUFFER  (QJS_CORE_CLASS_ID_OFFSET)
+#define QJS_CORE_CLASS_ID_UINT8_ARRAY_CTOR (QJS_CORE_CLASS_ID_OFFSET + 1)
+#define QJS_CORE_CLASS_ID_LAST    (QJS_CORE_CLASS_ID_UINT8_ARRAY_CTOR)
+
+
 typedef JSModuleDef *(*qjs_addon_init_pt)(JSContext *ctx, const char *name);
 
 typedef struct {

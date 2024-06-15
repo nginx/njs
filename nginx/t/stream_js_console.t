@@ -34,6 +34,21 @@ daemon off;
 events {
 }
 
+http {
+    %%TEST_GLOBALS_HTTP%%
+
+    js_import test.js;
+
+    server {
+        listen       127.0.0.1:8080;
+        server_name  localhost;
+
+        location /engine {
+            js_content test.engine;
+        }
+    }
+}
+
 stream {
     %%TEST_GLOBALS_STREAM%%
 
@@ -41,7 +56,7 @@ stream {
 
 
     server {
-        listen       127.0.0.1:8080;
+        listen       127.0.0.1:8081;
 
         js_preread test.log;
 
@@ -49,7 +64,7 @@ stream {
     }
 
     server {
-        listen       127.0.0.1:8081;
+        listen       127.0.0.1:8082;
 
         js_preread test.timer;
 
@@ -60,6 +75,10 @@ stream {
 EOF
 
 $t->write_file('test.js', <<EOF);
+    function engine(r) {
+        r.return(200, njs.engine);
+    }
+
     function log(s) {
         s.on('upload', function (data) {
             if (data.length > 0) {
@@ -85,7 +104,7 @@ $t->write_file('test.js', <<EOF);
         });
     }
 
-    export default { log, timer };
+    export default { engine, log, timer };
 EOF
 
 $t->run_daemon(\&stream_daemon, port(8090));
@@ -94,14 +113,23 @@ $t->waitforsocket('127.0.0.1:' . port(8090));
 
 ###############################################################################
 
-is(stream('127.0.0.1:' . port(8080))->io('eyJhIjpbIkIiLCJDIl19'),
+my $engine = http_get('/engine');
+
+is(stream('127.0.0.1:' . port(8081))->io('eyJhIjpbIkIiLCJDIl19'),
 	'eyJhIjpbIkIiLCJDIl19', 'log test');
-is(stream('127.0.0.1:' . port(8081))->io('timer'), 'timer', 'timer test');
+is(stream('127.0.0.1:' . port(8082))->io('timer'), 'timer', 'timer test');
 
 $t->stop();
 
+SKIP: {
+	skip "QuickJS has no console.dump() method.", 1
+		if $engine =~ /QuickJS$/m;
+
 like($t->read_file('error.log'), qr/\[info\].*js: \{a:\['B','C'\]\}/,
 	'console.log with object');
+
+}
+
 like($t->read_file('error.log'), qr/\[info\].*js: foo: \d+\.\d\d\d\d\d\dms/,
 	'console.time foo');
 

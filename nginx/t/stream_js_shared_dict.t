@@ -43,6 +43,10 @@ http {
         location / {
             return 200;
         }
+
+        location /engine {
+            js_content test.engine;
+        }
     }
 }
 
@@ -70,6 +74,10 @@ EOF
 
 $t->write_file('test.js', <<EOF);
     import qs from 'querystring';
+
+    function engine(r) {
+        r.return(200, 'engine');
+    }
 
     function preread_verify(s) {
         var collect = Buffer.from([]);
@@ -113,11 +121,15 @@ $t->write_file('test.js', <<EOF);
         });
     }
 
-    export default { preread_verify, control_access };
+    export default { engine, preread_verify, control_access };
 
 EOF
 
-$t->try_run('no js_shared_dict_zone')->plan(9);
+$t->try_run('no js_shared_dict_zone');
+
+plan(skip_all => 'not yet') if http_get('/engine') =~ /QuickJS$/m;
+
+$t->plan(9);
 
 $t->run_daemon(\&stream_daemon, port(8090));
 $t->waitforsocket('127.0.0.1:' . port(8090));

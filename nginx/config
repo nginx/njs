@@ -3,6 +3,7 @@ ngx_addon_name="ngx_js_module"
 NJS_OPENSSL=${NJS_OPENSSL:-YES}
 NJS_LIBXSLT=${NJS_LIBXSLT:-YES}
 NJS_ZLIB=${NJS_ZLIB:-YES}
+NJS_QUICKJS=${NJS_QUICKJS:-YES}
 
 NJS_DEPS="$ngx_addon_dir/ngx_js.h \
     $ngx_addon_dir/ngx_js_fetch.h \
@@ -12,9 +13,78 @@ NJS_SRCS="$ngx_addon_dir/ngx_js.c \
     $ngx_addon_dir/ngx_js_regex.c \
     $ngx_addon_dir/ngx_js_shared_dict.c"
 
+QJS_DEPS=""
+QJS_SRCS=""
+
 NJS_OPENSSL_LIB=
 NJS_XSLT_LIB=
 NJS_ZLIB_LIB=
+NJS_QUICKJS_LIB=
+NJS_QUICKJS_INC=
+NJS_HAVE_QUICKJS=
+
+if [ $NJS_QUICKJS != NO ]; then
+
+    ngx_feature="QuickJS library -lquickjs.lto"
+    ngx_feature_name=NJS_HAVE_QUICKJS
+    ngx_feature_run=yes
+    ngx_feature_incs="#if defined(__GNUC__) && (__GNUC__ >= 8)
+                      #pragma GCC diagnostic push
+                      #pragma GCC diagnostic ignored \"-Wcast-function-type\"
+                      #endif
+
+                      #include <quickjs.h>"
+    ngx_feature_path=""
+    ngx_feature_libs="-lquickjs.lto -lm -ldl -lpthread"
+    ngx_feature_test="JSRuntime *rt;
+
+                      rt = JS_NewRuntime();
+                      (void) JS_GetClassID;
+                      JS_FreeRuntime(rt);
+                      return 0;"
+    . auto/feature
+
+    if [ $ngx_found = no ]; then
+        ngx_feature="QuickJS library -lquickjs"
+        ngx_feature_libs="-lquickjs -lm -ldl -lpthread"
+
+        . auto/feature
+    fi
+
+    if [ $ngx_found = no ]; then
+        ngx_feature="QuickJS library -I/usr/include/quickjs/ -L/usr/lib/quickjs/ -lquickjs.lto"
+        ngx_feature_path="/usr/include/quickjs/"
+        ngx_feature_libs="-L/usr/lib/quickjs/ -lquickjs.lto -lm -ldl -lpthread"
+
+        . auto/feature
+    fi
+
+    if [ $ngx_found = no ]; then
+        ngx_feature="QuickJS library -I/usr/include/quickjs/ -L/usr/lib/quickjs/ -lquickjs"
+        ngx_feature_libs="-L/usr/lib/quickjs/ -lquickjs -lm -ldl -lpthread"
+
+        . auto/feature
+    fi
+
+    if [ $ngx_found = yes ]; then
+
+        ngx_feature="QuickJS JS_NewTypedArray()"
+        ngx_feature_test="(void) JS_NewTypedArray;
+                          return 0;"
+
+        . auto/feature
+
+        if [ $ngx_found = yes ]; then
+            have=NJS_HAVE_QUICKJS_NEW_TYPED_ARRAY . auto/have
+        fi
+
+        NJS_HAVE_QUICKJS=YES
+        NJS_QUICKJS_LIB="$ngx_feature_libs"
+        NJS_QUICKJS_INC="$ngx_feature_path"
+
+        echo " enabled QuickJS engine"
+    fi
+fi
 
 if [ $NJS_OPENSSL != NO ]; then
     NJS_OPENSSL_LIB=OPENSSL
@@ -37,17 +107,30 @@ if [ $NJS_ZLIB != NO ]; then
     have=NJS_HAVE_ZLIB . auto/have
     NJS_SRCS="$NJS_SRCS $ngx_addon_dir/../external/njs_zlib_module.c"
 
+    if [ "$NJS_HAVE_QUICKJS" = "YES" ];  then
+        NJS_SRCS="$NJS_SRCS $ngx_addon_dir/../external/qjs_zlib_module.c"
+    fi
+
     echo " enabled zlib module"
+fi
+
+
+NJS_ENGINE_DEP="$ngx_addon_dir/../build/libnjs.a"
+NJS_ENGINE_LIB="$ngx_addon_dir/../build/libnjs.a"
+if [ "$NJS_HAVE_QUICKJS" = "YES" ];  then
+    NJS_ENGINE_DEP="$ngx_addon_dir/../build/libqjs.a"
+    NJS_ENGINE_LIB="$ngx_addon_dir/../build/libnjs.a $ngx_addon_dir/../build/libqjs.a"
 fi
 
 if [ $HTTP != NO ]; then
     ngx_module_type=HTTP_AUX_FILTER
     ngx_module_name=ngx_http_js_module
-    ngx_module_incs="$ngx_addon_dir/../src $ngx_addon_dir/../build"
-    ngx_module_deps="$ngx_addon_dir/../build/libnjs.a $NJS_DEPS"
-    ngx_module_srcs="$ngx_addon_dir/ngx_http_js_module.c $NJS_SRCS"
+    ngx_module_incs="$ngx_addon_dir/../src $ngx_addon_dir/../build \
+                     $NJS_QUICKJS_INC"
+    ngx_module_deps="$NJS_ENGINE_DEP $NJS_DEPS $QJS_DEPS"
+    ngx_module_srcs="$ngx_addon_dir/ngx_http_js_module.c $NJS_SRCS $QJS_SRCS"
     ngx_module_libs="PCRE $NJS_OPENSSL_LIB $NJS_XSLT_LIB $NJS_ZLIB_LIB \
-                     $ngx_addon_dir/../build/libnjs.a -lm"
+                     $NJS_QUICKJS_LIB $NJS_ENGINE_LIB -lm"
 
     . auto/module
 
@@ -59,11 +142,12 @@ fi
 if [ $STREAM != NO ]; then
     ngx_module_type=STREAM
     ngx_module_name=ngx_stream_js_module
-    ngx_module_incs="$ngx_addon_dir/../src $ngx_addon_dir/../build"
-    ngx_module_deps="$ngx_addon_dir/../build/libnjs.a $NJS_DEPS"
-    ngx_module_srcs="$ngx_addon_dir/ngx_stream_js_module.c $NJS_SRCS"
+    ngx_module_incs="$ngx_addon_dir/../src $ngx_addon_dir/../build \
+                     $NJS_QUICKJS_INC"
+    ngx_module_deps="$NJS_ENGINE_DEP $NJS_DEPS $QJS_DEPS"
+    ngx_module_srcs="$ngx_addon_dir/ngx_stream_js_module.c $NJS_SRCS $QJS_SRCS"
     ngx_module_libs="PCRE $NJS_OPENSSL_LIB $NJS_XSLT_LIB $NJS_ZLIB_LIB \
-                     $ngx_addon_dir/../build/libnjs.a -lm"
+                     $NJS_QUICKJS_LIB $NJS_ENGINE_LIB -lm"
 
     . auto/module
 fi

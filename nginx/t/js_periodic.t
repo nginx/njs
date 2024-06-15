@@ -71,6 +71,10 @@ http {
             js_periodic test.timeout_exception interval=30ms;
         }
 
+        location /engine {
+            js_content test.engine;
+        }
+
         location /fetch_ok {
             return 200 'ok';
         }
@@ -119,6 +123,10 @@ my $p0 = port(8080);
 
 $t->write_file('test.js', <<EOF);
     import fs from 'fs';
+
+    function engine(r) {
+        r.return(200, njs.engine);
+    }
 
     function affinity() {
         ngx.shared.workers.set(ngx.worker_id, 1);
@@ -241,10 +249,14 @@ $t->write_file('test.js', <<EOF);
                      test_file, test_multiple_fetches, test_tick,
                      test_timeout_exception, test_timer, test_vars, tick,
                      tick_exception, timer, timer_exception,
-                     timeout_exception };
+                     timeout_exception, engine };
 EOF
 
-$t->try_run('no js_periodic')->plan(9);
+$t->try_run('no js_periodic');
+
+plan(skip_all => 'not yet') if http_get('/engine') =~ /QuickJS$/m;
+
+$t->plan(9);
 
 ###############################################################################
 

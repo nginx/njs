@@ -262,15 +262,12 @@ static JSClassDef qjs_buffer_class = {
 };
 
 
-static JSClassID qjs_buffer_class_id;
-
 #ifndef NJS_HAVE_QUICKJS_NEW_TYPED_ARRAY
 static JSClassDef qjs_uint8_array_ctor_class = {
     "Uint8ArrayConstructor",
     .finalizer = NULL,
 };
 
-static JSClassID qjs_uint8_array_ctor_id;
 #endif
 
 
@@ -354,7 +351,7 @@ qjs_buffer_ctor(JSContext *ctx, JSValueConst this_val, int argc,
         return ret;
     }
 
-    proto = JS_GetClassProto(ctx, qjs_buffer_class_id);
+    proto = JS_GetClassProto(ctx, QJS_CORE_CLASS_ID_BUFFER);
     JS_SetPrototype(ctx, ret, proto);
     JS_FreeValue(ctx, proto);
 
@@ -725,7 +722,7 @@ qjs_buffer_is_buffer(JSContext *ctx, JSValueConst this_val,
     JSValue proto, buffer_proto, ret;
 
     proto = JS_GetPrototype(ctx, argv[0]);
-    buffer_proto = JS_GetClassProto(ctx, qjs_buffer_class_id);
+    buffer_proto = JS_GetClassProto(ctx, QJS_CORE_CLASS_ID_BUFFER);
 
     ret = JS_NewBool(ctx, JS_VALUE_GET_TAG(argv[0]) == JS_TAG_OBJECT &&
                      JS_VALUE_GET_OBJ(buffer_proto) == JS_VALUE_GET_OBJ(proto));
@@ -2426,7 +2423,7 @@ qjs_buffer_alloc(JSContext *ctx, size_t size)
         return ret;
     }
 
-    proto = JS_GetClassProto(ctx, qjs_buffer_class_id);
+    proto = JS_GetClassProto(ctx, QJS_CORE_CLASS_ID_BUFFER);
     JS_SetPrototype(ctx, ret, proto);
     JS_FreeValue(ctx, proto);
 
@@ -2494,7 +2491,7 @@ qjs_new_uint8_array(JSContext *ctx, int argc, JSValueConst *argv)
 #else
     JSValue ctor;
 
-    ctor = JS_GetClassProto(ctx, qjs_uint8_array_ctor_id);
+    ctor = JS_GetClassProto(ctx, QJS_CORE_CLASS_ID_UINT8_ARRAY_CTOR);
     ret = JS_CallConstructor(ctx, ctor, argc, argv);
     JS_FreeValue(ctx, ctor);
 #endif
@@ -2511,8 +2508,8 @@ qjs_buffer_builtin_init(JSContext *ctx)
     JSValue    global_obj, buffer, proto, ctor, ta, ta_proto, symbol, species;
     JSClassID  u8_ta_class_id;
 
-    JS_NewClassID(&qjs_buffer_class_id);
-    JS_NewClass(JS_GetRuntime(ctx), qjs_buffer_class_id, &qjs_buffer_class);
+    JS_NewClass(JS_GetRuntime(ctx), QJS_CORE_CLASS_ID_BUFFER,
+                &qjs_buffer_class);
 
     global_obj = JS_GetGlobalObject(ctx);
 
@@ -2528,10 +2525,10 @@ qjs_buffer_builtin_init(JSContext *ctx)
      * We use JS_SetClassProto()/JS_GetClassProto() as a key-value store
      * for fast value query by class ID without querying the global object.
      */
-    JS_NewClassID(&qjs_uint8_array_ctor_id);
-    JS_NewClass(JS_GetRuntime(ctx), qjs_uint8_array_ctor_id,
+    JS_NewClass(JS_GetRuntime(ctx), QJS_CORE_CLASS_ID_UINT8_ARRAY_CTOR,
                 &qjs_uint8_array_ctor_class);
-    JS_SetClassProto(ctx, qjs_uint8_array_ctor_id, JS_DupValue(ctx, ctor));
+    JS_SetClassProto(ctx, QJS_CORE_CLASS_ID_UINT8_ARRAY_CTOR,
+                     JS_DupValue(ctx, ctor));
 #endif
 
     ta = JS_CallConstructor(ctx, ctor, 0, NULL);
@@ -2543,7 +2540,7 @@ qjs_buffer_builtin_init(JSContext *ctx)
     JS_SetPrototype(ctx, proto, ta_proto);
     JS_FreeValue(ctx, ta_proto);
 
-    JS_SetClassProto(ctx, qjs_buffer_class_id, proto);
+    JS_SetClassProto(ctx, QJS_CORE_CLASS_ID_BUFFER, proto);
 
     buffer = JS_NewCFunction2(ctx, qjs_buffer, "Buffer", 3,
                               JS_CFUNC_constructor, 0);

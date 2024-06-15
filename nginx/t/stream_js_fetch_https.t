@@ -47,6 +47,10 @@ http {
         location /njs {
             js_content test.njs;
         }
+
+        location /engine {
+            js_content test.engine;
+        }
     }
 
     server {
@@ -159,6 +163,10 @@ $t->write_file('test.js', <<EOF);
         r.return(200, njs.version);
     }
 
+    function engine(r) {
+        r.return(200, njs.engine);
+    }
+
     function preread(s) {
         s.on('upload', function (data, flags) {
             if (data.startsWith('GO')) {
@@ -193,7 +201,7 @@ $t->write_file('test.js', <<EOF);
         (r.status == 200) ? s.allow(): s.deny();
     }
 
-    export default {njs: test_njs, preread, access_ok, access_nok};
+    export default {njs: test_njs, engine, preread, access_ok, access_nok};
 EOF
 
 my $d = $t->testdir();
@@ -263,7 +271,11 @@ foreach my $name ('default.example.com', '1.example.com') {
 		. $t->read_file('intermediate.crt'));
 }
 
-$t->try_run('no njs.fetch')->plan(6);
+$t->try_run('no njs.fetch');
+
+plan(skip_all => 'not yet') if http_get('/engine') =~ /QuickJS$/m;
+
+$t->plan(6);
 
 $t->run_daemon(\&dns_daemon, port(8981), $t);
 $t->waitforfile($t->testdir . '/' . port(8981));

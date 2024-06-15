@@ -19,8 +19,12 @@
 #include "ngx_js_fetch.h"
 #include "ngx_js_shared_dict.h"
 
+#if (NJS_HAVE_QUICKJS)
+#include <qjs.h>
+#endif
 
 #define NGX_ENGINE_NJS      1
+#define NGX_ENGINE_QJS      2
 
 #define NGX_JS_UNSET        0
 #define NGX_JS_DEPRECATED   1
@@ -36,6 +40,26 @@
 #define NGX_NJS_VAR_NOCACHE 1
 
 #define ngx_js_buffer_type(btype) ((btype) & ~NGX_JS_DEPRECATED)
+
+/*
+ * This static table solves the problem of a native QuickJS approach
+ * which uses a static variables of type JSClassID and JS_NewClassID() to
+ * allocate class ids for custom classes. The static variables approach
+ * causes a problem when two modules linked with -Wl,-Bsymbolic-functions flag
+ * are loaded dynamically.
+ */
+
+#define NGX_QJS_CLASS_ID_OFFSET (QJS_CORE_CLASS_ID_LAST)
+#define NGX_QJS_CLASS_ID_CONSOLE (NGX_QJS_CLASS_ID_OFFSET + 1)
+#define NGX_QJS_CLASS_ID_HTTP_REQUEST (NGX_QJS_CLASS_ID_OFFSET + 2)
+#define NGX_QJS_CLASS_ID_HTTP_PERIODIC (NGX_QJS_CLASS_ID_OFFSET + 3)
+#define NGX_QJS_CLASS_ID_HTTP_VARS (NGX_QJS_CLASS_ID_OFFSET + 4)
+#define NGX_QJS_CLASS_ID_HTTP_HEADERS_IN (NGX_QJS_CLASS_ID_OFFSET + 5)
+#define NGX_QJS_CLASS_ID_HTTP_HEADERS_OUT (NGX_QJS_CLASS_ID_OFFSET + 6)
+#define NGX_QJS_CLASS_ID_STREAM_SESSION (NGX_QJS_CLASS_ID_OFFSET + 7)
+#define NGX_QJS_CLASS_ID_STREAM_PERIODIC (NGX_QJS_CLASS_ID_OFFSET + 8)
+#define NGX_QJS_CLASS_ID_STREAM_FLAGS (NGX_QJS_CLASS_ID_OFFSET + 9)
+#define NGX_QJS_CLASS_ID_STREAM_VARS (NGX_QJS_CLASS_ID_OFFSET + 10)
 
 
 typedef struct ngx_js_loc_conf_s ngx_js_loc_conf_t;
@@ -76,6 +100,15 @@ struct ngx_js_event_s {
 };
 
 
+typedef struct {
+    void               **data;
+    ngx_uint_t           head;
+    ngx_uint_t           tail;
+    ngx_uint_t           size;
+    ngx_uint_t           capacity;
+} ngx_js_queue_t;
+
+
 #define NGX_JS_COMMON_MAIN_CONF                                               \
     ngx_js_dict_t         *dicts;                                             \
     ngx_array_t           *periodics                                          \
@@ -84,6 +117,8 @@ struct ngx_js_event_s {
 #define _NGX_JS_COMMON_LOC_CONF                                               \
     ngx_uint_t             type;                                              \
     ngx_engine_t          *engine;                                            \
+    ngx_uint_t             reuse;                                             \
+    ngx_js_queue_t        *reuse_queue;                                       \
     ngx_str_t              cwd;                                               \
     ngx_array_t           *imports;                                           \
     ngx_array_t           *paths;                                             \
@@ -157,6 +192,11 @@ struct ngx_js_ctx_s {
 };
 
 
+typedef struct {
+    void                        *external;
+} ngx_js_opaque_t;
+
+
 typedef struct ngx_engine_opts_s {
     unsigned                    engine;
     union {
@@ -164,6 +204,12 @@ typedef struct ngx_engine_opts_s {
             njs_vm_meta_t      *metas;
             njs_module_t      **addons;
         } njs;
+#if (NJS_HAVE_QUICKJS)
+        struct {
+            uintptr_t          *metas;
+            qjs_module_t      **addons;
+        } qjs;
+#endif
     } u;
 
     njs_str_t                   file;
@@ -176,11 +222,22 @@ typedef struct ngx_engine_opts_s {
 } ngx_engine_opts_t;
 
 
+typedef struct {
+    u_char                     *code;
+    size_t                      code_size;
+} ngx_js_code_entry_t;
+
+
 struct ngx_engine_s {
     union {
         struct {
             njs_vm_t           *vm;
         } njs;
+#if (NJS_HAVE_QUICKJS)
+        struct {
+            JSContext          *ctx;
+        } qjs;
+#endif
     } u;
 
     ngx_int_t                 (*compile)(ngx_js_loc_conf_t *conf, ngx_log_t *lg,
@@ -202,6 +259,7 @@ struct ngx_engine_s {
     unsigned                    type;
     const char                 *name;
     njs_mp_t                   *pool;
+    njs_arr_t                  *precompiled;
 };
 
 
@@ -246,12 +304,81 @@ void ngx_js_ctx_init(ngx_js_ctx_t *ctx, ngx_log_t *log);
 #define ngx_js_ctx_external(ctx)                                              \
     ((ctx)->engine->external(ctx->engine))
 
+
 void ngx_js_ctx_destroy(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *conf);
 ngx_int_t ngx_js_call(njs_vm_t *vm, njs_function_t *func,
     njs_opaque_value_t *args, njs_uint_t nargs);
 ngx_int_t ngx_js_exception(njs_vm_t *vm, ngx_str_t *s);
 ngx_engine_t *ngx_njs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf,
     void *external);
+
+#if (NJS_HAVE_QUICKJS)
+
+typedef struct ngx_qjs_event_s ngx_qjs_event_t;
+
+typedef union {
+    njs_opaque_value_t opaque;
+    JSValue            value;
+} ngx_qjs_value_t;
+
+struct ngx_qjs_event_s {
+    void                *ctx;
+    JSValue              function;
+    JSValue             *args;
+    ngx_socket_t         fd;
+    NJS_RBTREE_NODE     (node);
+    njs_uint_t           nargs;
+    void               (*destructor)(ngx_qjs_event_t *event);
+    ngx_event_t          ev;
+    void                *data;
+};
+
+#define ngx_qjs_arg(val) (((ngx_qjs_value_t *) &(val))->value)
+ngx_engine_t *ngx_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf,
+    void *external);
+void ngx_engine_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
+    ngx_js_loc_conf_t *conf);
+ngx_int_t ngx_qjs_call(ngx_js_ctx_t *ctx, JSValue function,
+    JSValue *argv, int argc);
+ngx_int_t ngx_qjs_exception(ngx_engine_t *e, ngx_str_t *s);
+ngx_int_t ngx_qjs_integer(JSContext *cx, JSValueConst val, ngx_int_t *n);
+ngx_int_t ngx_qjs_string(ngx_engine_t *e, JSValueConst val, ngx_str_t *str);
+
+#define ngx_qjs_prop(cx, type, start, len)                                   \
+    ((type == NGX_JS_STRING) ? qjs_string_create(cx, start, len)             \
+                             : qjs_buffer_create(cx, (u_char *) start, len))
+
+#define ngx_qjs_meta(cx, i)                                                  \
+    ((uintptr_t *) JS_GetRuntimeOpaque(JS_GetRuntime(cx)))[i]
+#define ngx_qjs_external_connection(cx, e)                                   \
+    (*((ngx_connection_t **) ((u_char *) (e) + ngx_qjs_meta(cx, 0))))
+#define ngx_qjs_external_pool(cx, e)                                         \
+    ((ngx_external_pool_pt) ngx_qjs_meta(cx, 1))(e)
+#define ngx_qjs_external_resolver(cx, e)                                     \
+    ((ngx_external_resolver_pt) ngx_qjs_meta(vm, 2))(e)
+#define ngx_qjs_external_resolver_timeout(cx, e)                             \
+    ((ngx_external_timeout_pt) ngx_qjs_meta(cx, 3))(e)
+#define ngx_qjs_external_event_finalize(cx)                                  \
+    ((ngx_js_event_finalize_pt) ngx_qjs_meta(cx, 4))
+#define ngx_qjs_external_ssl(cx, e)                                          \
+    ((ngx_external_ssl_pt) ngx_qjs_meta(cx, 5))(e)
+#define ngx_qjs_external_ssl_verify(cx, e)                                   \
+    ((ngx_external_flag_pt) ngx_qjs_meta(cx, 6))(e)
+#define ngx_qjs_external_fetch_timeout(cx, e)                                \
+    ((ngx_external_timeout_pt) ngx_qjs_meta(cx, 7))(e)
+#define ngx_qjs_external_buffer_size(cx, e)                                  \
+    ((ngx_external_size_pt) ngx_qjs_meta(cx, 8))(e)
+#define ngx_qjs_external_max_response_buffer_size(cx, e)                     \
+    ((ngx_external_size_pt) ngx_qjs_meta(cx, 9))(e)
+#define ngx_qjs_main_conf(cx)                                                \
+    ((ngx_js_main_conf_t *) ngx_qjs_meta(cx, NGX_JS_MAIN_CONF_INDEX))
+#define ngx_qjs_external_ctx(cx, e)                                          \
+    ((ngx_js_external_ctx_pt) ngx_qjs_meta(cx, 11))(e)
+
+extern qjs_module_t  qjs_zlib_module;
+extern qjs_module_t  ngx_qjs_ngx_module;
+
+#endif
 
 njs_int_t ngx_js_ext_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t level, njs_value_t *retval);
@@ -285,6 +412,10 @@ njs_int_t ngx_js_ext_flags(njs_vm_t *vm, njs_object_prop_t *prop,
 
 ngx_int_t ngx_js_string(njs_vm_t *vm, njs_value_t *value, njs_str_t *str);
 ngx_int_t ngx_js_integer(njs_vm_t *vm, njs_value_t *value, ngx_int_t *n);
+
+ngx_js_queue_t *ngx_js_queue_create(ngx_pool_t *pool, ngx_uint_t capacity);
+ngx_int_t ngx_js_queue_push(ngx_js_queue_t *queue, void *item);
+void *ngx_js_queue_pop(ngx_js_queue_t *queue);
 
 
 extern njs_module_t  ngx_js_ngx_module;

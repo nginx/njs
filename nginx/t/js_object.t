@@ -42,6 +42,10 @@ http {
         listen       127.0.0.1:8080;
         server_name  localhost;
 
+        location /engine {
+            js_content test.engine;
+        }
+
         location /to_string {
             js_content test.to_string;
         }
@@ -75,6 +79,10 @@ http {
 EOF
 
 $t->write_file('test.js', <<EOF);
+    function engine(r) {
+        r.return(200, njs.engine);
+    }
+
     function to_string(r) {
         r.return(200, r.toString());
     }
@@ -113,7 +121,7 @@ $t->write_file('test.js', <<EOF);
                  Object.getOwnPropertyDescriptors(r)['log'].value === r.log);
     }
 
-    export default {to_string, define_prop, in_operator, redefine_bind,
+    export default {engine, to_string, define_prop, in_operator, redefine_bind,
                     redefine_proxy, redefine_proto, get_own_prop_descs};
 
 EOF
@@ -132,6 +140,12 @@ like(http(
 like(http_get('/redefine_bind'), qr/redefine_bind/, 'redefine_bind');
 like(http_get('/redefine_proxy'), qr/redefine_proxy/, 'redefine_proxy');
 like(http_get('/redefine_proto'), qr/a|b/, 'redefine_proto');
-like(http_get('/get_own_prop_descs'), qr/true/, 'get_own_prop_descs');
+
+SKIP: {
+	skip "In QuickJS methods are in the prototype", 1
+		if http_get('/engine') =~ /QuickJS$/m;
+
+	like(http_get('/get_own_prop_descs'), qr/true/, 'get_own_prop_descs');
+}
 
 ###############################################################################

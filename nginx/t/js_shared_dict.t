@@ -51,6 +51,10 @@ http {
             js_content test.njs;
         }
 
+        location /engine {
+            js_content test.engine;
+        }
+
         location /add {
             js_content test.add;
         }
@@ -130,6 +134,10 @@ EOF
 $t->write_file('test.js', <<'EOF');
     function test_njs(r) {
         r.return(200, njs.version);
+    }
+
+    function engine(r) {
+        r.return(200, njs.engine);
     }
 
     function convertToValue(dict, v) {
@@ -257,7 +265,7 @@ $t->write_file('test.js', <<'EOF');
 
     function pop(r) {
         var dict = ngx.shared[r.args.dict];
-		var val = dict.pop(r.args.key);
+        var val = dict.pop(r.args.key);
         if (val == '') {
             val = 'empty';
 
@@ -302,10 +310,14 @@ $t->write_file('test.js', <<'EOF');
 
     export default { add, capacity, chain, clear, del, free_space, get, has,
                      incr, items, keys, name, njs: test_njs, pop, replace, set,
-                     set_clear, size, zones };
+                     set_clear, size, zones, engine };
 EOF
 
-$t->try_run('no js_shared_dict_zone')->plan(51);
+$t->try_run('no js_shared_dict_zone');
+
+plan(skip_all => 'not yet') if http_get('/engine') =~ /QuickJS$/m;
+
+$t->plan(51);
 
 ###############################################################################
 

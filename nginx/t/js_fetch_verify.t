@@ -48,6 +48,10 @@ http {
             js_content test.njs;
         }
 
+        location /engine {
+            js_content test.engine;
+        }
+
         location /https {
             js_content test.https;
         }
@@ -76,6 +80,10 @@ $t->write_file('test.js', <<EOF);
         r.return(200, njs.version);
     }
 
+    function engine(r) {
+        r.return(200, njs.engine);
+    }
+
     function https(r) {
         ngx.fetch(`https://example.com:$p1/loc`)
         .then(reply => reply.text())
@@ -83,7 +91,7 @@ $t->write_file('test.js', <<EOF);
         .catch(e => r.return(501, e.message));
     }
 
-    export default {njs: test_njs, https};
+    export default {njs: test_njs, engine, https};
 EOF
 
 $t->write_file('openssl.conf', <<EOF);
@@ -104,7 +112,11 @@ foreach my $name ('localhost') {
 		or die "Can't create certificate for $name: $!\n";
 }
 
-$t->try_run('no js_fetch_verify')->plan(2);
+$t->try_run('no js_fetch_verify');
+
+plan(skip_all => 'not yet') if http_get('/engine') =~ /QuickJS$/m;
+
+$t->plan(2);
 
 $t->run_daemon(\&dns_daemon, port(8981), $t);
 $t->waitforfile($t->testdir . '/' . port(8981));
