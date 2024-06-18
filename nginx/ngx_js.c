@@ -1542,12 +1542,6 @@ ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
     ngx_array_t          *imports, *preload_objects, *paths;
     ngx_js_named_path_t  *import, *pi, *pij, *preload;
 
-    if (prev->imports != NGX_CONF_UNSET_PTR && prev->vm == NULL) {
-        if (init_vm(cf, (ngx_js_loc_conf_t *) prev) != NGX_OK) {
-            return NGX_ERROR;
-        }
-    }
-
     if (conf->imports == NGX_CONF_UNSET_PTR
         && conf->paths == NGX_CONF_UNSET_PTR
         && conf->preload_objects == NGX_CONF_UNSET_PTR)
