@@ -1847,7 +1847,7 @@ ngx_js_module_read(njs_mp_t *mp, int fd, njs_str_t *text)
 
     text->length = sb.st_size;
 
-    text->start = njs_mp_alloc(mp, text->length);
+    text->start = njs_mp_alloc(mp, text->length + 1);
     if (text->start == NULL) {
         goto fail;
     }
@@ -1857,6 +1857,8 @@ ngx_js_module_read(njs_mp_t *mp, int fd, njs_str_t *text)
     if (n < 0 || n != sb.st_size) {
         goto fail;
     }
+
+    text->start[text->length] = '\0';
 
     return NJS_OK;
 
