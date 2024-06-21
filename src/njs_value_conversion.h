@@ -17,7 +17,7 @@ njs_value_to_number(njs_vm_t *vm, njs_value_t *value, double *dst)
     if (njs_slow_path(!njs_is_primitive(value))) {
         ret = njs_value_to_primitive(vm, &primitive, value, 0);
         if (njs_slow_path(ret != NJS_OK)) {
-            return ret;
+            return NJS_ERROR;
         }
 
         value = &primitive;
