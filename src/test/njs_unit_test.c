@@ -630,13 +630,13 @@ static njs_unit_test_t  njs_test[] =
       njs_str("Infinity") },
 
     { njs_str("Infinity.toString(NaN)"),
-      njs_str("RangeError") },
+      njs_str("RangeError: radix argument must be between 2 and 36") },
 
     { njs_str("Infinity.toString({})"),
-      njs_str("RangeError") },
+      njs_str("RangeError: radix argument must be between 2 and 36") },
 
     { njs_str("Infinity.toString(Infinity)"),
-      njs_str("RangeError") },
+      njs_str("RangeError: radix argument must be between 2 and 36") },
 
     { njs_str("NaN.toString()"),
       njs_str("NaN") },
@@ -648,13 +648,13 @@ static njs_unit_test_t  njs_test[] =
       njs_str("NaN") },
 
     { njs_str("NaN.toString(Infinity)"),
-      njs_str("RangeError") },
+      njs_str("RangeError: radix argument must be between 2 and 36") },
 
     { njs_str("NaN.toString({})"),
-      njs_str("RangeError") },
+      njs_str("RangeError: radix argument must be between 2 and 36") },
 
     { njs_str("NaN.toString(NaN)"),
-      njs_str("RangeError") },
+      njs_str("RangeError: radix argument must be between 2 and 36") },
 
     { njs_str("1.2312313132.toString(14)"),
       njs_str("1.3346da6d5d455c") },
@@ -8383,13 +8383,13 @@ static njs_unit_test_t  njs_test[] =
       njs_str("0") },
 
     { njs_str("String.fromCodePoint('_')"),
-      njs_str("RangeError") },
+      njs_str("RangeError: invalid code point") },
 
     { njs_str("String.fromCharCode(65.14)"),
       njs_str("A") },
 
     { njs_str("String.fromCodePoint(3.14)"),
-      njs_str("RangeError") },
+      njs_str("RangeError: invalid code point") },
 
     { njs_str("String.fromCharCode(65.14 + 65536)"),
       njs_str("A") },
@@ -8428,7 +8428,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("\n") },
 
     { njs_str("String.fromCodePoint(1114111 + 1)"),
-      njs_str("RangeError") },
+      njs_str("RangeError: invalid code point") },
 
     { njs_str("String.fromCharCode(65, 90) + String.fromCodePoint(65, 90)"),
       njs_str("AZAZ") },
@@ -9809,22 +9809,22 @@ static njs_unit_test_t  njs_test[] =
       njs_str("") },
 
     { njs_str("'abc'.repeat(Infinity)"),
-      njs_str("RangeError") },
+      njs_str("RangeError: invalid count value") },
 
     { njs_str("'abc'.repeat(-1)"),
-      njs_str("RangeError") },
+      njs_str("RangeError: invalid count value") },
 
     { njs_str("''.repeat(-1)"),
-      njs_str("RangeError") },
+      njs_str("RangeError: invalid count value") },
 
     { njs_str("'a'.repeat(2147483647)"),
-      njs_str("RangeError") },
+      njs_str("RangeError: invalid string length") },
 
     { njs_str("'a'.repeat(2147483648)"),
-      njs_str("RangeError") },
+      njs_str("RangeError: invalid string length") },
 
     { njs_str("'a'.repeat(Infinity)"),
-      njs_str("RangeError") },
+      njs_str("RangeError: invalid count value") },
 
     { njs_str("'a'.repeat(NaN)"),
       njs_str("") },
@@ -9839,10 +9839,10 @@ static njs_unit_test_t  njs_test[] =
       njs_str("") },
 
     { njs_str("'aaaaaaaa'.repeat(2**64+1)"),
-      njs_str("RangeError") },
+      njs_str("RangeError: invalid count value") },
 
     { njs_str("''.repeat(Infinity)"),
-      njs_str("RangeError") },
+      njs_str("RangeError: invalid count value") },
 
     { njs_str("''.repeat(NaN)"),
       njs_str("") },
@@ -9866,7 +9866,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("abc") },
 
     { njs_str("'abc'.padStart(2147483647)"),
-      njs_str("RangeError") },
+      njs_str("RangeError: invalid string length") },
 
     { njs_str("'abc'.padStart(2147483646, '')"),
       njs_str("abc") },
@@ -9920,7 +9920,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("я     ") },
 
     { njs_str("'я'.padEnd(2147483647)"),
-      njs_str("RangeError") },
+      njs_str("RangeError: invalid string length") },
 
     { njs_str("'я'.padEnd(2147483646, '')"),
       njs_str("я") },
@@ -23050,7 +23050,7 @@ static njs_unit_test_t  njs_backtraces_test[] =
               "    at main (:1)\n") },
 
     { njs_str("''.repeat(-1)"),
-      njs_str("RangeError\n"
+      njs_str("RangeError: invalid count value\n"
               "    at String.prototype.repeat (native)\n"
               "    at main (:1)\n") },
 
