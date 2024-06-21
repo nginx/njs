@@ -8,14 +8,28 @@
 
 
 JSContext *
-qjs_new_context(JSRuntime *rt)
+qjs_new_context(JSRuntime *rt, _Bool eval)
 {
     JSContext     *ctx;
     qjs_module_t  **module;
 
-    ctx = JS_NewContext(rt);
+    ctx = JS_NewContextRaw(rt);
     if (ctx == NULL) {
         return NULL;
+    }
+
+    JS_AddIntrinsicBaseObjects(ctx);
+    JS_AddIntrinsicDate(ctx);
+    JS_AddIntrinsicRegExp(ctx);
+    JS_AddIntrinsicJSON(ctx);
+    JS_AddIntrinsicProxy(ctx);
+    JS_AddIntrinsicMapSet(ctx);
+    JS_AddIntrinsicTypedArrays(ctx);
+    JS_AddIntrinsicPromise(ctx);
+    JS_AddIntrinsicBigInt(ctx);
+
+    if (eval) {
+        JS_AddIntrinsicEval(ctx);
     }
 
     for (module = qjs_modules; *module != NULL; module++) {
