@@ -2811,7 +2811,7 @@ njs_engine_qjs_init(njs_engine_t *engine, njs_opts_t *opts)
         return NJS_ERROR;
     }
 
-    engine->u.qjs.ctx = qjs_new_context(engine->u.qjs.rt);
+    engine->u.qjs.ctx = qjs_new_context(engine->u.qjs.rt, 1);
     if (engine->u.qjs.ctx == NULL) {
         njs_stderror("JS_NewContext() failed\n");
         return NJS_ERROR;
