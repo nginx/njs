@@ -60,11 +60,7 @@ njs_throw_error_va(njs_vm_t *vm, njs_object_t *proto, const char *fmt,
 {
     u_char   buf[NJS_MAX_ERROR_STR], *p;
 
-    p = buf;
-
-    if (fmt != NULL) {
-        p = njs_vsprintf(buf, buf + sizeof(buf), fmt, args);
-    }
+    p = njs_vsprintf(buf, buf + sizeof(buf), fmt, args);
 
     njs_error_new(vm, &vm->exception, proto, buf, p - buf);
 }
@@ -88,13 +84,9 @@ njs_error_fmt_new(njs_vm_t *vm, njs_value_t *dst, njs_object_type_t type,
     va_list  args;
     u_char   buf[NJS_MAX_ERROR_STR], *p;
 
-    p = buf;
-
-    if (fmt != NULL) {
-        va_start(args, fmt);
-        p = njs_vsprintf(buf, buf + sizeof(buf), fmt, args);
-        va_end(args);
-    }
+    va_start(args, fmt);
+    p = njs_vsprintf(buf, buf + sizeof(buf), fmt, args);
+    va_end(args);
 
     njs_error_new(vm, dst, njs_vm_proto(vm, type), buf, p - buf);
 }

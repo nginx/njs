@@ -1695,7 +1695,7 @@ njs_string_from_char_code(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 range_error:
 
-    njs_range_error(vm, NULL);
+    njs_range_error(vm, "invalid code point");
 
     return NJS_ERROR;
 }
@@ -2503,7 +2503,7 @@ njs_string_prototype_repeat(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (njs_slow_path(n < 0 || n == INT64_MAX)) {
-        njs_range_error(vm, NULL);
+        njs_range_error(vm, "invalid count value");
         return NJS_ERROR;
     }
 
@@ -2517,7 +2517,7 @@ njs_string_prototype_repeat(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     max = NJS_STRING_MAX_LENGTH / string.size;
 
     if (njs_slow_path(n >= max)) {
-        njs_range_error(vm, NULL);
+        njs_range_error(vm, "invalid string length");
         return NJS_ERROR;
     }
 
@@ -2583,7 +2583,7 @@ njs_string_prototype_pad(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (njs_slow_path(new_length >= NJS_STRING_MAX_LENGTH)) {
-        njs_range_error(vm, NULL);
+        njs_range_error(vm, "invalid string length");
         return NJS_ERROR;
     }
 

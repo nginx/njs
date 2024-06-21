@@ -543,7 +543,7 @@ njs_number_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
         }
 
         if (radix < 2 || radix > 36 || radix != (int) radix) {
-            njs_range_error(vm, NULL);
+            njs_range_error(vm, "radix argument must be between 2 and 36");
             return NJS_ERROR;
         }
 
