@@ -21819,6 +21819,11 @@ static njs_unit_test_t  njs_webcrypto_test[] =
     { njs_str("let buf = new Uint32Array(4);"
               "buf === crypto.getRandomValues(buf)"),
       njs_str("true") },
+
+    { njs_str("crypto.subtle;"
+              "var d = Object.getOwnPropertyDescriptor(crypto, 'subtle');"
+              "d.enumerable && !d.configurable && d.writable"),
+      njs_str("true") },
 };
 
 
