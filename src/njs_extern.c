@@ -236,11 +236,9 @@ njs_external_prop_handler(njs_vm_t *vm, njs_object_prop_t *self,
         return NJS_ERROR;
     }
 
-    if (slots != NULL) {
-        prop->writable = slots->writable;
-        prop->configurable = slots->configurable;
-        prop->enumerable = slots->enumerable;
-    }
+    prop->writable = self->writable;
+    prop->configurable = self->configurable;
+    prop->enumerable = self->enumerable;
 
     lhq.value = prop;
     njs_string_get(&self->name, &lhq.key);
