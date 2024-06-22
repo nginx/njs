@@ -128,6 +128,7 @@ njs_utf8_decode_init(njs_unicode_decode_t *ctx)
 {
     ctx->need = 0x00;
     ctx->lower = 0x00;
+    ctx->codepoint = 0;
 }
 
 
