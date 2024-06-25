@@ -1,3 +1,53 @@
+Changes with njs 0.8.5                                       25 Jun 2024
+
+    nginx modules:
+
+    *) Change: r.variables.var, r.requestText, r.responseText,
+       s.variables.var, and the "data" argument of the s.on() callback
+       with "upload" or "download" event types will now convert bytes
+       invalid in UTF-8 encoding into the replacement character.  When
+       working with binary data, use r.rawVariables.var, r.requestBuffer,
+       r.responseBuffer, s.rawVariables.var, and the "upstream" or
+       "downstream" event type for s.on() instead.
+
+    *) Feature: added timeout argument for shared dictionary methods
+       add(), set() and incr().
+
+    *) Bugfix: fixed checking for duplicate js_set variables.
+
+    *) Bugfix: fixed request Host header when the port is non-standard.
+
+    *) Bugfix: fixed handling of a zero-length request body in ngx.fetch()
+       and r.subrequest().
+
+    *) Bugfix: fixed heap-buffer-overflow in Headers.get().
+
+    *) Bugfix: fixed r.subrequest() error handling.
+
+    Core:
+
+    *) Feature: added zlib module for QuickJS engine.
+
+    *) Bugfix: fixed zlib.inflate().
+
+    *) Bugfix: fixed String.prototype.replaceAll() with zero-length
+       argument.
+
+    *) Bugfix: fixed retval handling after an exception in
+       Array.prototype.toSpliced(), Array.prototype.toReversed(),
+       Array.prototype.toSorted().
+
+    *) Bugfix: fixed RegExp.prototype[@@replace]() with replacements
+       containing "$'", "$\`" and strings with Unicode characters.
+
+    *) Bugfix: fixed a one-byte overread in decodeURI() and
+       decodeURIComponent().
+
+    *) Bugfix: fixed tracking of argument scope.
+
+    *) Bugfix: fixed integer overflow in Date.parse().
+
+
 Changes with njs 0.8.4                                       16 Apr 2024
 
     nginx modules:
