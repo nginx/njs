@@ -22693,6 +22693,12 @@ static njs_unit_test_t  njs_shared_test[] =
     { njs_str("var v = Math.round(Math.random() * 1000); ExternalNull.set(v);"
               "ExternalNull.get() == v"),
       njs_str("true") },
+
+#if (NJS_HAVE_OPENSSL)
+    { njs_str("var cr = Object.entries(global).filter((v) => v[0] == 'crypto')[0][1];"
+              "cr.abc = 1; cr.abc"),
+      njs_str("1") },
+#endif
 };
 
 
