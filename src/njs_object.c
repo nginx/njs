@@ -1077,81 +1077,13 @@ njs_get_own_ordered_keys(njs_vm_t *vm, const njs_object_t *object,
 
 
 static njs_int_t
-njs_add_obj_prop_kind(njs_vm_t *vm, const njs_object_t *object,
-    const njs_lvlhsh_t *hash, njs_lvlhsh_query_t *lhq,
-    uint32_t flags, njs_array_t *items)
-{
-    njs_int_t          ret;
-    njs_value_t        value, *v, value1;
-    njs_array_t        *entry;
-    njs_object_prop_t  *prop;
-
-    ret = njs_lvlhsh_find(hash, lhq);
-    if (ret != NJS_OK) {
-        return NJS_DECLINED;
-    }
-
-    prop = (njs_object_prop_t *) (lhq->value);
-
-    if (prop->type != NJS_ACCESSOR) {
-        v = njs_prop_value(prop);
-
-    } else {
-        if (njs_is_data_descriptor(prop)) {
-            v = njs_prop_value(prop);
-            goto add;
-        }
-
-        if (njs_prop_getter(prop) == NULL) {
-            v =  njs_value_arg(&njs_value_undefined);
-            goto add;
-        }
-
-        v = &value1;
-
-        njs_set_object(&value, (njs_object_t *) object);
-        ret = njs_function_apply(vm, njs_prop_getter(prop), &value, 1, v);
-        if (ret != NJS_OK) {
-            return NJS_ERROR;
-        }
-    }
-
-add:
-    if (njs_object_enum_kind(flags) != NJS_ENUM_VALUES) {
-        entry = njs_array_alloc(vm, 0, 2, 0);
-        if (njs_slow_path(entry == NULL)) {
-            return NJS_ERROR;
-        }
-
-        njs_string_copy(&entry->start[0], &prop->name);
-        njs_value_assign(&entry->start[1], v);
-
-        njs_set_array(&value, entry);
-        v = &value;
-    }
-
-    ret = njs_array_add(vm, items, v);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return NJS_ERROR;
-    }
-
-    return NJS_OK;
-}
-
-
-static njs_int_t
 njs_object_own_enumerate_object(njs_vm_t *vm, const njs_object_t *object,
     const njs_object_t *parent, njs_array_t *items, uint32_t flags)
 {
-    njs_int_t           ret;
-    uint32_t            i;
-    njs_array_t         *items_sorted;
-    njs_lvlhsh_each_t   lhe;
-    njs_lvlhsh_query_t  lhq;
-
-    lhq.proto = &njs_object_hash_proto;
-
-    njs_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
+    uint32_t     i;
+    njs_int_t    ret;
+    njs_array_t  *items_sorted, *entry;
+    njs_value_t  value, retval;
 
     switch (njs_object_enum_kind(flags)) {
     case NJS_ENUM_KEYS:
@@ -1174,26 +1106,31 @@ njs_object_own_enumerate_object(njs_vm_t *vm, const njs_object_t *object,
             return NJS_ERROR;
         }
 
+        njs_set_object(&value, (njs_object_t *) object);
+
         for (i = 0; i< items_sorted->length; i++) {
+            ret = njs_value_property(vm, &value, &items_sorted->start[i],
+                                     &retval);
+            if (njs_slow_path(ret != NJS_OK)) {
+                njs_array_destroy(vm, items_sorted);
+                return NJS_ERROR;
+            }
 
-            lhe.key_hash = 0;
-            njs_object_property_key_set(&lhq, &items_sorted->start[i],
-                                        lhe.key_hash);
-
-            ret = njs_add_obj_prop_kind(vm, object, &object->hash, &lhq, flags,
-                                        items);
-            if (ret != NJS_DECLINED) {
-                if (ret != NJS_OK) {
+            if (njs_object_enum_kind(flags) != NJS_ENUM_VALUES) {
+                entry = njs_array_alloc(vm, 0, 2, 0);
+                if (njs_slow_path(entry == NULL)) {
                     return NJS_ERROR;
                 }
 
-            } else {
-                ret = njs_add_obj_prop_kind(vm, object, &object->shared_hash,
-                                            &lhq, flags, items);
-                njs_assert(ret != NJS_DECLINED);
-                if (ret != NJS_OK) {
-                    return NJS_ERROR;
-                }
+                njs_string_copy(&entry->start[0], &items_sorted->start[i]);
+                njs_value_assign(&entry->start[1], &retval);
+
+                njs_set_array(&retval, entry);
+            }
+
+            ret = njs_array_add(vm, items, &retval);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return NJS_ERROR;
             }
         }
 
