@@ -2168,6 +2168,10 @@ njs_object_prototype_create_constructor(njs_vm_t *vm, njs_object_prop_t *prop,
 
 found:
 
+    if (njs_flathsh_is_empty(&vm->constructors[index].object.shared_hash)) {
+        index = NJS_OBJ_TYPE_OBJECT;
+    }
+
     njs_set_function(&constructor, &njs_vm_ctor(vm, index));
     setval = &constructor;
 

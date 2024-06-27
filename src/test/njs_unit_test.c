@@ -7450,6 +7450,9 @@ static njs_unit_test_t  njs_test[] =
               "[i.next(), i.next(), i.next(), i.next()].map((x) => x.value)"),
       njs_str("1,2,3,") },
 
+    { njs_str("[].values().constructor()"),
+      njs_str("[object Object]") },
+
     { njs_str("var a = [], i = a.values();"
               "a.push(1); a.push(2); a.push(3);"
               "[i.next(), i.next(), i.next(), i.next()].map((x) => x.value)"),
