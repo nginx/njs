@@ -12885,6 +12885,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var ex; try {({}) instanceof this} catch (e) {ex = e}; ex"),
       njs_str("TypeError: right argument is not callable") },
 
+    { njs_str("delete global.global; global"),
+      njs_str("ReferenceError: \"global\" is not defined") },
+
     { njs_str("njs"),
       njs_str("[object njs]") },
 
