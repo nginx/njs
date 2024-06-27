@@ -1798,7 +1798,7 @@ njs_dump_terminal(njs_json_stringify_t *stringify, njs_chb_t *chain,
 
         njs_chb_append_literal(chain, "[");
 
-        (void) njs_typed_array_to_chain(stringify->vm, chain, array, NULL);
+        njs_typed_array_to_chain(stringify->vm, chain, array, NULL);
 
         njs_chb_append_literal(chain, "]");
 

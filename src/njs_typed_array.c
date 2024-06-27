@@ -2054,11 +2054,11 @@ njs_typed_array_prototype_sort(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-njs_int_t
+void
 njs_typed_array_to_chain(njs_vm_t *vm, njs_chb_t *chain,
     njs_typed_array_t *array, njs_value_t *sep)
 {
-    size_t             size, length, arr_length;
+    size_t             length;
     uint32_t           i;
     njs_string_prop_t  separator;
 
@@ -2068,29 +2068,18 @@ njs_typed_array_to_chain(njs_vm_t *vm, njs_chb_t *chain,
 
     (void) njs_string_prop(&separator, sep);
 
-    arr_length = njs_typed_array_length(array);
+    length = njs_typed_array_length(array);
 
-    if (arr_length == 0) {
-        return 0;
+    if (length == 0) {
+        return;
     }
 
-    for (i = 0; i < arr_length; i++) {
+    for (i = 0; i < length; i++) {
         njs_number_to_chain(vm, chain, njs_typed_array_prop(array, i));
         njs_chb_append(chain, separator.start, separator.size);
     }
 
     njs_chb_drop(chain, separator.size);
-
-    size = njs_chb_size(chain);
-
-    if (njs_utf8_length(separator.start, separator.size) >= 0) {
-        length = size - (separator.size - separator.length) * (arr_length - 1);
-
-    } else {
-        length = 0;
-    }
-
-    return length;
 }
 
 
@@ -2098,8 +2087,7 @@ static njs_int_t
 njs_typed_array_prototype_join(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
 {
-    u_char             *p;
-    size_t             size, length, arr_length;
+    size_t             length;
     njs_int_t          ret;
     njs_chb_t          chain;
     njs_value_t        *this, *separator;
@@ -2117,7 +2105,7 @@ njs_typed_array_prototype_join(njs_vm_t *vm, njs_value_t *args,
         return NJS_ERROR;
     }
 
-    arr_length = njs_typed_array_length(array);
+    length = njs_typed_array_length(array);
 
     separator = njs_arg(args, nargs, 1);
 
@@ -2133,7 +2121,7 @@ njs_typed_array_prototype_join(njs_vm_t *vm, njs_value_t *args,
         }
     }
 
-    if (arr_length == 0) {
+    if (length == 0) {
         njs_value_assign(retval, &njs_string_empty);
         return NJS_OK;
     }
@@ -2145,18 +2133,13 @@ njs_typed_array_prototype_join(njs_vm_t *vm, njs_value_t *args,
 
     NJS_CHB_MP_INIT(&chain, vm);
 
-    length = njs_typed_array_to_chain(vm, &chain, array, separator);
-    size = njs_chb_size(&chain);
+    njs_typed_array_to_chain(vm, &chain, array, separator);
 
-    p = njs_string_alloc(vm, retval, size, length);
-    if (njs_slow_path(p == NULL)) {
-        return NJS_ERROR;
-    }
+    ret = njs_string_create_chb(vm, retval, &chain);
 
-    njs_chb_join_to(&chain, p);
     njs_chb_destroy(&chain);
 
-    return NJS_OK;
+    return ret;
 }
 
 

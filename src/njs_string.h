@@ -149,8 +149,6 @@ void njs_string_truncate(njs_value_t *value, uint32_t size, uint32_t length);
 uint32_t njs_string_trim(const njs_value_t *value, njs_string_prop_t *string,
     unsigned mode);
 void njs_string_copy(njs_value_t *dst, njs_value_t *src);
-njs_int_t njs_string_validate(njs_vm_t *vm, njs_string_prop_t *string,
-    njs_value_t *value);
 njs_int_t njs_string_cmp(const njs_value_t *val1, const njs_value_t *val2);
 void njs_string_slice_string_prop(njs_string_prop_t *dst,
     const njs_string_prop_t *string, const njs_slice_prop_t *slice);
@@ -197,7 +195,7 @@ njs_string_calc_length(njs_utf8_t utf8, const u_char *start, size_t size)
     default:
         length = njs_utf8_length(start, size);
 
-        return (length >= 0) ? length : 0;
+        return length;
     }
 }
 
