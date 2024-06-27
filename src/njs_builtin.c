@@ -783,13 +783,14 @@ njs_global_this_object(njs_vm_t *vm, njs_object_prop_t *self,
     njs_object_prop_t   *prop;
     njs_lvlhsh_query_t  lhq;
 
+    if (retval == NULL) {
+        return NJS_DECLINED;
+    }
+
     njs_value_assign(retval, global);
 
     if (njs_slow_path(setval != NULL)) {
         njs_value_assign(retval, setval);
-
-    } else if (njs_slow_path(retval == NULL)) {
-        return NJS_DECLINED;
     }
 
     prop = njs_object_prop_alloc(vm, &self->name, retval, 1);
