@@ -1103,7 +1103,6 @@ njs_value_t *
 njs_vm_value_enumerate(njs_vm_t *vm, njs_value_t *value, uint32_t flags,
     njs_value_t *retval)
 {
-    ssize_t                  length;
     njs_int_t                ret;
     njs_value_t              *val;
     njs_array_t              *keys;
@@ -1143,18 +1142,13 @@ njs_vm_value_enumerate(njs_vm_t *vm, njs_value_t *value, uint32_t flags,
             continue;
         }
 
-        length = njs_utf8_length(lex_entry->name.start, lex_entry->name.length);
-        if (njs_slow_path(length < 0)) {
-            return NULL;
-        }
-
         val = njs_array_push(vm, keys);
         if (njs_slow_path(value == NULL)) {
             return NULL;
         }
 
-        ret = njs_string_new(vm, val, lex_entry->name.start,
-                             lex_entry->name.length, length);
+        ret = njs_string_create(vm, val, lex_entry->name.start,
+                                lex_entry->name.length);
         if (njs_slow_path(ret != NJS_OK)) {
             return NULL;
         }

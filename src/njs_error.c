@@ -31,17 +31,11 @@ void
 njs_error_new(njs_vm_t *vm, njs_value_t *dst, njs_object_t *proto,
     u_char *start, size_t size)
 {
-    ssize_t        length;
     njs_int_t     ret;
     njs_value_t   string;
     njs_object_t  *error;
 
-    length = njs_utf8_length(start, size);
-    if (njs_slow_path(length < 0)) {
-        length = 0;
-    }
-
-    ret = njs_string_new(vm, &string, start, size, length);
+    ret = njs_string_create(vm, &string, start, size);
     if (njs_slow_path(ret != NJS_OK)) {
         return;
     }
