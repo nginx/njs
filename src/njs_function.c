@@ -1054,9 +1054,11 @@ njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     njs_chb_append_literal(&chain, "){");
 
-    ret = njs_value_to_chain(vm, &chain, njs_argument(args, nargs - 1));
-    if (njs_slow_path(ret < NJS_OK)) {
-        return ret;
+    if (nargs > 1) {
+        ret = njs_value_to_chain(vm, &chain, njs_argument(args, nargs - 1));
+        if (njs_slow_path(ret < NJS_OK)) {
+            return ret;
+        }
     }
 
     njs_chb_append_literal(&chain, "})");
