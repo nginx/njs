@@ -14147,7 +14147,10 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Function.constructor === Function"),
       njs_str("true") },
 
-    { njs_str("function f() {} f.__proto__ === Function.prototype"),
+    { njs_str("Function.constructor()"),
+      njs_str("[Function: anonymous]") },
+
+{ njs_str("function f() {} f.__proto__ === Function.prototype"),
       njs_str("true") },
 
     { njs_str("Function()"),
