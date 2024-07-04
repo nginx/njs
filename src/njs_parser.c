@@ -4617,8 +4617,8 @@ njs_parser_statement(njs_parser_t *parser, njs_lexer_token_t *token,
 
 
 static njs_int_t
-njs_parser_statement_wo_node(njs_parser_t *parser, njs_lexer_token_t *token,
-    njs_queue_link_t *current)
+njs_parser_statement_wo_node_(njs_parser_t *parser, njs_lexer_token_t *token,
+    njs_queue_link_t *current, int labelled)
 {
     switch (token->type) {
     case NJS_TOKEN_OPEN_BRACE:
@@ -4631,6 +4631,12 @@ njs_parser_statement_wo_node(njs_parser_t *parser, njs_lexer_token_t *token,
 
     case NJS_TOKEN_SEMICOLON:
         njs_lexer_consume_token(parser->lexer, 1);
+        if (labelled == 1) {
+            token = njs_lexer_token(parser->lexer, 0);
+            if (token->type != NJS_TOKEN_END) {
+                return NJS_OK;
+            }
+        }
         return njs_parser_stack_pop(parser);
 
     case NJS_TOKEN_IF:
@@ -4707,6 +4713,22 @@ njs_parser_statement_wo_node(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_lexer_consume_token(parser->lexer, 1);
 
     return NJS_OK;
+}
+
+
+static njs_int_t
+njs_parser_statement_wo_node(njs_parser_t *parser, njs_lexer_token_t *token,
+    njs_queue_link_t *current)
+{
+    return njs_parser_statement_wo_node_(parser, token, current, 0);
+}
+
+
+static njs_int_t
+njs_parser_statement_wo_node_labelled(njs_parser_t *parser,
+    njs_lexer_token_t *token, njs_queue_link_t *current)
+{
+    return njs_parser_statement_wo_node_(parser, token, current, 1);
 }
 
 
@@ -6685,7 +6707,7 @@ njs_parser_labelled_statement(njs_parser_t *parser, njs_lexer_token_t *token,
         return NJS_DONE;
 
     } else {
-        njs_parser_next(parser, njs_parser_statement_wo_node);
+        njs_parser_next(parser, njs_parser_statement_wo_node_labelled);
     }
 
     return njs_parser_after(parser, current, (void *) unique_id, 1,
