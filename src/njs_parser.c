@@ -6699,23 +6699,32 @@ njs_parser_labelled_statement_after(njs_parser_t *parser,
 {
     njs_int_t                ret;
     uintptr_t                unique_id;
+    njs_parser_node_t        *node;
     const njs_lexer_entry_t  *entry;
 
-    if (parser->node != NULL) {
-        /* The statement is not empty block or just semicolon. */
-
-        unique_id = (uintptr_t) parser->target;
-        entry = (const njs_lexer_entry_t *) unique_id;
-
-        ret = njs_name_copy(parser->vm, &parser->node->name, &entry->name);
-        if (ret != NJS_OK) {
+    node = parser->node;
+    if (node == NULL) {
+        node = njs_parser_node_new(parser, NJS_TOKEN_BLOCK);
+        if (node == NULL) {
             return NJS_ERROR;
         }
 
-        ret = njs_label_remove(parser->vm, parser->scope, unique_id);
-        if (ret != NJS_OK) {
-            return NJS_ERROR;
-        }
+        node->token_line = token->line;
+
+        parser->node = node;
+    }
+
+    unique_id = (uintptr_t) parser->target;
+    entry = (const njs_lexer_entry_t *) unique_id;
+
+    ret = njs_name_copy(parser->vm, &parser->node->name, &entry->name);
+    if (ret != NJS_OK) {
+        return NJS_ERROR;
+    }
+
+    ret = njs_label_remove(parser->vm, parser->scope, unique_id);
+    if (ret != NJS_OK) {
+        return NJS_ERROR;
     }
 
     return njs_parser_stack_pop(parser);
