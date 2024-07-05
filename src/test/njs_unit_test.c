@@ -3494,6 +3494,22 @@ static njs_unit_test_t  njs_test[] =
                  "} catch(e) {c = 10;}; [c, fin]"),
       njs_str("1,1") },
 
+    { njs_str("function v1() {"
+                 "function v2 () {}"
+                 "v3:;"
+                 "1;"
+              "} v1();"),
+      njs_str("undefined") },
+
+    { njs_str("function v1() {"
+                 "function v2 () {}"
+                 "v3:;"
+              "} v1();"),
+      njs_str("undefined") },
+
+    { njs_str("{v1:;}"),
+      njs_str("undefined") },
+
     /* jumping out of a nested try-catch block. */
 
     { njs_str("var r = 0; "
