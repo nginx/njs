@@ -1901,46 +1901,6 @@ njs_qjs_clear_timeout(JSContext *ctx, JSValueConst this_val, int argc,
 }
 
 
-static njs_int_t
-njs_qjs_set_to_string_tag(JSContext *ctx, JSValueConst val, const char *tag)
-{
-    JSAtom    atom;
-    JSValue   global_obj, symbol, toStringTag;
-    njs_int_t ret;
-
-    global_obj = JS_GetGlobalObject(ctx);
-
-    symbol = JS_GetPropertyStr(ctx, global_obj, "Symbol");
-    JS_FreeValue(ctx, global_obj);
-    if (JS_IsException(symbol)) {
-        return -1;
-    }
-
-    toStringTag = JS_GetPropertyStr(ctx, symbol, "toStringTag");
-    if (JS_IsException(toStringTag)) {
-        JS_FreeValue(ctx, symbol);
-        return -1;
-    }
-
-    atom = JS_ValueToAtom(ctx, toStringTag);
-
-    JS_FreeValue(ctx, symbol);
-    JS_FreeValue(ctx, toStringTag);
-
-    if (atom == JS_ATOM_NULL) {
-        JS_ThrowInternalError(ctx, "failed to get atom");
-        return -1;
-    }
-
-    ret = JS_DefinePropertyValue(ctx, val, atom, JS_NewString(ctx, tag),
-                                 JS_PROP_C_W_E);
-
-    JS_FreeAtom(ctx, atom);
-
-    return ret;
-}
-
-
 static JSValue
 njs_qjs_process_getter(JSContext *ctx, JSValueConst this_val)
 {
@@ -1963,7 +1923,7 @@ njs_qjs_process_getter(JSContext *ctx, JSValueConst this_val)
         return JS_EXCEPTION;
     }
 
-    ret = njs_qjs_set_to_string_tag(ctx, obj, "process");
+    ret = qjs_set_to_string_tag(ctx, obj, "process");
     if (ret == -1) {
         JS_FreeValue(ctx, obj);
         return JS_EXCEPTION;
@@ -2062,46 +2022,6 @@ error:
     }
 
     console->process = JS_DupValue(ctx, obj);
-
-    return obj;
-}
-
-static JSValue
-njs_qjs_njs_getter(JSContext *ctx, JSValueConst this_val)
-{
-    JSValue    obj;
-    njs_int_t  ret;
-
-    obj = JS_NewObject(ctx);
-    if (JS_IsException(obj)) {
-        return JS_EXCEPTION;
-    }
-
-    ret = njs_qjs_set_to_string_tag(ctx, obj, "njs");
-    if (ret == -1) {
-        JS_FreeValue(ctx, obj);
-        return JS_EXCEPTION;
-    }
-
-    ret = JS_SetPropertyStr(ctx, obj, "version_number",
-                            JS_NewInt32(ctx, NJS_VERSION_NUMBER));
-    if (ret == -1) {
-        JS_FreeValue(ctx, obj);
-        return JS_EXCEPTION;
-    }
-
-    ret = JS_SetPropertyStr(ctx, obj, "version",
-                            JS_NewString(ctx, NJS_VERSION));
-    if (ret == -1) {
-        JS_FreeValue(ctx, obj);
-        return JS_EXCEPTION;
-    }
-
-    ret = JS_SetPropertyStr(ctx, obj, "engine", JS_NewString(ctx, "QuickJS"));
-    if (ret == -1) {
-        JS_FreeValue(ctx, obj);
-        return JS_EXCEPTION;
-    }
 
     return obj;
 }
@@ -2656,7 +2576,6 @@ njs_qjs_new_262(JSContext *ctx, JSValueConst this_val)
 static const JSCFunctionListEntry njs_qjs_global_proto[] = {
     JS_CFUNC_DEF("clearTimeout", 1, njs_qjs_clear_timeout),
     JS_CFUNC_MAGIC_DEF("print", 0, njs_qjs_console_log, NJS_LOG_INFO),
-    JS_CGETSET_DEF("njs", njs_qjs_njs_getter, NULL),
     JS_CGETSET_DEF("process", njs_qjs_process_getter, NULL),
     JS_CFUNC_MAGIC_DEF("setImmediate", 0, njs_qjs_set_timer, 1),
     JS_CFUNC_MAGIC_DEF("setTimeout", 0, njs_qjs_set_timer, 0),
@@ -2840,9 +2759,9 @@ njs_engine_qjs_init(njs_engine_t *engine, njs_opts_t *opts)
         goto done;
     }
 
-    ret = njs_qjs_set_to_string_tag(ctx, obj, "Console");
+    ret = qjs_set_to_string_tag(ctx, obj, "Console");
     if (ret == -1) {
-        njs_stderror("njs_qjs_set_to_string_tag() failed\n");
+        njs_stderror("qjs_set_to_string_tag() failed\n");
         ret = NJS_ERROR;
         goto done;
     }
