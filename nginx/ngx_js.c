@@ -815,10 +815,11 @@ njs_int_t
 ngx_js_ext_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t magic, njs_value_t *retval)
 {
-    char        *p;
-    ngx_int_t   lvl;
-    njs_str_t   msg;
-    njs_uint_t  n, level;
+    char              *p;
+    ngx_int_t          lvl;
+    njs_str_t          msg;
+    njs_uint_t         n, level;
+    ngx_connection_t  *c;
 
     p = njs_vm_external(vm, NJS_PROTO_ID_ANY, njs_argument(args, 0));
     if (p == NULL) {
@@ -840,6 +841,8 @@ ngx_js_ext_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         n = 1;
     }
 
+    c = ngx_external_connection(vm, p);
+
     for (; n < nargs; n++) {
         if (njs_vm_value_dump(vm, &msg, njs_argument(args, n), 1,
                               !!(magic & NGX_JS_LOG_DUMP))
@@ -848,7 +851,7 @@ ngx_js_ext_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             return NJS_ERROR;
         }
 
-        ngx_js_logger(vm, p, level, msg.start, msg.length);
+        ngx_js_logger(c, level, msg.start, msg.length);
     }
 
     njs_value_undefined_set(retval);
@@ -1185,30 +1188,36 @@ void
 ngx_js_log(njs_vm_t *vm, njs_external_ptr_t external, ngx_uint_t level,
     const char *fmt, ...)
 {
-    u_char   *p;
-    va_list   args;
-    u_char    buf[NGX_MAX_ERROR_STR];
+    u_char            *p;
+    va_list            args;
+    ngx_connection_t  *c;
+    u_char             buf[NGX_MAX_ERROR_STR];
 
     va_start(args, fmt);
     p = njs_vsprintf(buf, buf + sizeof(buf), fmt, args);
     va_end(args);
 
-    ngx_js_logger(vm, external, level, buf, p - buf);
+    if (external != NULL) {
+        c = ngx_external_connection(vm, external);
+
+    } else {
+        c = NULL;
+    }
+
+    ngx_js_logger(c, level, buf, p - buf);
 }
 
 
 void
-ngx_js_logger(njs_vm_t *vm, njs_external_ptr_t external, ngx_uint_t level,
-    const u_char *start, size_t length)
+ngx_js_logger(ngx_connection_t *c, ngx_uint_t level, const u_char *start,
+    size_t length)
 {
     ngx_log_t           *log;
-    ngx_connection_t    *c;
     ngx_log_handler_pt   handler;
 
     handler = NULL;
 
-    if (external != NULL) {
-        c = ngx_external_connection(vm, external);
+    if (c != NULL) {
         log =  c->log;
         handler = log->handler;
         log->handler = NULL;
@@ -1222,7 +1231,7 @@ ngx_js_logger(njs_vm_t *vm, njs_external_ptr_t external, ngx_uint_t level,
 
     ngx_log_error(level, log, 0, "js: %*s", length, start);
 
-    if (external != NULL) {
+    if (c != NULL) {
         log->handler = handler;
     }
 }
