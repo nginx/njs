@@ -5,11 +5,21 @@
  */
 
 #include <qjs.h>
+#include <njs.h> /* NJS_VERSION */
+
+
+static JSValue qjs_njs_getter(JSContext *ctx, JSValueConst this_val);
+
+
+static const JSCFunctionListEntry qjs_global_proto[] = {
+    JS_CGETSET_DEF("njs", qjs_njs_getter, NULL),
+};
 
 
 JSContext *
 qjs_new_context(JSRuntime *rt, _Bool eval)
 {
+    JSValue       global_obj;
     JSContext     *ctx;
     qjs_module_t  **module;
 
@@ -38,7 +48,95 @@ qjs_new_context(JSRuntime *rt, _Bool eval)
         }
     }
 
+    global_obj = JS_GetGlobalObject(ctx);
+
+    JS_SetPropertyFunctionList(ctx, global_obj, qjs_global_proto,
+                               njs_nitems(qjs_global_proto));
+
+    JS_FreeValue(ctx, global_obj);
+
     return ctx;
+}
+
+
+static JSValue
+qjs_njs_getter(JSContext *ctx, JSValueConst this_val)
+{
+    int      ret;
+    JSValue  obj;
+
+    obj = JS_NewObject(ctx);
+    if (JS_IsException(obj)) {
+        return JS_EXCEPTION;
+    }
+
+    ret = qjs_set_to_string_tag(ctx, obj, "njs");
+    if (ret == -1) {
+        JS_FreeValue(ctx, obj);
+        return JS_EXCEPTION;
+    }
+
+    ret = JS_SetPropertyStr(ctx, obj, "version_number",
+                            JS_NewInt32(ctx, NJS_VERSION_NUMBER));
+    if (ret == -1) {
+        JS_FreeValue(ctx, obj);
+        return JS_EXCEPTION;
+    }
+
+    ret = JS_SetPropertyStr(ctx, obj, "version",
+                            JS_NewString(ctx, NJS_VERSION));
+    if (ret == -1) {
+        JS_FreeValue(ctx, obj);
+        return JS_EXCEPTION;
+    }
+
+    ret = JS_SetPropertyStr(ctx, obj, "engine", JS_NewString(ctx, "QuickJS"));
+    if (ret == -1) {
+        JS_FreeValue(ctx, obj);
+        return JS_EXCEPTION;
+    }
+
+    return obj;
+}
+
+
+int
+qjs_set_to_string_tag(JSContext *ctx, JSValueConst val, const char *tag)
+{
+    int      ret;
+    JSAtom   atom;
+    JSValue  global_obj, symbol, toStringTag;
+
+    global_obj = JS_GetGlobalObject(ctx);
+
+    symbol = JS_GetPropertyStr(ctx, global_obj, "Symbol");
+    JS_FreeValue(ctx, global_obj);
+    if (JS_IsException(symbol)) {
+        return -1;
+    }
+
+    toStringTag = JS_GetPropertyStr(ctx, symbol, "toStringTag");
+    if (JS_IsException(toStringTag)) {
+        JS_FreeValue(ctx, symbol);
+        return -1;
+    }
+
+    atom = JS_ValueToAtom(ctx, toStringTag);
+
+    JS_FreeValue(ctx, symbol);
+    JS_FreeValue(ctx, toStringTag);
+
+    if (atom == JS_ATOM_NULL) {
+        JS_ThrowInternalError(ctx, "failed to get atom");
+        return -1;
+    }
+
+    ret = JS_DefinePropertyValue(ctx, val, atom, JS_NewString(ctx, tag),
+                                 JS_PROP_C_W_E);
+
+    JS_FreeAtom(ctx, atom);
+
+    return ret;
 }
 
 
