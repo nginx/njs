@@ -71,25 +71,18 @@ typedef struct {
 
 
 typedef struct {
-    ngx_http_request_t    *request;
-    njs_opaque_value_t     callbacks[2];
-} ngx_http_js_cb_t;
-
-
-typedef struct {
-    njs_str_t              name;
-#if defined(nginx_version) && (nginx_version >= 1023000)
+    ngx_str_t              name;
     unsigned               flags;
-    njs_int_t            (*handler)(njs_vm_t *vm, ngx_http_request_t *r,
-                                    unsigned flags, njs_str_t *name,
-                                    njs_value_t *setval, njs_value_t *retval);
-#else
-    njs_int_t            (*handler)(njs_vm_t *vm, ngx_http_request_t *r,
-                                    ngx_list_t *headers, njs_str_t *name,
-                                    njs_value_t *setval, njs_value_t *retval);
-
-#endif
+    uintptr_t              handler;
 }  ngx_http_js_header_t;
+
+
+typedef njs_int_t (*njs_http_js_header_handler_t)(njs_vm_t *vm,
+    ngx_http_request_t *r, unsigned flags, njs_str_t *name, njs_value_t *setval,
+    njs_value_t *retval);
+typedef njs_int_t (*njs_http_js_header_handler122_t)(njs_vm_t *vm,
+    ngx_http_request_t *r, ngx_list_t *headers, njs_str_t *name,
+    njs_value_t *setval, njs_value_t *retval);
 
 
 static ngx_int_t ngx_http_js_content_handler(ngx_http_request_t *r);
@@ -1613,33 +1606,41 @@ ngx_http_js_ext_header_out(njs_vm_t *vm, njs_object_prop_t *prop,
 
     static ngx_http_js_header_t headers_out[] = {
 #if defined(nginx_version) && (nginx_version < 1023000)
-        { njs_str("Age"), ngx_http_js_header_single },
-        { njs_str("Content-Type"), ngx_http_js_content_type122 },
-        { njs_str("Content-Length"), ngx_http_js_content_length122 },
-        { njs_str("Content-Encoding"), ngx_http_js_content_encoding122 },
-        { njs_str("Date"), ngx_http_js_date122 },
-        { njs_str("Etag"), ngx_http_js_header_single },
-        { njs_str("Expires"), ngx_http_js_header_single },
-        { njs_str("Last-Modified"), ngx_http_js_last_modified122 },
-        { njs_str("Location"), ngx_http_js_location122 },
-        { njs_str("Server"), ngx_http_js_server122 },
-        { njs_str("Set-Cookie"), ngx_http_js_header_array },
-        { njs_str("Retry-After"), ngx_http_js_header_single },
-        { njs_str(""), ngx_http_js_header_generic },
+
+#define header(name, h) { njs_str(name), 0, (uintptr_t) h }
+        header("Age", ngx_http_js_header_single),
+        header("Content-Type", ngx_http_js_content_type122),
+        header("Content-Length", ngx_http_js_content_length122),
+        header("Content-Encoding", ngx_http_js_content_encoding122),
+        header("Date", ngx_http_js_date122),
+        header("Etag", ngx_http_js_header_single),
+        header("Expires", ngx_http_js_header_single),
+        header("Last-Modified", ngx_http_js_last_modified122),
+        header("Location", ngx_http_js_location122),
+        header("Server", ngx_http_js_server122),
+        header("Set-Cookie", ngx_http_js_header_array),
+        header("Retry-After", ngx_http_js_header_single),
+        header("", ngx_http_js_header_generic),
+#undef header
+
 #else
-        { njs_str("Age"), NJS_HEADER_SINGLE, ngx_http_js_header_out },
-        { njs_str("Content-Encoding"), 0, ngx_http_js_content_encoding },
-        { njs_str("Content-Length"), 0, ngx_http_js_content_length },
-        { njs_str("Content-Type"), 0, ngx_http_js_content_type },
-        { njs_str("Date"), 0, ngx_http_js_date },
-        { njs_str("Etag"), NJS_HEADER_SINGLE, ngx_http_js_header_out },
-        { njs_str("Expires"), NJS_HEADER_SINGLE, ngx_http_js_header_out },
-        { njs_str("Last-Modified"), 0, ngx_http_js_last_modified },
-        { njs_str("Location"), 0, ngx_http_js_location },
-        { njs_str("Server"), 0, ngx_http_js_server },
-        { njs_str("Set-Cookie"), NJS_HEADER_ARRAY, ngx_http_js_header_out },
-        { njs_str("Retry-After"), NJS_HEADER_SINGLE, ngx_http_js_header_out },
-        { njs_str(""), 0, ngx_http_js_header_out },
+
+#define header(name, fl, h) { njs_str(name), fl, (uintptr_t) h }
+        header("Age", NJS_HEADER_SINGLE, ngx_http_js_header_out),
+        header("Content-Encoding", 0, ngx_http_js_content_encoding),
+        header("Content-Length", 0, ngx_http_js_content_length),
+        header("Content-Type", 0, ngx_http_js_content_type),
+        header("Date", 0, ngx_http_js_date),
+        header("Etag", NJS_HEADER_SINGLE, ngx_http_js_header_out),
+        header("Expires", NJS_HEADER_SINGLE, ngx_http_js_header_out),
+        header("Last-Modified", 0, ngx_http_js_last_modified),
+        header("Location", 0, ngx_http_js_location),
+        header("Server", 0, ngx_http_js_server),
+        header("Set-Cookie", NJS_HEADER_ARRAY, ngx_http_js_header_out),
+        header("Retry-After", NJS_HEADER_SINGLE, ngx_http_js_header_out),
+        header("", 0, ngx_http_js_header_out),
+#undef header
+
 #endif
     };
 
@@ -1667,18 +1668,20 @@ ngx_http_js_ext_header_out(njs_vm_t *vm, njs_object_prop_t *prop,
                       " headers were already sent", &name);
     }
 
-    for (h = headers_out; h->name.length > 0; h++) {
-        if (h->name.length == name.length
-            && ngx_strncasecmp(h->name.start, name.start, name.length) == 0)
+    for (h = headers_out; h->name.len > 0; h++) {
+        if (h->name.len == name.length
+            && ngx_strncasecmp(h->name.data, name.start, name.length) == 0)
         {
             break;
         }
     }
 
 #if defined(nginx_version) && (nginx_version < 1023000)
-    return h->handler(vm, r, &r->headers_out.headers, &name, setval, retval);
+    return ((njs_http_js_header_handler122_t) h->handler)(vm, r,
+                                &r->headers_out.headers, &name, setval, retval);
 #else
-    return h->handler(vm, r, h->flags, &name, setval, retval);
+    return ((njs_http_js_header_handler_t) h->handler)(vm, r, h->flags, &name,
+                                                       setval, retval);
 #endif
 }
 
@@ -2746,18 +2749,20 @@ ngx_http_js_ext_header_in(njs_vm_t *vm, njs_object_prop_t *prop,
     ngx_http_js_header_t  *h;
 
     static ngx_http_js_header_t headers_in[] = {
-        { njs_str("Content-Type"), ngx_http_js_header_single },
-        { njs_str("Cookie"), ngx_http_js_header_cookie },
-        { njs_str("ETag"), ngx_http_js_header_single },
-        { njs_str("From"), ngx_http_js_header_single },
-        { njs_str("Max-Forwards"), ngx_http_js_header_single },
-        { njs_str("Referer"), ngx_http_js_header_single },
-        { njs_str("Proxy-Authorization"), ngx_http_js_header_single },
-        { njs_str("User-Agent"), ngx_http_js_header_single },
+#define header(name, h) { njs_str(name), 0, (uintptr_t) h }
+        header("Content-Type", ngx_http_js_header_single),
+        header("Cookie", ngx_http_js_header_cookie),
+        header("ETag", ngx_http_js_header_single),
+        header("From", ngx_http_js_header_single),
+        header("Max-Forwards", ngx_http_js_header_single),
+        header("Referer", ngx_http_js_header_single),
+        header("Proxy-Authorization", ngx_http_js_header_single),
+        header("User-Agent", ngx_http_js_header_single),
 #if (NGX_HTTP_X_FORWARDED_FOR)
-        { njs_str("X-Forwarded-For"), ngx_http_js_header_x_forwarded_for },
+        header("X-Forwarded-For", ngx_http_js_header_x_forwarded_for),
 #endif
-        { njs_str(""), ngx_http_js_header_generic },
+        header("", ngx_http_js_header_generic),
+#undef header
     };
 
     r = njs_vm_external(vm, ngx_http_js_request_proto_id, value);
@@ -2778,15 +2783,16 @@ ngx_http_js_ext_header_in(njs_vm_t *vm, njs_object_prop_t *prop,
         return NJS_DECLINED;
     }
 
-    for (h = headers_in; h->name.length > 0; h++) {
-        if (h->name.length == name.length
-            && ngx_strncasecmp(h->name.start, name.start, name.length) == 0)
+    for (h = headers_in; h->name.len > 0; h++) {
+        if (h->name.len == name.length
+            && ngx_strncasecmp(h->name.data, name.start, name.length) == 0)
         {
             break;
         }
     }
 
-    return h->handler(vm, r, &r->headers_in.headers, &name, setval, retval);
+    return ((njs_http_js_header_handler122_t) h->handler)(vm, r,
+                                &r->headers_in.headers, &name, setval, retval);
 }
 
 
