@@ -388,12 +388,12 @@ $t->write_file('test.js', <<EOF);
             r.headersOut['Foo'] = 'xxx';
         }
 
-        r.return(200, `B:\${njs.dump(r.headersOut.foo)}`);
+        r.return(200, `B:\${r.headersOut.foo}`);
     }
 
     function hdr_out_single(r) {
         r.headersOut.ETag = ['a', 'b'];
-        r.return(200, `B:\${njs.dump(r.headersOut.etag)}`);
+        r.return(200, `B:\${r.headersOut.etag}`);
     }
 
     function hdr_out_set_cookie(r) {
@@ -403,7 +403,8 @@ $t->write_file('test.js', <<EOF);
         r.headersOut['Set-Cookie'] = 'e';
         r.headersOut['Set-Cookie'] = ['c', '', null, 'd', 'f'];
 
-        r.return(200, `B:\${njs.dump(r.headersOut['Set-Cookie'])}`);
+		var cookies = r.headersOut['Set-Cookie'];
+        r.return(200, `B:\${cookies} \${Array.isArray(cookies)}`);
     }
 
     function ihdr_out(r) {
@@ -519,7 +520,7 @@ like(http_get('/hdr_out_single'), qr/B:a/,
 	'r.headersOut single get');
 like(http_get('/hdr_out_set_cookie'), qr/Set-Cookie: c\r\nSet-Cookie: d/,
 	'set_cookie');
-like(http_get('/hdr_out_set_cookie'), qr/B:\['c','d','f']/,
+like(http_get('/hdr_out_set_cookie'), qr/B:c,d,f true/,
 	'set_cookie2');
 unlike(http_get('/hdr_out_set_cookie'), qr/Set-Cookie: [abe]/,
 	'set_cookie3');
