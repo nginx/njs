@@ -280,7 +280,7 @@ $t->write_file('test.js', <<EOF);
     }
 
     function sr(r) {
-        subrequest_fn(r, ['/p/sub2'], ['uri', 'status'])
+        subrequest_fn(r, ['/p/sub2'], ['status'])
     }
 
     function sr_pr(r) {
@@ -386,11 +386,11 @@ $t->write_file('test.js', <<EOF);
     }
 
     function sr_unavail(req) {
-        subrequest_fn(req, ['/unavail'], ['uri', 'status']);
+        subrequest_fn(req, ['/unavail'], ['status']);
     }
 
     function sr_unavail_pr(req) {
-        subrequest_fn_pr(req, ['/unavail'], ['uri', 'status']);
+        subrequest_fn_pr(req, ['/unavail'], ['status']);
     }
 
     function sr_unsafe(r) {
@@ -455,18 +455,20 @@ $t->write_file('test.js', <<EOF);
 
     function sr_out_of_order(r) {
         subrequest_fn(r, ['/p/delayed', '/p/sub1', '/unknown'],
-                      ['uri', 'status']);
+                      ['status']);
     }
 
     function collect(replies, props, total, reply) {
         reply.log(`subrequest handler: \${reply.uri} status: \${reply.status}`)
 
         var rep = {};
+        props.push('uri');
         props.forEach(p => {rep[p] = reply[p]});
 
         replies.push(rep);
 
         if (replies.length == total) {
+            replies.sort((a, b) => a.uri < b.uri ? -1 : 1);
             reply.parent.return(200, JSON.stringify(replies));
         }
     }
@@ -546,9 +548,9 @@ is(get_json('/sr_js_in_subrequest'), '["JS-SUB"]', 'sr_js_in_subrequest');
 is(get_json('/sr_unavail'), '[{"status":502,"uri":"/unavail"}]',
 	'sr_unavail');
 is(get_json('/sr_out_of_order'),
-	'[{"status":404,"uri":"/unknown"},' .
+	'[{"status":200,"uri":"/p/delayed"},' .
 	'{"status":206,"uri":"/p/sub1"},' .
-	'{"status":200,"uri":"/p/delayed"}]',
+	'{"status":404,"uri":"/unknown"}]',
 	'sr_multi');
 
 is(get_json('/sr_pr'), '{"h":"xxx"}', 'sr_promise');
