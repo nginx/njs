@@ -260,13 +260,11 @@ $t->write_file('test.js', <<EOF);
     }
 
     function except(r) {
-        var fs = require('fs');
-        fs.readFileSync();
+        decodeURI("%E0");
     }
 
-
     function content_except(r) {
-        JSON.parse({}.a.a);
+        return {}.a.a;
     }
 
     function content_empty(r) {
@@ -356,9 +354,9 @@ like(http_get('/content_empty'), qr/500 Internal Server Error/,
 $t->stop();
 
 ok(index($t->read_file('error.log'), 'SEE-LOG') > 0, 'log js');
-ok(index($t->read_file('error.log'), 'at fs.readFileSync') > 0,
+ok(index($t->read_file('error.log'), 'at decodeURI') > 0,
 	'js_set backtrace');
-ok(index($t->read_file('error.log'), 'at JSON.parse') > 0,
+ok(index($t->read_file('error.log'), 'at content_except') > 0,
 	'js_content backtrace');
 
 ###############################################################################
