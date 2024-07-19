@@ -85,6 +85,12 @@ typedef njs_int_t (*njs_http_js_header_handler122_t)(njs_vm_t *vm,
     njs_value_t *setval, njs_value_t *retval);
 
 
+typedef struct {
+    ngx_str_t   name;
+    ngx_uint_t  value;
+} ngx_http_js_entry_t;
+
+
 static ngx_int_t ngx_http_js_content_handler(ngx_http_request_t *r);
 static void ngx_http_js_content_event_handler(ngx_http_request_t *r);
 static void ngx_http_js_content_write_event_handler(ngx_http_request_t *r);
@@ -885,6 +891,25 @@ njs_module_t *njs_http_js_addon_modules[] = {
 #endif
     &ngx_js_http_module,
     NULL,
+};
+
+
+static ngx_http_js_entry_t ngx_http_methods[] = {
+    { ngx_string("GET"),       NGX_HTTP_GET },
+    { ngx_string("POST"),      NGX_HTTP_POST },
+    { ngx_string("HEAD"),      NGX_HTTP_HEAD },
+    { ngx_string("OPTIONS"),   NGX_HTTP_OPTIONS },
+    { ngx_string("PROPFIND"),  NGX_HTTP_PROPFIND },
+    { ngx_string("PUT"),       NGX_HTTP_PUT },
+    { ngx_string("MKCOL"),     NGX_HTTP_MKCOL },
+    { ngx_string("DELETE"),    NGX_HTTP_DELETE },
+    { ngx_string("COPY"),      NGX_HTTP_COPY },
+    { ngx_string("MOVE"),      NGX_HTTP_MOVE },
+    { ngx_string("PROPPATCH"), NGX_HTTP_PROPPATCH },
+    { ngx_string("LOCK"),      NGX_HTTP_LOCK },
+    { ngx_string("UNLOCK"),    NGX_HTTP_UNLOCK },
+    { ngx_string("PATCH"),     NGX_HTTP_PATCH },
+    { ngx_string("TRACE"),     NGX_HTTP_TRACE },
 };
 
 
@@ -3069,27 +3094,6 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     ngx_http_request_body_t     *rb;
     ngx_http_post_subrequest_t  *ps;
 
-    static const struct {
-        ngx_str_t   name;
-        ngx_uint_t  value;
-    } methods[] = {
-        { ngx_string("GET"),       NGX_HTTP_GET },
-        { ngx_string("POST"),      NGX_HTTP_POST },
-        { ngx_string("HEAD"),      NGX_HTTP_HEAD },
-        { ngx_string("OPTIONS"),   NGX_HTTP_OPTIONS },
-        { ngx_string("PROPFIND"),  NGX_HTTP_PROPFIND },
-        { ngx_string("PUT"),       NGX_HTTP_PUT },
-        { ngx_string("MKCOL"),     NGX_HTTP_MKCOL },
-        { ngx_string("DELETE"),    NGX_HTTP_DELETE },
-        { ngx_string("COPY"),      NGX_HTTP_COPY },
-        { ngx_string("MOVE"),      NGX_HTTP_MOVE },
-        { ngx_string("PROPPATCH"), NGX_HTTP_PROPPATCH },
-        { ngx_string("LOCK"),      NGX_HTTP_LOCK },
-        { ngx_string("UNLOCK"),    NGX_HTTP_UNLOCK },
-        { ngx_string("PATCH"),     NGX_HTTP_PATCH },
-        { ngx_string("TRACE"),     NGX_HTTP_TRACE },
-    };
-
     static const njs_str_t args_key   = njs_str("args");
     static const njs_str_t method_key = njs_str("method");
     static const njs_str_t body_key = njs_str("body");
@@ -3124,7 +3128,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     callback = NULL;
 
     method = 0;
-    methods_max = sizeof(methods) / sizeof(methods[0]);
+    methods_max = sizeof(ngx_http_methods) / sizeof(ngx_http_methods[0]);
 
     args_arg.length = 0;
     args_arg.start = NULL;
@@ -3172,8 +3176,9 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             }
 
             while (method < methods_max) {
-                if (method_name.length == methods[method].name.len
-                    && ngx_memcmp(method_name.start, methods[method].name.data,
+                if (method_name.length == ngx_http_methods[method].name.len
+                    && ngx_memcmp(method_name.start,
+                                  ngx_http_methods[method].name.data,
                                   method_name.length)
                        == 0)
                 {
@@ -3283,8 +3288,8 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (method != methods_max) {
-        sr->method = methods[method].value;
-        sr->method_name = methods[method].name;
+        sr->method = ngx_http_methods[method].value;
+        sr->method_name = ngx_http_methods[method].name;
 
     } else {
         sr->method = NGX_HTTP_UNKNOWN;
