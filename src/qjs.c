@@ -17,7 +17,7 @@ static const JSCFunctionListEntry qjs_global_proto[] = {
 
 
 JSContext *
-qjs_new_context(JSRuntime *rt, _Bool eval)
+qjs_new_context(JSRuntime *rt, qjs_module_t **addons, _Bool eval)
 {
     JSValue       global_obj;
     JSContext     *ctx;
@@ -45,6 +45,14 @@ qjs_new_context(JSRuntime *rt, _Bool eval)
     for (module = qjs_modules; *module != NULL; module++) {
         if ((*module)->init(ctx, (*module)->name) == NULL) {
             return NULL;
+        }
+    }
+
+    if (addons != NULL) {
+        for (module = addons; *module != NULL; module++) {
+            if ((*module)->init(ctx, (*module)->name) == NULL) {
+                return NULL;
+            }
         }
     }
 
