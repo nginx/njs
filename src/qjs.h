@@ -41,7 +41,7 @@ typedef struct {
 } qjs_module_t;
 
 
-JSContext *qjs_new_context(JSRuntime *rt, _Bool eval);
+JSContext *qjs_new_context(JSRuntime *rt, qjs_module_t **addons, _Bool eval);
 
 
 JSValue qjs_buffer_alloc(JSContext *ctx, size_t size);
