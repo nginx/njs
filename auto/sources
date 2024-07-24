@@ -52,6 +52,10 @@ NJS_LIB_SRCS=" \
    src/njs_builtin.c \
 "
 
+QJS_LIB_SRCS=" \
+	src/qjs.c   \
+"
+
 NJS_LIB_TEST_SRCS=" \
    src/test/lvlhsh_unit_test.c \
    src/test/random_unit_test.c \
@@ -70,10 +74,6 @@ fi
 
 if [ "$NJS_HAVE_LIBBFD" = "YES" -a "$NJS_HAVE_DL_ITERATE_PHDR" = "YES" ]; then
 	NJS_LIB_SRCS="$NJS_LIB_SRCS src/njs_addr2line.c"
-fi
-
-if [ "$NJS_HAVE_QUICKJS" = "YES" ]; then
-	NJS_LIB_SRCS="$NJS_LIB_SRCS src/qjs.c"
 fi
 
 NJS_TS_SRCS=$(find ts/ -name "*.d.ts" -o -name "*.json")
