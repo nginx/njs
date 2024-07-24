@@ -17,8 +17,10 @@ static const JSCFunctionListEntry qjs_global_proto[] = {
 
 
 JSContext *
-qjs_new_context(JSRuntime *rt, qjs_module_t **addons, _Bool eval)
+qjs_new_context(JSRuntime *rt, qjs_module_t **addons)
 {
+    int           ret;
+    JSAtom        prop;
     JSValue       global_obj;
     JSContext     *ctx;
     qjs_module_t  **module;
@@ -37,10 +39,7 @@ qjs_new_context(JSRuntime *rt, qjs_module_t **addons, _Bool eval)
     JS_AddIntrinsicTypedArrays(ctx);
     JS_AddIntrinsicPromise(ctx);
     JS_AddIntrinsicBigInt(ctx);
-
-    if (eval) {
-        JS_AddIntrinsicEval(ctx);
-    }
+    JS_AddIntrinsicEval(ctx);
 
     for (module = qjs_modules; *module != NULL; module++) {
         if ((*module)->init(ctx, (*module)->name) == NULL) {
@@ -60,6 +59,28 @@ qjs_new_context(JSRuntime *rt, qjs_module_t **addons, _Bool eval)
 
     JS_SetPropertyFunctionList(ctx, global_obj, qjs_global_proto,
                                njs_nitems(qjs_global_proto));
+
+    prop = JS_NewAtom(ctx, "eval");
+    if (prop == JS_ATOM_NULL) {
+        return NULL;
+    }
+
+    ret = JS_DeleteProperty(ctx, global_obj, prop, 0);
+    JS_FreeAtom(ctx, prop);
+    if (ret < 0) {
+        return NULL;
+    }
+
+    prop = JS_NewAtom(ctx, "Function");
+    if (prop == JS_ATOM_NULL) {
+        return NULL;
+    }
+
+    ret = JS_DeleteProperty(ctx, global_obj, prop, 0);
+    JS_FreeAtom(ctx, prop);
+    if (ret < 0) {
+        return NULL;
+    }
 
     JS_FreeValue(ctx, global_obj);
 
