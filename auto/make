@@ -40,11 +40,9 @@ cat << END                                    >> $njs_modules_c
 
 END
 
-if [ $NJS_HAVE_QUICKJS = YES ]; then
-
 qjs_modules_c=$NJS_BUILD_DIR/qjs_modules.c
 
-NJS_LIB_SRCS="$NJS_LIB_SRCS $qjs_modules_c"
+QJS_LIB_SRCS="$QJS_LIB_SRCS $qjs_modules_c"
 
 cat << END                                    > $qjs_modules_c
 
@@ -70,12 +68,19 @@ cat << END                                    >> $qjs_modules_c
 };
 
 END
-fi
 
 njs_incs=`echo $NJS_LIB_INCS \
         | sed -e "s# *\([^ ]*\)#$njs_regex_cont-I\1#g"`
 njs_objs=`echo $NJS_LIB_SRCS \
         | sed -e "s# *\([^ ]*\.\)c#$NJS_BUILD_DIR/\1o$njs_regex_cont#g"`
+
+qjs_objs=`echo $QJS_LIB_SRCS \
+        | sed -e "s# *\([^ ]*\.\)c#$NJS_BUILD_DIR/\1o$njs_regex_cont#g"`
+
+QJS_LIB=""
+if [ $NJS_HAVE_QUICKJS = YES ]; then
+    QJS_LIB="$NJS_BUILD_DIR/libqjs.a"
+fi
 
 cat << END > $NJS_MAKEFILE
 
@@ -96,8 +101,10 @@ default: njs
 
 NJS_LIB_INCS = $njs_incs
 NJS_LIB_OBJS = $njs_objs
+QJS_LIB_OBJS = $qjs_objs
 
 libnjs: $NJS_BUILD_DIR/libnjs.a pc
+libqjs: $NJS_BUILD_DIR/libqjs.a
 
 $NJS_BUILD_DIR/libnjs.a:   \\
 	$NJS_BUILD_DIR/njs_auto_config.h \\
@@ -105,6 +112,13 @@ $NJS_BUILD_DIR/libnjs.a:   \\
 
 	\$(NJS_STATIC_LINK) $NJS_BUILD_DIR/libnjs.a \\
 		\$(NJS_LIB_OBJS)
+
+$NJS_BUILD_DIR/libqjs.a:   \\
+	$NJS_BUILD_DIR/njs_auto_config.h \\
+	\$(QJS_LIB_OBJS)
+
+	\$(NJS_STATIC_LINK) $NJS_BUILD_DIR/libqjs.a \\
+		\$(QJS_LIB_OBJS)
 END
 
 # object files.
@@ -131,17 +145,39 @@ END
 
 done
 
+for njs_src in $QJS_LIB_SRCS
+do
+    njs_obj="${njs_src%.c}.o"
+    njs_dep="${njs_src%.c}.dep"
+    njs_dep_flags=`njs_gen_dep_flags $njs_dep $njs_obj`
+    njs_dep_post=`njs_gen_dep_post $njs_dep $njs_obj`
+    cat << END >> $NJS_MAKEFILE
+
+$NJS_BUILD_DIR/$njs_obj: $njs_src
+	\$(NJS_CC) -c \$(NJS_LIB_INCS) \$(NJS_CFLAGS) \\
+		\$(NJS_LIB_AUX_CFLAGS) \\
+		-o $NJS_BUILD_DIR/$njs_obj \\
+		$njs_dep_flags \\
+		$njs_src
+		$njs_dep_post
+
+-include $NJS_BUILD_DIR/$njs_dep
+
+END
+
+done
+
 # njs cli.
 
 cat << END >> $NJS_MAKEFILE
 
 $NJS_BUILD_DIR/njs: \\
-	$NJS_BUILD_DIR/libnjs.a \\
+	$NJS_BUILD_DIR/libnjs.a $QJS_LIB \\
 	external/njs_shell.c
 	\$(NJS_LINK) -o $NJS_BUILD_DIR/njs \$(NJS_LIB_INCS) \\
 		\$(NJS_CFLAGS) \$(NJS_LIB_AUX_CFLAGS)\\
 		external/njs_shell.c \\
-		$NJS_BUILD_DIR/libnjs.a \\
+		$NJS_BUILD_DIR/libnjs.a $QJS_LIB \\
 		$NJS_LD_OPT -lm $NJS_LIBS $NJS_LIB_AUX_LIBS $NJS_READLINE_LIB
 
 END
