@@ -257,18 +257,14 @@ static njs_int_t ngx_http_js_server(njs_vm_t *vm, ngx_http_request_t *r,
     unsigned flags, njs_str_t *name, njs_value_t *setval,
     njs_value_t *retval);
 
-static ngx_pool_t *ngx_http_js_pool(njs_vm_t *vm, ngx_http_request_t *r);
-static ngx_resolver_t *ngx_http_js_resolver(njs_vm_t *vm,
-    ngx_http_request_t *r);
-static ngx_msec_t ngx_http_js_resolver_timeout(njs_vm_t *vm,
-    ngx_http_request_t *r);
-static ngx_msec_t ngx_http_js_fetch_timeout(njs_vm_t *vm,
-    ngx_http_request_t *r);
-static size_t ngx_http_js_buffer_size(njs_vm_t *vm, ngx_http_request_t *r);
-static size_t ngx_http_js_max_response_buffer_size(njs_vm_t *vm,
-    ngx_http_request_t *r);
+static ngx_pool_t *ngx_http_js_pool(ngx_http_request_t *r);
+static ngx_resolver_t *ngx_http_js_resolver(ngx_http_request_t *r);
+static ngx_msec_t ngx_http_js_resolver_timeout(ngx_http_request_t *r);
+static ngx_msec_t ngx_http_js_fetch_timeout(ngx_http_request_t *r);
+static size_t ngx_http_js_buffer_size(ngx_http_request_t *r);
+static size_t ngx_http_js_max_response_buffer_size(ngx_http_request_t *r);
 static void ngx_http_js_event_finalize(ngx_http_request_t *r, ngx_int_t rc);
-static ngx_js_ctx_t *ngx_http_js_ctx(njs_vm_t *vm, ngx_http_request_t *r);
+static ngx_js_ctx_t *ngx_http_js_ctx(ngx_http_request_t *r);
 
 static void ngx_http_js_periodic_handler(ngx_event_t *ev);
 static void ngx_http_js_periodic_shutdown_handler(ngx_event_t *ev);
@@ -297,8 +293,8 @@ static void *ngx_http_js_create_loc_conf(ngx_conf_t *cf);
 static char *ngx_http_js_merge_loc_conf(ngx_conf_t *cf, void *parent,
     void *child);
 
-static ngx_ssl_t *ngx_http_js_ssl(njs_vm_t *vm, ngx_http_request_t *r);
-static ngx_flag_t ngx_http_js_ssl_verify(njs_vm_t *vm, ngx_http_request_t *r);
+static ngx_ssl_t *ngx_http_js_ssl(ngx_http_request_t *r);
+static ngx_flag_t ngx_http_js_ssl_verify(ngx_http_request_t *r);
 
 static ngx_int_t ngx_http_js_parse_unsafe_uri(ngx_http_request_t *r,
     njs_str_t *uri, njs_str_t *args);
@@ -4291,14 +4287,14 @@ ngx_http_js_periodic_init(ngx_js_periodic_t *periodic)
 
 
 static ngx_pool_t *
-ngx_http_js_pool(njs_vm_t *vm, ngx_http_request_t *r)
+ngx_http_js_pool(ngx_http_request_t *r)
 {
     return r->pool;
 }
 
 
 static ngx_resolver_t *
-ngx_http_js_resolver(njs_vm_t *vm, ngx_http_request_t *r)
+ngx_http_js_resolver(ngx_http_request_t *r)
 {
     ngx_http_core_loc_conf_t  *clcf;
 
@@ -4309,7 +4305,7 @@ ngx_http_js_resolver(njs_vm_t *vm, ngx_http_request_t *r)
 
 
 static ngx_msec_t
-ngx_http_js_resolver_timeout(njs_vm_t *vm, ngx_http_request_t *r)
+ngx_http_js_resolver_timeout(ngx_http_request_t *r)
 {
     ngx_http_core_loc_conf_t  *clcf;
 
@@ -4320,7 +4316,7 @@ ngx_http_js_resolver_timeout(njs_vm_t *vm, ngx_http_request_t *r)
 
 
 static ngx_msec_t
-ngx_http_js_fetch_timeout(njs_vm_t *vm, ngx_http_request_t *r)
+ngx_http_js_fetch_timeout(ngx_http_request_t *r)
 {
     ngx_http_js_loc_conf_t  *jlcf;
 
@@ -4331,7 +4327,7 @@ ngx_http_js_fetch_timeout(njs_vm_t *vm, ngx_http_request_t *r)
 
 
 static size_t
-ngx_http_js_buffer_size(njs_vm_t *vm, ngx_http_request_t *r)
+ngx_http_js_buffer_size(ngx_http_request_t *r)
 {
     ngx_http_js_loc_conf_t  *jlcf;
 
@@ -4342,7 +4338,7 @@ ngx_http_js_buffer_size(njs_vm_t *vm, ngx_http_request_t *r)
 
 
 static size_t
-ngx_http_js_max_response_buffer_size(njs_vm_t *vm, ngx_http_request_t *r)
+ngx_http_js_max_response_buffer_size(ngx_http_request_t *r)
 {
     ngx_http_js_loc_conf_t  *jlcf;
 
@@ -4375,7 +4371,7 @@ ngx_http_js_event_finalize(ngx_http_request_t *r, ngx_int_t rc)
 
 
 static ngx_js_ctx_t *
-ngx_http_js_ctx(njs_vm_t *vm, ngx_http_request_t *r)
+ngx_http_js_ctx(ngx_http_request_t *r)
 {
     return ngx_http_get_module_ctx(r, ngx_http_js_module);
 }
@@ -4844,7 +4840,7 @@ ngx_http_js_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
 
 
 static ngx_ssl_t *
-ngx_http_js_ssl(njs_vm_t *vm, ngx_http_request_t *r)
+ngx_http_js_ssl(ngx_http_request_t *r)
 {
 #if (NGX_HTTP_SSL)
     ngx_http_js_loc_conf_t  *jlcf;
@@ -4859,7 +4855,7 @@ ngx_http_js_ssl(njs_vm_t *vm, ngx_http_request_t *r)
 
 
 static ngx_flag_t
-ngx_http_js_ssl_verify(njs_vm_t *vm, ngx_http_request_t *r)
+ngx_http_js_ssl_verify(ngx_http_request_t *r)
 {
 #if (NGX_HTTP_SSL)
     ngx_http_js_loc_conf_t  *jlcf;
