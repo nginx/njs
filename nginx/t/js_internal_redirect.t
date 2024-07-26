@@ -72,7 +72,7 @@ $t->write_file('test.js', <<EOF);
             r.internalRedirect('\@named');
 
         } else if (r.variables.arg_unsafe) {
-            r.internalRedirect('/red\0rect');
+            r.internalRedirect('/red/../rect');
 
         } else if (r.variables.arg_quoted) {
             r.internalRedirect('/red%69rect');
