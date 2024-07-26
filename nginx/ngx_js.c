@@ -2017,7 +2017,7 @@ ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
                 + sizeof(" globalThis. = ;\n") - 1;
     }
 
-    start = ngx_pnalloc(cf->pool, size);
+    start = ngx_pnalloc(cf->pool, size + 1);
     if (start == NULL) {
         return NGX_ERROR;
     }
@@ -2038,6 +2038,8 @@ ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
         p = ngx_cpymem(p, import[i].name.data, import[i].name.len);
         p = ngx_cpymem(p, ";\n", sizeof(";\n") - 1);
     }
+
+    *p = '\0';
 
     file = ngx_cycle->conf_prefix;
 
