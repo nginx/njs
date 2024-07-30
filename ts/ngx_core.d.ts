@@ -250,7 +250,7 @@ interface NgxFetchOptions {
 declare class SharedMemoryError extends Error {}
 
 type NgxSharedDictValue = string | number;
-type NgxKeyValuePair<V> = { key: string, value: V };
+type NgxKeyValuePair<V> = [string, V];
 
 /**
  * Interface of a dictionary shared among the working processes.
