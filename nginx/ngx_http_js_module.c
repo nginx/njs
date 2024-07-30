@@ -2954,10 +2954,10 @@ static njs_int_t
 ngx_http_js_request_variables(njs_vm_t *vm, njs_object_prop_t *prop,
     ngx_http_request_t *r, njs_value_t *setval, njs_value_t *retval)
 {
-    njs_int_t                   rc;
+    njs_int_t                   rc, is_capture, start, length;
     njs_str_t                   val, s;
     ngx_str_t                   name;
-    ngx_uint_t                  key;
+    ngx_uint_t                  i, key;
     ngx_http_variable_t        *v;
     ngx_http_core_main_conf_t  *cmcf;
     ngx_http_variable_value_t  *vv;
@@ -2972,6 +2972,31 @@ ngx_http_js_request_variables(njs_vm_t *vm, njs_object_prop_t *prop,
     name.len = val.length;
 
     if (setval == NULL) {
+        is_capture = 1;
+        for (i = 0; i < name.len; i++) {
+            if (name.data[i] < '0' || name.data[i] > '9') {
+                is_capture = 0;
+                break;
+            }
+        }
+
+        if (is_capture) {
+            key = ngx_atoi(name.data, name.len) * 2;
+            if (r->captures == NULL || r->captures_data == NULL
+                || r->ncaptures <= key)
+            {
+                njs_value_undefined_set(retval);
+                return NJS_DECLINED;
+            }
+
+            start = r->captures[key];
+            length = r->captures[key + 1] - start;
+
+            return ngx_js_prop(vm, njs_vm_prop_magic32(prop), retval,
+                               &r->captures_data[start], length);
+        }
+
+        /* Lookup the variable in nginx variables */
         key = ngx_hash_strlow(name.data, name.data, name.len);
 
         vv = ngx_http_get_variable(r, &name, key);
