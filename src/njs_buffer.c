@@ -1981,7 +1981,7 @@ njs_buffer_prototype_index_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t last, njs_value_t *retval)
 {
     uint8_t                      byte;
-    int64_t                      from, to, increment, length, offset, index, i;
+    int64_t                      from, to, increment, length, index, i;
     njs_int_t                    ret;
     njs_str_t                    str;
     njs_value_t                  *this, *value, *value_from, *enc, dst;
@@ -2070,8 +2070,7 @@ encoding:
         return NJS_ERROR;
     }
 
-    u8 = &buffer->u.u8[0];
-    offset = array->offset;
+    u8 = &buffer->u.u8[array->offset];
 
     switch (value->type) {
     case NJS_STRING:
@@ -2104,23 +2103,21 @@ encoding:
             goto done;
         }
 
-        if (last) {
-            if (from - to < (int64_t) str.length) {
-                goto done;
-            }
+        if (str.length > (size_t) length) {
+            goto done;
+        }
 
+        if (last) {
             from -= str.length - 1;
+            from = njs_max(from, 0);
 
         } else {
-            if (to - from < (int64_t) str.length) {
-                goto done;
-            }
-
             to -= str.length - 1;
+            to = njs_min(to, length);
         }
 
         for (i = from; i != to; i += increment) {
-            if (memcmp(&u8[offset + i], str.start, str.length) == 0) {
+            if (memcmp(&u8[i], str.start, str.length) == 0) {
                 index = i;
                 goto done;
             }
@@ -2132,7 +2129,7 @@ encoding:
         byte = njs_number_to_uint32(njs_number(value));
 
         for (i = from; i != to; i += increment) {
-            if (u8[offset + i] == byte) {
+            if (u8[i] == byte) {
                 index = i;
                 goto done;
             }
