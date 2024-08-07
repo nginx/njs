@@ -342,7 +342,7 @@ static ngx_command_t  ngx_http_js_commands[] = {
       NULL },
 
     { ngx_string("js_set"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE2,
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE23,
       ngx_http_js_set,
       0,
       0,
@@ -1245,12 +1245,15 @@ static ngx_int_t
 ngx_http_js_variable_set(ngx_http_request_t *r, ngx_http_variable_value_t *v,
     uintptr_t data)
 {
-    ngx_str_t *fname = (ngx_str_t *) data;
+    ngx_js_set_t *vdata = (ngx_js_set_t *) data;
 
     ngx_int_t           rc;
     njs_int_t           pending;
+    ngx_str_t          *fname;
     njs_str_t           value;
     ngx_http_js_ctx_t  *ctx;
+
+    fname = &vdata->fname;
 
     rc = ngx_http_js_init_vm(r, ngx_http_js_request_proto_id);
 
@@ -1290,7 +1293,7 @@ ngx_http_js_variable_set(ngx_http_request_t *r, ngx_http_variable_value_t *v,
 
     v->len = value.length;
     v->valid = 1;
-    v->no_cacheable = 0;
+    v->no_cacheable = vdata->flags & NGX_NJS_VAR_NOCACHE;
     v->not_found = 0;
     v->data = value.start;
 
@@ -4639,7 +4642,8 @@ invalid:
 static char *
 ngx_http_js_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    ngx_str_t            *value, *fname, *prev;
+    ngx_str_t            *value;
+    ngx_js_set_t         *data, *prev;
     ngx_http_variable_t  *v;
 
     value = cf->args->elts;
@@ -4658,18 +4662,19 @@ ngx_http_js_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    fname = ngx_palloc(cf->pool, sizeof(ngx_str_t));
-    if (fname == NULL) {
+    data = ngx_palloc(cf->pool, sizeof(ngx_js_set_t));
+    if (data == NULL) {
         return NGX_CONF_ERROR;
     }
 
-    *fname = value[2];
+    data->fname = value[2];
+    data->flags = 0;
 
     if (v->get_handler == ngx_http_js_variable_set) {
-        prev = (ngx_str_t *) v->data;
+        prev = (ngx_js_set_t *) v->data;
 
-        if (fname->len != prev->len
-            || ngx_strncmp(fname->data, prev->data, fname->len) != 0)
+        if (data->fname.len != prev->fname.len
+            || ngx_strncmp(data->fname.data, prev->fname.data, data->fname.len) != 0)
         {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                "variable \"%V\" is redeclared with "
@@ -4678,8 +4683,19 @@ ngx_http_js_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         }
     }
 
+    if (cf->args->nelts == 4) {
+        if (ngx_strcmp(value[3].data, "nocache") == 0) {
+            data->flags |= NGX_NJS_VAR_NOCACHE;
+
+        } else {
+            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                "unrecognized flag \"%V\"", &value[3]);
+            return NGX_CONF_ERROR;
+        }
+    }
+
     v->get_handler = ngx_http_js_variable_set;
-    v->data = (uintptr_t) fname;
+    v->data = (uintptr_t) data;
 
     return NGX_CONF_OK;
 }

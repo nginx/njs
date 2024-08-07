@@ -199,7 +199,7 @@ static ngx_command_t  ngx_stream_js_commands[] = {
       NULL },
 
     { ngx_string("js_set"),
-      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_TAKE2,
+      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_TAKE23,
       ngx_stream_js_set,
       0,
       0,
@@ -891,12 +891,15 @@ static ngx_int_t
 ngx_stream_js_variable_set(ngx_stream_session_t *s,
     ngx_stream_variable_value_t *v, uintptr_t data)
 {
-    ngx_str_t *fname = (ngx_str_t *) data;
+    ngx_js_set_t *vdata = (ngx_js_set_t *) data;
 
     ngx_int_t             rc;
     njs_int_t             pending;
+    ngx_str_t            *fname;
     njs_str_t             value;
     ngx_stream_js_ctx_t  *ctx;
+
+    fname = &vdata->fname;
 
     rc = ngx_stream_js_init_vm(s, ngx_stream_js_session_proto_id);
 
@@ -936,7 +939,7 @@ ngx_stream_js_variable_set(ngx_stream_session_t *s,
 
     v->len = value.length;
     v->valid = 1;
-    v->no_cacheable = 0;
+    v->no_cacheable = vdata->flags & NGX_NJS_VAR_NOCACHE;
     v->not_found = 0;
     v->data = value.start;
 
@@ -2186,7 +2189,8 @@ invalid:
 static char *
 ngx_stream_js_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    ngx_str_t              *value, *fname, *prev;
+    ngx_str_t              *value;
+    ngx_js_set_t           *data, *prev;
     ngx_stream_variable_t  *v;
 
     value = cf->args->elts;
@@ -2205,18 +2209,18 @@ ngx_stream_js_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    fname = ngx_palloc(cf->pool, sizeof(ngx_str_t));
-    if (fname == NULL) {
+    data = ngx_palloc(cf->pool, sizeof(ngx_js_set_t));
+    if (data == NULL) {
         return NGX_CONF_ERROR;
     }
 
-    *fname = value[2];
+    data->fname = value[2];
 
     if (v->get_handler == ngx_stream_js_variable_set) {
-        prev = (ngx_str_t *) v->data;
+        prev = (ngx_js_set_t *) v->data;
 
-        if (fname->len != prev->len
-            || ngx_strncmp(fname->data, prev->data, fname->len) != 0)
+        if (data->fname.len != prev->fname.len
+            || ngx_strncmp(data->fname.data, prev->fname.data, data->fname.len) != 0)
         {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                "variable \"%V\" is redeclared with "
@@ -2225,8 +2229,19 @@ ngx_stream_js_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         }
     }
 
+    if (cf->args->nelts == 4) {
+        if (ngx_strcmp(value[3].data, "nocache") == 0) {
+            data->flags |= NGX_NJS_VAR_NOCACHE;
+
+        } else {
+            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                "unrecognized flag \"%V\"", &value[3]);
+            return NGX_CONF_ERROR;
+        }
+    }
+
     v->get_handler = ngx_stream_js_variable_set;
-    v->data = (uintptr_t) fname;
+    v->data = (uintptr_t) data;
 
     return NGX_CONF_OK;
 }

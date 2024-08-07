@@ -31,6 +31,8 @@
 #define NGX_JS_BOOL_TRUE    1
 #define NGX_JS_BOOL_UNSET   2
 
+#define NGX_NJS_VAR_NOCACHE 1
+
 #define ngx_js_buffer_type(btype) ((btype) & ~NGX_JS_DEPRECATED)
 
 
@@ -135,6 +137,12 @@ typedef struct {
 typedef struct {
     NGX_JS_COMMON_LOC_CONF;
 } ngx_js_loc_conf_t;
+
+
+typedef struct {
+    ngx_str_t fname;
+    unsigned  flags;
+} ngx_js_set_t;
 
 
 struct ngx_js_ctx_s {
