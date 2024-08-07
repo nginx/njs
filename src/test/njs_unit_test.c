@@ -21550,6 +21550,9 @@ static njs_unit_test_t  njs_buffer_module_test[] =
               "buf.lastIndexOf('C')"),
       njs_str("2") },
 
+    { njs_str("Buffer.from('abcdef').lastIndexOf('abc', 1)"),
+      njs_str("0") },
+
     { njs_str("['swap16', 'swap32', 'swap64'].every(method => {"
               "    var buf = Buffer.from([]);"
               "    buf[method]();"
