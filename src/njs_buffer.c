@@ -10,8 +10,14 @@
 
 
 #define INT24_MAX  0x7FFFFF
-#define INT40_MAX  0x7FFFFFFFFFULL
-#define INT48_MAX  0x7FFFFFFFFFFFULL
+#define INT24_MIN  (-0x800000)
+#define INT40_MAX  0x7FFFFFFFFFLL
+#define INT40_MIN  (-0x8000000000LL)
+#define INT48_MAX  0x7FFFFFFFFFFFLL
+#define INT48_MIN  (-0x800000000000LL)
+#define UINT24_MAX 0xFFFFFFLL
+#define UINT40_MAX 0xFFFFFFFFFFLL
+#define UINT48_MAX 0xFFFFFFFFFFFFLL
 
 #define njs_buffer_magic(size, sign, little)                                 \
     ((size << 2) | (sign << 1) | little)
@@ -1273,7 +1279,7 @@ njs_buffer_prototype_write_int(njs_vm_t *vm, njs_value_t *args,
     uint32_t            u32;
     uint64_t            index, size;
     njs_int_t           ret;
-    njs_bool_t          little, swap;
+    njs_bool_t          little, swap, sign;
     njs_value_t         *this, *value;
     njs_typed_array_t   *array;
     njs_array_buffer_t  *buffer;
@@ -1321,6 +1327,7 @@ njs_buffer_prototype_write_int(njs_vm_t *vm, njs_value_t *args,
     }
 
     little = magic & 1;
+    sign = (magic >> 1) & 1;
     swap = little;
 
 #if NJS_HAVE_LITTLE_ENDIAN
@@ -1336,11 +1343,41 @@ njs_buffer_prototype_write_int(njs_vm_t *vm, njs_value_t *args,
 
     switch (size) {
     case 1:
+        if (sign) {
+            if (i64 < INT8_MIN || i64 > INT8_MAX) {
+                njs_range_error(vm, "value is outside the range of "
+                                "a representable int8");
+                return NJS_ERROR;
+            }
+
+        } else {
+            if (i64 < 0 || i64 > UINT8_MAX) {
+                njs_range_error(vm, "value is outside the range of "
+                                "a representable uint8");
+                return NJS_ERROR;
+            }
+        }
+
         *u8 = i64;
         break;
 
     case 2:
         u32 = (uint16_t) i64;
+
+        if (sign) {
+            if (i64 < INT16_MIN || i64 > INT16_MAX) {
+                njs_range_error(vm, "value is outside the range of "
+                                "a representable int16");
+                return NJS_ERROR;
+            }
+
+        } else {
+            if (i64 < 0 || i64 > UINT16_MAX) {
+                njs_range_error(vm, "value is outside the range of "
+                                "a representable uint16");
+                return NJS_ERROR;
+            }
+        }
 
         if (swap) {
             u32 = njs_bswap_u16(u32);
@@ -1350,6 +1387,21 @@ njs_buffer_prototype_write_int(njs_vm_t *vm, njs_value_t *args,
         break;
 
     case 3:
+        if (sign) {
+            if (i64 < INT24_MIN || i64 > INT24_MAX) {
+                njs_range_error(vm, "value is outside the range of "
+                                "a representable int24");
+                return NJS_ERROR;
+            }
+
+        } else {
+            if (i64 < 0 || i64 > UINT24_MAX) {
+                njs_range_error(vm, "value is outside the range of "
+                                "a representable uint24");
+                return NJS_ERROR;
+            }
+        }
+
         if (little) {
             *u8++ = i64; i64 >>= 8;
             *u8++ = i64; i64 >>= 8;
@@ -1366,6 +1418,21 @@ njs_buffer_prototype_write_int(njs_vm_t *vm, njs_value_t *args,
         break;
 
     case 4:
+        if (sign) {
+            if (i64 < INT32_MIN || i64 > INT32_MAX) {
+                njs_range_error(vm, "value is outside the range of "
+                                "a representable int32");
+                return NJS_ERROR;
+            }
+
+        } else {
+            if (i64 < 0 || i64 > UINT32_MAX) {
+                njs_range_error(vm, "value is outside the range of "
+                                "a representable uint32");
+                return NJS_ERROR;
+            }
+        }
+
         u32 = i64;
 
         if (swap) {
@@ -1376,6 +1443,21 @@ njs_buffer_prototype_write_int(njs_vm_t *vm, njs_value_t *args,
         break;
 
     case 5:
+        if (sign) {
+            if (i64 < INT40_MIN || i64 > INT40_MAX) {
+                njs_range_error(vm, "value is outside the range of "
+                                "a representable int40");
+                return NJS_ERROR;
+            }
+
+        } else {
+            if (i64 < 0 || i64 > UINT40_MAX) {
+                njs_range_error(vm, "value is outside the range of "
+                                "a representable uint40");
+                return NJS_ERROR;
+            }
+        }
+
         if (little) {
             *u8++ = i64; i64 >>= 8;
             *u8++ = i64; i64 >>= 8;
@@ -1397,6 +1479,21 @@ njs_buffer_prototype_write_int(njs_vm_t *vm, njs_value_t *args,
 
     case 6:
     default:
+        if (sign) {
+            if (i64 < INT48_MIN || i64 > INT48_MAX) {
+                njs_range_error(vm, "value is outside the range of "
+                                "a representable int48");
+                return NJS_ERROR;
+            }
+
+        } else {
+            if (i64 < 0 || i64 > UINT48_MAX) {
+                njs_range_error(vm, "value is outside the range of "
+                                "a representable uint48");
+                return NJS_ERROR;
+            }
+        }
+
         if (little) {
             *u8++ = i64; i64 >>= 8;
             *u8++ = i64; i64 >>= 8;
