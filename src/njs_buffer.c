@@ -1577,7 +1577,7 @@ encoding:
         return NJS_ERROR;
     }
 
-    if (offset >= array->byte_length) {
+    if (offset > array->byte_length) {
         njs_range_error(vm, "\"offset\" is out of range");
         return NJS_ERROR;
     }
@@ -1596,6 +1596,7 @@ njs_buffer_write_string(njs_vm_t *vm, njs_value_t *value,
     njs_int_t           ret;
     njs_str_t           str;
     njs_value_t         dst;
+    const u_char        *p, *end, *prev;
     njs_array_buffer_t  *buffer;
 
     buffer = njs_typed_array_buffer(array);
@@ -1616,6 +1617,23 @@ njs_buffer_write_string(njs_vm_t *vm, njs_value_t *value,
     if (str.length == 0) {
         length = 0;
         goto done;
+    }
+
+    length = njs_min(str.length, (size_t) length);
+
+    if (encoding->decode == njs_string_decode_utf8) {
+        /* Avoid writing incomplete UTF-8 characters. */
+        p = prev = str.start;
+        end = p + length;
+
+        while (p < end) {
+            p = njs_utf8_next(p, str.start + str.length);
+            if (p <= end) {
+                prev = p;
+            }
+        }
+
+        length = prev - str.start;
     }
 
     memcpy(start, str.start, length);
