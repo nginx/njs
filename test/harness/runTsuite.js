@@ -48,6 +48,9 @@ function merge(to, from) {
             } else if (from[v] instanceof Uint8Array) {
                 r[v] = new Uint8Array(from[v]);
 
+            } else if (from[v] instanceof ArrayBuffer) {
+                r[v] = new ArrayBuffer(from[v].byteLength);
+
             } else {
                 r[v] = Object.assign(Array.isArray(from[v]) ? [] : {}, from[v]);
             }
