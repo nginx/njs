@@ -1577,7 +1577,7 @@ encoding:
         return NJS_ERROR;
     }
 
-    if (offset >= array->byte_length) {
+    if (offset > array->byte_length) {
         njs_range_error(vm, "\"offset\" is out of range");
         return NJS_ERROR;
     }
@@ -1617,6 +1617,8 @@ njs_buffer_write_string(njs_vm_t *vm, njs_value_t *value,
         length = 0;
         goto done;
     }
+
+    length = njs_min(str.length, (size_t) length);
 
     memcpy(start, str.start, length);
 
