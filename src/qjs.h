@@ -16,6 +16,7 @@
 #include <njs_unicode.h>
 #include <njs_utf8.h>
 #include <njs_chb.h>
+#include <njs_utils.h>
 
 #if defined(__GNUC__) && (__GNUC__ >= 8)
 #pragma GCC diagnostic push
@@ -43,6 +44,7 @@ JSContext *qjs_new_context(JSRuntime *rt, _Bool eval);
 
 
 JSValue qjs_buffer_alloc(JSContext *ctx, size_t size);
+JSValue qjs_buffer_create(JSContext *ctx, u_char *start, size_t size);
 JSValue qjs_buffer_chb_alloc(JSContext *ctx, njs_chb_t *chain);
 
 typedef int (*qjs_buffer_encode_t)(JSContext *ctx, const njs_str_t *src,
