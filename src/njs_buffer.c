@@ -1504,7 +1504,7 @@ njs_buffer_prototype_write_float(njs_vm_t *vm, njs_value_t *args,
         *((uint64_t *) u8) = conv_f64.u;
     }
 
-    njs_set_undefined(retval);
+    njs_set_number(retval, index + size);
 
     return NJS_OK;
 }
