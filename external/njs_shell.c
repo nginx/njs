@@ -2108,6 +2108,7 @@ njs_qjs_njs_getter(JSContext *ctx, JSValueConst this_val)
 
 
 static njs_int_t njs_qjs_global_init(JSContext *ctx, JSValue global_obj);
+static void njs_qjs_dump_error(JSContext *ctx);
 
 
 static void
@@ -2126,7 +2127,7 @@ njs_qjs_dump_obj(JSContext *ctx, FILE *f, JSValueConst val, const char *prefix,
         JS_FreeCString(ctx, str);
 
     } else {
-        fprintf(f, "%s[exception]\n", prefix);
+        njs_qjs_dump_error(ctx);
     }
 }
 
