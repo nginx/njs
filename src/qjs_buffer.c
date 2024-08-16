@@ -760,7 +760,7 @@ qjs_buffer_array_range(JSContext *ctx, njs_str_t *array, JSValueConst start,
     }
 
     if (num_start < 0 || (size_t) num_start > array->length) {
-        return JS_ThrowRangeError(ctx, "\"%sStart\" is out of range: %ld",
+        return JS_ThrowRangeError(ctx, "\"%sStart\" is out of range: %" PRId64,
                                   name, num_start);
     }
 
@@ -773,7 +773,7 @@ qjs_buffer_array_range(JSContext *ctx, njs_str_t *array, JSValueConst start,
     }
 
     if (num_end < 0 || (size_t) num_end > array->length) {
-        return JS_ThrowRangeError(ctx, "\"%sEnd\" is out of range: %ld",
+        return JS_ThrowRangeError(ctx, "\"%sEnd\" is out of range: %" PRId64,
                                   name, num_end);
     }
 
@@ -1141,8 +1141,8 @@ qjs_buffer_prototype_read_float(JSContext *ctx, JSValueConst this_val,
     size = magic >> 2;
 
     if (size + index > self.length) {
-        return JS_ThrowRangeError(ctx, "index %lu is outside the bound of the"
-                                  " buffer", index);
+        return JS_ThrowRangeError(ctx, "index %" PRIu64 " is outside the bound"
+                                  " of the buffer", index);
     }
 
     little = magic & 1;
@@ -1217,8 +1217,8 @@ qjs_buffer_prototype_read_int(JSContext *ctx, JSValueConst this_val,
     }
 
     if (size + index > self.length) {
-        return JS_ThrowRangeError(ctx, "index %lu is outside the bound of the"
-                                  " buffer", index);
+        return JS_ThrowRangeError(ctx, "index %" PRIu64 " is outside the bound"
+                                  " of the buffer", index);
     }
 
     sign = (magic >> 1) & 1;
@@ -1628,8 +1628,8 @@ qjs_buffer_prototype_write_int(JSContext *ctx, JSValueConst this_val,
     }
 
     if (size + index > self.length) {
-        return JS_ThrowRangeError(ctx, "index %lu is outside the bound of the"
-                                  " buffer", index);
+        return JS_ThrowRangeError(ctx, "index %" PRIu64 " is outside the bound"
+                                  " of the buffer", index);
     }
 
     little = magic & 1;
@@ -1834,8 +1834,8 @@ qjs_buffer_prototype_write_float(JSContext *ctx, JSValueConst this_val,
     size = magic >> 2;
 
     if (size + index > self.length) {
-        return JS_ThrowRangeError(ctx, "index %lu is outside the bound of the"
-                                  " buffer", index);
+        return JS_ThrowRangeError(ctx, "index %" PRIu64 " is outside the bound"
+                                  " of the buffer", index);
     }
 
     little = magic & 1;

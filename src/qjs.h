@@ -11,6 +11,7 @@
 
 #include <njs_types.h>
 #include <njs_clang.h>
+#include <inttypes.h>
 #include <string.h>
 #include <njs_str.h>
 #include <njs_unicode.h>
