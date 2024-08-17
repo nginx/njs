@@ -77,6 +77,17 @@ void qjs_bytes_free(JSContext *ctx, qjs_bytes_t *data);
 JSValue qjs_typed_array_data(JSContext *ctx, JSValueConst value,
     njs_str_t *data);
 
+#define qjs_string_create(ctx, data, len)                                   \
+    JS_NewStringLen(ctx, (const char *) (data), len)
+JSValue qjs_string_create_chb(JSContext *cx, njs_chb_t *chain);
+
+
+static inline JS_BOOL JS_IsNullOrUndefined(JSValueConst v)
+{
+    return JS_VALUE_GET_TAG(v) == JS_TAG_NULL
+           || JS_VALUE_GET_TAG(v) == JS_TAG_UNDEFINED;
+}
+
 
 extern qjs_module_t              *qjs_modules[];
 
