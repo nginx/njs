@@ -227,3 +227,23 @@ qjs_typed_array_data(JSContext *ctx, JSValueConst value, njs_str_t *data)
 
     return JS_UNDEFINED;
 }
+
+
+JSValue
+qjs_string_create_chb(JSContext *cx, njs_chb_t *chain)
+{
+    JSValue    val;
+    njs_int_t  ret;
+    njs_str_t  str;
+
+    ret = njs_chb_join(chain, &str);
+    if (ret != NJS_OK) {
+        return JS_ThrowInternalError(cx, "failed to create string");
+    }
+
+    val = JS_NewStringLen(cx, (const char *) str.start, str.length);
+
+    chain->free(cx, str.start);
+
+    return val;
+}
