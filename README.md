@@ -1,3 +1,6 @@
+[![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
+[![Community Support](https://badgen.net/badge/support/commercial/green?icon=awesome)](/SUPPORT.md)
+
 ![NGINX JavaScript Banner](NGINX-js-1660x332.png "NGINX JavaScript Banner")
 
 # NGINX JavaScript
