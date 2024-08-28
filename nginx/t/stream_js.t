@@ -366,8 +366,7 @@ $t->write_file('test.js', <<EOF);
     }
 
     function preread_except(s) {
-        var fs = require('fs');
-        fs.readFileSync();
+        decodeURI("%E0");
     }
 
     function filter_except(s) {
@@ -441,7 +440,7 @@ like(stream('127.0.0.1:' . port(8101))->read(), qr/\xaa\xbb\xcc\xdd/,
 $t->stop();
 
 ok(index($t->read_file('error.log'), 'SEE-THIS') > 0, 'stream js log');
-ok(index($t->read_file('error.log'), 'at fs.readFileSync') > 0,
+ok(index($t->read_file('error.log'), 'at decodeURI') > 0,
 	'stream js_preread backtrace');
 ok(index($t->read_file('error.log'), 'at filter_except') > 0,
 	'stream js_filter backtrace');
