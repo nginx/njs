@@ -9,17 +9,17 @@
 
 
 static const njs_value_t  njs_symbol_async_iterator_name =
-                            njs_long_string("Symbol.asyncIterator");
+                            njs_string("Symbol.asyncIterator");
 static const njs_value_t  njs_symbol_has_instance_name =
-                            njs_long_string("Symbol.hasInstance");
+                            njs_string("Symbol.hasInstance");
 static const njs_value_t  njs_symbol_is_concat_spreadable_name =
-                            njs_long_string("Symbol.isConcatSpreadable");
+                            njs_string("Symbol.isConcatSpreadable");
 static const njs_value_t  njs_symbol_iterator_name =
-                            njs_long_string("Symbol.iterator");
+                            njs_string("Symbol.iterator");
 static const njs_value_t  njs_symbol_match_name =
                             njs_string("Symbol.match");
 static const njs_value_t  njs_symbol_match_all_name =
-                            njs_long_string("Symbol.matchAll");
+                            njs_string("Symbol.matchAll");
 static const njs_value_t  njs_symbol_replace_name =
                             njs_string("Symbol.replace");
 static const njs_value_t  njs_symbol_search_name =
@@ -29,11 +29,11 @@ static const njs_value_t  njs_symbol_species_name =
 static const njs_value_t  njs_symbol_split_name =
                             njs_string("Symbol.split");
 static const njs_value_t  njs_symbol_to_primitive_name =
-                            njs_long_string("Symbol.toPrimitive");
+                            njs_string("Symbol.toPrimitive");
 static const njs_value_t  njs_symbol_to_string_tag_name =
-                            njs_long_string("Symbol.toStringTag");
+                            njs_string("Symbol.toStringTag");
 static const njs_value_t  njs_symbol_unscopables_name =
-                            njs_long_string("Symbol.unscopables");
+                            njs_string("Symbol.unscopables");
 
 
 static const njs_value_t  *njs_symbol_names[NJS_SYMBOL_KNOWN_MAX] = {
@@ -247,7 +247,7 @@ static const njs_object_prop_t  njs_symbol_constructor_properties[] =
     NJS_DECLARE_PROP_VALUE("hasInstance",
                            njs_wellknown_symbol(NJS_SYMBOL_HAS_INSTANCE), 0),
 
-    NJS_DECLARE_PROP_LVALUE("isConcatSpreadable",
+    NJS_DECLARE_PROP_VALUE("isConcatSpreadable",
                      njs_wellknown_symbol(NJS_SYMBOL_IS_CONCAT_SPREADABLE), 0),
 
     NJS_DECLARE_PROP_VALUE("iterator",

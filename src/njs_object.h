@@ -290,12 +290,12 @@ njs_value_create_data_prop_i64(njs_vm_t *vm, njs_value_t *value, int64_t index,
 }
 
 
+static const njs_value_t string_length = njs_string("length");
+
 njs_inline njs_int_t
 njs_object_length_set(njs_vm_t *vm, njs_value_t *value, int64_t length)
 {
     njs_value_t  index;
-
-    static const njs_value_t  string_length = njs_string("length");
 
     njs_value_number_set(&index, length);
 
