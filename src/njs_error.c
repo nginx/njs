@@ -577,6 +577,10 @@ njs_error_prototype_value_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
+static const njs_value_t  string_message = njs_string("message");
+static const njs_value_t  default_name = njs_string("Error");
+
+
 static njs_int_t
 njs_error_to_string2(njs_vm_t *vm, njs_value_t *retval,
     const njs_value_t *error, njs_bool_t want_stack)
@@ -587,9 +591,6 @@ njs_error_to_string2(njs_vm_t *vm, njs_value_t *retval,
     njs_value_t        value1, value2;
     njs_value_t        *name_value, *message_value;
     njs_string_prop_t  name, message;
-
-    static const njs_value_t  string_message = njs_string("message");
-    static const njs_value_t  default_name = njs_string("Error");
 
     njs_assert(njs_is_object(error));
 
@@ -763,12 +764,13 @@ const njs_object_type_init_t  njs_eval_error_type_init = {
 };
 
 
+static const njs_value_t name = njs_string("MemoryError");
+
+
 static njs_int_t
 njs_internal_error_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
 {
-    static const njs_value_t name = njs_string("MemoryError");
-
     if (nargs >= 1 && njs_is_object(&args[0])) {
         /* MemoryError is a nonextensible internal error. */
         if (!njs_object(&args[0])->extensible) {

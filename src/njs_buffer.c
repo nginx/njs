@@ -337,6 +337,9 @@ next:
 }
 
 
+static const njs_str_t  str_buffer = njs_str("Buffer");
+
+
 static njs_int_t
 njs_buffer_from_object(njs_vm_t *vm, njs_value_t *value, njs_value_t *retval)
 {
@@ -348,9 +351,6 @@ njs_buffer_from_object(njs_vm_t *vm, njs_value_t *value, njs_value_t *retval)
     njs_int_t          ret;
     njs_value_t        val, data, length;
     njs_typed_array_t  *buffer;
-
-    static const njs_value_t  string_length = njs_string("length");
-    static const njs_str_t  str_buffer = njs_str("Buffer");
 
 next:
 
@@ -2358,6 +2358,9 @@ njs_buffer_prototype_swap(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
+static const njs_value_t  string_buffer = njs_string("Buffer");
+
+
 static njs_int_t
 njs_buffer_prototype_to_json(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
@@ -2370,8 +2373,6 @@ njs_buffer_prototype_to_json(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_object_t        *obj;
     njs_typed_array_t   *ta;
     njs_array_buffer_t  *buffer;
-
-    static const njs_value_t  string_buffer = njs_string("Buffer");
 
     ta = njs_buffer_slot(vm, njs_argument(args, 0), "this");
     if (njs_slow_path(ta == NULL)) {
@@ -2660,7 +2661,7 @@ static const njs_object_prop_t  njs_buffer_constructor_properties[] =
 
     NJS_DECLARE_PROP_NATIVE("allocUnsafe", njs_buffer_alloc_safe, 0, 0),
 
-    NJS_DECLARE_PROP_LNATIVE("allocUnsafeSlow", njs_buffer_alloc_safe, 1, 0),
+    NJS_DECLARE_PROP_NATIVE("allocUnsafeSlow", njs_buffer_alloc_safe, 1, 0),
 
     NJS_DECLARE_PROP_NATIVE("byteLength", njs_buffer_byte_length, 1, 0),
 
@@ -2695,9 +2696,9 @@ static const njs_object_prop_t  njs_buffer_constants_properties[] =
     NJS_DECLARE_PROP_VALUE("MAX_LENGTH", njs_value(NJS_NUMBER, 1, INT32_MAX),
                            NJS_OBJECT_PROP_VALUE_E),
 
-    NJS_DECLARE_PROP_LVALUE("MAX_STRING_LENGTH",
-                            njs_value(NJS_NUMBER, 1, NJS_STRING_MAX_LENGTH),
-                            NJS_OBJECT_PROP_VALUE_E),
+    NJS_DECLARE_PROP_VALUE("MAX_STRING_LENGTH",
+                           njs_value(NJS_NUMBER, 1, NJS_STRING_MAX_LENGTH),
+                           NJS_OBJECT_PROP_VALUE_E),
 };
 
 

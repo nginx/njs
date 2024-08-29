@@ -358,8 +358,10 @@ njs_object_iterate(njs_vm_t *vm, njs_iterator_args_t *args,
             /* ASCII string. */
 
             for (i = from; i < to; i++) {
-                /* This cannot fail. */
-                (void) njs_string_new(vm, &character, p + i, 1, 1);
+                ret = njs_string_new(vm, &character, p + i, 1, 1);
+                if (njs_slow_path(ret != NJS_OK)) {
+                    return NJS_ERROR;
+                }
 
                 ret = handler(vm, args, &character, i, retval);
                 if (njs_slow_path(ret != NJS_OK)) {
@@ -377,8 +379,10 @@ njs_object_iterate(njs_vm_t *vm, njs_iterator_args_t *args,
             for (i = from; i < to; i++) {
                 pos = njs_utf8_next(p, end);
 
-                /* This cannot fail. */
-                (void) njs_string_new(vm, &character, p, pos - p, 1);
+                ret = njs_string_new(vm, &character, p, pos - p, 1);
+                if (njs_slow_path(ret != NJS_OK)) {
+                    return NJS_ERROR;
+                }
 
                 ret = handler(vm, args, &character, i, retval);
                 if (njs_slow_path(ret != NJS_OK)) {
@@ -513,8 +517,10 @@ njs_object_iterate_reverse(njs_vm_t *vm, njs_iterator_args_t *args,
             i = from + 1;
 
             while (i-- > to) {
-                /* This cannot fail. */
-                (void) njs_string_new(vm, &character, p, 1, 1);
+                ret = njs_string_new(vm, &character, p, 1, 1);
+                if (njs_slow_path(ret != NJS_OK)) {
+                    return NJS_ERROR;
+                }
 
                 ret = handler(vm, args, &character, i, retval);
                 if (njs_slow_path(ret != NJS_OK)) {
@@ -542,8 +548,10 @@ njs_object_iterate_reverse(njs_vm_t *vm, njs_iterator_args_t *args,
             while (i-- > to) {
                 pos = njs_utf8_prev(p, string_prop.start);
 
-                /* This cannot fail. */
-                (void) njs_string_new(vm, &character, pos, p - pos , 1);
+                ret = njs_string_new(vm, &character, pos, p - pos , 1);
+                if (njs_slow_path(ret != NJS_OK)) {
+                    return NJS_ERROR;
+                }
 
                 ret = handler(vm, args, &character, i, retval);
                 if (njs_slow_path(ret != NJS_OK)) {

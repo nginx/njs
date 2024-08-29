@@ -435,7 +435,7 @@ njs_typed_array_writable(njs_vm_t *vm, njs_typed_array_t *array)
 
 static const njs_value_t  njs_typed_array_uint8_tag = njs_string("Uint8Array");
 static const njs_value_t  njs_typed_array_uint8_clamped_tag =
-                                        njs_long_string("Uint8ClampedArray");
+                                               njs_string("Uint8ClampedArray");
 static const njs_value_t  njs_typed_array_int8_tag = njs_string("Int8Array");
 static const njs_value_t  njs_typed_array_uint16_tag =
                                                     njs_string("Uint16Array");
@@ -2751,8 +2751,7 @@ static const njs_object_prop_t  njs_typed_array_u8_constructor_props[] =
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
-    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 1),
-                            0),
+    NJS_DECLARE_PROP_VALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 1), 0),
 };
 
 
@@ -2768,8 +2767,7 @@ static const njs_object_prop_t  njs_typed_array_u8_prototype_properties[] =
                              njs_object_prototype_create_constructor,
                              0, 0, NJS_OBJECT_PROP_VALUE_CW),
 
-    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 1),
-                            0),
+    NJS_DECLARE_PROP_VALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 1), 0),
 };
 
 
@@ -2793,7 +2791,7 @@ static const njs_object_prop_t  njs_typed_array_u8c_constructor_props[] =
     {
         .type = NJS_PROPERTY,
         .name = njs_string("name"),
-        .u.value = njs_long_string("Uint8ClampedArray"),
+        .u.value = njs_string("Uint8ClampedArray"),
         .configurable = 1,
     },
 
@@ -2801,8 +2799,7 @@ static const njs_object_prop_t  njs_typed_array_u8c_constructor_props[] =
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
-    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 1),
-                            0),
+    NJS_DECLARE_PROP_VALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 1), 0),
 };
 
 
@@ -2818,8 +2815,7 @@ static const njs_object_prop_t  njs_typed_array_u8c_prototype_properties[] =
                              njs_object_prototype_create_constructor,
                              0, 0, NJS_OBJECT_PROP_VALUE_CW),
 
-    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 1),
-                            0),
+    NJS_DECLARE_PROP_VALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 1), 0),
 };
 
 
@@ -2846,8 +2842,7 @@ static const njs_object_prop_t  njs_typed_array_i8_constructor_props[] =
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
-    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 1),
-                            0),
+    NJS_DECLARE_PROP_VALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 1), 0),
 };
 
 
@@ -2863,8 +2858,7 @@ static const njs_object_prop_t  njs_typed_array_i8_prototype_properties[] =
                              njs_object_prototype_create_constructor,
                              0, 0, NJS_OBJECT_PROP_VALUE_CW),
 
-    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 1),
-                            0),
+    NJS_DECLARE_PROP_VALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 1), 0),
 };
 
 
@@ -2891,8 +2885,7 @@ static const njs_object_prop_t  njs_typed_array_u16_constructor_props[] =
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
-    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 2),
-                            0),
+    NJS_DECLARE_PROP_VALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 2), 0),
 };
 
 
@@ -2908,8 +2901,7 @@ static const njs_object_prop_t  njs_typed_array_u16_prototype_properties[] =
                              njs_object_prototype_create_constructor,
                              0, 0, NJS_OBJECT_PROP_VALUE_CW),
 
-    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 2),
-                            0),
+    NJS_DECLARE_PROP_VALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 2), 0),
 };
 
 
@@ -2936,8 +2928,7 @@ static const njs_object_prop_t  njs_typed_array_i16_constructor_props[] =
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
-    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 2),
-                            0),
+    NJS_DECLARE_PROP_VALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 2), 0),
 };
 
 
@@ -2953,8 +2944,7 @@ static const njs_object_prop_t  njs_typed_array_i16_prototype_properties[] =
                              njs_object_prototype_create_constructor,
                              0, 0, NJS_OBJECT_PROP_VALUE_CW),
 
-    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 2),
-                            0),
+    NJS_DECLARE_PROP_VALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 2), 0),
 };
 
 
@@ -2981,8 +2971,7 @@ static const njs_object_prop_t  njs_typed_array_u32_constructor_props[] =
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
-    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 4),
-                            0),
+    NJS_DECLARE_PROP_VALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 4), 0),
 };
 
 
@@ -2998,8 +2987,7 @@ static const njs_object_prop_t  njs_typed_array_u32_prototype_properties[] =
                              njs_object_prototype_create_constructor,
                              0, 0, NJS_OBJECT_PROP_VALUE_CW),
 
-    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 4),
-                            0),
+    NJS_DECLARE_PROP_VALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 4), 0),
 };
 
 
@@ -3026,8 +3014,7 @@ static const njs_object_prop_t  njs_typed_array_i32_constructor_props[] =
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
-    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 4),
-                            0),
+    NJS_DECLARE_PROP_VALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 4), 0),
 };
 
 
@@ -3043,8 +3030,7 @@ static const njs_object_prop_t  njs_typed_array_i32_prototype_properties[] =
                              njs_object_prototype_create_constructor,
                              0, 0, NJS_OBJECT_PROP_VALUE_CW),
 
-    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 4),
-                            0),
+    NJS_DECLARE_PROP_VALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 4), 0),
 };
 
 
@@ -3071,8 +3057,7 @@ static const njs_object_prop_t  njs_typed_array_f32_constructor_props[] =
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
-    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 4),
-                            0),
+    NJS_DECLARE_PROP_VALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 4), 0),
 };
 
 
@@ -3088,8 +3073,7 @@ static const njs_object_prop_t  njs_typed_array_f32_prototype_properties[] =
                              njs_object_prototype_create_constructor,
                              0, 0, NJS_OBJECT_PROP_VALUE_CW),
 
-    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 4),
-                            0),
+    NJS_DECLARE_PROP_VALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 4), 0),
 };
 
 
@@ -3116,8 +3100,7 @@ static const njs_object_prop_t  njs_typed_array_f64_constructor_props[] =
 
     NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
 
-    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 8),
-                            0),
+    NJS_DECLARE_PROP_VALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 8), 0),
 };
 
 
@@ -3133,8 +3116,7 @@ static const njs_object_prop_t  njs_typed_array_f64_prototype_properties[] =
                              njs_object_prototype_create_constructor,
                              0, 0, NJS_OBJECT_PROP_VALUE_CW),
 
-    NJS_DECLARE_PROP_LVALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 8),
-                            0),
+    NJS_DECLARE_PROP_VALUE("BYTES_PER_ELEMENT", njs_value(NJS_NUMBER, 1, 8), 0),
 };
 
 

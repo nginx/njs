@@ -650,6 +650,12 @@ njs_ext_on(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
+static const njs_value_t  size_string = njs_string("size");
+static const njs_value_t  nblocks_string = njs_string("nblocks");
+static const njs_value_t  page_string = njs_string("page_size");
+static const njs_value_t  cluster_string = njs_string("cluster_size");
+
+
 static njs_int_t
 njs_ext_memory_stats(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *unused, njs_value_t *unused2, njs_value_t *retval)
@@ -658,11 +664,6 @@ njs_ext_memory_stats(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t    object, value;
     njs_object_t   *stat;
     njs_mp_stat_t  mp_stat;
-
-    static const njs_value_t  size_string = njs_string("size");
-    static const njs_value_t  nblocks_string = njs_string("nblocks");
-    static const njs_value_t  page_string = njs_string("page_size");
-    static const njs_value_t  cluster_string = njs_string("cluster_size");
 
     stat = njs_object_alloc(vm);
     if (njs_slow_path(stat == NULL)) {
@@ -729,7 +730,12 @@ njs_global_this_prop_handler(njs_vm_t *vm, njs_object_prop_t *prop,
         return NJS_DECLINED;
     }
 
+    if (njs_slow_path(prop->name.type == NJS_SYMBOL)) {
+        return NJS_DECLINED;
+    }
+
     njs_string_get(&prop->name, &lhq.key);
+
     lhq.key_hash = njs_djb_hash(lhq.key.start, lhq.key.length);
     lhq.proto = &njs_lexer_hash_proto;
 
@@ -954,11 +960,11 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
 
     NJS_DECLARE_PROP_NATIVE("encodeURI", njs_string_encode_uri, 1, 0),
 
-    NJS_DECLARE_PROP_LNATIVE("encodeURIComponent", njs_string_encode_uri, 1, 1),
+    NJS_DECLARE_PROP_NATIVE("encodeURIComponent", njs_string_encode_uri, 1, 1),
 
     NJS_DECLARE_PROP_NATIVE("decodeURI", njs_string_decode_uri, 1, 0),
 
-    NJS_DECLARE_PROP_LNATIVE("decodeURIComponent", njs_string_decode_uri, 1, 1),
+    NJS_DECLARE_PROP_NATIVE("decodeURIComponent", njs_string_decode_uri, 1, 1),
 
     NJS_DECLARE_PROP_NATIVE("atob", njs_string_atob, 1, 0),
 
@@ -1054,15 +1060,10 @@ static const njs_object_prop_t  njs_global_this_object_properties[] =
                              NJS_OBJ_TYPE_FLOAT64_ARRAY, NJS_FLOAT64ARRAY_HASH,
                              NJS_OBJECT_PROP_VALUE_CW),
 
-    {
-        .type = NJS_PROPERTY_HANDLER,
-        .name = njs_long_string("Uint8ClampedArray"),
-        .u.value = njs_prop_handler2(njs_top_level_constructor,
-                                   NJS_OBJ_TYPE_UINT8_CLAMPED_ARRAY,
-                                   NJS_UINT8CLAMPEDARRAY_HASH),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_HANDLER("Uint8ClampedArray", njs_top_level_constructor,
+                             NJS_OBJ_TYPE_UINT8_CLAMPED_ARRAY,
+                             NJS_UINT8CLAMPEDARRAY_HASH,
+                             NJS_OBJECT_PROP_VALUE_CW),
 
     NJS_DECLARE_PROP_HANDLER("Boolean", njs_top_level_constructor,
                              NJS_OBJ_TYPE_BOOLEAN, NJS_BOOLEAN_HASH,
@@ -1181,6 +1182,9 @@ static const njs_object_init_t  njs_njs_object_init = {
 };
 
 
+static const njs_value_t  argv_string = njs_string("argv");
+
+
 static njs_int_t
 njs_process_object_argv(njs_vm_t *vm, njs_object_prop_t *pr,
     njs_value_t *process, njs_value_t *unused, njs_value_t *retval)
@@ -1191,8 +1195,6 @@ njs_process_object_argv(njs_vm_t *vm, njs_object_prop_t *pr,
     njs_array_t         *argv;
     njs_object_prop_t   *prop;
     njs_lvlhsh_query_t  lhq;
-
-    static const njs_value_t  argv_string = njs_string("argv");
 
     argv = njs_array_alloc(vm, 1, vm->options.argc, 0);
     if (njs_slow_path(argv == NULL)) {
@@ -1315,6 +1317,9 @@ njs_env_hash_init(njs_vm_t *vm, njs_lvlhsh_t *hash, char **environment)
 }
 
 
+static const njs_value_t  env_string = njs_string("env");
+
+
 static njs_int_t
 njs_process_object_env(njs_vm_t *vm, njs_object_prop_t *pr,
     njs_value_t *process, njs_value_t *unused, njs_value_t *retval)
@@ -1323,8 +1328,6 @@ njs_process_object_env(njs_vm_t *vm, njs_object_prop_t *pr,
     njs_object_t        *env;
     njs_object_prop_t   *prop;
     njs_lvlhsh_query_t  lhq;
-
-    static const njs_value_t  env_string = njs_string("env");
 
     env = njs_object_alloc(vm);
     if (njs_slow_path(env == NULL)) {

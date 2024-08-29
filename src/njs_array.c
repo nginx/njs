@@ -139,6 +139,7 @@ njs_int_t
 njs_array_convert_to_slow_array(njs_vm_t *vm, njs_array_t *array)
 {
     uint32_t           i, length;
+    njs_int_t          ret;
     njs_value_t        index, value;
     njs_object_prop_t  *prop;
 
@@ -153,7 +154,10 @@ njs_array_convert_to_slow_array(njs_vm_t *vm, njs_array_t *array)
 
     for (i = 0; i < length; i++) {
         if (njs_is_valid(&array->start[i])) {
-            njs_uint32_to_string(&index, i);
+            ret = njs_uint32_to_string(vm, &index, i);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return NJS_ERROR;
+            }
             prop = njs_object_property_add(vm, &value, &index, 0);
             if (njs_slow_path(prop == NULL)) {
                 return NJS_ERROR;
@@ -175,8 +179,6 @@ njs_array_length_redefine(njs_vm_t *vm, njs_value_t *value, uint32_t length,
     int writable)
 {
     njs_object_prop_t  *prop;
-
-    static const njs_value_t  string_length = njs_string("length");
 
     if (njs_slow_path(!njs_is_array(value))) {
         njs_internal_error(vm, "njs_array_length_redefine() "
@@ -787,8 +789,8 @@ static njs_int_t
 njs_array_prototype_slice_copy(njs_vm_t *vm, njs_value_t *this,
     int64_t start, int64_t length, njs_value_t *retval)
 {
+    u_char             *c, buf[4];
     size_t             size;
-    u_char             *dst;
     uint32_t           n;
     njs_int_t          ret;
     njs_array_t        *array, *keys;
@@ -828,10 +830,14 @@ njs_array_prototype_slice_copy(njs_vm_t *vm, njs_value_t *this,
 
             do {
                 value = &array->start[n++];
-                dst = njs_string_short_start(value);
-                dst = njs_utf8_copy(dst, &src, end);
-                size = dst - njs_string_short_start(value);
-                njs_string_short_set(value, size, 1);
+                c = buf;
+                c = njs_utf8_copy(c, &src, end);
+                size = c - buf;
+
+                ret = njs_string_new(vm, value, buf, size, 1);
+                if (njs_slow_path(ret != NJS_OK)) {
+                    return NJS_ERROR;
+                }
 
                 length--;
             } while (length != 0);
@@ -1603,6 +1609,9 @@ njs_array_prototype_to_reversed(njs_vm_t *vm, njs_value_t *args,
 }
 
 
+static const njs_value_t  join_string = njs_string("join");
+
+
 njs_int_t
 njs_array_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
@@ -1610,8 +1619,6 @@ njs_array_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_int_t           ret;
     njs_value_t         value;
     njs_lvlhsh_query_t  lhq;
-
-    static const njs_value_t  join_string = njs_string("join");
 
     if (njs_is_object(njs_argument(args, 0))) {
         njs_object_property_init(&lhq, &join_string, NJS_JOIN_HASH);
@@ -2776,7 +2783,10 @@ njs_sort_indexed_properties(njs_vm_t *vm, njs_value_t *obj, int64_t length,
                 njs_value_assign(&p->value, &start[i]);
 
             } else {
-                njs_uint32_to_string(&key, i);
+                ret = njs_uint32_to_string(vm, &key, i);
+                if (njs_slow_path(ret != NJS_OK)) {
+                    goto exception;
+                }
                 ret = njs_value_property(vm, obj, &key, &p->value);
                 if (njs_slow_path(ret == NJS_ERROR)) {
                     goto exception;

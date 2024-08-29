@@ -107,7 +107,7 @@ static njs_int_t njs_promise_perform_race_handler(njs_vm_t *vm,
 
 static const njs_value_t  string_resolve = njs_string("resolve");
 static const njs_value_t  string_any_rejected =
-                                 njs_long_string("All promises were rejected");
+                                      njs_string("All promises were rejected");
 
 
 static njs_promise_t *
@@ -391,14 +391,12 @@ njs_promise_value_constructor(njs_vm_t *vm, njs_value_t *value,
 {
     njs_int_t  ret;
 
-    static const njs_value_t  string_constructor = njs_string("constructor");
-
     if (njs_is_function(value)) {
         *dst = *value;
         return NJS_OK;
     }
 
-    ret = njs_value_property(vm, value, njs_value_arg(&string_constructor),
+    ret = njs_value_property(vm, value, njs_value_arg(&njs_string_ctor),
                              dst);
     if (njs_slow_path(ret == NJS_ERROR)) {
         return ret;
@@ -545,14 +543,15 @@ njs_promise_reject(njs_vm_t *vm, njs_promise_t *promise, njs_value_t *reason)
 }
 
 
+static const njs_value_t  string_then = njs_string("then");
+
+
 static njs_int_t
 njs_promise_invoke_then(njs_vm_t *vm, njs_value_t *promise, njs_value_t *args,
     njs_int_t nargs, njs_value_t *retval)
 {
     njs_int_t    ret;
     njs_value_t  function;
-
-    static const njs_value_t  string_then = njs_string("then");
 
     ret = njs_value_property(vm, promise, njs_value_arg(&string_then),
                              &function);
@@ -587,8 +586,6 @@ njs_promise_resolve_function(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_function_t         *function;
     njs_native_frame_t     *active_frame;
     njs_promise_context_t  *context;
-
-    static const njs_value_t  string_then = njs_string("then");
 
     active_frame = vm->top_frame;
     context = active_frame->function->context;
@@ -701,10 +698,8 @@ njs_promise_resolve(njs_vm_t *vm, njs_value_t *constructor, njs_value_t *x)
     njs_value_t               value;
     njs_promise_capability_t  *capability;
 
-    static const njs_value_t  string_constructor = njs_string("constructor");
-
     if (njs_is_promise(x)) {
-        ret = njs_value_property(vm, x, njs_value_arg(&string_constructor),
+        ret = njs_value_property(vm, x, njs_value_arg(&njs_string_ctor),
                                  &value);
         if (njs_slow_path(ret == NJS_ERROR)) {
             return NULL;
@@ -1470,6 +1465,13 @@ njs_promise_perform_all_settled_handler(njs_vm_t *vm, njs_iterator_args_t *args,
 }
 
 
+static const njs_value_t  string_status = njs_string("status");
+static const njs_value_t  string_fulfilled = njs_string("fulfilled");
+static const njs_value_t  string_value = njs_string("value");
+static const njs_value_t  string_rejected = njs_string("rejected");
+static const njs_value_t  string_reason = njs_string("reason");
+
+
 static njs_int_t
 njs_promise_all_settled_element_functions(njs_vm_t *vm,
     njs_value_t *args, njs_uint_t nargs, njs_index_t rejected,
@@ -1480,12 +1482,6 @@ njs_promise_all_settled_element_functions(njs_vm_t *vm,
     njs_object_t               *obj;
     const njs_value_t          *status, *set;
     njs_promise_all_context_t  *context;
-
-    static const njs_value_t  string_status = njs_string("status");
-    static const njs_value_t  string_fulfilled = njs_string("fulfilled");
-    static const njs_value_t  string_value = njs_string("value");
-    static const njs_value_t  string_rejected = njs_string("rejected");
-    static const njs_value_t  string_reason = njs_string("reason");
 
     context = vm->top_frame->function->context;
 

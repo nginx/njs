@@ -154,6 +154,10 @@ njs_text_encoder_encode_utf8(njs_vm_t *vm, njs_string_prop_t *prop,
 }
 
 
+static const njs_value_t  read_str = njs_string("read");
+static const njs_value_t  written_str = njs_string("written");
+
+
 static njs_int_t
 njs_text_encoder_encode_into(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
@@ -167,9 +171,6 @@ njs_text_encoder_encode_into(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     const u_char          *start, *end;
     njs_typed_array_t     *array;
     njs_unicode_decode_t  ctx;
-
-    static const njs_value_t  read_str = njs_string("read");
-    static const njs_value_t  written_str = njs_string("written");
 
     this = njs_argument(args, 0);
     input = njs_arg(args, nargs, 1);
@@ -357,15 +358,16 @@ njs_text_decoder_arg_encoding(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
+static const njs_value_t  fatal_str = njs_string("fatal");
+static const njs_value_t  ignore_bom_str = njs_string("ignoreBOM");
+
+
 static njs_int_t
 njs_text_decoder_arg_options(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_encoding_decode_t *data)
 {
     njs_int_t    ret;
     njs_value_t  retval, *value;
-
-    static const njs_value_t  fatal_str = njs_string("fatal");
-    static const njs_value_t  ignore_bom_str = njs_string("ignoreBOM");
 
     if (nargs < 3) {
         data->fatal = 0;
@@ -400,13 +402,14 @@ njs_text_decoder_arg_options(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
+static const njs_value_t  utf8_str = njs_string("utf-8");
+
+
 static njs_int_t
 njs_text_decoder_encoding(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     njs_encoding_decode_t  *data;
-
-    static const njs_value_t  utf8_str = njs_string("utf-8");
 
     if (njs_slow_path(!njs_is_object_data(value, NJS_DATA_TAG_TEXT_DECODER))) {
         njs_set_undefined(retval);
@@ -467,6 +470,9 @@ njs_text_decoder_ignore_bom(njs_vm_t *vm, njs_object_prop_t *prop,
 }
 
 
+static const njs_value_t  stream_str = njs_string("stream");
+
+
 static njs_int_t
 njs_text_decoder_decode(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
@@ -482,8 +488,6 @@ njs_text_decoder_decode(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_encoding_decode_t     *data;
     const njs_typed_array_t   *array;
     const njs_array_buffer_t  *buffer;
-
-    static const njs_value_t  stream_str = njs_string("stream");
 
     start = NULL;
     end = NULL;

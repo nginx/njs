@@ -78,49 +78,22 @@ njs_int_t
 njs_string_set(njs_vm_t *vm, njs_value_t *value, const u_char *start,
     uint32_t size)
 {
-    u_char        *dst;
-    const u_char  *src;
     njs_string_t  *string;
 
     value->type = NJS_STRING;
-    njs_string_truth(value, size);
+    value->truth = size != 0;
 
-    if (size <= NJS_STRING_SHORT) {
-        value->short_string.size = size;
-        value->short_string.length = 0;
-
-        dst = value->short_string.start;
-        src = start;
-
-        while (size != 0) {
-            /* The maximum size is just 14 bytes. */
-            njs_pragma_loop_disable_vectorization;
-
-            *dst++ = *src++;
-            size--;
-        }
-
-    } else {
-        /*
-         * Setting UTF-8 length is not required here, it just allows
-         * to store the constant in whole byte instead of bit twiddling.
-         */
-        value->short_string.size = NJS_STRING_LONG;
-        value->short_string.length = 0;
-        value->long_string.external = 0xff;
-        value->long_string.size = size;
-
-        string = njs_mp_alloc(vm->mem_pool, sizeof(njs_string_t));
-        if (njs_slow_path(string == NULL)) {
-            njs_memory_error(vm);
-            return NJS_ERROR;
-        }
-
-        value->long_string.data = string;
-
-        string->start = (u_char *) start;
-        string->length = 0;
+    string = njs_mp_alloc(vm->mem_pool, sizeof(njs_string_t));
+    if (njs_slow_path(string == NULL)) {
+        njs_memory_error(vm);
+        return NJS_ERROR;
     }
+
+    value->string.data = string;
+
+    string->size = size;
+    string->start = (u_char *) start;
+    string->length = 0;
 
     return NJS_OK;
 }
@@ -212,23 +185,7 @@ njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint64_t size,
     }
 
     value->type = NJS_STRING;
-    njs_string_truth(value, size);
-
-    if (size <= NJS_STRING_SHORT) {
-        value->short_string.size = size;
-        value->short_string.length = length;
-
-        return value->short_string.start;
-    }
-
-    /*
-     * Setting UTF-8 length is not required here, it just allows
-     * to store the constant in whole byte instead of bit twiddling.
-     */
-    value->short_string.size = NJS_STRING_LONG;
-    value->short_string.length = 0;
-    value->long_string.external = 0;
-    value->long_string.size = size;
+    value->truth = size != 0;
 
     if (size != length && length > NJS_STRING_MAP_STRIDE) {
         map_offset = njs_string_map_offset(size);
@@ -242,9 +199,10 @@ njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint64_t size,
     string = njs_mp_alloc(vm->mem_pool, sizeof(njs_string_t) + total);
 
     if (njs_fast_path(string != NULL)) {
-        value->long_string.data = string;
+        value->string.data = string;
 
         string->start = (u_char *) string + sizeof(njs_string_t);
+        string->size = size;
         string->length = length;
 
         if (map_offset != 0) {
@@ -266,14 +224,8 @@ njs_string_length(njs_value_t *string)
 {
     uint32_t  length, size;
 
-    if (string->short_string.size != NJS_STRING_LONG) {
-        size = string->short_string.size;
-        length = string->short_string.length;
-
-    } else {
-        size = string->long_string.size;
-        length = string->long_string.data->length;
-    }
+    size = string->string.data->size;
+    length = string->string.data->length;
 
     return (length == 0) ? size : length;
 }
@@ -285,17 +237,9 @@ njs_string_prop(njs_string_prop_t *string, const njs_value_t *value)
     size_t     size;
     uintptr_t  length;
 
-    size = value->short_string.size;
-
-    if (size != NJS_STRING_LONG) {
-        string->start = (u_char *) value->short_string.start;
-        length = value->short_string.length;
-
-    } else {
-        string->start = (u_char *) value->long_string.data->start;
-        size = value->long_string.size;
-        length = value->long_string.data->length;
-    }
+    string->start = (u_char *) value->string.data->start;
+    size = value->string.data->size;
+    length = value->string.data->length;
 
     string->size = size;
     string->length = length;
@@ -307,32 +251,8 @@ njs_string_prop(njs_string_prop_t *string, const njs_value_t *value)
 void
 njs_string_truncate(njs_value_t *value, uint32_t size, uint32_t length)
 {
-    u_char    *dst, *src;
-    uint32_t  n;
-
-    if (size <= NJS_STRING_SHORT) {
-        if (value->short_string.size == NJS_STRING_LONG) {
-            dst = value->short_string.start;
-            src = value->long_string.data->start;
-
-            n = size;
-
-            while (n != 0) {
-                /* The maximum size is just 14 bytes. */
-                njs_pragma_loop_disable_vectorization;
-
-                *dst++ = *src++;
-                n--;
-            }
-        }
-
-        value->short_string.size = size;
-        value->short_string.length = length;
-
-    } else {
-        value->long_string.size = size;
-        value->long_string.data->length = length;
-    }
+    value->string.data->size = size;
+    value->string.data->length = length;
 }
 
 
@@ -601,7 +521,6 @@ static njs_int_t
 njs_string_instance_length(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
-    size_t              size;
     uintptr_t           length;
     njs_object_value_t  *ov;
 
@@ -620,15 +539,7 @@ njs_string_instance_length(njs_vm_t *vm, njs_object_prop_t *prop,
     }
 
     if (njs_is_string(value)) {
-        size = value->short_string.size;
-        length = value->short_string.length;
-
-        if (size == NJS_STRING_LONG) {
-            size = value->long_string.size;
-            length = value->long_string.data->length;
-        }
-
-        length = (length == 0) ? size : length;
+        length = value->string.data->length;
     }
 
     njs_set_number(retval, length);
@@ -640,89 +551,40 @@ njs_string_instance_length(njs_vm_t *vm, njs_object_prop_t *prop,
 njs_bool_t
 njs_string_eq(const njs_value_t *v1, const njs_value_t *v2)
 {
-    size_t        size, length1, length2;
-    const u_char  *start1, *start2;
+    size_t  size, length1, length2;
 
-    size = v1->short_string.size;
+    size = v1->string.data->size;
 
-    if (size != v2->short_string.size) {
+    if (size != v2->string.data->size) {
         return 0;
     }
 
-    if (size != NJS_STRING_LONG) {
-        length1 = v1->short_string.length;
-        length2 = v2->short_string.length;
+    length1 = v1->string.data->length;
+    length2 = v2->string.data->length;
 
-        /*
-         * Using full memcmp() comparison if at least one string
-         * is a Byte string.
-         */
-        if (length1 != 0 && length2 != 0 && length1 != length2) {
-            return 0;
-        }
-
-        start1 = v1->short_string.start;
-        start2 = v2->short_string.start;
-
-    } else {
-        size = v1->long_string.size;
-
-        if (size != v2->long_string.size) {
-            return 0;
-        }
-
-        length1 = v1->long_string.data->length;
-        length2 = v2->long_string.data->length;
-
-        /*
-         * Using full memcmp() comparison if at least one string
-         * is a Byte string.
-         */
-        if (length1 != 0 && length2 != 0 && length1 != length2) {
-            return 0;
-        }
-
-        start1 = v1->long_string.data->start;
-        start2 = v2->long_string.data->start;
+    if (length1 != 0 && length2 != 0 && length1 != length2) {
+        return 0;
     }
 
-    return (memcmp(start1, start2, size) == 0);
+    return (memcmp(v1->string.data->start, v2->string.data->start, size) == 0);
 }
 
 
 njs_int_t
 njs_string_cmp(const njs_value_t *v1, const njs_value_t *v2)
 {
-    size_t        size, size1, size2;
-    njs_int_t     ret;
-    const u_char  *start1, *start2;
+    size_t     size, size1, size2;
+    njs_int_t  ret;
 
     njs_assert(njs_is_string(v1));
     njs_assert(njs_is_string(v2));
 
-    size1 = v1->short_string.size;
-
-    if (size1 != NJS_STRING_LONG) {
-        start1 = v1->short_string.start;
-
-    } else {
-        size1 = v1->long_string.size;
-        start1 = v1->long_string.data->start;
-    }
-
-    size2 = v2->short_string.size;
-
-    if (size2 != NJS_STRING_LONG) {
-        start2 = v2->short_string.start;
-
-    } else {
-        size2 = v2->long_string.size;
-        start2 = v2->long_string.data->start;
-    }
+    size1 = v1->string.data->size;
+    size2 = v2->string.data->size;
 
     size = njs_min(size1, size2);
 
-    ret = memcmp(start1, start2, size);
+    ret = memcmp(v1->string.data->start, v2->string.data->start, size);
 
     if (ret != 0) {
         return ret;
@@ -2461,6 +2323,9 @@ njs_string_prototype_repeat(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
+static const njs_value_t  string_space = njs_string(" ");
+
+
 static njs_int_t
 njs_string_prototype_pad(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t pad_start, njs_value_t *retval)
@@ -2473,8 +2338,6 @@ njs_string_prototype_pad(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_value_t        *value, *pad;
     const u_char       *end;
     njs_string_prop_t  string, pad_string;
-
-    static const njs_value_t  string_space = njs_string(" ");
 
     ret = njs_string_object_validate(vm, njs_argument(args, 0));
     if (njs_slow_path(ret != NJS_OK)) {
@@ -3145,6 +3008,9 @@ exception:
 }
 
 
+static const njs_value_t  string_flags = njs_string("flags");
+
+
 static njs_int_t
 njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t replaceAll, njs_value_t *retval)
@@ -3164,7 +3030,6 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     static const njs_value_t  replace_key =
                                       njs_wellknown_symbol(NJS_SYMBOL_REPLACE);
-    static const njs_value_t  string_flags = njs_string("flags");
 
     this = njs_argument(args, 0);
 
@@ -3465,15 +3330,12 @@ njs_string_to_index(const njs_value_t *value)
     const u_char  *p, *start, *end;
     u_char        buf[128];
 
-    size = value->short_string.size;
-
-    if (size != NJS_STRING_LONG) {
-        start = value->short_string.start;
-
-    } else {
-        size = value->long_string.size;
-        start = value->long_string.data->start;
+    if (njs_slow_path(value->type == NJS_SYMBOL)) {
+        return NAN;
     }
+
+    size = value->string.data->size;
+    start = value->string.data->start;
 
     p = start;
     end = p + size;

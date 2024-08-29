@@ -719,6 +719,9 @@ njs_prop_private_copy(njs_vm_t *vm, njs_property_query_t *pq,
 }
 
 
+static const njs_value_t  get_string = njs_string("get");
+
+
 static njs_object_prop_t *
 njs_descriptor_prop(njs_vm_t *vm, const njs_value_t *name,
     const njs_value_t *desc)
@@ -730,8 +733,6 @@ njs_descriptor_prop(njs_vm_t *vm, const njs_value_t *name,
     njs_function_t      *getter, *setter;
     njs_object_prop_t   *prop;
     njs_lvlhsh_query_t  lhq;
-
-    static const njs_value_t  get_string = njs_string("get");
 
     if (!njs_is_object(desc)) {
         njs_type_error(vm, "property descriptor must be an object");

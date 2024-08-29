@@ -1218,6 +1218,9 @@ done:
 }
 
 
+static const njs_value_t  string_message = njs_string("message");
+
+
 static njs_int_t
 njs_parser_regexp_literal(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
@@ -1229,8 +1232,6 @@ njs_parser_regexp_literal(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_value_t           *value, retval;
     njs_regex_flags_t     flags;
     njs_regexp_pattern_t  *pattern;
-
-    static const njs_value_t  string_message = njs_string("message");
 
     value = &parser->node->u.value;
     lexer = parser->lexer;
@@ -8725,7 +8726,7 @@ njs_parser_string_create(njs_vm_t *vm, njs_lexer_token_t *token,
     njs_decode_utf8(&dst, &token->text);
 
     if (length > NJS_STRING_MAP_STRIDE && dst.length != length) {
-        njs_string_utf8_offset_map_init(value->long_string.data->start,
+        njs_string_utf8_offset_map_init(value->string.data->start,
                                         dst.length);
     }
 
@@ -9210,6 +9211,10 @@ njs_parser_unexpected_token(njs_vm_t *vm, njs_parser_t *parser,
 }
 
 
+static const njs_value_t  file_name = njs_string("fileName");
+static const njs_value_t  line_number = njs_string("lineNumber");
+
+
 static void
 njs_parser_error(njs_vm_t *vm, njs_object_type_t type, njs_str_t *file,
     uint32_t line, const char *fmt, va_list args)
@@ -9219,9 +9224,6 @@ njs_parser_error(njs_vm_t *vm, njs_object_type_t type, njs_str_t *file,
     u_char       *p, *end;
     njs_int_t    ret;
     njs_value_t  value, error;
-
-    static const njs_value_t  file_name = njs_string("fileName");
-    static const njs_value_t  line_number = njs_string("lineNumber");
 
     if (njs_slow_path(vm->top_frame == NULL)) {
         njs_vm_runtime_init(vm);

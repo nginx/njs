@@ -94,6 +94,10 @@ njs_time(void)
 }
 
 
+static const njs_value_t  name_key = njs_string("name");
+static const njs_value_t  usec_key = njs_string("usec");
+static const njs_value_t  times_key = njs_string("times");
+
 static njs_int_t
 njs_benchmark_test(njs_vm_t *parent, njs_opts_t *opts, njs_value_t *report,
     njs_benchmark_test_t *test)
@@ -107,10 +111,6 @@ njs_benchmark_test(njs_vm_t *parent, njs_opts_t *opts, njs_value_t *report,
     njs_bool_t    success;
     njs_value_t   *result, retval, name, usec, times;
     njs_vm_opt_t  options;
-
-    static const njs_value_t  name_key = njs_string("name");
-    static const njs_value_t  usec_key = njs_string("usec");
-    static const njs_value_t  times_key = njs_string("times");
 
     njs_vm_opt_init(&options);
 
@@ -493,6 +493,9 @@ static njs_str_t  code = njs_str(
     "}");
 
 
+static const njs_str_t  compare = njs_str("compare");
+
+
 int njs_cdecl
 main(int argc, char **argv)
 {
@@ -517,8 +520,6 @@ main(int argc, char **argv)
         "  -d                dump report as a JSON file.\n"
         "  -c <report file>  compare with previous report.\n"
         "  -h                this help.\n";
-
-    static const njs_str_t  compare = njs_str("compare");
 
     njs_memzero(&opts, sizeof(njs_opts_t));
     opts.prefix = "";
@@ -682,13 +683,14 @@ njs_benchmark_preinit(njs_vm_t *vm)
 }
 
 
+static const njs_str_t  benchmark = njs_str("benchmark");
+
+
 static njs_int_t
 njs_benchmark_init(njs_vm_t *vm)
 {
     njs_int_t           ret;
     njs_opaque_value_t  value;
-
-    static const njs_str_t  benchmark = njs_str("benchmark");
 
     ret = njs_vm_external_create(vm, njs_value_arg(&value),
                                  njs_benchmark_proto_id, NULL, 1);

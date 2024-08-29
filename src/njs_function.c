@@ -251,8 +251,6 @@ njs_function_arguments_object_init(njs_vm_t *vm, njs_native_frame_t *frame)
     njs_value_t   value, length;
     njs_object_t  *arguments;
 
-    static const njs_value_t  string_length = njs_string("length");
-
     arguments = njs_object_alloc(vm);
     if (njs_slow_path(arguments == NULL)) {
         return NJS_ERROR;
@@ -912,9 +910,7 @@ njs_function_property_prototype_set(njs_vm_t *vm, njs_lvlhsh_t *hash,
     njs_object_prop_t   *prop;
     njs_lvlhsh_query_t  lhq;
 
-    const njs_value_t  proto_string = njs_string("prototype");
-
-    prop = njs_object_prop_alloc(vm, &proto_string, prototype, 0);
+    prop = njs_object_prop_alloc(vm, &njs_string_prototype, prototype, 0);
     if (njs_slow_path(prop == NULL)) {
         return NULL;
     }
