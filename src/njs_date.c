@@ -69,9 +69,6 @@ static njs_int_t njs_date_string(njs_vm_t *vm, njs_value_t *retval,
     njs_date_fmt_t fmt, double time);
 
 
-static const njs_value_t  njs_string_invalid_date = njs_string("Invalid Date");
-
-
 njs_inline int64_t
 njs_mod(int64_t a, int64_t b)
 {
@@ -1127,23 +1124,24 @@ njs_date_number_parse(int64_t *value, const u_char *p, const u_char *end,
 }
 
 
-static const njs_object_prop_t  njs_date_constructor_properties[] =
+static njs_object_prop_t  njs_date_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(7),
 
-    NJS_DECLARE_PROP_NAME("Date"),
+    NJS_DECLARE_PROP_NAME(vs_Date),
 
-    NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
+    NJS_DECLARE_PROP_HANDLER(vs_prototype, njs_object_prototype_create,
+                             0, 0),
 
-    NJS_DECLARE_PROP_NATIVE("UTC", njs_date_utc, 7, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_UTC, njs_date_utc, 7, 0),
 
-    NJS_DECLARE_PROP_NATIVE("now", njs_date_now, 0, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_now, njs_date_now, 0, 0),
 
-    NJS_DECLARE_PROP_NATIVE("parse", njs_date_parse, 1, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_parse, njs_date_parse, 1, 0),
 };
 
 
-const njs_object_init_t  njs_date_constructor_init = {
+static const njs_object_init_t  njs_date_constructor_init = {
     njs_date_constructor_properties,
     njs_nitems(njs_date_constructor_properties),
 };
@@ -1206,7 +1204,7 @@ njs_date_string(njs_vm_t *vm, njs_value_t *retval, njs_date_fmt_t fmt,
                                     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
 
     if (njs_slow_path(isnan(time))) {
-        *retval = njs_string_invalid_date;
+        *retval = njs_atom.vs_Invalid_Date;
         return NJS_OK;
     }
 
@@ -1447,10 +1445,9 @@ njs_date_prototype_to_json(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_value_t         value;
     njs_lvlhsh_query_t  lhq;
 
-    static const njs_value_t  to_iso_string = njs_string("toISOString");
-
     if (njs_is_object(njs_argument(args, 0))) {
-        njs_object_property_init(&lhq, &to_iso_string, NJS_TO_ISO_STRING_HASH);
+        lhq.proto = &njs_object_hash_proto;
+        lhq.key_hash = njs_atom.vs_toISOString.atom_id;
 
         ret = njs_object_property(vm, njs_object(njs_argument(args, 0)), &lhq,
                                   &value);
@@ -1471,177 +1468,185 @@ njs_date_prototype_to_json(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static const njs_object_prop_t  njs_date_prototype_properties[] =
+static njs_object_prop_t  njs_date_prototype_properties[] =
 {
-    NJS_DECLARE_PROP_HANDLER("__proto__", njs_primitive_prototype_get_proto,
-                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
+    NJS_DECLARE_PROP_HANDLER(vs___proto__,
+                             njs_primitive_prototype_get_proto, 0,
+                             NJS_OBJECT_PROP_VALUE_CW),
 
-    NJS_DECLARE_PROP_HANDLER("constructor",
-                             njs_object_prototype_create_constructor,
-                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
+    NJS_DECLARE_PROP_HANDLER(vs_constructor,
+                             njs_object_prototype_create_constructor, 0,
+                             NJS_OBJECT_PROP_VALUE_CW),
 
-    NJS_DECLARE_PROP_NATIVE("valueOf", njs_date_prototype_value_of, 0, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_valueOf, njs_date_prototype_value_of, 0,
+                            0),
 
-    NJS_DECLARE_PROP_NATIVE("toString", njs_date_prototype_to_string, 0,
-                            NJS_DATE_FMT_TO_STRING),
+    NJS_DECLARE_PROP_NATIVE(vs_toString, njs_date_prototype_to_string,
+                            0, NJS_DATE_FMT_TO_STRING),
 
-    NJS_DECLARE_PROP_NATIVE("toDateString", njs_date_prototype_to_string, 0,
+    NJS_DECLARE_PROP_NATIVE(vs_toDateString,
+                            njs_date_prototype_to_string, 0,
                             NJS_DATE_FMT_TO_DATE_STRING),
 
-    NJS_DECLARE_PROP_NATIVE("toTimeString", njs_date_prototype_to_string, 0,
+    NJS_DECLARE_PROP_NATIVE(vs_toTimeString,
+                            njs_date_prototype_to_string, 0,
                             NJS_DATE_FMT_TO_TIME_STRING),
 
-    NJS_DECLARE_PROP_NATIVE("toLocaleString", njs_date_prototype_to_string, 0,
+    NJS_DECLARE_PROP_NATIVE(vs_toLocaleString,
+                            njs_date_prototype_to_string, 0,
                             NJS_DATE_FMT_TO_STRING),
 
-    NJS_DECLARE_PROP_LNATIVE("toLocaleDateString",
-                             njs_date_prototype_to_string, 0,
-                             NJS_DATE_FMT_TO_DATE_STRING),
+    NJS_DECLARE_PROP_NATIVE(vs_toLocaleDateString,
+                            njs_date_prototype_to_string, 0,
+                            NJS_DATE_FMT_TO_DATE_STRING),
 
-    NJS_DECLARE_PROP_LNATIVE("toLocaleTimeString",
-                             njs_date_prototype_to_string, 0,
-                             NJS_DATE_FMT_TO_TIME_STRING),
+    NJS_DECLARE_PROP_NATIVE(vs_toLocaleTimeString,
+                            njs_date_prototype_to_string, 0,
+                            NJS_DATE_FMT_TO_TIME_STRING),
 
-    NJS_DECLARE_PROP_NATIVE("toUTCString",
+    NJS_DECLARE_PROP_NATIVE(vs_toUTCString,
                             njs_date_prototype_to_string, 0,
                             NJS_DATE_FMT_TO_UTC_STRING),
 
-    NJS_DECLARE_PROP_NATIVE("toISOString",
+    NJS_DECLARE_PROP_NATIVE(vs_toISOString,
                             njs_date_prototype_to_string, 0,
                             NJS_DATE_FMT_TO_ISO_STRING),
 
-    NJS_DECLARE_PROP_NATIVE("toJSON", njs_date_prototype_to_json, 1, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_toJSON, njs_date_prototype_to_json, 1,
+                            0),
 
-    NJS_DECLARE_PROP_NATIVE("getTime", njs_date_prototype_value_of, 0, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_getTime, njs_date_prototype_value_of, 0,
+                            0),
 
-    NJS_DECLARE_PROP_NATIVE("getFullYear",
+    NJS_DECLARE_PROP_NATIVE(vs_getFullYear,
                             njs_date_prototype_get_field, 0,
                             njs_date_magic(NJS_DATE_YR, 1)),
 
-    NJS_DECLARE_PROP_NATIVE("getUTCFullYear",
+    NJS_DECLARE_PROP_NATIVE(vs_getUTCFullYear,
                             njs_date_prototype_get_field, 0,
                             njs_date_magic(NJS_DATE_YR, 0)),
 
-    NJS_DECLARE_PROP_NATIVE("getMonth",
+    NJS_DECLARE_PROP_NATIVE(vs_getMonth,
                             njs_date_prototype_get_field, 0,
                             njs_date_magic(NJS_DATE_MON, 1)),
 
-    NJS_DECLARE_PROP_NATIVE("getUTCMonth",
+    NJS_DECLARE_PROP_NATIVE(vs_getUTCMonth,
                             njs_date_prototype_get_field, 0,
                             njs_date_magic(NJS_DATE_MON, 0)),
 
-    NJS_DECLARE_PROP_NATIVE("getDate",
+    NJS_DECLARE_PROP_NATIVE(vs_getDate,
                             njs_date_prototype_get_field, 0,
                             njs_date_magic(NJS_DATE_DAY, 1)),
 
-    NJS_DECLARE_PROP_NATIVE("getUTCDate",
+    NJS_DECLARE_PROP_NATIVE(vs_getUTCDate,
                             njs_date_prototype_get_field, 0,
                             njs_date_magic(NJS_DATE_DAY, 0)),
 
-    NJS_DECLARE_PROP_NATIVE("getDay",
+    NJS_DECLARE_PROP_NATIVE(vs_getDay,
                             njs_date_prototype_get_field, 0,
                             njs_date_magic(NJS_DATE_WDAY, 1)),
 
-    NJS_DECLARE_PROP_NATIVE("getUTCDay",
+    NJS_DECLARE_PROP_NATIVE(vs_getUTCDay,
                             njs_date_prototype_get_field, 0,
                             njs_date_magic(NJS_DATE_WDAY, 0)),
 
-    NJS_DECLARE_PROP_NATIVE("getHours",
+    NJS_DECLARE_PROP_NATIVE(vs_getHours,
                             njs_date_prototype_get_field, 0,
                             njs_date_magic(NJS_DATE_HR, 1)),
 
-    NJS_DECLARE_PROP_NATIVE("getUTCHours",
+    NJS_DECLARE_PROP_NATIVE(vs_getUTCHours,
                             njs_date_prototype_get_field, 0,
                             njs_date_magic(NJS_DATE_HR, 0)),
 
-    NJS_DECLARE_PROP_NATIVE("getMinutes",
+    NJS_DECLARE_PROP_NATIVE(vs_getMinutes,
                             njs_date_prototype_get_field, 0,
                             njs_date_magic(NJS_DATE_MIN, 1)),
 
-    NJS_DECLARE_PROP_NATIVE("getUTCMinutes",
+    NJS_DECLARE_PROP_NATIVE(vs_getUTCMinutes,
                             njs_date_prototype_get_field, 0,
                             njs_date_magic(NJS_DATE_MIN, 0)),
 
-    NJS_DECLARE_PROP_NATIVE("getSeconds",
+    NJS_DECLARE_PROP_NATIVE(vs_getSeconds,
                             njs_date_prototype_get_field, 0,
                             njs_date_magic(NJS_DATE_SEC, 1)),
 
-    NJS_DECLARE_PROP_NATIVE("getUTCSeconds",
+    NJS_DECLARE_PROP_NATIVE(vs_getUTCSeconds,
                             njs_date_prototype_get_field, 0,
                             njs_date_magic(NJS_DATE_SEC, 0)),
 
-    NJS_DECLARE_PROP_LNATIVE("getMilliseconds",
-                             njs_date_prototype_get_field, 0,
-                             njs_date_magic(NJS_DATE_MSEC, 1)),
+    NJS_DECLARE_PROP_NATIVE(vs_getMilliseconds,
+                            njs_date_prototype_get_field, 0,
+                            njs_date_magic(NJS_DATE_MSEC, 1)),
 
-    NJS_DECLARE_PROP_LNATIVE("getUTCMilliseconds",
-                             njs_date_prototype_get_field, 0,
-                             njs_date_magic(NJS_DATE_MSEC, 0)),
+    NJS_DECLARE_PROP_NATIVE(vs_getUTCMilliseconds,
+                            njs_date_prototype_get_field, 0,
+                            njs_date_magic(NJS_DATE_MSEC, 0)),
 
-    NJS_DECLARE_PROP_LNATIVE("getTimezoneOffset",
-                             njs_date_prototype_get_timezone_offset, 0, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_getTimezoneOffset,
+                            njs_date_prototype_get_timezone_offset, 0, 0),
 
-    NJS_DECLARE_PROP_NATIVE("setTime", njs_date_prototype_set_time, 1, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_setTime, njs_date_prototype_set_time, 1,
+                            0),
 
-    NJS_DECLARE_PROP_LNATIVE("setMilliseconds",
-                             njs_date_prototype_set_fields, 1,
-                             njs_date_magic2(NJS_DATE_MSEC, 1, 1)),
+    NJS_DECLARE_PROP_NATIVE(vs_setMilliseconds,
+                            njs_date_prototype_set_fields, 1,
+                            njs_date_magic2(NJS_DATE_MSEC, 1, 1)),
 
-    NJS_DECLARE_PROP_LNATIVE("setUTCMilliseconds",
-                             njs_date_prototype_set_fields, 1,
-                             njs_date_magic2(NJS_DATE_MSEC, 1, 0)),
+    NJS_DECLARE_PROP_NATIVE(vs_setUTCMilliseconds,
+                            njs_date_prototype_set_fields, 1,
+                            njs_date_magic2(NJS_DATE_MSEC, 1, 0)),
 
-    NJS_DECLARE_PROP_NATIVE("setSeconds",
+    NJS_DECLARE_PROP_NATIVE(vs_setSeconds,
                             njs_date_prototype_set_fields, 2,
                             njs_date_magic2(NJS_DATE_SEC, 2, 1)),
 
-    NJS_DECLARE_PROP_NATIVE("setUTCSeconds",
+    NJS_DECLARE_PROP_NATIVE(vs_setUTCSeconds,
                             njs_date_prototype_set_fields, 2,
                             njs_date_magic2(NJS_DATE_SEC, 2, 0)),
 
-    NJS_DECLARE_PROP_NATIVE("setMinutes",
+    NJS_DECLARE_PROP_NATIVE(vs_setMinutes,
                             njs_date_prototype_set_fields, 3,
                             njs_date_magic2(NJS_DATE_MIN, 3, 1)),
 
-    NJS_DECLARE_PROP_NATIVE("setUTCMinutes",
+    NJS_DECLARE_PROP_NATIVE(vs_setUTCMinutes,
                             njs_date_prototype_set_fields, 3,
                             njs_date_magic2(NJS_DATE_MIN, 3, 0)),
 
-    NJS_DECLARE_PROP_NATIVE("setHours",
+    NJS_DECLARE_PROP_NATIVE(vs_setHours,
                             njs_date_prototype_set_fields, 4,
                             njs_date_magic2(NJS_DATE_HR, 4, 1)),
 
-    NJS_DECLARE_PROP_NATIVE("setUTCHours",
+    NJS_DECLARE_PROP_NATIVE(vs_setUTCHours,
                             njs_date_prototype_set_fields, 4,
                             njs_date_magic2(NJS_DATE_HR, 4, 0)),
 
-    NJS_DECLARE_PROP_NATIVE("setDate",
+    NJS_DECLARE_PROP_NATIVE(vs_setDate,
                             njs_date_prototype_set_fields, 1,
                             njs_date_magic2(NJS_DATE_DAY, 1, 1)),
 
-    NJS_DECLARE_PROP_NATIVE("setUTCDate",
+    NJS_DECLARE_PROP_NATIVE(vs_setUTCDate,
                             njs_date_prototype_set_fields, 1,
                             njs_date_magic2(NJS_DATE_DAY, 1, 0)),
 
-    NJS_DECLARE_PROP_NATIVE("setMonth",
+    NJS_DECLARE_PROP_NATIVE(vs_setMonth,
                             njs_date_prototype_set_fields, 2,
                             njs_date_magic2(NJS_DATE_MON, 2, 1)),
 
-    NJS_DECLARE_PROP_NATIVE("setUTCMonth",
+    NJS_DECLARE_PROP_NATIVE(vs_setUTCMonth,
                             njs_date_prototype_set_fields, 2,
                             njs_date_magic2(NJS_DATE_MON, 2, 0)),
 
-    NJS_DECLARE_PROP_NATIVE("setFullYear",
+    NJS_DECLARE_PROP_NATIVE(vs_setFullYear,
                             njs_date_prototype_set_fields, 3,
                             njs_date_magic2(NJS_DATE_YR, 3, 1)),
 
-    NJS_DECLARE_PROP_NATIVE("setUTCFullYear",
+    NJS_DECLARE_PROP_NATIVE(vs_setUTCFullYear,
                             njs_date_prototype_set_fields, 3,
                             njs_date_magic2(NJS_DATE_YR, 3, 0)),
 };
 
 
-const njs_object_init_t  njs_date_prototype_init = {
+static const njs_object_init_t  njs_date_prototype_init = {
     njs_date_prototype_properties,
     njs_nitems(njs_date_prototype_properties),
 };
