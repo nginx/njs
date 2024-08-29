@@ -91,33 +91,18 @@ typedef struct njs_property_next_s    njs_property_next_t;
 
 
 union njs_value_s {
-    /*
-     * The njs_value_t size is 16 bytes and must be aligned to 16 bytes
-     * to provide 4 bits to encode scope in njs_index_t.  This space is
-     * used to store short strings.  The maximum size of a short string
-     * is 14 (NJS_STRING_SHORT).  If the short_string.size field is 15
-     * (NJS_STRING_LONG) then the size is in the long_string.size field
-     * and the long_string.data field points to a long string.
-     *
-     * The number of the string types is limited to 2 types to minimize
-     * overhead of processing string fields.  It is also possible to add
-     * strings with size from 14 to 254 which size and length are stored in
-     * the string_size and string_length byte wide fields.  This will lessen
-     * the maximum size of short string to 13.
-     */
     struct {
-        njs_value_type_t              type:8;  /* 6 bits */
+        uint32_t                      magic32;
+        njs_value_type_t              type:8;  /* 5 bits */
+
         /*
          * The truth field is set during value assignment and then can be
          * quickly tested by logical and conditional operations regardless
-         * of value type.  The truth field coincides with short_string.size
-         * and short_string.length so when string size and length are zero
-         * the string's value is false.
+         * of value type.
          */
         uint8_t                       truth;
 
         uint16_t                      magic16;
-        uint32_t                      magic32;
 
         union {
             double                    number;
@@ -139,30 +124,21 @@ union njs_value_s {
     } data;
 
     struct {
-        njs_value_type_t              type:8;  /* 6 bits */
-
-#define NJS_STRING_SHORT              14
-#define NJS_STRING_LONG               15
-
-        uint8_t                       size:4;
-        uint8_t                       length:4;
-
-        u_char                        start[NJS_STRING_SHORT];
-    } short_string;
-
-    struct {
-        njs_value_type_t              type:8;  /* 6 bits */
+        uint32_t                      atom_id;
+        njs_value_type_t              type:8;  /* 5 bits */
         uint8_t                       truth;
 
-        /* 0xff if data is external string. */
-        uint8_t                       external;
-        uint8_t                       _spare;
+        uint8_t                       _spare1_;
+        uint8_t                       _spare2_;
 
-        uint32_t                      size;
         njs_string_t                  *data;
-    } long_string;
+    } string;
 
-    njs_value_type_t                  type:8;  /* 6 bits */
+    struct {
+        uint32_t                      atom_id;
+        njs_value_type_t              type:8;  /* 5 bits */
+        uint8_t                       truth;
+    };
 };
 
 
@@ -409,27 +385,16 @@ typedef struct {
 }
 
 
+/* Declares an ASCII string value for which size == length. */
 #define njs_string(s) {                                                       \
-    .short_string = {                                                         \
+    .string = {                                                               \
         .type = NJS_STRING,                                                   \
-        .size = njs_length(s),                                                \
-        .length = njs_length(s),                                              \
-        .start = s,                                                           \
-    }                                                                         \
-}
-
-
-/* NJS_STRING_LONG is set for both big and little endian platforms. */
-
-#define njs_long_string(s) {                                                  \
-    .long_string = {                                                          \
-        .type = NJS_STRING,                                                   \
-        .truth = (NJS_STRING_LONG << 4) | NJS_STRING_LONG,                    \
-        .size = njs_length(s),                                                \
-        .data = & (njs_string_t) {                                            \
+        .truth = njs_length(s) ? 1 : 0,                                       \
+        .data = &(njs_string_t) {                                             \
             .start = (u_char *) s,                                            \
             .length = njs_length(s),                                          \
-        }                                                                     \
+            .size = njs_length(s),                                            \
+        },                                                                    \
     }                                                                         \
 }
 
@@ -551,49 +516,12 @@ typedef struct {
     (njs_is_number(value) || njs_is_key(value))
 
 
-/*
- * The truth field coincides with short_string.size and short_string.length
- * so when string size and length are zero the string's value is false and
- * otherwise is true.
- */
-#define njs_string_truth(value, size)
-
-
 #define njs_string_get(value, str)                                            \
     do {                                                                      \
-        if ((value)->short_string.size != NJS_STRING_LONG) {                  \
-            (str)->length = (value)->short_string.size;                       \
-            (str)->start = (u_char *) (value)->short_string.start;            \
-                                                                              \
-        } else {                                                              \
-            (str)->length = (value)->long_string.size;                        \
-            (str)->start = (u_char *) (value)->long_string.data->start;       \
-        }                                                                     \
+        (str)->length = (value)->string.data->size;                           \
+        (str)->start = (u_char *) (value)->string.data->start;                \
     } while (0)
 
-
-#define njs_string_short_start(value)                                         \
-    (value)->short_string.start
-
-
-#define njs_string_short_set(value, _size, _length)                           \
-    do {                                                                      \
-        (value)->type = NJS_STRING;                                           \
-        njs_string_truth(value, _size);                                       \
-        (value)->short_string.size = _size;                                   \
-        (value)->short_string.length = _length;                               \
-    } while (0)
-
-
-#define njs_string_length_set(value, _length)                                 \
-    do {                                                                      \
-        if ((value)->short_string.size != NJS_STRING_LONG) {                  \
-            (value)->short_string.length = length;                            \
-                                                                              \
-        } else {                                                              \
-            (value)->long_string.data->length = length;                       \
-        }                                                                     \
-    } while (0)
 
 #define njs_is_primitive(value)                                               \
     ((value)->type <= NJS_STRING)
@@ -852,6 +780,9 @@ extern const njs_value_t  njs_string_object;
 extern const njs_value_t  njs_string_function;
 extern const njs_value_t  njs_string_anonymous;
 extern const njs_value_t  njs_string_memory_error;
+extern const njs_value_t  njs_string_value_of;
+extern const njs_value_t  njs_string_ctor;
+extern const njs_value_t  njs_string_prototype;
 
 
 njs_inline void

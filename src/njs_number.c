@@ -252,19 +252,7 @@ njs_int_t
 njs_int64_to_string(njs_vm_t *vm, njs_value_t *value, int64_t i64)
 {
     size_t  size;
-    u_char  *dst, *p;
     u_char  buf[128];
-
-    if (njs_fast_path(i64 >= 0 && i64 < 0x3fffffffffffLL)) {
-        /* Fits to short_string. */
-        dst = njs_string_short_start(value);
-
-        p = njs_sprintf(dst, dst + NJS_STRING_SHORT, "%L", i64);
-
-        njs_string_short_set(value, p - dst, p - dst);
-
-        return NJS_OK;
-    }
 
     size = njs_dtoa(i64, (char *) buf);
 
@@ -449,11 +437,11 @@ static const njs_object_prop_t  njs_number_constructor_properties[] =
 
     NJS_DECLARE_PROP_VALUE("EPSILON", njs_value(NJS_NUMBER, 1, DBL_EPSILON), 0),
 
-    NJS_DECLARE_PROP_LVALUE("MAX_SAFE_INTEGER",
-                            njs_value(NJS_NUMBER, 1, NJS_MAX_SAFE_INTEGER), 0),
+    NJS_DECLARE_PROP_VALUE("MAX_SAFE_INTEGER",
+                           njs_value(NJS_NUMBER, 1, NJS_MAX_SAFE_INTEGER), 0),
 
-    NJS_DECLARE_PROP_LVALUE("MIN_SAFE_INTEGER",
-                            njs_value(NJS_NUMBER, 1, -NJS_MAX_SAFE_INTEGER), 0),
+    NJS_DECLARE_PROP_VALUE("MIN_SAFE_INTEGER",
+                           njs_value(NJS_NUMBER, 1, -NJS_MAX_SAFE_INTEGER), 0),
 
     NJS_DECLARE_PROP_VALUE("MAX_VALUE", njs_value(NJS_NUMBER, 1, DBL_MAX), 0),
 
@@ -461,11 +449,11 @@ static const njs_object_prop_t  njs_number_constructor_properties[] =
 
     NJS_DECLARE_PROP_VALUE("NaN", njs_value(NJS_NUMBER, 0, NAN), 0),
 
-    NJS_DECLARE_PROP_LVALUE("POSITIVE_INFINITY",
-                            njs_value(NJS_NUMBER, 1, INFINITY), 0),
+    NJS_DECLARE_PROP_VALUE("POSITIVE_INFINITY",
+                           njs_value(NJS_NUMBER, 1, INFINITY), 0),
 
-    NJS_DECLARE_PROP_LVALUE("NEGATIVE_INFINITY",
-                            njs_value(NJS_NUMBER, 1, -INFINITY), 0),
+    NJS_DECLARE_PROP_VALUE("NEGATIVE_INFINITY",
+                           njs_value(NJS_NUMBER, 1, -INFINITY), 0),
 
     NJS_DECLARE_PROP_NATIVE("isFinite", njs_number_is_finite, 1, 0),
 
