@@ -168,15 +168,30 @@ njs_char_to_hex(u_char c)
 }
 
 
-njs_inline void
-njs_uint32_to_string(njs_value_t *value, uint32_t u32)
+njs_inline njs_int_t
+njs_uint32_to_string(njs_vm_t *vm, njs_value_t *value, uint32_t u32)
 {
-    u_char  *dst, *p;
+    size_t  size;
+    u_char  *p;
 
-    dst = njs_string_short_start(value);
-    p = njs_sprintf(dst, dst + NJS_STRING_SHORT, "%uD", u32);
+    if (!(u32 & 0x80000000)) {
+        value->type = NJS_STRING;
+        value->data.truth = (u32 != 0);
+        value->atom_id = njs_number_atom(u32);
+        value->string.data = NULL;
+        return NJS_OK;
+    }
 
-    njs_string_short_set(value, p - dst, p - dst);
+    p = njs_string_alloc(vm, value, 10, 10);
+    if (njs_slow_path(p == NULL)) {
+        return NJS_ERROR;
+    }
+
+    size = njs_sprintf(p, p + 10, "%uD", u32) - p;
+    value->string.data->length = size;
+    value->string.data->size = size;
+
+    return NJS_OK;
 }
 
 

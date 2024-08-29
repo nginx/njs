@@ -362,7 +362,7 @@ njs_hash_prototype_update(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             return NJS_ERROR;
         }
 
-        njs_value_string_get(njs_value_arg(&result), &data);
+        njs_value_string_get(vm, njs_value_arg(&result), &data);
 
     } else if (njs_value_is_buffer(value)) {
         ret = njs_value_buffer_get(vm, value, &data);
@@ -526,7 +526,7 @@ njs_crypto_create_hmac(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             return NJS_ERROR;
         }
 
-        njs_value_string_get(njs_value_arg(&result), &key);
+        njs_value_string_get(vm, njs_value_arg(&result), &key);
 
     } else if (njs_value_is_buffer(value)) {
         ret = njs_value_buffer_get(vm, value, &key);
@@ -589,7 +589,7 @@ njs_crypto_algorithm(njs_vm_t *vm, njs_value_t *value)
         return NULL;
     }
 
-    njs_value_string_get(value, &name);
+    njs_value_string_get(vm, value, &name);
 
     for (e = &njs_hash_algorithms[0]; e->name.length != 0; e++) {
         if (njs_strstr_eq(&name, &e->name)) {
@@ -618,7 +618,7 @@ njs_crypto_encoding(njs_vm_t *vm, njs_value_t *value)
         return &njs_encodings[0];
     }
 
-    njs_value_string_get(value, &name);
+    njs_value_string_get(vm, value, &name);
 
     for (e = &njs_encodings[1]; e->name.length != 0; e++) {
         if (njs_strstr_eq(&name, &e->name)) {

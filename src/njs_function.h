@@ -94,13 +94,16 @@ njs_int_t njs_function_arguments_object_init(njs_vm_t *vm,
 njs_int_t njs_function_rest_parameters_init(njs_vm_t *vm,
     njs_native_frame_t *frame);
 njs_int_t njs_function_prototype_create(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
 njs_int_t njs_function_constructor(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 njs_int_t njs_function_instance_length(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+     uint32_t unused, njs_value_t *value, njs_value_t *setval,
+     njs_value_t *retval);
 njs_int_t njs_function_instance_name(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
 njs_int_t njs_eval_function(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval);
 njs_int_t njs_function_native_frame(njs_vm_t *vm, njs_function_t *function,

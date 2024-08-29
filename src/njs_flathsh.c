@@ -144,13 +144,6 @@ njs_flathsh_chunk(njs_flathsh_descr_t *h)
 }
 
 
-njs_inline njs_flathsh_elt_t *
-njs_hash_elts(njs_flathsh_descr_t *h)
-{
-    return (njs_flathsh_elt_t *) ((char *) h + sizeof(njs_flathsh_descr_t));
-}
-
-
 /*
  * Create a new empty flat hash.
  */
@@ -343,11 +336,40 @@ njs_flathsh_find(const njs_flathsh_t *fh, njs_flathsh_query_t *fhq)
     while (elt_num != 0) {
         e = &elts[elt_num - 1];
 
-        /* TODO: need to be replaced by atomic test. */
-
         if (e->key_hash == fhq->key_hash &&
             fhq->proto->test(fhq, e->value) == NJS_OK)
         {
+            fhq->value = e->value;
+            return NJS_OK;
+        }
+
+        elt_num = e->next_elt;
+    }
+
+    return NJS_DECLINED;
+}
+
+
+njs_int_t
+njs_flathsh_unique_find(const njs_flathsh_t *fh, njs_flathsh_query_t *fhq)
+{
+    njs_int_t            cell_num, elt_num;
+    njs_flathsh_elt_t    *e, *elts;
+    njs_flathsh_descr_t  *h;
+
+    h = fh->slot;
+    if (njs_slow_path(h == NULL)) {
+        return NJS_DECLINED;
+    }
+
+    cell_num = fhq->key_hash & h->hash_mask;
+    elt_num = njs_hash_cells_end(h)[-cell_num - 1];
+    elts = njs_hash_elts(h);
+
+    while (elt_num != 0) {
+        e = &elts[elt_num - 1];
+
+        if (e->key_hash == fhq->key_hash) {
             fhq->value = e->value;
             return NJS_OK;
         }
@@ -385,11 +407,64 @@ njs_flathsh_insert(njs_flathsh_t *fh, njs_flathsh_query_t *fhq)
     while (elt_num != 0) {
         elt = &elts[elt_num - 1];
 
-        /* TODO: need to be replaced by atomic test. */
-
         if (elt->key_hash == fhq->key_hash &&
             fhq->proto->test(fhq, elt->value) == NJS_OK)
         {
+            if (fhq->replace) {
+                tmp = fhq->value;
+                fhq->value = elt->value;
+                elt->value = tmp;
+
+                return NJS_OK;
+
+            } else {
+                fhq->value = elt->value;
+
+                return NJS_DECLINED;
+            }
+        }
+
+        elt_num = elt->next_elt;
+    }
+
+    elt = njs_flathsh_add_elt(fh, fhq);
+    if (elt == NULL) {
+        return NJS_ERROR;
+    }
+
+    elt->value = fhq->value;
+
+    return NJS_OK;
+}
+
+
+njs_int_t
+njs_flathsh_unique_insert(njs_flathsh_t *fh, njs_flathsh_query_t *fhq)
+{
+    void                 *tmp;
+    njs_int_t            cell_num, elt_num;
+    njs_flathsh_elt_t    *elt, *elts;
+    njs_flathsh_descr_t  *h;
+
+    h = fh->slot;
+
+    if (h == NULL) {
+        h = njs_flathsh_new(fhq);
+        if (h == NULL) {
+            return NJS_ERROR;
+        }
+
+        fh->slot = h;
+    }
+
+    cell_num = fhq->key_hash & h->hash_mask;
+    elt_num = njs_hash_cells_end(h)[-cell_num - 1];
+    elts = njs_hash_elts(h);
+
+    while (elt_num != 0) {
+        elt = &elts[elt_num - 1];
+
+        if (elt->key_hash == fhq->key_hash) {
             if (fhq->replace) {
                 tmp = fhq->value;
                 fhq->value = elt->value;
@@ -502,8 +577,6 @@ njs_flathsh_delete(njs_flathsh_t *fh, njs_flathsh_query_t *fhq)
     while (elt_num != 0) {
         elt = &elts[elt_num - 1];
 
-        /* TODO: use atomic comparision. */
-
         if (elt->key_hash == fhq->key_hash &&
             fhq->proto->test(fhq, elt->value) == NJS_OK)
         {
@@ -550,11 +623,75 @@ njs_flathsh_delete(njs_flathsh_t *fh, njs_flathsh_query_t *fhq)
 }
 
 
-void *
+njs_int_t
+njs_flathsh_unique_delete(njs_flathsh_t *fh, njs_flathsh_query_t *fhq)
+{
+    njs_int_t            cell_num, elt_num;
+    njs_flathsh_elt_t    *elt, *elt_prev, *elts;
+    njs_flathsh_descr_t  *h;
+
+    h = fh->slot;
+
+    if (njs_slow_path(h == NULL)) {
+        return NJS_DECLINED;
+    }
+
+    cell_num = fhq->key_hash & h->hash_mask;
+    elt_num = njs_hash_cells_end(h)[-cell_num - 1];
+    elts = njs_hash_elts(h);
+    elt_prev = NULL;
+
+    while (elt_num != 0) {
+        elt = &elts[elt_num - 1];
+
+        if (elt->key_hash == fhq->key_hash) {
+            fhq->value = elt->value;
+
+            if (elt_prev != NULL) {
+                elt_prev->next_elt = elt->next_elt;
+
+            } else {
+                njs_hash_cells_end(h)[-cell_num - 1] = elt->next_elt;
+            }
+
+            h->elts_deleted_count++;
+
+            elt->value = NULL;
+
+            /* Shrink elts if elts_deleted_count is eligible. */
+
+            if (h->elts_deleted_count >= NJS_FLATHSH_ELTS_MINIMUM_TO_SHRINK
+                && h->elts_deleted_count
+                   >= (h->elts_count / NJS_FLATHSH_ELTS_FRACTION_TO_SHRINK))
+            {
+                h = njs_shrink_elts(fhq, h);
+                if (njs_slow_path(h == NULL)) {
+                    return NJS_ERROR;
+                }
+
+                fh->slot = h;
+            }
+
+            if (h->elts_deleted_count == h->elts_count) {
+                njs_flathsh_free(fhq, njs_flathsh_chunk(h));
+                fh->slot = NULL;
+            }
+
+            return NJS_OK;
+        }
+
+        elt_prev = elt;
+        elt_num = elt->next_elt;
+    }
+
+    return NJS_DECLINED;
+}
+
+
+njs_flathsh_elt_t *
 njs_flathsh_each(const njs_flathsh_t *fh, njs_flathsh_each_t *fhe)
 {
-    void                 *v;
-    njs_flathsh_elt_t    *elt;
+    njs_flathsh_elt_t    *e, *elt;
     njs_flathsh_descr_t  *h;
 
     h = fh->slot;
@@ -565,9 +702,9 @@ njs_flathsh_each(const njs_flathsh_t *fh, njs_flathsh_each_t *fhe)
     elt = njs_hash_elts(h);
 
     while (fhe->cp < h->elts_count) {
-        v = elt[fhe->cp++].value;
-        if (v != NULL) {
-            return v;
+        e = &elt[fhe->cp++];
+        if (e->value != NULL) {
+            return e;
         }
     }
 

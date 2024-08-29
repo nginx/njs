@@ -127,7 +127,8 @@ njs_scope_values_hash_test(njs_lvlhsh_query_t *lhq, void *data)
     value = data;
 
     if (njs_is_string(value)) {
-        njs_string_get(value, &string);
+        /* parser strings are always initialized. */
+        njs_string_get_unsafe(value, &string);
 
     } else {
         string.start = (u_char *) value;
@@ -167,24 +168,23 @@ njs_scope_value_index(njs_vm_t *vm, const njs_value_t *src, njs_uint_t runtime,
     uint32_t            value_size, size, length;
     njs_int_t           ret;
     njs_str_t           str;
-    njs_bool_t          long_string;
+    njs_bool_t          is_string;
     njs_value_t         *value;
     njs_string_t        *string;
     njs_lvlhsh_t        *values_hash;
     njs_lvlhsh_query_t  lhq;
 
-    long_string = 0;
+    is_string = 0;
     value_size = sizeof(njs_value_t);
 
     if (njs_is_string(src)) {
-        njs_string_get(src, &str);
+        /* parser strings are always initialized. */
+        njs_string_get_unsafe(src, &str);
 
         size = (uint32_t) str.length;
         start = str.start;
 
-        if (src->short_string.size == NJS_STRING_LONG) {
-            long_string = 1;
-        }
+        is_string = 1;
 
     } else {
         size = value_size;
@@ -207,8 +207,8 @@ njs_scope_value_index(njs_vm_t *vm, const njs_value_t *src, njs_uint_t runtime,
         *index = (njs_index_t *) ((u_char *) value + sizeof(njs_value_t));
 
     } else {
-        if (long_string) {
-            length = src->long_string.data->length;
+        if (is_string) {
+            length = src->string.data->length;
 
             if (size != length && length > NJS_STRING_MAP_STRIDE) {
                 size = njs_string_map_offset(size)
@@ -227,14 +227,15 @@ njs_scope_value_index(njs_vm_t *vm, const njs_value_t *src, njs_uint_t runtime,
 
         *value = *src;
 
-        if (long_string) {
+        if (is_string) {
             string = (njs_string_t *) ((u_char *) value + sizeof(njs_value_t)
                                        + sizeof(njs_index_t));
 
-            value->long_string.data = string;
+            value->string.data = string;
 
             string->start = (u_char *) string + sizeof(njs_string_t);
-            string->length = src->long_string.data->length;
+            string->length = src->string.data->length;
+            string->size = src->string.data->size;
 
             memcpy(string->start, start, size);
         }

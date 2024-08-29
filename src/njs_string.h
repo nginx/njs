@@ -73,6 +73,7 @@
 struct njs_string_s {
     u_char    *start;
     uint32_t  length;   /* Length in UTF-8 characters. */
+    uint32_t  size;
 };
 
 
@@ -111,8 +112,8 @@ njs_int_t njs_string_create(njs_vm_t *vm, njs_value_t *value, const u_char *src,
 njs_int_t njs_string_create_chb(njs_vm_t *vm, njs_value_t *value,
     njs_chb_t *chain);
 
-uint32_t njs_string_length(njs_value_t *string);
-size_t njs_string_prop(njs_string_prop_t *string, const njs_value_t *value);
+size_t njs_string_prop(njs_vm_t *vm, njs_string_prop_t *string,
+    const njs_value_t *value);
 
 void njs_encode_hex(njs_str_t *dst, const njs_str_t *src);
 size_t njs_encode_hex_length(const njs_str_t *src, size_t *out_size);
@@ -143,10 +144,11 @@ njs_int_t njs_string_decode_base64(njs_vm_t *vm, njs_value_t *value,
 njs_int_t njs_string_decode_base64url(njs_vm_t *vm, njs_value_t *value,
     const njs_str_t *src);
 void njs_string_truncate(njs_value_t *value, uint32_t size, uint32_t length);
-uint32_t njs_string_trim(const njs_value_t *value, njs_string_prop_t *string,
-    unsigned mode);
+uint32_t njs_string_trim(njs_vm_t *vm, const njs_value_t *value,
+    njs_string_prop_t *string, unsigned mode);
 void njs_string_copy(njs_value_t *dst, njs_value_t *src);
-njs_int_t njs_string_cmp(const njs_value_t *val1, const njs_value_t *val2);
+njs_int_t njs_string_cmp(njs_vm_t *vm, const njs_value_t *val1,
+    const njs_value_t *val2);
 void njs_string_slice_string_prop(njs_string_prop_t *dst,
     const njs_string_prop_t *string, const njs_slice_prop_t *slice);
 njs_int_t njs_string_slice(njs_vm_t *vm, njs_value_t *dst,
@@ -170,6 +172,21 @@ njs_int_t njs_string_prototype_concat(njs_vm_t *vm, njs_value_t *args,
 njs_int_t njs_string_get_substitution(njs_vm_t *vm, njs_value_t *matched,
     njs_value_t *string, int64_t pos, njs_value_t *captures, int64_t ncaptures,
     njs_value_t *groups, njs_value_t *replacement, njs_value_t *retval);
+
+
+njs_inline njs_int_t
+njs_atom_string_create(njs_vm_t *vm, njs_value_t *value, const u_char *src,
+    size_t size)
+{
+    njs_int_t  ret;
+
+    ret = njs_string_create(vm, value, src, size);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    return njs_atom_atomize_key(vm, value);
+}
 
 
 njs_inline njs_bool_t

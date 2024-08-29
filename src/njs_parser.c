@@ -451,7 +451,7 @@ static njs_int_t njs_parser_export_sink(njs_parser_t *parser);
 static njs_parser_node_t *njs_parser_return_set(njs_parser_t *parser,
     njs_parser_node_t *expr);
 static njs_parser_node_t *njs_parser_variable_node(njs_parser_t *parser,
-    uintptr_t unique_id, njs_variable_type_t type, njs_variable_t  **retvar);
+    uintptr_t atom_id, njs_variable_type_t type, njs_variable_t  **retvar);
 
 static njs_parser_node_t *njs_parser_reference(njs_parser_t *parser,
     njs_lexer_token_t *token);
@@ -529,7 +529,7 @@ njs_parser_reject(njs_parser_t *parser)
 
 njs_int_t
 njs_parser_init(njs_vm_t *vm, njs_parser_t *parser, njs_parser_scope_t *scope,
-    njs_str_t *file, u_char *start, u_char *end, njs_uint_t runtime)
+    njs_str_t *file, u_char *start, u_char *end)
 {
     njs_lexer_t  *lexer;
 
@@ -542,17 +542,15 @@ njs_parser_init(njs_vm_t *vm, njs_parser_t *parser, njs_parser_scope_t *scope,
 
     parser->use_lhs = 0;
 
-    return njs_lexer_init(vm, lexer, file, start, end, runtime, 0);
+    return njs_lexer_init(vm, lexer, file, start, end);
 }
 
 
 njs_int_t
 njs_parser(njs_vm_t *vm, njs_parser_t *parser)
 {
-    njs_int_t                        ret;
-    njs_str_t                        str;
-    njs_lexer_token_t                *token;
-    const njs_lexer_keyword_entry_t  *keyword;
+    njs_int_t          ret;
+    njs_lexer_token_t  *token;
 
     parser->vm = vm;
 
@@ -571,16 +569,6 @@ njs_parser(njs_vm_t *vm, njs_parser_t *parser)
         parser->node = NULL;
         parser->ret = NJS_OK;
     }
-
-    /* Add this as first variable. */
-    njs_string_get(&njs_string_undefined, &str);
-
-    keyword = njs_lexer_keyword(str.start, str.length);
-    if (njs_slow_path(keyword == NULL)) {
-        return NJS_ERROR;
-    }
-
-    parser->undefined_id = (uintptr_t) keyword->value;
 
     njs_queue_init(&parser->stack);
 
@@ -665,11 +653,8 @@ static njs_int_t
 njs_parser_scope_begin(njs_parser_t *parser, njs_scope_t type,
     njs_bool_t init_this)
 {
-    njs_variable_t                   *var;
-    njs_parser_scope_t               *scope, *parent;
-    const njs_lexer_keyword_entry_t  *keyword;
-
-    static const njs_str_t  njs_this_str = njs_str("this");
+    njs_variable_t      *var;
+    njs_parser_scope_t  *scope, *parent;
 
     scope = njs_mp_zalloc(parser->vm->mem_pool, sizeof(njs_parser_scope_t));
     if (njs_slow_path(scope == NULL)) {
@@ -689,13 +674,7 @@ njs_parser_scope_begin(njs_parser_t *parser, njs_scope_t type,
     if (type == NJS_SCOPE_FUNCTION || type == NJS_SCOPE_GLOBAL) {
         if (init_this) {
             /* Add this as first variable. */
-            keyword = njs_lexer_keyword(njs_this_str.start,
-                                        njs_this_str.length);
-            if (njs_slow_path(keyword == NULL)) {
-                return NJS_ERROR;
-            }
-
-            var = njs_variable_add(parser, scope, (uintptr_t) keyword->value,
+            var = njs_variable_add(parser, scope, NJS_ATOM_STRING_this,
                                    NJS_VARIABLE_VAR);
             if (njs_slow_path(var == NULL)) {
                 return NJS_ERROR;
@@ -1004,6 +983,13 @@ njs_parser_primary_expression_test(njs_parser_t *parser,
         }
 
         njs_set_number(&node->u.value, token->number);
+
+        if (njs_number_is_integer_index(token->number)
+            && token->number < 0x80000000)
+        {
+            node->u.value.atom_id = njs_number_atom((uint32_t) token->number);
+        }
+
         node->token_line = token->line;
 
         parser->node = node;
@@ -1207,6 +1193,8 @@ reference:
         return NJS_ERROR;
     }
 
+    node->u.value.atom_id = token->atom_id;
+
     node->token_line = token->line;
     parser->node = node;
 
@@ -1229,8 +1217,6 @@ njs_parser_regexp_literal(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_value_t           *value, retval;
     njs_regex_flags_t     flags;
     njs_regexp_pattern_t  *pattern;
-
-    static const njs_value_t  string_message = njs_string("message");
 
     value = &parser->node->u.value;
     lexer = parser->lexer;
@@ -1302,13 +1288,12 @@ njs_parser_regexp_literal(njs_parser_t *parser, njs_lexer_token_t *token,
             if (njs_slow_path(pattern == NULL)) {
                 retval = njs_vm_exception(parser->vm);
                 ret = njs_value_property(parser->vm, &retval,
-                                         njs_value_arg(&string_message),
-                                         &retval);
+                                         NJS_ATOM_STRING_message, &retval);
                 if (njs_slow_path(ret != NJS_OK)) {
                     return NJS_ERROR;
                 }
 
-                njs_string_get(&retval, &text);
+                njs_string_get(parser->vm, &retval, &text);
 
                 njs_parser_syntax_error(parser, "%V", &text);
 
@@ -2087,7 +2072,7 @@ njs_parser_property_definition_after(njs_parser_t *parser,
     if (property->index != NJS_TOKEN_OPEN_BRACKET
         && njs_is_string(&property->u.value))
     {
-        njs_string_get(&property->u.value, &name);
+        njs_string_get(parser->vm, &property->u.value, &name);
 
         if (njs_slow_path(njs_strstr_eq(&name, &proto_string))) {
             if (temp->token_type == NJS_TOKEN_PROTO_INIT) {
@@ -5092,7 +5077,7 @@ njs_parser_variable_declaration(njs_parser_t *parser,
         return NJS_DONE;
     }
 
-    name = njs_parser_variable_node(parser, token->unique_id, parser->var_type,
+    name = njs_parser_variable_node(parser, token->atom_id, parser->var_type,
                                     &var);
     if (name == NULL) {
         return NJS_ERROR;
@@ -5879,8 +5864,7 @@ njs_parser_for_var_binding_or_var_list(njs_parser_t *parser,
                 return NJS_ERROR;
             }
 
-            var = njs_parser_variable_node(parser, token->unique_id,
-                                           type, NULL);
+            var = njs_parser_variable_node(parser, token->atom_id, type, NULL);
             if (var == NULL) {
                 return NJS_ERROR;
             }
@@ -6257,8 +6241,8 @@ njs_parser_break_continue(njs_parser_t *parser, njs_lexer_token_t *token,
                 return njs_parser_stack_pop(parser);
             }
 
-            if (njs_label_find(parser->vm, parser->scope,
-                               token->unique_id) == NULL)
+            if (njs_label_find(parser->vm, parser->scope, token->atom_id)
+                == NULL)
             {
                 njs_parser_syntax_error(parser, "Undefined label \"%V\"",
                                         &token->text);
@@ -6671,19 +6655,19 @@ static njs_int_t
 njs_parser_labelled_statement(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
 {
-    uintptr_t          unique_id;
-    njs_variable_t     *label;
+    uintptr_t       atom_id;
+    njs_variable_t  *label;
 
-    unique_id = token->unique_id;
+    atom_id = token->atom_id;
 
-    label = njs_label_find(parser->vm, parser->scope, unique_id);
+    label = njs_label_find(parser->vm, parser->scope, atom_id);
     if (label != NULL) {
         njs_parser_syntax_error(parser, "Label \"%V\" "
                                 "has already been declared", &token->text);
         return NJS_DONE;
     }
 
-    label = njs_label_add(parser->vm, parser->scope, unique_id);
+    label = njs_label_add(parser->vm, parser->scope, atom_id);
     if (label == NULL) {
         return NJS_ERROR;
     }
@@ -6706,7 +6690,7 @@ njs_parser_labelled_statement(njs_parser_t *parser, njs_lexer_token_t *token,
         njs_parser_next(parser, njs_parser_statement_wo_node);
     }
 
-    return njs_parser_after(parser, current, (void *) unique_id, 1,
+    return njs_parser_after(parser, current, (void *) atom_id, 1,
                             njs_parser_labelled_statement_after);
 }
 
@@ -6715,10 +6699,11 @@ static njs_int_t
 njs_parser_labelled_statement_after(njs_parser_t *parser,
     njs_lexer_token_t *token, njs_queue_link_t *current)
 {
-    njs_int_t                ret;
-    uintptr_t                unique_id;
-    njs_parser_node_t        *node;
-    const njs_lexer_entry_t  *entry;
+    njs_int_t          ret;
+    njs_str_t          str;
+    uintptr_t          atom_id;
+    njs_value_t        entry;
+    njs_parser_node_t  *node;
 
     node = parser->node;
     if (node == NULL) {
@@ -6732,15 +6717,17 @@ njs_parser_labelled_statement_after(njs_parser_t *parser,
         parser->node = node;
     }
 
-    unique_id = (uintptr_t) parser->target;
-    entry = (const njs_lexer_entry_t *) unique_id;
+    atom_id = (uint32_t) (uintptr_t) parser->target;
 
-    ret = njs_name_copy(parser->vm, &parser->node->name, &entry->name);
+    njs_atom_to_value(parser->vm, &entry, atom_id);
+    njs_string_get(parser->vm, &entry, &str);
+
+    ret = njs_name_copy(parser->vm, &parser->node->name, &str);
     if (ret != NJS_OK) {
         return NJS_ERROR;
     }
 
-    ret = njs_label_remove(parser->vm, parser->scope, unique_id);
+    ret = njs_label_remove(parser->vm, parser->scope, atom_id);
     if (ret != NJS_OK) {
         return NJS_ERROR;
     }
@@ -6907,7 +6894,7 @@ njs_parser_catch_or_finally(njs_parser_t *parser, njs_lexer_token_t *token,
     try->right = catch;
 
     if (njs_lexer_token_is_binding_identifier(token)) {
-        node = njs_parser_variable_node(parser, token->unique_id,
+        node = njs_parser_variable_node(parser, token->atom_id,
                                         NJS_VARIABLE_CATCH, NULL);
         if (node == NULL) {
             return NJS_ERROR;
@@ -7075,7 +7062,7 @@ njs_parser_function_declaration(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
 {
     njs_int_t          ret;
-    uintptr_t          unique_id;
+    uintptr_t          atom_id;
     njs_bool_t         async;
     njs_variable_t     *var;
     njs_parser_node_t  *node;
@@ -7091,7 +7078,7 @@ njs_parser_function_declaration(njs_parser_t *parser, njs_lexer_token_t *token,
     }
 
     node = parser->node;
-    unique_id = token->unique_id;
+    atom_id = token->atom_id;
 
     njs_lexer_consume_token(parser->lexer, 1);
 
@@ -7106,7 +7093,7 @@ njs_parser_function_declaration(njs_parser_t *parser, njs_lexer_token_t *token,
 
     njs_lexer_consume_token(parser->lexer, 1);
 
-    var = njs_variable_function_add(parser, parser->scope, unique_id,
+    var = njs_variable_function_add(parser, parser->scope, atom_id,
                                     NJS_VARIABLE_FUNCTION);
     if (var == NULL) {
         return NJS_ERROR;
@@ -7114,7 +7101,7 @@ njs_parser_function_declaration(njs_parser_t *parser, njs_lexer_token_t *token,
 
     node->u.value.data.u.lambda = njs_variable_lambda(var);
 
-    node->left = (njs_parser_node_t *) unique_id;
+    node->left = (njs_parser_node_t *) atom_id;
 
     parser->node = node;
 
@@ -7138,16 +7125,16 @@ njs_parser_function_declaration_after(njs_parser_t *parser,
     njs_lexer_token_t *token, njs_queue_link_t *current)
 {
     njs_int_t  ret;
-    uintptr_t  unique_id;
+    uintptr_t  atom_id;
 
-    unique_id = (uintptr_t) parser->node->left;
+    atom_id = (uint32_t) (uintptr_t) parser->node->left;
 
     parser->node->left = NULL;
 
     njs_value_null_set(&parser->node->u.value);
 
     ret = njs_parser_variable_reference(parser, parser->scope, parser->node,
-                                        unique_id, NJS_DECLARATION);
+                                        atom_id, NJS_DECLARATION);
     if (ret != NJS_OK) {
         return NJS_ERROR;
     }
@@ -7170,18 +7157,12 @@ njs_parser_function_parse(njs_parser_t *parser, njs_lexer_token_t *token,
 }
 
 
-static const njs_lexer_entry_t njs_parser_empty_entry =
-{
-    .name = njs_str("")
-};
-
-
 static njs_int_t
 njs_parser_function_expression(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
 {
     njs_int_t              ret;
-    uintptr_t              unique_id;
+    uintptr_t              atom_id;
     njs_bool_t             async;
     njs_variable_t         *var;
     njs_function_lambda_t  *lambda;
@@ -7197,7 +7178,7 @@ njs_parser_function_expression(njs_parser_t *parser, njs_lexer_token_t *token,
     var = NULL;
 
     if (njs_lexer_token_is_binding_identifier(token)) {
-        unique_id = token->unique_id;
+        atom_id = token->atom_id;
 
         njs_lexer_consume_token(parser->lexer, 1);
 
@@ -7207,7 +7188,7 @@ njs_parser_function_expression(njs_parser_t *parser, njs_lexer_token_t *token,
         }
 
     } else {
-        unique_id = (uintptr_t) &njs_parser_empty_entry;
+        atom_id = NJS_ATOM_STRING_empty;
     }
 
     if (token->type != NJS_TOKEN_OPEN_PARENTHESIS) {
@@ -7222,7 +7203,7 @@ njs_parser_function_expression(njs_parser_t *parser, njs_lexer_token_t *token,
     }
 
     var = njs_variable_scope_add(parser, parser->scope, parser->scope,
-                                 unique_id, NJS_VARIABLE_FUNCTION, 1);
+                                 atom_id, NJS_VARIABLE_FUNCTION, 1);
     if (var == NULL) {
         return NJS_ERROR;
     }
@@ -7230,7 +7211,7 @@ njs_parser_function_expression(njs_parser_t *parser, njs_lexer_token_t *token,
     var->self = 1;
 
     ret = njs_parser_variable_reference(parser, parser->scope,
-                                        parser->node->left, unique_id,
+                                        parser->node->left, atom_id,
                                         NJS_DECLARATION);
     if (ret != NJS_OK) {
         return NJS_ERROR;
@@ -7330,7 +7311,7 @@ njs_parser_formal_parameters(njs_parser_t *parser, njs_lexer_token_t *token,
     default:
         /* SingleNameBinding */
         if (njs_lexer_token_is_binding_identifier(token)) {
-            var_node.key = token->unique_id;
+            var_node.key = token->atom_id;
 
             rb_node = njs_rbtree_find(&parser->scope->variables,
                                       &var_node.node);
@@ -7347,7 +7328,7 @@ njs_parser_formal_parameters(njs_parser_t *parser, njs_lexer_token_t *token,
 
             } else {
                 arg = njs_variable_add(parser, parser->scope,
-                                       token->unique_id, NJS_VARIABLE_VAR);
+                                       token->atom_id, NJS_VARIABLE_VAR);
             }
 
             if (arg == NULL) {
@@ -7410,7 +7391,6 @@ njs_parser_arrow_function(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
 {
     njs_int_t              ret;
-    uintptr_t              unique_id;
     njs_bool_t             async;
     njs_variable_t         *arg, *var;
     njs_parser_node_t      *node, *name;
@@ -7453,16 +7433,15 @@ njs_parser_arrow_function(njs_parser_t *parser, njs_lexer_token_t *token,
 
     node->left = name;
 
-    unique_id = (uintptr_t) &njs_parser_empty_entry;
-
     var = njs_variable_scope_add(parser, parser->scope, parser->scope,
-                                 unique_id, NJS_VARIABLE_FUNCTION, 1);
+                                 NJS_ATOM_STRING_empty, NJS_VARIABLE_FUNCTION,
+                                 1);
     if (var == NULL) {
         return NJS_ERROR;
     }
 
     ret = njs_parser_variable_reference(parser, parser->scope, node->left,
-                                        unique_id, NJS_DECLARATION);
+                                        NJS_ATOM_STRING_empty, NJS_DECLARATION);
     if (ret != NJS_OK) {
         return NJS_ERROR;
     }
@@ -7490,7 +7469,7 @@ njs_parser_arrow_function(njs_parser_t *parser, njs_lexer_token_t *token,
                                 njs_parser_arrow_function_args_after);
 
     } else if (njs_lexer_token_is_binding_identifier(token)) {
-        arg = njs_variable_add(parser, parser->scope, token->unique_id,
+        arg = njs_variable_add(parser, parser->scope, token->atom_id,
                                NJS_VARIABLE_VAR);
         if (arg == NULL) {
             return NJS_ERROR;
@@ -8189,7 +8168,7 @@ njs_parser_import(njs_parser_t *parser, njs_lexer_token_t *token,
         return njs_parser_failed(parser);
      }
 
-    name = njs_parser_variable_node(parser, token->unique_id, NJS_VARIABLE_LET,
+    name = njs_parser_variable_node(parser, token->atom_id, NJS_VARIABLE_LET,
                                     &var);
     if (name == NULL) {
         return NJS_ERROR;
@@ -8337,14 +8316,14 @@ njs_parser_return_set(njs_parser_t *parser, njs_parser_node_t *expr)
 
 
 static njs_parser_node_t *
-njs_parser_variable_node(njs_parser_t *parser, uintptr_t unique_id,
+njs_parser_variable_node(njs_parser_t *parser, uintptr_t atom_id,
     njs_variable_type_t type, njs_variable_t  **retvar)
 {
     njs_int_t          ret;
     njs_variable_t     *var;
     njs_parser_node_t  *node;
 
-    var = njs_variable_add(parser, parser->scope, unique_id, type);
+    var = njs_variable_add(parser, parser->scope, atom_id, type);
     if (njs_slow_path(var == NULL)) {
         return NULL;
     }
@@ -8358,7 +8337,7 @@ njs_parser_variable_node(njs_parser_t *parser, uintptr_t unique_id,
         return NULL;
     }
 
-    ret = njs_parser_variable_reference(parser, parser->scope, node, unique_id,
+    ret = njs_parser_variable_reference(parser, parser->scope, node, atom_id,
                                         NJS_DECLARATION);
     if (njs_slow_path(ret != NJS_OK)) {
         return NULL;
@@ -8371,14 +8350,11 @@ njs_parser_variable_node(njs_parser_t *parser, uintptr_t unique_id,
 static njs_parser_node_t *
 njs_parser_reference(njs_parser_t *parser, njs_lexer_token_t *token)
 {
-    njs_int_t                        ret;
-    njs_index_t                      index;
-    njs_variable_t                   *var;
-    njs_parser_node_t                *node;
-    njs_parser_scope_t               *scope;
-    const njs_lexer_keyword_entry_t  *keyword;
-
-    static const njs_str_t  njs_undefined_str = njs_str("undefined");
+    njs_int_t           ret;
+    njs_index_t         index;
+    njs_variable_t      *var;
+    njs_parser_node_t   *node;
+    njs_parser_scope_t  *scope;
 
     node = njs_parser_node_new(parser, token->type);
     if (njs_slow_path(node == NULL)) {
@@ -8402,19 +8378,13 @@ njs_parser_reference(njs_parser_t *parser, njs_lexer_token_t *token)
         }
 
         if (parser->vm->options.module) {
-            keyword = njs_lexer_keyword(njs_undefined_str.start,
-                                        njs_undefined_str.length);
-            if (njs_slow_path(keyword == NULL)) {
-                return NULL;
-            }
-
-            token->unique_id = (uintptr_t) keyword->value;
+            token->atom_id = NJS_ATOM_STRING_undefined;
 
         } else if (!scope->arrow_function) {
             index = njs_scope_index(scope->type, 0, NJS_LEVEL_LOCAL,
                                     NJS_VARIABLE_VAR);
 
-            var = njs_variable_scope_add(parser, scope, scope, token->unique_id,
+            var = njs_variable_scope_add(parser, scope, scope, token->atom_id,
                                          NJS_VARIABLE_VAR, index);
             if (njs_slow_path(var == NULL)) {
                 return NULL;
@@ -8425,7 +8395,7 @@ njs_parser_reference(njs_parser_t *parser, njs_lexer_token_t *token)
         node->token_line = token->line;
 
         ret = njs_parser_variable_reference(parser, parser->scope, node,
-                                            token->unique_id, NJS_REFERENCE);
+                                            token->atom_id, NJS_REFERENCE);
         if (njs_slow_path(ret != NJS_OK)) {
             return NULL;
         }
@@ -8450,12 +8420,12 @@ njs_parser_reference(njs_parser_t *parser, njs_lexer_token_t *token)
         node->token_line = token->line;
 
         ret = njs_parser_variable_reference(parser, parser->scope, node,
-                                            token->unique_id, NJS_REFERENCE);
+                                            token->atom_id, NJS_REFERENCE);
         if (njs_slow_path(ret != NJS_OK)) {
             return NULL;
         }
 
-        var = njs_variable_add(parser, scope, token->unique_id,
+        var = njs_variable_add(parser, scope, token->atom_id,
                                NJS_VARIABLE_VAR);
         if (njs_slow_path(var == NULL)) {
             return NULL;
@@ -8478,7 +8448,7 @@ njs_parser_reference(njs_parser_t *parser, njs_lexer_token_t *token)
             node->token_line = token->line;
 
             ret = njs_parser_variable_reference(parser, parser->scope, node,
-                                               token->unique_id, NJS_REFERENCE);
+                                               token->atom_id, NJS_REFERENCE);
             if (njs_slow_path(ret != NJS_OK)) {
                 return NULL;
             }
@@ -8735,6 +8705,7 @@ njs_parser_string_create(njs_vm_t *vm, njs_lexer_token_t *token,
     njs_value_t *value)
 {
     size_t     length;
+    njs_int_t  ret;
     njs_str_t  dst;
 
     length = njs_decode_utf8_length(&token->text, &dst.length);
@@ -8746,8 +8717,13 @@ njs_parser_string_create(njs_vm_t *vm, njs_lexer_token_t *token,
     njs_decode_utf8(&dst, &token->text);
 
     if (length > NJS_STRING_MAP_STRIDE && dst.length != length) {
-        njs_string_utf8_offset_map_init(value->long_string.data->start,
+        njs_string_utf8_offset_map_init(value->string.data->start,
                                         dst.length);
+    }
+
+    ret = njs_atom_atomize_key(vm, value);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_TOKEN_ERROR;
     }
 
     return NJS_OK;
@@ -8994,6 +8970,11 @@ next_char:
         njs_string_utf8_offset_map_init(start, size);
     }
 
+    ret = njs_atom_atomize_key(parser->vm, value);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_TOKEN_ERROR;
+    }
+
     return NJS_TOKEN_STRING;
 }
 
@@ -9183,7 +9164,7 @@ njs_parser_has_side_effect(njs_parser_node_t *node)
 
 njs_int_t
 njs_parser_variable_reference(njs_parser_t *parser, njs_parser_scope_t *scope,
-    njs_parser_node_t *node, uintptr_t unique_id, njs_reference_type_t type)
+    njs_parser_node_t *node, uintptr_t atom_id, njs_reference_type_t type)
 {
     njs_rbtree_node_t         *rb_node;
     njs_variable_reference_t  *vr;
@@ -9191,10 +9172,10 @@ njs_parser_variable_reference(njs_parser_t *parser, njs_parser_scope_t *scope,
 
     vr = &node->u.reference;
 
-    vr->unique_id = unique_id;
+    vr->atom_id = atom_id;
     vr->type = type;
 
-    parse_node.key = unique_id;
+    parse_node.key = atom_id;
 
     rb_node = njs_rbtree_find(&scope->references, &parse_node.node);
     if (rb_node != NULL) {
@@ -9207,7 +9188,7 @@ njs_parser_variable_reference(njs_parser_t *parser, njs_parser_scope_t *scope,
         return NJS_ERROR;
     }
 
-    rb_parse_node->key = unique_id;
+    rb_parse_node->key = atom_id;
     rb_parse_node->index = NJS_INDEX_NONE;
 
     njs_rbtree_insert(&scope->references, &rb_parse_node->node);
@@ -9241,9 +9222,6 @@ njs_parser_error(njs_vm_t *vm, njs_object_type_t type, njs_str_t *file,
     njs_int_t    ret;
     njs_value_t  value, error;
 
-    static const njs_value_t  file_name = njs_string("fileName");
-    static const njs_value_t  line_number = njs_string("lineNumber");
-
     if (njs_slow_path(vm->top_frame == NULL)) {
         njs_vm_runtime_init(vm);
     }
@@ -9269,13 +9247,12 @@ njs_parser_error(njs_vm_t *vm, njs_object_type_t type, njs_str_t *file,
     njs_error_new(vm, &error, njs_vm_proto(vm, type), msg, p - msg);
 
     njs_set_number(&value, line);
-    njs_value_property_set(vm, &error, njs_value_arg(&line_number), &value);
+    njs_value_property_set(vm, &error, NJS_ATOM_STRING_lineNumber, &value);
 
     if (file->length != 0) {
         ret = njs_string_create(vm, &value, file->start, file->length);
         if (ret == NJS_OK) {
-            njs_value_property_set(vm, &error, njs_value_arg(&file_name),
-                                   &value);
+            njs_value_property_set(vm, &error, NJS_ATOM_STRING_fileName, &value);
         }
     }
 
@@ -9440,7 +9417,7 @@ njs_parser_serialize_tree(njs_chb_t *chain, njs_parser_node_t *node,
                                 njs_number(&node->u.value));
 
             } else {
-                njs_string_get(&node->u.value, &str);
+                njs_string_get_unsafe(&node->u.value, &str);
                 njs_chb_append_literal(chain, " \"value\": \"");
                 njs_chb_append_str(chain, &str);
                 njs_chb_append_literal(chain, "\"");

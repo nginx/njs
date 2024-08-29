@@ -45,6 +45,8 @@
 #include <njs_vm.h>
 #include <njs_object_prop_declare.h>
 #include <njs_error.h>
+#include <njs_string.h>
+#include <njs_atom.h>
 #include <njs_number.h>
 #include <njs_value_conversion.h>
 #include <njs_vmcode.h>
@@ -56,9 +58,7 @@
 
 #include <njs_boolean.h>
 #include <njs_symbol.h>
-#include <njs_string.h>
 #include <njs_object.h>
-#include <njs_object_hash.h>
 #include <njs_array.h>
 #include <njs_array_buffer.h>
 #include <njs_typed_array.h>
