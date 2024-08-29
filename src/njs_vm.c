@@ -1442,8 +1442,6 @@ njs_vm_date_alloc(njs_vm_t *vm, njs_value_t *retval, double time)
 njs_int_t
 njs_vm_value_to_string(njs_vm_t *vm, njs_str_t *dst, njs_value_t *src)
 {
-    u_char       *start;
-    size_t       size;
     njs_int_t    ret;
     njs_value_t  value, stack;
 
@@ -1472,24 +1470,8 @@ njs_vm_value_to_string(njs_vm_t *vm, njs_str_t *dst, njs_value_t *src)
     ret = njs_value_to_string(vm, &value, &value);
 
     if (njs_fast_path(ret == NJS_OK)) {
-        size = value.short_string.size;
-
-        if (size != NJS_STRING_LONG) {
-            start = njs_mp_alloc(vm->mem_pool, size);
-            if (njs_slow_path(start == NULL)) {
-                njs_memory_error(vm);
-                return NJS_ERROR;
-            }
-
-            memcpy(start, value.short_string.start, size);
-
-        } else {
-            size = value.long_string.size;
-            start = value.long_string.data->start;
-        }
-
-        dst->length = size;
-        dst->start = start;
+        dst->length = value.string.data->size;
+        dst->start = value.string.data->start;
     }
 
     return ret;
@@ -1504,24 +1486,12 @@ njs_vm_value_to_string(njs_vm_t *vm, njs_str_t *dst, njs_value_t *src)
 const char *
 njs_vm_value_to_c_string(njs_vm_t *vm, njs_value_t *value)
 {
-    u_char  *p, *data, *start;
+    u_char  *p, *data;
     size_t  size;
 
     njs_assert(njs_is_string(value));
 
-    if (value->short_string.size != NJS_STRING_LONG) {
-        start = value->short_string.start;
-        size = value->short_string.size;
-
-        if (size < NJS_STRING_SHORT) {
-            start[size] = '\0';
-            return (const char *) start;
-        }
-
-    } else {
-        start = value->long_string.data->start;
-        size = value->long_string.size;
-    }
+    size = value->string.data->size;
 
     data = njs_mp_alloc(vm->mem_pool, size + njs_length("\0"));
     if (njs_slow_path(data == NULL)) {
@@ -1529,7 +1499,7 @@ njs_vm_value_to_c_string(njs_vm_t *vm, njs_value_t *value)
         return NULL;
     }
 
-    p = njs_cpymem(data, start, size);
+    p = njs_cpymem(data, value->string.data->start, size);
     *p++ = '\0';
 
     return (const char *) data;
@@ -1564,8 +1534,7 @@ njs_value_to_string(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value)
 njs_int_t
 njs_vm_value_to_bytes(njs_vm_t *vm, njs_str_t *dst, njs_value_t *src)
 {
-    u_char              *start;
-    size_t              size, length, offset;
+    size_t              length, offset;
     njs_int_t           ret;
     njs_value_t         value;
     njs_typed_array_t   *array;
@@ -1616,24 +1585,8 @@ njs_vm_value_to_bytes(njs_vm_t *vm, njs_str_t *dst, njs_value_t *src)
             return NJS_ERROR;
         }
 
-        size = value.short_string.size;
-
-        if (size != NJS_STRING_LONG) {
-            start = njs_mp_alloc(vm->mem_pool, size);
-            if (njs_slow_path(start == NULL)) {
-                njs_memory_error(vm);
-                return NJS_ERROR;
-            }
-
-            memcpy(start, value.short_string.start, size);
-
-        } else {
-            size = value.long_string.size;
-            start = value.long_string.data->start;
-        }
-
-        dst->length = size;
-        dst->start = start;
+        dst->length = value.string.data->size;
+        dst->start = value.string.data->start;
     }
 
     return ret;

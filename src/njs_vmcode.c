@@ -2190,8 +2190,6 @@ njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
     njs_function_t  *function;
     njs_jump_off_t  ret;
 
-    static const njs_value_t prototype_string = njs_string("prototype");
-
     if (!njs_is_function(constructor)) {
         njs_type_error(vm, "right argument is not callable");
         return NJS_ERROR;
@@ -2207,7 +2205,7 @@ njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
 
     if (njs_is_object(object)) {
         ret = njs_value_property(vm, constructor,
-                                 njs_value_arg(&prototype_string), &value);
+                                 njs_value_arg(&njs_string_prototype), &value);
 
         if (njs_slow_path(ret == NJS_ERROR)) {
             return ret;
@@ -2521,8 +2519,6 @@ njs_function_new_object(njs_vm_t *vm, njs_value_t *constructor)
     njs_function_t  *function;
     njs_jump_off_t  ret;
 
-    const njs_value_t prototype_string = njs_string("prototype");
-
     object = njs_object_alloc(vm);
     if (njs_slow_path(object == NULL)) {
         return NULL;
@@ -2538,8 +2534,8 @@ njs_function_new_object(njs_vm_t *vm, njs_value_t *constructor)
         constructor = &bound;
     }
 
-    ret = njs_value_property(vm, constructor, njs_value_arg(&prototype_string),
-                             &proto);
+    ret = njs_value_property(vm, constructor,
+                             njs_value_arg(&njs_string_prototype), &proto);
 
     if (njs_slow_path(ret == NJS_ERROR)) {
         return NULL;

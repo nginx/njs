@@ -56,6 +56,9 @@ const njs_value_t  njs_string_object =      njs_string("object");
 const njs_value_t  njs_string_function =    njs_string("function");
 const njs_value_t  njs_string_anonymous =   njs_string("anonymous");
 const njs_value_t  njs_string_memory_error = njs_string("MemoryError");
+const njs_value_t  njs_string_value_of = njs_string("valueOf");
+const njs_value_t  njs_string_ctor = njs_string("constructor");
+const njs_value_t  njs_string_prototype = njs_string("prototype");
 
 
 /*
@@ -265,13 +268,11 @@ njs_value_of(njs_vm_t *vm, njs_value_t *value, njs_value_t *retval)
 
     njs_int_t  ret;
 
-    static const njs_value_t  value_of = njs_string("valueOf");
-
     if (njs_slow_path(!njs_is_object(value))) {
         return NJS_DECLINED;
     }
 
-    ret = njs_value_property(vm, value, njs_value_arg(&value_of),
+    ret = njs_value_property(vm, value, njs_value_arg(&njs_string_value_of),
                              retval);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
@@ -955,6 +956,7 @@ static njs_int_t
 njs_string_property_query(njs_vm_t *vm, njs_property_query_t *pq,
     njs_value_t *object, uint32_t index)
 {
+    njs_int_t          ret;
     njs_slice_prop_t   slice;
     njs_object_prop_t  *prop;
     njs_string_prop_t  string;
@@ -981,7 +983,11 @@ njs_string_property_query(njs_vm_t *vm, njs_property_query_t *pq,
 
         if (pq->query != NJS_PROPERTY_QUERY_GET) {
             /* pq->lhq.key is used by NJS_VMCODE_PROPERTY_SET for TypeError */
-            njs_uint32_to_string(&pq->key, index);
+            ret = njs_uint32_to_string(vm, &pq->key, index);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return NJS_ERROR;
+            }
+
             njs_string_get(&pq->key, &pq->lhq.key);
         }
 
@@ -1712,11 +1718,10 @@ njs_value_species_constructor(njs_vm_t *vm, njs_value_t *object,
     njs_int_t    ret;
     njs_value_t  constructor, retval;
 
-    static const njs_value_t  string_constructor = njs_string("constructor");
     static const njs_value_t  string_species =
                                 njs_wellknown_symbol(NJS_SYMBOL_SPECIES);
 
-    ret = njs_value_property(vm, object, njs_value_arg(&string_constructor),
+    ret = njs_value_property(vm, object, njs_value_arg(&njs_string_ctor),
                              &constructor);
     if (njs_slow_path(ret == NJS_ERROR)) {
         return NJS_ERROR;
