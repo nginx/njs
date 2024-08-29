@@ -33,7 +33,7 @@ njs_value_to_number(njs_vm_t *vm, njs_value_t *value, double *dst)
         *dst = NAN;
 
         if (njs_is_string(value)) {
-            *dst = njs_string_to_number(value);
+            *dst = njs_string_to_number(vm, value);
         }
 
         return NJS_OK;

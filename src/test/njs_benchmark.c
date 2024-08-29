@@ -728,9 +728,9 @@ njs_benchmark_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_str_t           s, mode;
     njs_opaque_value_t  value;
 
-    njs_value_string_get(njs_arg(args, nargs, 1), &mode);
+    njs_value_string_get(vm, njs_arg(args, nargs, 1), &mode);
 
-    njs_value_string_get(njs_arg(args, nargs, 2), &s);
+    njs_value_string_get(vm, njs_arg(args, nargs, 2), &s);
 
     if (njs_value_to_integer(vm, njs_arg(args, nargs, 3), &n) != NJS_OK) {
         return NJS_ERROR;

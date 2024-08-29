@@ -146,7 +146,7 @@ lvlhsh_unit_test_add(njs_mp_t *pool, njs_unit_test_req_t *r,
 
 
 static njs_int_t
-njs_unit_test_r_uri(njs_vm_t *vm, njs_object_prop_t *prop,
+njs_unit_test_r_uri(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     char       *p;
@@ -169,8 +169,8 @@ njs_unit_test_r_uri(njs_vm_t *vm, njs_object_prop_t *prop,
 
 
 static njs_int_t
-njs_unit_test_r_a(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *unused, njs_value_t *retval)
+njs_unit_test_r_a(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
+    njs_value_t *value, njs_value_t *unused2, njs_value_t *retval)
 {
     u_char               *p;
     njs_unit_test_req_t  *r;
@@ -189,8 +189,8 @@ njs_unit_test_r_a(njs_vm_t *vm, njs_object_prop_t *prop,
 
 
 static njs_int_t
-njs_unit_test_r_b(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *unused, njs_value_t *retval)
+njs_unit_test_r_b(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
+    njs_value_t *value, njs_value_t *unused2, njs_value_t *retval)
 {
     njs_value_number_set(retval, njs_vm_prop_magic32(prop));
 
@@ -199,8 +199,8 @@ njs_unit_test_r_b(njs_vm_t *vm, njs_object_prop_t *prop,
 
 
 static njs_int_t
-njs_unit_test_r_d(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *unused, njs_value_t *retval)
+njs_unit_test_r_d(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
+    njs_value_t *value, njs_value_t *unused2, njs_value_t *retval)
 {
     njs_unit_test_req_t  *r;
 
@@ -217,7 +217,7 @@ njs_unit_test_r_d(njs_vm_t *vm, njs_object_prop_t *prop,
 
 
 static njs_int_t
-njs_unit_test_r_host(njs_vm_t *vm, njs_object_prop_t *prop,
+njs_unit_test_r_host(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     return njs_vm_value_string_create(vm, retval, (u_char *) "АБВГДЕЁЖЗИЙ", 22);
@@ -225,7 +225,7 @@ njs_unit_test_r_host(njs_vm_t *vm, njs_object_prop_t *prop,
 
 
 static njs_int_t
-njs_unit_test_r_buffer(njs_vm_t *vm, njs_object_prop_t *prop,
+njs_unit_test_r_buffer(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     return njs_vm_value_buffer_set(vm, retval, (u_char *) "АБВГДЕЁЖЗИЙ", 22);
@@ -233,7 +233,7 @@ njs_unit_test_r_buffer(njs_vm_t *vm, njs_object_prop_t *prop,
 
 
 static njs_int_t
-njs_unit_test_r_vars(njs_vm_t *vm, njs_object_prop_t *self,
+njs_unit_test_r_vars(njs_vm_t *vm, njs_object_prop_t *self, uint32_t atom_id,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     njs_int_t             ret;
@@ -247,7 +247,7 @@ njs_unit_test_r_vars(njs_vm_t *vm, njs_object_prop_t *self,
         return NJS_DECLINED;
     }
 
-    ret = njs_vm_prop_name(vm, self, &lhq.key);
+    ret = njs_vm_prop_name(vm, atom_id, &lhq.key);
     if (ret != NJS_OK) {
         if (setval == NULL && retval != NULL) {
             /* Get. */
@@ -314,14 +314,14 @@ njs_unit_test_r_vars(njs_vm_t *vm, njs_object_prop_t *self,
 
 
 static njs_int_t
-njs_unit_test_r_header(njs_vm_t *vm, njs_object_prop_t *prop,
+njs_unit_test_r_header(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t atom_id,
     njs_value_t *value, njs_value_t *unused, njs_value_t *retval)
 {
     njs_int_t  ret;
     njs_str_t  h;
     njs_chb_t  chain;
 
-    ret = njs_vm_prop_name(vm, prop, &h);
+    ret = njs_vm_prop_name(vm, atom_id, &h);
     if (ret == NJS_OK) {
         NJS_CHB_MP_INIT(&chain, njs_vm_memory_pool(vm));
 
@@ -640,7 +640,7 @@ njs_unit_test_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
-njs_unit_test_error_name(njs_vm_t *vm, njs_object_prop_t *prop,
+njs_unit_test_error_name(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     return njs_vm_value_string_create(vm, retval, (u_char *) "ExternalError",
@@ -650,7 +650,8 @@ njs_unit_test_error_name(njs_vm_t *vm, njs_object_prop_t *prop,
 
 static njs_int_t
 njs_unit_test_error_message(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval)
 {
     return njs_vm_value_string_create(vm, retval, (u_char *) "", 0);
 }
