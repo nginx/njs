@@ -139,6 +139,7 @@ njs_int_t
 njs_array_convert_to_slow_array(njs_vm_t *vm, njs_array_t *array)
 {
     uint32_t           i, length;
+    njs_int_t          ret;
     njs_value_t        index, value;
     njs_object_prop_t  *prop;
 
@@ -153,7 +154,10 @@ njs_array_convert_to_slow_array(njs_vm_t *vm, njs_array_t *array)
 
     for (i = 0; i < length; i++) {
         if (njs_is_valid(&array->start[i])) {
-            njs_uint32_to_string(&index, i);
+            ret = njs_uint32_to_string(vm, &index, i);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return NJS_ERROR;
+            }
             prop = njs_object_property_add(vm, &value, &index, 0);
             if (njs_slow_path(prop == NULL)) {
                 return NJS_ERROR;
@@ -176,15 +180,14 @@ njs_array_length_redefine(njs_vm_t *vm, njs_value_t *value, uint32_t length,
 {
     njs_object_prop_t  *prop;
 
-    static const njs_value_t  string_length = njs_string("length");
-
     if (njs_slow_path(!njs_is_array(value))) {
         njs_internal_error(vm, "njs_array_length_redefine() "
                            "applied to non-array");
         return NJS_ERROR;
     }
 
-    prop = njs_object_property_add(vm, value, njs_value_arg(&string_length), 1);
+    prop = njs_object_property_add(vm, value,
+                                   njs_value_arg(&njs_atom.vs_length), 1);
     if (njs_slow_path(prop == NULL)) {
         njs_internal_error(vm, "njs_array_length_redefine() "
                            "cannot redefine \"length\"");
@@ -603,23 +606,24 @@ njs_array_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static const njs_object_prop_t  njs_array_constructor_properties[] =
+static njs_object_prop_t  njs_array_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(1),
 
-    NJS_DECLARE_PROP_NAME("Array"),
+    NJS_DECLARE_PROP_NAME(vs_Array),
 
-    NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
+    NJS_DECLARE_PROP_HANDLER(vs_prototype, njs_object_prototype_create,
+                             0, 0),
 
-    NJS_DECLARE_PROP_NATIVE("from", njs_array_from, 1, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_from, njs_array_from, 1, 0),
 
-    NJS_DECLARE_PROP_NATIVE("isArray", njs_array_is_array, 1, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_isArray, njs_array_is_array, 1, 0),
 
-    NJS_DECLARE_PROP_NATIVE("of", njs_array_of, 0, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_of, njs_array_of, 0, 0),
 };
 
 
-const njs_object_init_t  njs_array_constructor_init = {
+static const njs_object_init_t  njs_array_constructor_init = {
     njs_array_constructor_properties,
     njs_nitems(njs_array_constructor_properties),
 };
@@ -787,8 +791,8 @@ static njs_int_t
 njs_array_prototype_slice_copy(njs_vm_t *vm, njs_value_t *this,
     int64_t start, int64_t length, njs_value_t *retval)
 {
+    u_char             *c, buf[4];
     size_t             size;
-    u_char             *dst;
     uint32_t           n;
     njs_int_t          ret;
     njs_array_t        *array, *keys;
@@ -828,10 +832,14 @@ njs_array_prototype_slice_copy(njs_vm_t *vm, njs_value_t *this,
 
             do {
                 value = &array->start[n++];
-                dst = njs_string_short_start(value);
-                dst = njs_utf8_copy(dst, &src, end);
-                size = dst - njs_string_short_start(value);
-                njs_string_short_set(value, size, 1);
+                c = buf;
+                c = njs_utf8_copy(c, &src, end);
+                size = c - buf;
+
+                ret = njs_string_new(vm, value, buf, size, 1);
+                if (njs_slow_path(ret != NJS_OK)) {
+                    return NJS_ERROR;
+                }
 
                 length--;
             } while (length != 0);
@@ -1611,10 +1619,9 @@ njs_array_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_value_t         value;
     njs_lvlhsh_query_t  lhq;
 
-    static const njs_value_t  join_string = njs_string("join");
-
     if (njs_is_object(njs_argument(args, 0))) {
-        njs_object_property_init(&lhq, &join_string, NJS_JOIN_HASH);
+        lhq.proto = &njs_object_hash_proto;
+        lhq.key_hash = njs_atom.vs_join.atom_id;
 
         ret = njs_object_property(vm, njs_object(njs_argument(args, 0)), &lhq,
                                   &value);
@@ -1655,7 +1662,7 @@ njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     if (njs_slow_path(!njs_is_string(value))) {
         if (njs_is_undefined(value)) {
-            value = njs_value_arg(&njs_string_comma);
+            value = njs_value_arg(&njs_atom.vs_spec_COMMA);
 
         } else {
             ret = njs_value_to_string(vm, value, value);
@@ -1668,7 +1675,7 @@ njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     (void) njs_string_prop(&separator, value);
 
     if (njs_slow_path(!njs_is_object(this))) {
-        njs_value_assign(retval, &njs_string_empty);
+        njs_value_assign(retval, &njs_atom.vs_);
         return NJS_OK;
     }
 
@@ -1680,7 +1687,7 @@ njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (njs_slow_path(len == 0)) {
-        njs_value_assign(retval, &njs_string_empty);
+        njs_value_assign(retval, &njs_atom.vs_);
         return NJS_OK;
     }
 
@@ -1886,14 +1893,13 @@ njs_is_concat_spreadable(njs_vm_t *vm, njs_value_t *value)
     njs_int_t    ret;
     njs_value_t  retval;
 
-    static const njs_value_t  key =
-                         njs_wellknown_symbol(NJS_SYMBOL_IS_CONCAT_SPREADABLE);
-
     if (njs_slow_path(!njs_is_object(value))) {
         return NJS_DECLINED;
     }
 
-    ret = njs_value_property(vm, value, njs_value_arg(&key), &retval);
+    ret = njs_value_property(vm, value,
+                             njs_value_arg(&njs_atom.vw_isConcatSpreadable),
+                             &retval);
     if (njs_slow_path(ret == NJS_ERROR)) {
         return NJS_ERROR;
     }
@@ -2776,7 +2782,10 @@ njs_sort_indexed_properties(njs_vm_t *vm, njs_value_t *obj, int64_t length,
                 njs_value_assign(&p->value, &start[i]);
 
             } else {
-                njs_uint32_to_string(&key, i);
+                ret = njs_uint32_to_string(vm, &key, i);
+                if (njs_slow_path(ret != NJS_OK)) {
+                    goto exception;
+                }
                 ret = njs_value_property(vm, obj, &key, &p->value);
                 if (njs_slow_path(ret == NJS_ERROR)) {
                     goto exception;
@@ -3179,115 +3188,116 @@ njs_array_prototype_iterator_obj(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static const njs_object_prop_t  njs_array_prototype_properties[] =
+static njs_object_prop_t  njs_array_prototype_properties[] =
 {
-    NJS_DECLARE_PROP_HANDLER("length", njs_array_length, 0, 0,
+    NJS_DECLARE_PROP_HANDLER(vs_length, njs_array_length, 0,
                              NJS_OBJECT_PROP_VALUE_W),
 
-    NJS_DECLARE_PROP_HANDLER("constructor",
-                             njs_object_prototype_create_constructor,
-                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
+    NJS_DECLARE_PROP_HANDLER(vs_constructor,
+                             njs_object_prototype_create_constructor, 0,
+                             NJS_OBJECT_PROP_VALUE_CW),
 
-    NJS_DECLARE_PROP_NATIVE("concat", njs_array_prototype_concat, 1, 0),
-
-    NJS_DECLARE_PROP_NATIVE("copyWithin", njs_array_prototype_copy_within, 2,
+    NJS_DECLARE_PROP_NATIVE(vs_concat, njs_array_prototype_concat, 1,
                             0),
 
-    NJS_DECLARE_PROP_NATIVE("entries", njs_array_prototype_iterator_obj, 0,
-                            NJS_ENUM_BOTH),
+    NJS_DECLARE_PROP_NATIVE(vs_copyWithin,
+                            njs_array_prototype_copy_within, 2, 0),
 
-    NJS_DECLARE_PROP_NATIVE("every", njs_array_prototype_iterator, 1,
+    NJS_DECLARE_PROP_NATIVE(vs_entries,
+                            njs_array_prototype_iterator_obj, 0, NJS_ENUM_BOTH),
+
+    NJS_DECLARE_PROP_NATIVE(vs_every, njs_array_prototype_iterator, 1,
                             njs_array_func(NJS_ARRAY_EVERY)),
 
-    NJS_DECLARE_PROP_NATIVE("fill", njs_array_prototype_fill, 1, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_fill, njs_array_prototype_fill, 1, 0),
 
-    NJS_DECLARE_PROP_NATIVE("filter", njs_array_prototype_iterator, 1,
+    NJS_DECLARE_PROP_NATIVE(vs_filter, njs_array_prototype_iterator, 1,
                             njs_array_func(NJS_ARRAY_FILTER)),
 
-    NJS_DECLARE_PROP_NATIVE("find", njs_array_prototype_iterator, 1,
+    NJS_DECLARE_PROP_NATIVE(vs_find, njs_array_prototype_iterator, 1,
                             njs_array_func(NJS_ARRAY_FIND)),
 
-    NJS_DECLARE_PROP_NATIVE("findIndex", njs_array_prototype_iterator, 1,
-                            njs_array_func(NJS_ARRAY_FIND_INDEX)),
+    NJS_DECLARE_PROP_NATIVE(vs_findIndex, njs_array_prototype_iterator,
+                            1, njs_array_func(NJS_ARRAY_FIND_INDEX)),
 
-    NJS_DECLARE_PROP_NATIVE("forEach", njs_array_prototype_iterator, 1,
-                            njs_array_func(NJS_ARRAY_FOR_EACH)),
+    NJS_DECLARE_PROP_NATIVE(vs_forEach, njs_array_prototype_iterator,
+                            1, njs_array_func(NJS_ARRAY_FOR_EACH)),
 
-    NJS_DECLARE_PROP_NATIVE("includes", njs_array_prototype_iterator, 1,
-                            njs_array_arg(NJS_ARRAY_INCLUDES)),
+    NJS_DECLARE_PROP_NATIVE(vs_includes, njs_array_prototype_iterator,
+                            1, njs_array_arg(NJS_ARRAY_INCLUDES)),
 
-    NJS_DECLARE_PROP_NATIVE("indexOf", njs_array_prototype_iterator, 1,
+    NJS_DECLARE_PROP_NATIVE(vs_indexOf, njs_array_prototype_iterator, 1,
                             njs_array_arg(NJS_ARRAY_INDEX_OF)),
 
-    NJS_DECLARE_PROP_NATIVE("join", njs_array_prototype_join, 1, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_join, njs_array_prototype_join, 1, 0),
 
-    NJS_DECLARE_PROP_NATIVE("keys", njs_array_prototype_iterator_obj, 0,
-                            NJS_ENUM_KEYS),
+    NJS_DECLARE_PROP_NATIVE(vs_keys, njs_array_prototype_iterator_obj,
+                            0, NJS_ENUM_KEYS),
 
-    NJS_DECLARE_PROP_NATIVE("lastIndexOf",
+    NJS_DECLARE_PROP_NATIVE(vs_lastIndexOf,
                             njs_array_prototype_reverse_iterator, 1,
                             NJS_ARRAY_LAST_INDEX_OF),
 
-    NJS_DECLARE_PROP_NATIVE("map", njs_array_prototype_iterator, 1,
+    NJS_DECLARE_PROP_NATIVE(vs_map, njs_array_prototype_iterator, 1,
                             njs_array_func(NJS_ARRAY_MAP)),
 
-    NJS_DECLARE_PROP_NATIVE("pop", njs_array_prototype_pop, 0, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_pop, njs_array_prototype_pop, 0, 0),
 
-    NJS_DECLARE_PROP_NATIVE("push", njs_array_prototype_push, 1, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_push, njs_array_prototype_push, 1, 0),
 
-    NJS_DECLARE_PROP_NATIVE("reduce", njs_array_prototype_iterator, 1,
+    NJS_DECLARE_PROP_NATIVE(vs_reduce, njs_array_prototype_iterator, 1,
                             njs_array_func(NJS_ARRAY_REDUCE)),
 
-    NJS_DECLARE_PROP_NATIVE("reduceRight",
+    NJS_DECLARE_PROP_NATIVE(vs_reduceRight,
                             njs_array_prototype_reverse_iterator, 1,
                             njs_array_func(NJS_ARRAY_REDUCE_RIGHT)),
 
-    NJS_DECLARE_PROP_NATIVE("reverse", njs_array_prototype_reverse, 0, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_reverse, njs_array_prototype_reverse, 0, 0),
 
-    NJS_DECLARE_PROP_NATIVE("shift", njs_array_prototype_shift, 0, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_shift, njs_array_prototype_shift, 0, 0),
 
-    NJS_DECLARE_PROP_NATIVE("slice", njs_array_prototype_slice, 2, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_slice, njs_array_prototype_slice, 2, 0),
 
-    NJS_DECLARE_PROP_NATIVE("some", njs_array_prototype_iterator, 1,
+    NJS_DECLARE_PROP_NATIVE(vs_some, njs_array_prototype_iterator, 1,
                             njs_array_func(NJS_ARRAY_SOME)),
 
-    NJS_DECLARE_PROP_NATIVE("sort", njs_array_prototype_sort, 1, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_sort, njs_array_prototype_sort, 1, 0),
 
-    NJS_DECLARE_PROP_NATIVE("splice", njs_array_prototype_splice, 2, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_splice, njs_array_prototype_splice, 2,
+                            0),
 
-    NJS_DECLARE_PROP_NATIVE("toReversed", njs_array_prototype_to_reversed, 0, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_toReversed,
+                            njs_array_prototype_to_reversed, 0, 0),
 
-    NJS_DECLARE_PROP_NATIVE("toSorted", njs_array_prototype_to_sorted, 1, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_toSorted, njs_array_prototype_to_sorted,
+                            1, 0),
 
-    NJS_DECLARE_PROP_NATIVE("toSpliced", njs_array_prototype_to_spliced, 2, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_toSpliced,
+                            njs_array_prototype_to_spliced, 2, 0),
 
-    NJS_DECLARE_PROP_NATIVE("toString", njs_array_prototype_to_string, 0, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_toString, njs_array_prototype_to_string,
+                            0, 0),
 
-    NJS_DECLARE_PROP_NATIVE("unshift", njs_array_prototype_unshift, 1, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_unshift, njs_array_prototype_unshift, 1,
+                            0),
 
-    NJS_DECLARE_PROP_NATIVE("values", njs_array_prototype_iterator_obj, 0,
+    NJS_DECLARE_PROP_NATIVE(vs_values, njs_array_prototype_iterator_obj,
+                            0, NJS_ENUM_VALUES),
+
+    NJS_DECLARE_PROP_NATIVE(vw_iterator,
+                            njs_array_prototype_iterator_obj, 0,
                             NJS_ENUM_VALUES),
-
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_wellknown_symbol(NJS_SYMBOL_ITERATOR),
-        .u.value = njs_native_function2(njs_array_prototype_iterator_obj, 0,
-                                        NJS_ENUM_VALUES),
-        .writable = 1,
-        .configurable = 1,
-    },
 };
 
-
-const njs_object_init_t  njs_array_prototype_init = {
+static const njs_object_init_t  njs_array_prototype_init = {
     njs_array_prototype_properties,
     njs_nitems(njs_array_prototype_properties),
 };
 
 
-const njs_object_prop_t  njs_array_instance_properties[] =
+njs_object_prop_t  njs_array_instance_properties[] =
 {
-    NJS_DECLARE_PROP_HANDLER("length", njs_array_length, 0, 0,
+    NJS_DECLARE_PROP_HANDLER(vs_length, njs_array_length, 0,
                              NJS_OBJECT_PROP_VALUE_W),
 };
 
