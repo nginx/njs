@@ -374,101 +374,132 @@ njs_object_math_random(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static const njs_object_prop_t  njs_math_object_properties[] =
+static njs_object_prop_t  njs_math_object_properties[] =
 {
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG),
-        .u.value = njs_string("Math"),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_VALUE(vw_toStringTag, njs_atom.vs_Math,
+                           NJS_OBJECT_PROP_VALUE_C),
 
-    NJS_DECLARE_PROP_VALUE("E", njs_value(NJS_NUMBER, 1, M_E), 0),
+    NJS_DECLARE_PROP_VALUE(vs_E, njs_value(NJS_NUMBER, 1, M_E), 0),
 
-    NJS_DECLARE_PROP_VALUE("LN10", njs_value(NJS_NUMBER, 1, M_LN10), 0),
+    NJS_DECLARE_PROP_VALUE(vs_LN10, njs_value(NJS_NUMBER, 1, M_LN10),
+                           0),
 
-    NJS_DECLARE_PROP_VALUE("LN2", njs_value(NJS_NUMBER, 1, M_LN2), 0),
+    NJS_DECLARE_PROP_VALUE(vs_LN2, njs_value(NJS_NUMBER, 1, M_LN2), 0),
 
-    NJS_DECLARE_PROP_VALUE("LOG10E", njs_value(NJS_NUMBER, 1, M_LOG10E), 0),
+    NJS_DECLARE_PROP_VALUE(vs_LOG10E,
+                           njs_value(NJS_NUMBER, 1, M_LOG10E), 0),
 
-    NJS_DECLARE_PROP_VALUE("LOG2E", njs_value(NJS_NUMBER, 1, M_LOG2E), 0),
+    NJS_DECLARE_PROP_VALUE(vs_LOG2E, njs_value(NJS_NUMBER, 1, M_LOG2E),
+                           0),
 
-    NJS_DECLARE_PROP_VALUE("PI", njs_value(NJS_NUMBER, 1, M_PI), 0),
+    NJS_DECLARE_PROP_VALUE(vs_PI, njs_value(NJS_NUMBER, 1, M_PI), 0),
 
-    NJS_DECLARE_PROP_VALUE("SQRT1_2", njs_value(NJS_NUMBER, 1, M_SQRT1_2), 0),
+    NJS_DECLARE_PROP_VALUE(vs_SQRT1_2,
+                           njs_value(NJS_NUMBER, 1, M_SQRT1_2), 0),
 
-    NJS_DECLARE_PROP_VALUE("SQRT2", njs_value(NJS_NUMBER, 1, M_SQRT2), 0),
+    NJS_DECLARE_PROP_VALUE(vs_SQRT2, njs_value(NJS_NUMBER, 1, M_SQRT2),
+                           0),
 
-    NJS_DECLARE_PROP_NATIVE("abs", njs_object_math_func, 1, NJS_MATH_ABS),
+    NJS_DECLARE_PROP_NATIVE(vs_abs, njs_object_math_func, 1,
+                            NJS_MATH_ABS),
 
-    NJS_DECLARE_PROP_NATIVE("acos", njs_object_math_func, 1, NJS_MATH_ACOS),
+    NJS_DECLARE_PROP_NATIVE(vs_acos, njs_object_math_func, 1,
+                            NJS_MATH_ACOS),
 
-    NJS_DECLARE_PROP_NATIVE("acosh", njs_object_math_func, 1, NJS_MATH_ACOSH),
+    NJS_DECLARE_PROP_NATIVE(vs_acosh, njs_object_math_func, 1,
+                            NJS_MATH_ACOSH),
 
-    NJS_DECLARE_PROP_NATIVE("asin", njs_object_math_func, 1, NJS_MATH_ASIN),
+    NJS_DECLARE_PROP_NATIVE(vs_asin, njs_object_math_func, 1,
+                            NJS_MATH_ASIN),
 
-    NJS_DECLARE_PROP_NATIVE("asinh", njs_object_math_func, 1, NJS_MATH_ASINH),
+    NJS_DECLARE_PROP_NATIVE(vs_asinh, njs_object_math_func, 1,
+                            NJS_MATH_ASINH),
 
-    NJS_DECLARE_PROP_NATIVE("atan", njs_object_math_func, 1, NJS_MATH_ATAN),
+    NJS_DECLARE_PROP_NATIVE(vs_atan, njs_object_math_func, 1,
+                            NJS_MATH_ATAN),
 
-    NJS_DECLARE_PROP_NATIVE("atan2", njs_object_math_func, 2, NJS_MATH_ATAN2),
+    NJS_DECLARE_PROP_NATIVE(vs_atan2, njs_object_math_func, 2,
+                            NJS_MATH_ATAN2),
 
-    NJS_DECLARE_PROP_NATIVE("atanh", njs_object_math_func, 1, NJS_MATH_ATANH),
+    NJS_DECLARE_PROP_NATIVE(vs_atanh, njs_object_math_func, 1,
+                            NJS_MATH_ATANH),
 
-    NJS_DECLARE_PROP_NATIVE("cbrt", njs_object_math_func, 1, NJS_MATH_CBRT),
+    NJS_DECLARE_PROP_NATIVE(vs_cbrt, njs_object_math_func, 1,
+                            NJS_MATH_CBRT),
 
-    NJS_DECLARE_PROP_NATIVE("ceil", njs_object_math_func, 1, NJS_MATH_CEIL),
+    NJS_DECLARE_PROP_NATIVE(vs_ceil, njs_object_math_func, 1,
+                            NJS_MATH_CEIL),
 
-    NJS_DECLARE_PROP_NATIVE("clz32", njs_object_math_func, 1, NJS_MATH_CLZ32),
+    NJS_DECLARE_PROP_NATIVE(vs_clz32, njs_object_math_func, 1,
+                            NJS_MATH_CLZ32),
 
-    NJS_DECLARE_PROP_NATIVE("cos", njs_object_math_func, 1, NJS_MATH_COS),
+    NJS_DECLARE_PROP_NATIVE(vs_cos, njs_object_math_func, 1,
+                            NJS_MATH_COS),
 
-    NJS_DECLARE_PROP_NATIVE("cosh", njs_object_math_func, 1, NJS_MATH_COSH),
+    NJS_DECLARE_PROP_NATIVE(vs_cosh, njs_object_math_func, 1,
+                            NJS_MATH_COSH),
 
-    NJS_DECLARE_PROP_NATIVE("exp", njs_object_math_func, 1, NJS_MATH_EXP),
+    NJS_DECLARE_PROP_NATIVE(vs_exp, njs_object_math_func, 1,
+                            NJS_MATH_EXP),
 
-    NJS_DECLARE_PROP_NATIVE("expm1", njs_object_math_func, 1, NJS_MATH_EXPM1),
+    NJS_DECLARE_PROP_NATIVE(vs_expm1, njs_object_math_func, 1,
+                            NJS_MATH_EXPM1),
 
-    NJS_DECLARE_PROP_NATIVE("floor", njs_object_math_func, 1, NJS_MATH_FLOOR),
+    NJS_DECLARE_PROP_NATIVE(vs_floor, njs_object_math_func, 1,
+                            NJS_MATH_FLOOR),
 
-    NJS_DECLARE_PROP_NATIVE("fround", njs_object_math_func, 1,
+    NJS_DECLARE_PROP_NATIVE(vs_fround, njs_object_math_func, 1,
                             NJS_MATH_FROUND),
 
-    NJS_DECLARE_PROP_NATIVE("hypot", njs_object_math_hypot, 2, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_hypot, njs_object_math_hypot, 2, 0),
 
-    NJS_DECLARE_PROP_NATIVE("imul", njs_object_math_func, 2, NJS_MATH_IMUL),
+    NJS_DECLARE_PROP_NATIVE(vs_imul, njs_object_math_func, 2,
+                            NJS_MATH_IMUL),
 
-    NJS_DECLARE_PROP_NATIVE("log", njs_object_math_func, 1, NJS_MATH_LOG),
+    NJS_DECLARE_PROP_NATIVE(vs_log, njs_object_math_func, 1,
+                            NJS_MATH_LOG),
 
-    NJS_DECLARE_PROP_NATIVE("log10", njs_object_math_func, 1, NJS_MATH_LOG10),
+    NJS_DECLARE_PROP_NATIVE(vs_log10, njs_object_math_func, 1,
+                            NJS_MATH_LOG10),
 
-    NJS_DECLARE_PROP_NATIVE("log1p", njs_object_math_func, 1, NJS_MATH_LOG1P),
+    NJS_DECLARE_PROP_NATIVE(vs_log1p, njs_object_math_func, 1,
+                            NJS_MATH_LOG1P),
 
-    NJS_DECLARE_PROP_NATIVE("log2", njs_object_math_func, 1, NJS_MATH_LOG2),
+    NJS_DECLARE_PROP_NATIVE(vs_log2, njs_object_math_func, 1,
+                            NJS_MATH_LOG2),
 
-    NJS_DECLARE_PROP_NATIVE("max", njs_object_math_min_max, 2, 1),
+    NJS_DECLARE_PROP_NATIVE(vs_max, njs_object_math_min_max, 2, 1),
 
-    NJS_DECLARE_PROP_NATIVE("min", njs_object_math_min_max, 2, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_min, njs_object_math_min_max, 2, 0),
 
-    NJS_DECLARE_PROP_NATIVE("pow", njs_object_math_func, 2, NJS_MATH_POW),
+    NJS_DECLARE_PROP_NATIVE(vs_pow, njs_object_math_func, 2,
+                            NJS_MATH_POW),
 
-    NJS_DECLARE_PROP_NATIVE("random", njs_object_math_random, 0, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_random, njs_object_math_random, 0, 0),
 
-    NJS_DECLARE_PROP_NATIVE("round", njs_object_math_func, 1, NJS_MATH_ROUND),
+    NJS_DECLARE_PROP_NATIVE(vs_round, njs_object_math_func, 1,
+                            NJS_MATH_ROUND),
 
-    NJS_DECLARE_PROP_NATIVE("sign", njs_object_math_func, 1, NJS_MATH_SIGN),
+    NJS_DECLARE_PROP_NATIVE(vs_sign, njs_object_math_func, 1,
+                            NJS_MATH_SIGN),
 
-    NJS_DECLARE_PROP_NATIVE("sin", njs_object_math_func, 1, NJS_MATH_SIN),
+    NJS_DECLARE_PROP_NATIVE(vs_sin, njs_object_math_func, 1,
+                            NJS_MATH_SIN),
 
-    NJS_DECLARE_PROP_NATIVE("sinh", njs_object_math_func, 1, NJS_MATH_SINH),
+    NJS_DECLARE_PROP_NATIVE(vs_sinh, njs_object_math_func, 1,
+                            NJS_MATH_SINH),
 
-    NJS_DECLARE_PROP_NATIVE("sqrt", njs_object_math_func, 1, NJS_MATH_SQRT),
+    NJS_DECLARE_PROP_NATIVE(vs_sqrt, njs_object_math_func, 1,
+                            NJS_MATH_SQRT),
 
-    NJS_DECLARE_PROP_NATIVE("tan", njs_object_math_func, 1, NJS_MATH_TAN),
+    NJS_DECLARE_PROP_NATIVE(vs_tan, njs_object_math_func, 1,
+                            NJS_MATH_TAN),
 
-    NJS_DECLARE_PROP_NATIVE("tanh", njs_object_math_func, 1, NJS_MATH_TANH),
+    NJS_DECLARE_PROP_NATIVE(vs_tanh, njs_object_math_func, 1,
+                            NJS_MATH_TANH),
 
-    NJS_DECLARE_PROP_NATIVE("trunc", njs_object_math_func, 1, NJS_MATH_TRUNC),
+    NJS_DECLARE_PROP_NATIVE(vs_trunc, njs_object_math_func, 1,
+                            NJS_MATH_TRUNC),
 };
 
 

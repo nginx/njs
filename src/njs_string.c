@@ -160,23 +160,9 @@ njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint64_t size,
     }
 
     value->type = NJS_STRING;
-    njs_string_truth(value, size);
+    value->truth = size != 0;
 
-    if (size <= NJS_STRING_SHORT) {
-        value->short_string.size = size;
-        value->short_string.length = length;
-
-        return value->short_string.start;
-    }
-
-    /*
-     * Setting UTF-8 length is not required here, it just allows
-     * to store the constant in whole byte instead of bit twiddling.
-     */
-    value->short_string.size = NJS_STRING_LONG;
-    value->short_string.length = 0;
-    value->long_string.external = 0;
-    value->long_string.size = size;
+    value->atom_id = 0;
 
     if (size != length && length > NJS_STRING_MAP_STRIDE) {
         map_offset = njs_string_map_offset(size);
@@ -190,9 +176,10 @@ njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint64_t size,
     string = njs_mp_alloc(vm->mem_pool, sizeof(njs_string_t) + total);
 
     if (njs_fast_path(string != NULL)) {
-        value->long_string.data = string;
+        value->string.data = string;
 
         string->start = (u_char *) string + sizeof(njs_string_t);
+        string->size = size;
         string->length = length;
 
         if (map_offset != 0) {
@@ -214,14 +201,8 @@ njs_string_length(njs_value_t *string)
 {
     uint32_t  length, size;
 
-    if (string->short_string.size != NJS_STRING_LONG) {
-        size = string->short_string.size;
-        length = string->short_string.length;
-
-    } else {
-        size = string->long_string.size;
-        length = string->long_string.data->length;
-    }
+    size = string->string.data->size;
+    length = string->string.data->length;
 
     return (length == 0) ? size : length;
 }
@@ -233,17 +214,9 @@ njs_string_prop(njs_string_prop_t *string, const njs_value_t *value)
     size_t     size;
     uintptr_t  length;
 
-    size = value->short_string.size;
-
-    if (size != NJS_STRING_LONG) {
-        string->start = (u_char *) value->short_string.start;
-        length = value->short_string.length;
-
-    } else {
-        string->start = (u_char *) value->long_string.data->start;
-        size = value->long_string.size;
-        length = value->long_string.data->length;
-    }
+    string->start = (u_char *) value->string.data->start;
+    size = value->string.data->size;
+    length = value->string.data->length;
 
     string->size = size;
     string->length = length;
@@ -255,32 +228,8 @@ njs_string_prop(njs_string_prop_t *string, const njs_value_t *value)
 void
 njs_string_truncate(njs_value_t *value, uint32_t size, uint32_t length)
 {
-    u_char    *dst, *src;
-    uint32_t  n;
-
-    if (size <= NJS_STRING_SHORT) {
-        if (value->short_string.size == NJS_STRING_LONG) {
-            dst = value->short_string.start;
-            src = value->long_string.data->start;
-
-            n = size;
-
-            while (n != 0) {
-                /* The maximum size is just 14 bytes. */
-                njs_pragma_loop_disable_vectorization;
-
-                *dst++ = *src++;
-                n--;
-            }
-        }
-
-        value->short_string.size = size;
-        value->short_string.length = length;
-
-    } else {
-        value->long_string.size = size;
-        value->long_string.data->length = length;
-    }
+    value->string.data->size = size;
+    value->string.data->length = length;
 }
 
 
@@ -430,7 +379,7 @@ njs_string_base64(njs_vm_t *vm, njs_value_t *retval, const njs_str_t *src)
     length = njs_encode_base64_length(src, &dst.length);
 
     if (njs_slow_path(dst.length == 0)) {
-        njs_value_assign(retval, &njs_string_empty);
+        njs_value_assign(retval, &njs_atom.vs_);
         return NJS_OK;
     }
 
@@ -452,7 +401,7 @@ njs_string_base64url(njs_vm_t *vm, njs_value_t *retval, const njs_str_t *src)
     njs_str_t  dst;
 
     if (njs_slow_path(src->length == 0)) {
-        njs_value_assign(retval, &njs_string_empty);
+        njs_value_assign(retval, &njs_atom.vs_);
         return NJS_OK;
     }
 
@@ -492,7 +441,7 @@ njs_string_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_object_value_t  *object;
 
     if (nargs == 1) {
-        value = njs_value_arg(&njs_string_empty);
+        value = njs_value_arg(&njs_atom.vs_);
 
     } else {
         value = &args[1];
@@ -525,21 +474,24 @@ njs_string_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static const njs_object_prop_t  njs_string_constructor_properties[] =
+static njs_object_prop_t  njs_string_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(1),
 
-    NJS_DECLARE_PROP_NAME("String"),
+    NJS_DECLARE_PROP_NAME(vs_String),
 
-    NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
+    NJS_DECLARE_PROP_HANDLER(vs_prototype, njs_object_prototype_create,
+                             0, 0),
 
-    NJS_DECLARE_PROP_NATIVE("fromCharCode", njs_string_from_char_code, 1, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_fromCharCode, njs_string_from_char_code,
+                            1, 0),
 
-    NJS_DECLARE_PROP_NATIVE("fromCodePoint", njs_string_from_char_code, 1, 1),
+    NJS_DECLARE_PROP_NATIVE(vs_fromCodePoint,
+                            njs_string_from_char_code, 1, 1),
 };
 
 
-const njs_object_init_t  njs_string_constructor_init = {
+static const njs_object_init_t  njs_string_constructor_init = {
     njs_string_constructor_properties,
     njs_nitems(njs_string_constructor_properties),
 };
@@ -549,7 +501,6 @@ static njs_int_t
 njs_string_instance_length(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
-    size_t              size;
     uintptr_t           length;
     njs_object_value_t  *ov;
 
@@ -568,15 +519,7 @@ njs_string_instance_length(njs_vm_t *vm, njs_object_prop_t *prop,
     }
 
     if (njs_is_string(value)) {
-        size = value->short_string.size;
-        length = value->short_string.length;
-
-        if (size == NJS_STRING_LONG) {
-            size = value->long_string.size;
-            length = value->long_string.data->length;
-        }
-
-        length = (length == 0) ? size : length;
+        length = value->string.data->length;
     }
 
     njs_set_number(retval, length);
@@ -588,89 +531,40 @@ njs_string_instance_length(njs_vm_t *vm, njs_object_prop_t *prop,
 njs_bool_t
 njs_string_eq(const njs_value_t *v1, const njs_value_t *v2)
 {
-    size_t        size, length1, length2;
-    const u_char  *start1, *start2;
+    size_t  size, length1, length2;
 
-    size = v1->short_string.size;
+    size = v1->string.data->size;
 
-    if (size != v2->short_string.size) {
+    if (size != v2->string.data->size) {
         return 0;
     }
 
-    if (size != NJS_STRING_LONG) {
-        length1 = v1->short_string.length;
-        length2 = v2->short_string.length;
+    length1 = v1->string.data->length;
+    length2 = v2->string.data->length;
 
-        /*
-         * Using full memcmp() comparison if at least one string
-         * is a Byte string.
-         */
-        if (length1 != 0 && length2 != 0 && length1 != length2) {
-            return 0;
-        }
-
-        start1 = v1->short_string.start;
-        start2 = v2->short_string.start;
-
-    } else {
-        size = v1->long_string.size;
-
-        if (size != v2->long_string.size) {
-            return 0;
-        }
-
-        length1 = v1->long_string.data->length;
-        length2 = v2->long_string.data->length;
-
-        /*
-         * Using full memcmp() comparison if at least one string
-         * is a Byte string.
-         */
-        if (length1 != 0 && length2 != 0 && length1 != length2) {
-            return 0;
-        }
-
-        start1 = v1->long_string.data->start;
-        start2 = v2->long_string.data->start;
+    if (length1 != 0 && length2 != 0 && length1 != length2) {
+        return 0;
     }
 
-    return (memcmp(start1, start2, size) == 0);
+    return (memcmp(v1->string.data->start, v2->string.data->start, size) == 0);
 }
 
 
 njs_int_t
 njs_string_cmp(const njs_value_t *v1, const njs_value_t *v2)
 {
-    size_t        size, size1, size2;
-    njs_int_t     ret;
-    const u_char  *start1, *start2;
+    size_t     size, size1, size2;
+    njs_int_t  ret;
 
     njs_assert(njs_is_string(v1));
     njs_assert(njs_is_string(v2));
 
-    size1 = v1->short_string.size;
-
-    if (size1 != NJS_STRING_LONG) {
-        start1 = v1->short_string.start;
-
-    } else {
-        size1 = v1->long_string.size;
-        start1 = v1->long_string.data->start;
-    }
-
-    size2 = v2->short_string.size;
-
-    if (size2 != NJS_STRING_LONG) {
-        start2 = v2->short_string.start;
-
-    } else {
-        size2 = v2->long_string.size;
-        start2 = v2->long_string.data->start;
-    }
+    size1 = v1->string.data->size;
+    size2 = v2->string.data->size;
 
     size = njs_min(size1, size2);
 
-    ret = memcmp(start1, start2, size);
+    ret = memcmp(v1->string.data->start, v2->string.data->start, size);
 
     if (ret != 0) {
         return ret;
@@ -1153,7 +1047,7 @@ njs_string_slice(njs_vm_t *vm, njs_value_t *retval,
         return njs_string_new(vm, retval, prop.start, prop.size, prop.length);
     }
 
-    njs_value_assign(retval, &njs_string_empty);
+    njs_value_assign(retval, &njs_atom.vs_);
 
     return NJS_OK;
 }
@@ -1306,7 +1200,7 @@ njs_string_decode_hex(njs_vm_t *vm, njs_value_t *retval, const njs_str_t *src)
     length = njs_decode_hex_length(src, &size);
 
     if (njs_slow_path(size == 0)) {
-        njs_value_assign(retval, &njs_string_empty);
+        njs_value_assign(retval, &njs_atom.vs_);
         return NJS_OK;
     }
 
@@ -1429,7 +1323,7 @@ njs_string_decode_base64_core(njs_vm_t *vm, njs_value_t *retval,
     length = njs_decode_base64_length_core(src, basis, &dst.length);
 
     if (njs_slow_path(dst.length == 0)) {
-        njs_value_assign(retval, &njs_string_empty);
+        njs_value_assign(retval, &njs_atom.vs_);
         return NJS_OK;
     }
 
@@ -2334,7 +2228,7 @@ njs_string_prototype_trim(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (string.size == 0) {
-        njs_value_assign(retval, &njs_string_empty);
+        njs_value_assign(retval, &njs_atom.vs_);
         return NJS_OK;
     }
 
@@ -2380,7 +2274,7 @@ njs_string_prototype_repeat(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     (void) njs_string_prop(&string, this);
 
     if (njs_slow_path(n == 0 || string.size == 0)) {
-        njs_value_assign(retval, &njs_string_empty);
+        njs_value_assign(retval, &njs_atom.vs_);
         return NJS_OK;
     }
 
@@ -2421,8 +2315,6 @@ njs_string_prototype_pad(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_value_t        *value, *pad;
     const u_char       *end;
     njs_string_prop_t  string, pad_string;
-
-    static const njs_value_t  string_space = njs_string(" ");
 
     ret = njs_string_object_validate(vm, njs_argument(args, 0));
     if (njs_slow_path(ret != NJS_OK)) {
@@ -2467,7 +2359,7 @@ njs_string_prototype_pad(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     if (njs_slow_path(!njs_is_string(pad))) {
         if (njs_is_undefined(pad)) {
-            pad = njs_value_arg(&string_space);
+            pad = njs_value_arg(&njs_atom.vs__);
 
         } else {
             ret = njs_value_to_string(vm, pad, pad);
@@ -2795,9 +2687,6 @@ njs_string_prototype_split(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_string_prop_t  string, split;
     njs_value_t        arguments[3];
 
-    static const njs_value_t  split_key =
-                                        njs_wellknown_symbol(NJS_SYMBOL_SPLIT);
-
     this = njs_argument(args, 0);
 
     if (njs_slow_path(njs_is_null_or_undefined(this))) {
@@ -2810,7 +2699,7 @@ njs_string_prototype_split(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     value = njs_lvalue_arg(&limit_lvalue, args, nargs, 2);
 
     if (!njs_is_null_or_undefined(separator)) {
-        ret = njs_value_method(vm, separator, njs_value_arg(&split_key),
+        ret = njs_value_method(vm, separator, njs_value_arg(&njs_atom.vw_split),
                                &splitter);
         if (njs_slow_path(ret != NJS_OK)) {
             return ret;
@@ -3110,10 +2999,6 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_function_t     *func_replace;
     njs_string_prop_t  string, s, ret_string;
 
-    static const njs_value_t  replace_key =
-                                      njs_wellknown_symbol(NJS_SYMBOL_REPLACE);
-    static const njs_value_t  string_flags = njs_string("flags");
-
     this = njs_argument(args, 0);
 
     if (njs_slow_path(njs_is_null_or_undefined(this))) {
@@ -3126,7 +3011,7 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     replace = njs_lvalue_arg(&replace_lvalue, args, nargs, 2);
 
     if (!njs_is_null_or_undefined(search)) {
-        ret = njs_value_method(vm, search, njs_value_arg(&replace_key),
+        ret = njs_value_method(vm, search, njs_value_arg(&njs_atom.vw_replace),
                                &replacer);
         if (njs_slow_path(ret != NJS_OK)) {
             return ret;
@@ -3141,7 +3026,8 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                 njs_regexp_prototype_symbol_replace)
             {
                 ret = njs_value_property(vm, search,
-                                         njs_value_arg(&string_flags), &value);
+                                         njs_value_arg(&njs_atom.vs_flags),
+                                         &value);
                 if (njs_slow_path(ret == NJS_ERROR)) {
                     return NJS_ERROR;
                 }
@@ -3413,15 +3299,12 @@ njs_string_to_index(const njs_value_t *value)
     const u_char  *p, *start, *end;
     u_char        buf[128];
 
-    size = value->short_string.size;
-
-    if (size != NJS_STRING_LONG) {
-        start = value->short_string.start;
-
-    } else {
-        size = value->long_string.size;
-        start = value->long_string.data->start;
+    if (njs_slow_path(value->type == NJS_SYMBOL)) {
+        return NAN;
     }
+
+    size = value->string.data->size;
+    start = value->string.data->start;
 
     p = start;
     end = p + size;
@@ -3493,101 +3376,111 @@ njs_string_to_index(const njs_value_t *value)
 }
 
 
-static const njs_object_prop_t  njs_string_prototype_properties[] =
+static njs_object_prop_t  njs_string_prototype_properties[] =
 {
-    NJS_DECLARE_PROP_HANDLER("__proto__", njs_primitive_prototype_get_proto,
-                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
+    NJS_DECLARE_PROP_HANDLER(vs___proto__,
+                             njs_primitive_prototype_get_proto, 0,
+                             NJS_OBJECT_PROP_VALUE_CW),
 
     NJS_DECLARE_PROP_LENGTH(0),
 
-    NJS_DECLARE_PROP_HANDLER("constructor",
-                             njs_object_prototype_create_constructor,
-                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
+    NJS_DECLARE_PROP_HANDLER(vs_constructor,
+                             njs_object_prototype_create_constructor, 0,
+                             NJS_OBJECT_PROP_VALUE_CW),
 
-    NJS_DECLARE_PROP_NATIVE("valueOf", njs_string_prototype_value_of, 0, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_valueOf, njs_string_prototype_value_of,
+                            0, 0),
 
-    NJS_DECLARE_PROP_NATIVE("toString", njs_string_prototype_to_string, 0, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_toString,
+                            njs_string_prototype_to_string, 0, 0),
 
-    NJS_DECLARE_PROP_NATIVE("concat", njs_string_prototype_concat, 1, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_concat,
+                            njs_string_prototype_concat, 1, 0),
 
-    NJS_DECLARE_PROP_NATIVE("slice", njs_string_prototype_slice, 2, 0),
-
-    NJS_DECLARE_PROP_NATIVE("substring", njs_string_prototype_substring, 2, 0),
-
-    NJS_DECLARE_PROP_NATIVE("substr", njs_string_prototype_substr, 2, 0),
-
-    NJS_DECLARE_PROP_NATIVE("charAt", njs_string_prototype_char_at, 1, 0),
-
-    NJS_DECLARE_PROP_NATIVE("charCodeAt", njs_string_prototype_char_code_at, 1,
+    NJS_DECLARE_PROP_NATIVE(vs_slice, njs_string_prototype_slice, 2,
                             0),
 
-    NJS_DECLARE_PROP_NATIVE("codePointAt", njs_string_prototype_char_code_at,
+    NJS_DECLARE_PROP_NATIVE(vs_substring,
+                            njs_string_prototype_substring, 2, 0),
+
+    NJS_DECLARE_PROP_NATIVE(vs_substr, njs_string_prototype_substr, 2,
+                            0),
+
+    NJS_DECLARE_PROP_NATIVE(vs_charAt, njs_string_prototype_char_at, 1,
+                            0),
+
+    NJS_DECLARE_PROP_NATIVE(vs_charCodeAt,
+                            njs_string_prototype_char_code_at, 1, 0),
+
+    NJS_DECLARE_PROP_NATIVE(vs_codePointAt,
+                            njs_string_prototype_char_code_at, 1, 0),
+
+    NJS_DECLARE_PROP_NATIVE(vs_indexOf, njs_string_prototype_index_of,
                             1, 0),
 
-    NJS_DECLARE_PROP_NATIVE("indexOf", njs_string_prototype_index_of, 1, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_lastIndexOf,
+                            njs_string_prototype_last_index_of, 1, 0),
 
-    NJS_DECLARE_PROP_NATIVE("lastIndexOf", njs_string_prototype_last_index_of,
+    NJS_DECLARE_PROP_NATIVE(vs_includes, njs_string_prototype_includes,
                             1, 0),
 
-    NJS_DECLARE_PROP_NATIVE("includes", njs_string_prototype_includes, 1, 0),
-
-    NJS_DECLARE_PROP_NATIVE("startsWith",
+    NJS_DECLARE_PROP_NATIVE(vs_startsWith,
                             njs_string_prototype_starts_or_ends_with, 1, 1),
 
-    NJS_DECLARE_PROP_NATIVE("endsWith",
+    NJS_DECLARE_PROP_NATIVE(vs_endsWith,
                             njs_string_prototype_starts_or_ends_with, 1, 0),
 
-    NJS_DECLARE_PROP_NATIVE("toLowerCase", njs_string_prototype_to_lower_case,
-                            0, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_toLowerCase,
+                            njs_string_prototype_to_lower_case, 0, 0),
 
-    NJS_DECLARE_PROP_NATIVE("toUpperCase", njs_string_prototype_to_upper_case,
-                            0, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_toUpperCase,
+                            njs_string_prototype_to_upper_case, 0, 0),
 
-    NJS_DECLARE_PROP_NATIVE("trim", njs_string_prototype_trim, 0,
+    NJS_DECLARE_PROP_NATIVE(vs_trim, njs_string_prototype_trim, 0,
                             NJS_TRIM_START | NJS_TRIM_END),
 
-    NJS_DECLARE_PROP_NATIVE("trimStart", njs_string_prototype_trim, 0,
+    NJS_DECLARE_PROP_NATIVE(vs_trimStart, njs_string_prototype_trim, 0,
                             NJS_TRIM_START),
 
-    NJS_DECLARE_PROP_NATIVE("trimEnd", njs_string_prototype_trim, 0,
+    NJS_DECLARE_PROP_NATIVE(vs_trimEnd, njs_string_prototype_trim, 0,
                             NJS_TRIM_END),
 
-    NJS_DECLARE_PROP_NATIVE("repeat", njs_string_prototype_repeat, 1, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_repeat, njs_string_prototype_repeat, 1,
+                            0),
 
-    NJS_DECLARE_PROP_NATIVE("padStart", njs_string_prototype_pad, 1, 1),
+    NJS_DECLARE_PROP_NATIVE(vs_padStart, njs_string_prototype_pad, 1,
+                            1),
 
-    NJS_DECLARE_PROP_NATIVE("padEnd", njs_string_prototype_pad, 1, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_padEnd, njs_string_prototype_pad, 1, 0),
 
-    NJS_DECLARE_PROP_NATIVE("search", njs_string_prototype_search, 1, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_search, njs_string_prototype_search, 1,
+                            0),
 
-    NJS_DECLARE_PROP_NATIVE("match", njs_string_prototype_match, 1, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_match, njs_string_prototype_match, 1, 0),
 
-    NJS_DECLARE_PROP_NATIVE("split", njs_string_prototype_split, 2, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_split, njs_string_prototype_split, 2, 0),
 
-    NJS_DECLARE_PROP_NATIVE("replace", njs_string_prototype_replace, 2, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_replace, njs_string_prototype_replace, 2,
+                            0),
 
-    NJS_DECLARE_PROP_NATIVE("replaceAll", njs_string_prototype_replace, 2, 1),
+    NJS_DECLARE_PROP_NATIVE(vs_replaceAll, njs_string_prototype_replace,
+                            2, 1),
 
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_wellknown_symbol(NJS_SYMBOL_ITERATOR),
-        .u.value = njs_native_function2(njs_string_prototype_iterator_obj, 0,
-                                        NJS_ENUM_VALUES),
-        .writable = 1,
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_NATIVE(vw_iterator,
+                            njs_string_prototype_iterator_obj, 0, NJS_ENUM_VALUES),
 };
 
 
-const njs_object_init_t  njs_string_prototype_init = {
+static const njs_object_init_t  njs_string_prototype_init = {
     njs_string_prototype_properties,
     njs_nitems(njs_string_prototype_properties),
 };
 
 
-const njs_object_prop_t  njs_string_instance_properties[] =
+static njs_object_prop_t  njs_string_instance_properties[] =
 {
-    NJS_DECLARE_PROP_HANDLER("length", njs_string_instance_length, 0, 0, 0),
+    NJS_DECLARE_PROP_HANDLER(vs_length, njs_string_instance_length, 0,
+                             0),
 };
 
 
@@ -3649,7 +3542,7 @@ njs_string_encode_uri(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     };
 
     if (nargs < 2) {
-        njs_value_assign(retval, &njs_string_undefined);
+        njs_value_assign(retval, &njs_atom.vs_undefined);
         return NJS_OK;
     }
 
@@ -3878,7 +3771,7 @@ njs_string_decode_uri(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     };
 
     if (nargs < 2) {
-        njs_value_assign(retval, &njs_string_undefined);
+        njs_value_assign(retval, &njs_atom.vs_undefined);
         return NJS_OK;
     }
 
@@ -4208,7 +4101,7 @@ njs_string_atob(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (size == 0) {
-        njs_value_assign(retval, &njs_string_empty);
+        njs_value_assign(retval, &njs_atom.vs_);
         return NJS_OK;
     }
 
@@ -4237,7 +4130,6 @@ const njs_object_type_init_t  njs_string_type_init = {
     .constructor_props = &njs_string_constructor_init,
     .prototype_props = &njs_string_prototype_init,
     .prototype_value = { .object_value = {
-                            .value = njs_string(""),
                             .object = { .type = NJS_OBJECT_VALUE } }
                        },
 };

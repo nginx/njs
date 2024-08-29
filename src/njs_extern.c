@@ -19,6 +19,7 @@ njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
 {
     size_t                size;
     njs_int_t             ret;
+    njs_value_t           prop_name;
     njs_lvlhsh_t          *hash;
     const u_char          *start;
     njs_function_t        *function;
@@ -44,7 +45,6 @@ njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
     end = external + n;
 
     while (external < end) {
-
         if ((external->flags & NJS_EXTERN_TYPE_MASK) == NJS_EXTERN_SELF) {
             slot->writable = external->u.object.writable;
             slot->configurable = external->u.object.configurable;
@@ -57,8 +57,7 @@ njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
             continue;
         }
 
-        prop = njs_object_prop_alloc(vm, &njs_string_empty,
-                                     &njs_value_invalid, 1);
+        prop = njs_object_prop_alloc(vm, &njs_atom.vs_, &njs_value_invalid, 1);
         if (njs_slow_path(prop == NULL)) {
             goto memory_error;
         }
@@ -68,20 +67,25 @@ njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
         prop->enumerable = external->enumerable;
 
         if (external->flags & NJS_EXTERN_SYMBOL) {
-            njs_set_symbol(&prop->name, external->name.symbol, NULL);
+            prop->atom_id = external->name.symbol;
 
             lhq.key_hash = external->name.symbol;
 
         } else {
-            ret = njs_string_create(vm, &prop->name,
+            ret = njs_string_create(vm, &prop_name,
                                     external->name.string.start,
                                     external->name.string.length);
             if (njs_slow_path(ret != NJS_OK)) {
                 return NJS_ERROR;
             }
 
-            lhq.key = external->name.string;
-            lhq.key_hash = njs_djb_hash(lhq.key.start, lhq.key.length);
+            ret = njs_atom_atomize_key(vm, &prop_name);
+            if (ret != NJS_OK) {
+                return ret;
+            }
+
+            prop->atom_id = prop_name.atom_id;
+            lhq.key_hash = prop_name.atom_id;
         }
 
         lhq.value = prop;
@@ -194,6 +198,7 @@ njs_external_prop_handler(njs_vm_t *vm, njs_object_prop_t *self,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     njs_int_t           ret;
+    njs_value_t         self_name;
     njs_object_prop_t   *prop;
     njs_external_ptr_t  external;
     njs_object_value_t  *ov;
@@ -226,7 +231,12 @@ njs_external_prop_handler(njs_vm_t *vm, njs_object_prop_t *self,
         njs_set_object_value(retval, ov);
     }
 
-    prop = njs_object_prop_alloc(vm, &self->name, retval, 1);
+    ret = njs_get_prop_name_by_atom_id(vm, &self_name, self->atom_id);
+    if (ret != NJS_OK) {
+        return NJS_ERROR;
+    }
+
+    prop = njs_object_prop_alloc(vm, &self_name, retval, 1);
     if (njs_slow_path(prop == NULL)) {
         return NJS_ERROR;
     }
@@ -236,8 +246,9 @@ njs_external_prop_handler(njs_vm_t *vm, njs_object_prop_t *self,
     prop->enumerable = self->enumerable;
 
     lhq.value = prop;
-    njs_string_get(&self->name, &lhq.key);
-    lhq.key_hash = njs_prop_magic32(self);
+
+    lhq.key_hash = prop->atom_id;
+
     lhq.replace = 1;
     lhq.pool = vm->mem_pool;
     lhq.proto = &njs_object_hash_proto;
@@ -325,7 +336,7 @@ njs_vm_external_constructor_handler(njs_vm_t *vm, njs_object_prop_t *prop,
 
 njs_int_t
 njs_vm_external_constructor(njs_vm_t *vm, const njs_str_t *name,
-    njs_function_native_t native, const njs_external_t *ctor_props,
+    const njs_function_native_t native, const njs_external_t *ctor_props,
     njs_uint_t ctor_nprops, const njs_external_t *proto_props,
     njs_uint_t proto_nprops)
 {
