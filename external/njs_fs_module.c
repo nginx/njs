@@ -1940,14 +1940,19 @@ njs_fs_readdir(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     encoding = NULL;
 
-    if (!njs_value_is_string(njs_value_arg(&encode))) {
+
+    if (njs_value_is_string(njs_value_arg(&encode))) {
         njs_value_string_get(njs_value_arg(&encode), &s);
 
-        if (!njs_strstr_eq(&s, &string_buffer)) {
-            encoding = njs_buffer_encoding(vm, njs_value_arg(&encode), 1);
-            if (njs_slow_path(encoding == NULL)) {
-                return NJS_ERROR;
-            }
+    } else {
+        s.length = 0;
+        s.start = NULL;
+    }
+
+    if (!njs_strstr_eq(&s, &string_buffer)) {
+        encoding = njs_buffer_encoding(vm, njs_value_arg(&encode), 1);
+        if (njs_slow_path(encoding == NULL)) {
+            return NJS_ERROR;
         }
     }
 
@@ -2080,14 +2085,18 @@ njs_fs_realpath(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     encoding = NULL;
 
-    if (!njs_value_is_string(njs_value_arg(&encode))) {
+    if (njs_value_is_string(njs_value_arg(&encode))) {
         njs_value_string_get(njs_value_arg(&encode), &s);
 
-        if (!njs_strstr_eq(&s, &string_buffer)) {
-            encoding = njs_buffer_encoding(vm, njs_value_arg(&encode), 1);
-            if (njs_slow_path(encoding == NULL)) {
-                return NJS_ERROR;
-            }
+    } else {
+        s.length = 0;
+        s.start = NULL;
+    }
+
+    if (!njs_strstr_eq(&s, &string_buffer)) {
+        encoding = njs_buffer_encoding(vm, njs_value_arg(&encode), 1);
+        if (njs_slow_path(encoding == NULL)) {
+            return NJS_ERROR;
         }
     }
 
