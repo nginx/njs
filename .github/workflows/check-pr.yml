@@ -39,7 +39,7 @@ jobs:
       - name: Check out and build quickjs
         run: |
           git clone https://github.com/bellard/quickjs
-          cd quickjs && curl -OL http://pp.nginx.com/pluknet/quickjs.patch && git apply quickjs.patch
+          cd quickjs
           CFLAGS=$CC_OPT LDFLAGS=$LD_OPT $MAKE_UTILITY -j$(nproc) libquickjs.a
 
       - name: Configure and make njs
