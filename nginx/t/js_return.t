@@ -46,21 +46,29 @@ http {
         location / {
             js_content test.returnf;
         }
+
+        location /njs {
+            js_content test.njs;
+        }
     }
 }
 
 EOF
 
 $t->write_file('test.js', <<EOF);
+    function test_njs(r) {
+        r.return(200, njs.version);
+    }
+
     function returnf(r) {
         r.return(Number(r.args.c), r.args.t);
     }
 
-    export default {returnf};
+    export default {njs:test_njs, returnf};
 
 EOF
 
-$t->try_run('no njs return')->plan(5);
+$t->try_run('no njs return')->plan(6);
 
 ###############################################################################
 
@@ -69,5 +77,31 @@ like(http_get('/?c=200&t=SEE-THIS'), qr/200 OK.*^SEE-THIS$/ms, 'return text');
 like(http_get('/?c=301&t=path'), qr/ 301 .*Location: path/s, 'return redirect');
 like(http_get('/?c=404'), qr/404 Not.*html/s, 'return error page');
 like(http_get('/?c=inv'), qr/ 500 /, 'return invalid');
+
+TODO: {
+local $TODO = 'not yet' unless has_version('0.8.6');
+
+unlike(http_get('/?c=404&t='), qr/Not.*html/s, 'return empty body');
+
+}
+
+###############################################################################
+
+sub has_version {
+	my $need = shift;
+
+	http_get('/njs') =~ /^([.0-9]+)$/m;
+
+	my @v = split(/\./, $1);
+	my ($n, $v);
+
+	for $n (split(/\./, $need)) {
+		$v = shift @v || 0;
+		return 0 if $n > $v;
+		return 1 if $v > $n;
+	}
+
+	return 1;
+}
 
 ###############################################################################
