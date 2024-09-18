@@ -3358,7 +3358,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
-    if (r->main != r) {
+    if (r->subrequest_in_memory) {
         njs_vm_error(vm, "subrequest can only be created for "
                          "the primary request");
         return NJS_ERROR;
@@ -5722,7 +5722,7 @@ ngx_http_qjs_ext_subrequest(JSContext *cx, JSValueConst this_val,
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
-    if (r->main != r) {
+    if (r->subrequest_in_memory) {
         return JS_ThrowTypeError(cx, "subrequest can only be created for "
                                      "the primary request");
     }
