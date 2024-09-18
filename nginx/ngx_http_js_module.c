@@ -2704,14 +2704,16 @@ ngx_http_js_ext_return(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    if (ngx_js_string(vm, njs_arg(args, nargs, 2), &text) != NGX_OK) {
-        njs_vm_error(vm, "failed to convert text");
-        return NJS_ERROR;
-    }
-
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
-    if (status < NGX_HTTP_BAD_REQUEST || text.length) {
+    if (status < NGX_HTTP_BAD_REQUEST
+        || !njs_value_is_null_or_undefined(njs_arg(args, nargs, 2)))
+    {
+        if (ngx_js_string(vm, njs_arg(args, nargs, 2), &text) != NGX_OK) {
+            njs_vm_error(vm, "failed to convert text");
+            return NJS_ERROR;
+        }
+
         ngx_memzero(&cv, sizeof(ngx_http_complex_value_t));
 
         cv.value.data = text.start;
@@ -5352,11 +5354,11 @@ ngx_http_qjs_ext_return(JSContext *cx, JSValueConst this_val,
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
-    if (ngx_qjs_string(ctx->engine, argv[1], &body) != NGX_OK) {
-        return JS_ThrowOutOfMemory(cx);
-    }
+    if (status < NGX_HTTP_BAD_REQUEST || !JS_IsNullOrUndefined(argv[1])) {
+        if (ngx_qjs_string(ctx->engine, argv[1], &body) != NGX_OK) {
+            return JS_ThrowOutOfMemory(cx);
+        }
 
-    if (status < NGX_HTTP_BAD_REQUEST || body.len) {
         ngx_memzero(&cv, sizeof(ngx_http_complex_value_t));
 
         cv.value.data = body.data;
