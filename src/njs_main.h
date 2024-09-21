@@ -41,6 +41,7 @@
 
 #include <njs.h>
 #include <njs_value.h>
+#include <njs_atom.h>
 
 #include <njs_vm.h>
 #include <njs_object_prop_declare.h>
