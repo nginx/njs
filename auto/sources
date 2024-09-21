@@ -19,6 +19,7 @@ NJS_LIB_SRCS=" \
    src/njs_utils.c \
    src/njs_chb.c \
    src/njs_value.c \
+   src/njs_atom.c \
    src/njs_vm.c \
    src/njs_vmcode.c \
    src/njs_lexer.c \

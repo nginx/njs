@@ -39,7 +39,7 @@ typedef enum {
 
 
 struct njs_object_init_s {
-    const njs_object_prop_t     *properties;
+    njs_object_prop_t           *properties;
     njs_uint_t                  items;
 };
 
@@ -73,7 +73,7 @@ njs_array_t *njs_object_own_enumerate(njs_vm_t *vm, const njs_object_t *object,
 njs_int_t njs_object_traverse(njs_vm_t *vm, njs_object_t *object, void *ctx,
     njs_object_traverse_cb_t cb);
 njs_int_t njs_object_hash_create(njs_vm_t *vm, njs_lvlhsh_t *hash,
-    const njs_object_prop_t *prop, njs_uint_t n);
+    njs_object_prop_t *prop, njs_uint_t n);
 njs_int_t njs_primitive_prototype_get_proto(njs_vm_t *vm,
     njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval);
@@ -110,7 +110,7 @@ njs_int_t njs_object_get_prototype_of(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 const char *njs_prop_type_string(njs_object_prop_type_t type);
 njs_int_t njs_object_prop_init(njs_vm_t *vm, const njs_object_init_t* init,
-    const njs_object_prop_t *base, njs_value_t *value, njs_value_t *retval);
+    njs_object_prop_t *base, njs_value_t *value, njs_value_t *retval);
 
 
 njs_inline njs_bool_t
@@ -182,15 +182,15 @@ njs_primitive_value_to_key(njs_vm_t *vm, njs_value_t *dst,
     switch (src->type) {
 
     case NJS_NULL:
-        value = &njs_string_null;
+        value = &njs_atom.vs_null;
         break;
 
     case NJS_UNDEFINED:
-        value = &njs_string_undefined;
+        value = &njs_atom.vs_undefined;
         break;
 
     case NJS_BOOLEAN:
-        value = njs_is_true(src) ? &njs_string_true : &njs_string_false;
+        value = njs_is_true(src) ? &njs_atom.vs_true : &njs_atom.vs_false;
         break;
 
     case NJS_NUMBER:
@@ -290,8 +290,6 @@ njs_value_create_data_prop_i64(njs_vm_t *vm, njs_value_t *value, int64_t index,
 }
 
 
-static const njs_value_t string_length = njs_string("length");
-
 njs_inline njs_int_t
 njs_object_length_set(njs_vm_t *vm, njs_value_t *value, int64_t length)
 {
@@ -299,7 +297,7 @@ njs_object_length_set(njs_vm_t *vm, njs_value_t *value, int64_t length)
 
     njs_value_number_set(&index, length);
 
-    return njs_value_property_set(vm, value, njs_value_arg(&string_length),
+    return njs_value_property_set(vm, value, njs_value_arg(&njs_atom.vs_length),
                                   &index);
 }
 
@@ -309,10 +307,7 @@ njs_object_string_tag(njs_vm_t *vm, njs_value_t *value, njs_value_t *tag)
 {
     njs_int_t  ret;
 
-    static const njs_value_t  to_string_tag =
-                                njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG);
-
-    ret = njs_value_property(vm, value, njs_value_arg(&to_string_tag), tag);
+    ret = njs_value_property(vm, value, njs_value_arg(&njs_atom.vw_toStringTag), tag);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
