@@ -95,10 +95,6 @@ njs_time(void)
 }
 
 
-static const njs_value_t  name_key = njs_string("name");
-static const njs_value_t  usec_key = njs_string("usec");
-static const njs_value_t  times_key = njs_string("times");
-
 static njs_int_t
 njs_benchmark_test(njs_vm_t *parent, njs_opts_t *opts, njs_value_t *report,
     njs_benchmark_test_t *test)

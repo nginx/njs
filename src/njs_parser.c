@@ -573,7 +573,7 @@ njs_parser(njs_vm_t *vm, njs_parser_t *parser)
     }
 
     /* Add this as first variable. */
-    njs_string_get(&njs_string_undefined, &str);
+    njs_string_get(&njs_atom.vs_undefined, &str);
 
     keyword = njs_lexer_keyword(str.start, str.length);
     if (njs_slow_path(keyword == NULL)) {
@@ -1218,9 +1218,6 @@ done:
 }
 
 
-static const njs_value_t  string_message = njs_string("message");
-
-
 static njs_int_t
 njs_parser_regexp_literal(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
@@ -1303,7 +1300,7 @@ njs_parser_regexp_literal(njs_parser_t *parser, njs_lexer_token_t *token,
             if (njs_slow_path(pattern == NULL)) {
                 retval = njs_vm_exception(parser->vm);
                 ret = njs_value_property(parser->vm, &retval,
-                                         njs_value_arg(&string_message),
+                                         njs_value_arg(&njs_atom.vs_message),
                                          &retval);
                 if (njs_slow_path(ret != NJS_OK)) {
                     return NJS_ERROR;
@@ -9214,10 +9211,6 @@ njs_parser_unexpected_token(njs_vm_t *vm, njs_parser_t *parser,
 }
 
 
-static const njs_value_t  file_name = njs_string("fileName");
-static const njs_value_t  line_number = njs_string("lineNumber");
-
-
 static void
 njs_parser_error(njs_vm_t *vm, njs_object_type_t type, njs_str_t *file,
     uint32_t line, const char *fmt, va_list args)
@@ -9253,13 +9246,14 @@ njs_parser_error(njs_vm_t *vm, njs_object_type_t type, njs_str_t *file,
     njs_error_new(vm, &error, njs_vm_proto(vm, type), msg, p - msg);
 
     njs_set_number(&value, line);
-    njs_value_property_set(vm, &error, njs_value_arg(&line_number), &value);
+    njs_value_property_set(vm, &error, njs_value_arg(&njs_atom.vs_lineNumber),
+                           &value);
 
     if (file->length != 0) {
         ret = njs_string_create(vm, &value, file->start, file->length);
         if (ret == NJS_OK) {
-            njs_value_property_set(vm, &error, njs_value_arg(&file_name),
-                                   &value);
+            njs_value_property_set(vm, &error,
+                                   njs_value_arg(&njs_atom.vs_fileName), &value);
         }
     }
 

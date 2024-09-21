@@ -88,7 +88,7 @@ static njs_object_t *njs_json_wrap_value(njs_vm_t *vm, njs_value_t *wrapper,
     const njs_value_t *value);
 
 
-static const njs_object_prop_t  njs_json_object_properties[];
+static njs_object_prop_t  njs_json_object_properties[];
 
 
 static njs_int_t
@@ -150,8 +150,8 @@ njs_json_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
         return njs_json_internalize_property(vm, njs_function(reviver),
                                              &wrapper,
-                                             njs_value_arg(&njs_string_empty),
-                                             0, retval);
+                                             njs_value_arg(&njs_atom.vs_), 0,
+                                             retval);
     }
 
     njs_value_assign(retval, &value);
@@ -1229,9 +1229,6 @@ memory_error:
 }
 
 
-static const njs_value_t  to_json_string = njs_string("toJSON");
-
-
 static njs_function_t *
 njs_object_to_json_function(njs_vm_t *vm, njs_value_t *value)
 {
@@ -1240,7 +1237,7 @@ njs_object_to_json_function(njs_vm_t *vm, njs_value_t *value)
     njs_lvlhsh_query_t  lhq;
 
     if (njs_is_object(value)) {
-        njs_object_property_init(&lhq, &to_json_string, NJS_TO_JSON_HASH);
+        njs_object_property_init(&lhq, &njs_atom.vs_toJSON, NJS_TO_JSON_HASH);
 
         ret = njs_object_property(vm, njs_object(value), &lhq, &retval);
 
@@ -1337,7 +1334,7 @@ njs_json_stringify_array(njs_json_stringify_t *stringify)
     }
 
     item = njs_array_push(stringify->vm, properties);
-    njs_value_assign(item, &njs_string_empty);
+    njs_value_assign(item, &njs_atom.vs_);
 
     for (i = 0; i < length; i++) {
         ret = njs_value_property_i64(stringify->vm, &stringify->replacer, i,
@@ -1615,7 +1612,7 @@ njs_json_wrap_value(njs_vm_t *vm, njs_value_t *wrapper,
     lhq.key = njs_str_value("");
     lhq.key_hash = NJS_DJB_HASH_INIT;
 
-    prop = njs_object_prop_alloc(vm, &njs_string_empty, value, 1);
+    prop = njs_object_prop_alloc(vm, &njs_atom.vs_, value, 1);
     if (njs_slow_path(prop == NULL)) {
         return NULL;
     }
@@ -1631,18 +1628,14 @@ njs_json_wrap_value(njs_vm_t *vm, njs_value_t *wrapper,
 }
 
 
-static const njs_object_prop_t  njs_json_object_properties[] =
+static njs_object_prop_t  njs_json_object_properties[] =
 {
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG),
-        .u.value = njs_string("JSON"),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_VALUE(njs_atom.vw_toStringTag, njs_atom.vs_JSON,
+                           NJS_OBJECT_PROP_VALUE_C),
 
-    NJS_DECLARE_PROP_NATIVE("parse", njs_json_parse, 2, 0),
+    NJS_DECLARE_PROP_NATIVE(njs_atom.vs_parse, njs_json_parse, 2, 0),
 
-    NJS_DECLARE_PROP_NATIVE("stringify", njs_json_stringify, 3, 0),
+    NJS_DECLARE_PROP_NATIVE(njs_atom.vs_stringify, njs_json_stringify, 3, 0),
 };
 
 
@@ -1650,9 +1643,6 @@ const njs_object_init_t  njs_json_object_init = {
     njs_json_object_properties,
     njs_nitems(njs_json_object_properties),
 };
-
-
-static const njs_value_t  name_string = njs_string("name");
 
 
 static njs_int_t
@@ -1775,7 +1765,7 @@ njs_dump_terminal(njs_json_stringify_t *stringify, njs_chb_t *chain,
         }
 
         ret = njs_value_property(stringify->vm, value,
-                                 njs_value_arg(&name_string), &tag);
+                                 njs_value_arg(&njs_atom.vs_name), &tag);
         if (njs_slow_path(ret == NJS_ERROR)) {
             return ret;
         }
@@ -1953,11 +1943,6 @@ njs_dump_empty(njs_json_stringify_t *stringify, njs_json_state_t *state,
 }
 
 
-static const njs_value_t  string_get = njs_string("[Getter]");
-static const njs_value_t  string_set = njs_string("[Setter]");
-static const njs_value_t  string_get_set = njs_string("[Getter/Setter]");
-
-
 njs_int_t
 njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, njs_value_t *value,
     njs_uint_t console, njs_uint_t indent)
@@ -2110,14 +2095,14 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, njs_value_t *value,
         if (njs_is_accessor_descriptor(prop)) {
             if (njs_prop_getter(prop) != NULL) {
                 if (njs_prop_setter(prop) != NULL) {
-                    val = njs_value_arg(&string_get_set);
+                    val = njs_value_arg(&njs_atom.vs__Getter_Setter_);
 
                 } else {
-                    val = njs_value_arg(&string_get);
+                    val = njs_value_arg(&njs_atom.vs__Getter_);
                 }
 
             } else {
-                val = njs_value_arg(&string_set);
+                val = njs_value_arg(&njs_atom.vs__Setter_);
             }
         }
 

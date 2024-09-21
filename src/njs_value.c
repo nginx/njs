@@ -20,7 +20,6 @@ static njs_int_t njs_string_property_query(njs_vm_t *vm,
 static njs_int_t njs_external_property_query(njs_vm_t *vm,
     njs_property_query_t *pq, njs_value_t *value);
 
-
 const njs_value_t  njs_value_null =         njs_value(NJS_NULL, 0, 0.0);
 const njs_value_t  njs_value_undefined =    njs_value(NJS_UNDEFINED, 0, NAN);
 const njs_value_t  njs_value_false =        njs_value(NJS_BOOLEAN, 0, 0.0);
@@ -28,38 +27,6 @@ const njs_value_t  njs_value_true =         njs_value(NJS_BOOLEAN, 1, 1.0);
 const njs_value_t  njs_value_zero =         njs_value(NJS_NUMBER, 0, 0.0);
 const njs_value_t  njs_value_nan =          njs_value(NJS_NUMBER, 0, NAN);
 const njs_value_t  njs_value_invalid =      njs_value(NJS_INVALID, 0, 0.0);
-
-const njs_value_t  njs_string_empty =       njs_string("");
-const njs_value_t  njs_string_empty_regexp =
-                                            njs_string("(?:)");
-const njs_value_t  njs_string_comma =       njs_string(",");
-const njs_value_t  njs_string_null =        njs_string("null");
-const njs_value_t  njs_string_undefined =   njs_string("undefined");
-const njs_value_t  njs_string_boolean =     njs_string("boolean");
-const njs_value_t  njs_string_false =       njs_string("false");
-const njs_value_t  njs_string_true =        njs_string("true");
-const njs_value_t  njs_string_number =      njs_string("number");
-const njs_value_t  njs_string_minus_zero =  njs_string("-0");
-const njs_value_t  njs_string_minus_infinity =
-                                            njs_string("-Infinity");
-const njs_value_t  njs_string_plus_infinity =
-                                            njs_string("Infinity");
-const njs_value_t  njs_string_nan =         njs_string("NaN");
-const njs_value_t  njs_string_symbol =      njs_string("symbol");
-const njs_value_t  njs_string_string =      njs_string("string");
-const njs_value_t  njs_string_name =        njs_string("name");
-const njs_value_t  njs_string_data =        njs_string("data");
-const njs_value_t  njs_string_type =        njs_string("type");
-const njs_value_t  njs_string_external =    njs_string("external");
-const njs_value_t  njs_string_invalid =     njs_string("invalid");
-const njs_value_t  njs_string_object =      njs_string("object");
-const njs_value_t  njs_string_function =    njs_string("function");
-const njs_value_t  njs_string_anonymous =   njs_string("anonymous");
-const njs_value_t  njs_string_memory_error = njs_string("MemoryError");
-const njs_value_t  njs_string_value_of = njs_string("valueOf");
-const njs_value_t  njs_string_ctor = njs_string("constructor");
-const njs_value_t  njs_string_prototype = njs_string("prototype");
-
 
 /*
  * A hint value is 0 for numbers and 1 for strings.  The value chooses
@@ -272,7 +239,7 @@ njs_value_of(njs_vm_t *vm, njs_value_t *value, njs_value_t *retval)
         return NJS_DECLINED;
     }
 
-    ret = njs_value_property(vm, value, njs_value_arg(&njs_string_value_of),
+    ret = njs_value_property(vm, value, njs_value_arg(&njs_atom.vs_valueOf),
                              retval);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
@@ -1556,15 +1523,15 @@ njs_primitive_value_to_string(njs_vm_t *vm, njs_value_t *dst,
     switch (src->type) {
 
     case NJS_NULL:
-        value = &njs_string_null;
+        value = &njs_atom.vs_null;
         break;
 
     case NJS_UNDEFINED:
-        value = &njs_string_undefined;
+        value = &njs_atom.vs_undefined;
         break;
 
     case NJS_BOOLEAN:
-        value = njs_is_true(src) ? &njs_string_true : &njs_string_false;
+        value = njs_is_true(src) ? &njs_atom.vs_true : &njs_atom.vs_false;
         break;
 
     case NJS_NUMBER:
@@ -1718,10 +1685,7 @@ njs_value_species_constructor(njs_vm_t *vm, njs_value_t *object,
     njs_int_t    ret;
     njs_value_t  constructor, retval;
 
-    static const njs_value_t  string_species =
-                                njs_wellknown_symbol(NJS_SYMBOL_SPECIES);
-
-    ret = njs_value_property(vm, object, njs_value_arg(&njs_string_ctor),
+    ret = njs_value_property(vm, object, njs_value_arg(&njs_atom.vs_constructor),
                              &constructor);
     if (njs_slow_path(ret == NJS_ERROR)) {
         return NJS_ERROR;
@@ -1736,8 +1700,8 @@ njs_value_species_constructor(njs_vm_t *vm, njs_value_t *object,
         return NJS_ERROR;
     }
 
-    ret = njs_value_property(vm, &constructor, njs_value_arg(&string_species),
-                             &retval);
+    ret = njs_value_property(vm, &constructor,
+                             njs_value_arg(&njs_atom.vw_species), &retval);
     if (njs_slow_path(ret == NJS_ERROR)) {
         return NJS_ERROR;
     }
