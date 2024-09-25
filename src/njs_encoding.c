@@ -204,7 +204,6 @@ njs_text_encoder_encode_into(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     to = njs_typed_array_start(array);
     to_end = to + array->byte_length;
 
-    cp = 0;
     njs_set_number(&read, 0);
     njs_set_number(&written, 0);
 
