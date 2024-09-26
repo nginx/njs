@@ -5,7 +5,7 @@ on:
 
 jobs:
   build:
-    runs-on: [ ubuntu-latest ]
+    runs-on: [ ubuntu-24.04 ]
     steps:
       - name: checkout v4
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -14,7 +14,7 @@ jobs:
         run: |
           echo NGINX_CONFIGURE_CMD="auto/configure --prefix=/tmp --with-http_ssl_module --with-http_realip_module --with-http_addition_module --with-http_sub_module --with-http_dav_module --with-http_flv_module --with-http_mp4_module --with-http_gunzip_module --with-http_gzip_static_module --with-http_random_index_module --with-http_secure_link_module --with-http_stub_status_module --with-mail --with-mail_ssl_module --with-select_module --with-poll_module --with-http_auth_request_module --with-http_v2_module --with-http_slice_module --with-stream --with-stream_ssl_module --with-stream_ssl_preread_module --with-stream_realip_module --with-threads --with-cpp_test_module --with-compat --with-http_degradation_module --with-http_xslt_module --with-http_image_filter_module --with-http_perl_module --with-http_geoip_module --with-stream_geoip_module" >> $GITHUB_ENV
           export DEB_BUILD_MAINT_OPTIONS="hardening=+all"
-          export DEB_CFLAGS_MAINT_APPEND="-Wp,-D_FORTIFY_SOURCE=2 -fPIC"
+          export DEB_CFLAGS_MAINT_APPEND="-fPIC"
           export DEB_LDFLAGS_MAINT_APPEND=""-Wl,--as-needed""
           echo CC_OPT=$(dpkg-buildflags --get CFLAGS) >> $GITHUB_ENV
           echo LD_OPT=$(dpkg-buildflags --get LDFLAGS) >> $GITHUB_ENV
