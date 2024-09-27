@@ -1,3 +1,41 @@
+Changes with njs 0.8.6                                       02 Oct 2024
+
+    nginx modules:
+
+    *) Feature: introduced QuickJS engine.
+
+    *) Feature: added optional nocache flag for js_set directive.
+       Thanks to Thomas P.
+
+    *) Feature: exposed capture group variables in HTTP module.
+       Thanks to Thomas P.
+
+    Core:
+
+    *) Feature: added Buffer module for QuickJS engine.
+
+    *) Bugfix: fixed handling of empty labelled statement in a function.
+
+    *) Bugfix: fixed Function constructor handling when called without
+       arguments.
+
+    *) Bugfix: fixed Buffer.prototype.writeInt8() and friends.
+
+    *) Bugfix: fixed Buffer.prototype.writeFloat() and friends.
+
+    *) Bugfix: fixed Buffer.prototype.lastIndexOf().
+
+    *) Bugfix: fixed Buffer.prototype.write().
+
+    *) Bugfix: fixed maybe-uninitialized warnings in error creation.
+
+    *) Bugfix: fixed 'ctx.codepoint' initialization in UTF-8 decoding.
+
+    *) Bugfix: fixed 'length' initialization in Array.prototype.pop().
+
+    *) Bugfix: fixed handling of encode arg in fs.readdir() and
+       fs.realpath().
+
 Changes with njs 0.8.5                                       25 Jun 2024
 
     nginx modules:
