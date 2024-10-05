@@ -140,7 +140,7 @@ njs_object_hash_init(njs_vm_t *vm, njs_lvlhsh_t *hash,
 
 
 njs_int_t
-njs_builtin_objects_create(njs_vm_t *vm)
+njs_builtin_objects_create(njs_vm_t *vm, njs_vm_t *vm_parent)
 {
     njs_int_t                  ret, index;
     njs_uint_t                 i;
@@ -159,9 +159,30 @@ njs_builtin_objects_create(njs_vm_t *vm)
     vm->shared = shared;
 
     njs_lvlhsh_init(&shared->keywords_hash);
+
     njs_lvlhsh_init(&shared->values_hash);
 
     njs_atom_hash_init();
+
+    if (vm_parent == NULL) {
+        /* njs_lvlhsh_init(&vm->atom_hash_shared); // done by zalign */
+
+        ret = njs_flathsh_alloc_copy(vm->mem_pool, &vm->atom_hash,
+                                     &njs_atom_hash);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
+        vm->atom_hash_mem_pool = vm->mem_pool;
+        vm->atom_hash_atom_id = njs_atom_hash_atom_id;
+
+    } else {
+        vm->atom_hash_shared = vm_parent->atom_hash_shared;
+
+        vm->atom_hash = vm_parent->atom_hash;
+        vm->atom_hash_mem_pool = vm_parent->mem_pool;
+        vm->atom_hash_atom_id = vm_parent->atom_hash_atom_id;
+
+    }
 
     pattern = njs_regexp_pattern_create(vm, (u_char *) "(?:)",
                                         njs_length("(?:)"), 0);

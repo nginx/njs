@@ -29,7 +29,7 @@ njs_vm_opt_init(njs_vm_opt_t *options)
 
 
 njs_vm_t *
-njs_vm_create(njs_vm_opt_t *options)
+njs_vm_create_parent(njs_vm_opt_t *options, njs_vm_t *vm_parent)
 {
     njs_mp_t      *mp;
     njs_vm_t      *vm;
@@ -62,11 +62,13 @@ njs_vm_create(njs_vm_opt_t *options)
         vm->shared = options->shared;
 
     } else {
-        ret = njs_builtin_objects_create(vm);
+        ret = njs_builtin_objects_create(vm, vm_parent);
         if (njs_slow_path(ret != NJS_OK)) {
             return NULL;
         }
     }
+
+//vm->is_cloned = 0; //??
 
     vm->external = options->external;
 
@@ -145,6 +147,13 @@ njs_vm_create(njs_vm_opt_t *options)
     }
 
     return vm;
+}
+
+
+njs_vm_t *
+njs_vm_create(njs_vm_opt_t *options)
+{
+    return njs_vm_create_parent(options, NULL);
 }
 
 
@@ -407,6 +416,13 @@ njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external)
     nvm->mem_pool = nmp;
     nvm->trace.data = nvm;
     nvm->external = external;
+
+    nvm->atom_hash_shared = vm->atom_hash;
+
+    njs_lvlhsh_init(&nvm->atom_hash);
+    nvm->atom_hash_mem_pool = nvm->mem_pool;
+    nvm->atom_hash_atom_id = vm->atom_hash_atom_id;
+//??    nvm->is_clone = 1;
 
     ret = njs_vm_runtime_init(nvm);
     if (njs_slow_path(ret != NJS_OK)) {
