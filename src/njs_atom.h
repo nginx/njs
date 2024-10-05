@@ -35,5 +35,6 @@ void njs_atom_hash_init(void);
 
 extern njs_atom_values_t  njs_atom;
 extern njs_flathsh_t      njs_atom_hash;
+extern uint32_t           njs_atom_hash_atom_id;
 
 #endif /* _NJS_ATOM_H_INCLUDED_ */
