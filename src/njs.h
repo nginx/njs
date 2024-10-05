@@ -290,6 +290,8 @@ typedef njs_int_t (*njs_iterator_handler_t)(njs_vm_t *vm,
 
 
 NJS_EXPORT void njs_vm_opt_init(njs_vm_opt_t *options);
+NJS_EXPORT njs_vm_t *njs_vm_create_parent(njs_vm_opt_t *options,
+    njs_vm_t *vm_parent);
 NJS_EXPORT njs_vm_t *njs_vm_create(njs_vm_opt_t *options);
 NJS_EXPORT void njs_vm_destroy(njs_vm_t *vm);
 
