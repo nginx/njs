@@ -4,7 +4,10 @@
  * Copyright (C) NGINX, Inc.
  */
 
-#include <njs_main.h>
+#include <njs.h>
+#include <njs_flathsh.h>
+#include <njs_queue.h>
+#include <njs_djb_hash.h>
 
 #include "njs_externals_test.h"
 
@@ -21,8 +24,8 @@ typedef struct {
 
 
 typedef struct {
-    njs_value_t           name;
-    njs_value_t           value;
+    njs_str_t             name;
+    njs_opaque_value_t    value;
 } njs_unit_test_prop_t;
 
 
@@ -59,7 +62,7 @@ lvlhsh_unit_test_key_test(njs_lvlhsh_query_t *lhq, void *data)
     njs_unit_test_prop_t  *prop;
 
     prop = data;
-    njs_string_get(&prop->name, &name);
+    name = prop->name;
 
     if (name.length != lhq->key.length) {
         return NJS_DECLINED;
@@ -96,18 +99,21 @@ static const njs_lvlhsh_proto_t  lvlhsh_proto  njs_aligned(64) = {
 
 
 static njs_unit_test_prop_t *
-lvlhsh_unit_test_alloc(njs_mp_t *pool, const njs_value_t *name,
+lvlhsh_unit_test_alloc(njs_mp_t *pool, const njs_str_t *name,
     const njs_value_t *value)
 {
     njs_unit_test_prop_t *prop;
 
-    prop = njs_mp_alloc(pool, sizeof(njs_unit_test_prop_t));
+    prop = njs_mp_alloc(pool, sizeof(njs_unit_test_prop_t) + name->length);
     if (prop == NULL) {
         return NULL;
     }
 
-    prop->name = *name;
-    prop->value = *value;
+    prop->name.length = name->length;
+    prop->name.start = (u_char *) prop + sizeof(njs_unit_test_prop_t);
+    memcpy(prop->name.start, name->start, name->length);
+
+    njs_value_assign(&prop->value, value);
 
     return prop;
 }
@@ -119,7 +125,7 @@ lvlhsh_unit_test_add(njs_mp_t *pool, njs_unit_test_req_t *r,
 {
     njs_lvlhsh_query_t  lhq;
 
-    njs_string_get(&prop->name, &lhq.key);
+    lhq.key = prop->name;
     lhq.key_hash = njs_djb_hash(lhq.key.start, lhq.key.length);
 
     lhq.replace = 1;
@@ -231,7 +237,6 @@ njs_unit_test_r_vars(njs_vm_t *vm, njs_object_prop_t *self,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     njs_int_t             ret;
-    njs_value_t           name;
     njs_lvlhsh_query_t    lhq;
     njs_unit_test_req_t   *r;
     njs_unit_test_prop_t  *prop;
@@ -264,14 +269,13 @@ njs_unit_test_r_vars(njs_vm_t *vm, njs_object_prop_t *self,
 
     if (setval != NULL) {
         /* Set. */
-        njs_vm_value_string_create(vm, &name, lhq.key.start, lhq.key.length);
-        prop = lvlhsh_unit_test_alloc(vm->mem_pool, &name, setval);
+        prop = lvlhsh_unit_test_alloc(njs_vm_memory_pool(vm), &lhq.key, setval);
         if (prop == NULL) {
-            njs_memory_error(vm);
+            njs_vm_memory_error(vm);
             return NJS_ERROR;
         }
 
-        ret = lvlhsh_unit_test_add(vm->mem_pool, r, prop);
+        ret = lvlhsh_unit_test_add(njs_vm_memory_pool(vm), r, prop);
         if (ret != NJS_OK) {
             njs_vm_error(vm, "lvlhsh_unit_test_add() failed");
             return NJS_ERROR;
@@ -291,12 +295,12 @@ njs_unit_test_r_vars(njs_vm_t *vm, njs_object_prop_t *self,
 
     if (ret == NJS_OK) {
         if (retval == NULL) {
-            njs_set_invalid(&prop->value);
+            njs_value_invalid_set(njs_value_arg(&prop->value));
             return NJS_OK;
         }
 
-        if (njs_is_valid(&prop->value)) {
-            *retval = prop->value;
+        if (njs_value_is_valid(njs_value_arg(&prop->value))) {
+            njs_value_assign(retval, njs_value_arg(&prop->value));
             return NJS_OK;
         }
     }
@@ -377,7 +381,7 @@ njs_unit_test_r_method(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     r = njs_vm_external(vm, njs_external_r_proto_id, njs_argument(args, 0));
     if (r == NULL) {
-        njs_type_error(vm, "\"this\" is not an external");
+        njs_vm_type_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
     }
 
@@ -387,7 +391,7 @@ njs_unit_test_r_method(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                                           r->uri.length);
     }
 
-    njs_set_undefined(retval);
+    njs_value_undefined_set(retval);
 
     return NJS_OK;
 }
@@ -414,25 +418,27 @@ njs_unit_test_r_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
 {
     njs_int_t            ret;
-    njs_value_t          value, *argument, *select;
+    njs_value_t          *argument, *select;
     njs_function_t       *callback;
     njs_external_ev_t    *ev;
     njs_external_env_t   *env;
+    njs_opaque_value_t   value;
     njs_unit_test_req_t  *r;
 
     r = njs_vm_external(vm, njs_external_r_proto_id, njs_argument(args, 0));
     if (r == NULL) {
-        njs_type_error(vm, "\"this\" is not an external");
+        njs_vm_type_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
     }
 
     ev = njs_mp_alloc(njs_vm_memory_pool(vm), sizeof(njs_external_ev_t));
     if (ev == NULL) {
-        njs_memory_error(vm);
+        njs_vm_memory_error(vm);
         return NJS_ERROR;
     }
 
-    ret = njs_vm_promise_create(vm, &value, njs_value_arg(&ev->callbacks[0]));
+    ret = njs_vm_promise_create(vm, njs_value_arg(&value),
+                                njs_value_arg(&ev->callbacks[0]));
     if (ret != NJS_OK) {
         return NJS_ERROR;
     }
@@ -449,10 +455,10 @@ njs_unit_test_r_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     ev->function = callback;
     ev->data = r;
     ev->nargs = 2;
-    njs_value_assign(&ev->args[0], &ev->callbacks[!!njs_bool(select)]);
+    njs_value_assign(&ev->args[0], &ev->callbacks[!!njs_value_bool(select)]);
     njs_value_assign(&ev->args[1], argument);
 
-    env = vm->external;
+    env = njs_vm_external_ptr(vm);
 
     njs_queue_insert_tail(&env->events, &ev->link);
 
@@ -468,11 +474,11 @@ njs_unit_test_r_retval(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 {
     njs_external_env_t  *env;
 
-    env = vm->external;
+    env = njs_vm_external_ptr(vm);
 
     njs_value_assign(&env->retval, njs_arg(args, nargs, 1));
 
-    njs_set_undefined(retval);
+    njs_value_undefined_set(retval);
 
     return NJS_OK;
 }
@@ -497,11 +503,11 @@ njs_unit_test_r_create(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     r = njs_vm_external(vm, njs_external_r_proto_id, njs_argument(args, 0));
     if (r == NULL) {
-        njs_type_error(vm, "\"this\" is not an external");
+        njs_vm_type_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
     }
 
-    sr = njs_mp_zalloc(vm->mem_pool, sizeof(njs_unit_test_req_t));
+    sr = njs_mp_zalloc(njs_vm_memory_pool(vm), sizeof(njs_unit_test_req_t));
     if (sr == NULL) {
         goto memory_error;
     }
@@ -522,7 +528,7 @@ njs_unit_test_r_create(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 memory_error:
 
-    njs_memory_error(vm);
+    njs_vm_memory_error(vm);
 
     return NJS_ERROR;
 }
@@ -537,7 +543,7 @@ njs_unit_test_r_bind(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     r = njs_vm_external(vm, njs_external_r_proto_id, njs_argument(args, 0));
     if (r == NULL) {
-        njs_type_error(vm, "\"this\" is not an external");
+        njs_vm_type_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
     }
 
@@ -559,7 +565,7 @@ njs_unit_test_null_get(njs_vm_t *vm, njs_value_t *args,
     this = njs_argument(args, 0);
 
     if (!njs_value_is_external(this, njs_external_null_proto_id)) {
-        njs_type_error(vm, "\"this\" is not a null external");
+        njs_vm_type_error(vm, "\"this\" is not a null external");
         return NJS_ERROR;
     }
 
@@ -586,16 +592,16 @@ njs_unit_test_null_set(njs_vm_t *vm, njs_value_t *args,
     this = njs_argument(args, 0);
 
     if (!njs_value_is_external(this, njs_external_null_proto_id)) {
-        njs_type_error(vm, "\"this\" is not a null external");
+        njs_vm_type_error(vm, "\"this\" is not a null external");
         return NJS_ERROR;
     }
 
     d = njs_value_external(this);
 
     if (d == NULL) {
-        d = njs_mp_alloc(vm->mem_pool, sizeof(double));
+        d = njs_mp_alloc(njs_vm_memory_pool(vm), sizeof(double));
         if (d == NULL) {
-            njs_memory_error(vm);
+            njs_vm_memory_error(vm);
             return NJS_ERROR;
         }
     }
@@ -616,9 +622,9 @@ njs_unit_test_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 {
     njs_unit_test_req_t  *sr;
 
-    sr = njs_mp_zalloc(vm->mem_pool, sizeof(njs_unit_test_req_t));
+    sr = njs_mp_zalloc(njs_vm_memory_pool(vm), sizeof(njs_unit_test_req_t));
     if (sr == NULL) {
-        njs_memory_error(vm);
+        njs_vm_memory_error(vm);
         return NJS_ERROR;
     }
 
@@ -1017,9 +1023,15 @@ static njs_external_t  njs_unit_test_proto_props[] = {
 
 
 typedef struct {
-    njs_str_t             name;
-    njs_unit_test_req_t   request;
-    njs_unit_test_prop_t  props[2];
+    njs_str_t                  name;
+    njs_str_t                  value;
+} njs_unit_test_prop_init_t;
+
+
+typedef struct {
+    njs_str_t                  name;
+    njs_unit_test_req_t        request;
+    njs_unit_test_prop_init_t  props[2];
 } njs_unit_test_req_init_t;
 
 
@@ -1032,8 +1044,8 @@ static njs_unit_test_req_init_t njs_test_requests[] = {
             .d = 13,
         },
         {
-            { njs_string("r"), njs_string("rval") },
-            { njs_string("r2"), njs_string("r2val") },
+            { njs_str("r"), njs_str("rval") },
+            { njs_str("r2"), njs_str("r2val") },
         }
     },
 
@@ -1044,8 +1056,8 @@ static njs_unit_test_req_init_t njs_test_requests[] = {
             .d = 1024,
         },
         {
-            { njs_string("p"), njs_string("pval") },
-            { njs_string("p2"), njs_string("p2val") },
+            { njs_str("p"), njs_str("pval") },
+            { njs_str("p2"), njs_str("p2val") },
         }
     },
 
@@ -1056,8 +1068,8 @@ static njs_unit_test_req_init_t njs_test_requests[] = {
             .d = 1025,
         },
         {
-            { njs_string("q"), njs_string("qval") },
-            { njs_string("q2"), njs_string("q2val") },
+            { njs_str("q"), njs_str("qval") },
+            { njs_str("q2"), njs_str("q2val") },
         }
     },
 
@@ -1068,8 +1080,8 @@ static njs_unit_test_req_init_t njs_test_requests[] = {
             .d = 1026,
         },
         {
-            { njs_string("k"), njs_string("kval") },
-            { njs_string("k2"), njs_string("k2val") },
+            { njs_str("k"), njs_str("kval") },
+            { njs_str("k2"), njs_str("k2val") },
         }
     },
 };
@@ -1081,10 +1093,12 @@ njs_externals_init_internal(njs_vm_t *vm, njs_unit_test_req_init_t *init,
 {
     njs_int_t             ret;
     njs_uint_t            i, j;
+    njs_opaque_value_t    value;
     njs_unit_test_req_t   *requests;
     njs_unit_test_prop_t  *prop;
 
-    requests = njs_mp_zalloc(vm->mem_pool, n * sizeof(njs_unit_test_req_t));
+    requests = njs_mp_zalloc(njs_vm_memory_pool(vm),
+                             n * sizeof(njs_unit_test_req_t));
     if (njs_slow_path(requests == NULL)) {
         return NJS_ERROR;
     }
@@ -1108,15 +1122,24 @@ njs_externals_init_internal(njs_vm_t *vm, njs_unit_test_req_init_t *init,
         }
 
         for (j = 0; j < njs_nitems(init[i].props); j++) {
-            prop = lvlhsh_unit_test_alloc(vm->mem_pool, &init[i].props[j].name,
-                                          &init[i].props[j].value);
+            ret = njs_vm_value_string_create(vm, njs_value_arg(&value),
+                                             init[i].props[j].value.start,
+                                             init[i].props[j].value.length);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return NJS_ERROR;
+            }
+
+            prop = lvlhsh_unit_test_alloc(njs_vm_memory_pool(vm),
+                                          &init[i].props[j].name,
+                                          njs_value_arg(&value));
 
             if (njs_slow_path(prop == NULL)) {
                 njs_printf("lvlhsh_unit_test_alloc() failed\n");
                 return NJS_ERROR;
             }
 
-            ret = lvlhsh_unit_test_add(vm->mem_pool, &requests[i], prop);
+            ret = lvlhsh_unit_test_add(njs_vm_memory_pool(vm), &requests[i],
+                                       prop);
             if (njs_slow_path(ret != NJS_OK)) {
                 njs_printf("lvlhsh_unit_test_add() failed\n");
                 return NJS_ERROR;
