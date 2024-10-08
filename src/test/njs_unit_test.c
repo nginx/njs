@@ -10028,9 +10028,6 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("decodeURI('%D0%B0%D0%B1%D0%B2').length"),
       njs_str("3")},
 
-    { njs_str("decodeURI($262.byteString([0x80,0x80]))"),
-      njs_str("URIError: malformed URI")},
-
     { njs_str("["
               " '%',"
               " '%0',"
@@ -10074,11 +10071,8 @@ static njs_unit_test_t  njs_test[] =
               " String.fromCodePoint(0x100),"
               " String.fromCodePoint(0x00, 0x100),"
               " String.fromCodePoint(0x00, 0x01, 0x100),"
-              " $262.byteString([0x80]),"
-              " $262.byteString([0x60, 0x80]),"
-              " $262.byteString([0x60, 0x60, 0x80]),"
               "].map(v => { try { return btoa(v); } catch (e) { return '#'} })"),
-      njs_str("dW5kZWZpbmVk,,AA==,AAE=,AAEC,AP7/,#,#,#,#,#,#")},
+      njs_str("dW5kZWZpbmVk,,AA==,AAE=,AAEC,AP7/,#,#,#")},
 
     /* atob() */
 
@@ -19359,17 +19353,6 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var en = new TextEncoder(); var res = en.encode('α1α'); res[2]"),
       njs_str("49") },
 
-    { njs_str("var en = new TextEncoder(); en.encode($262.byteString([0xCE]))"),
-      njs_str("239,191,189") },
-
-    { njs_str("var en = new TextEncoder();"
-              "en.encode($262.byteString([0xCE, 0xB1, 0xCE]))"),
-      njs_str("206,177,239,191,189") },
-
-    { njs_str("var en = new TextEncoder();"
-              "en.encode($262.byteString([0xCE, 0xCE, 0xB1]))"),
-      njs_str("239,191,189,206,177") },
-
     { njs_str("var en = new TextEncoder(); en.encoding"),
       njs_str("utf-8") },
 
@@ -19390,33 +19373,6 @@ static njs_unit_test_t  njs_test[] =
               "var utf8 = new Uint8Array(10);"
               "en.encodeInto('ααααα', utf8.subarray(2)); utf8[0]"),
       njs_str("0") },
-
-    { njs_str("var str = $262.byteString([0xCE]);"
-              "var en = new TextEncoder();"
-              "var utf8 = new Uint8Array(3);"
-              "var res = en.encodeInto(str, utf8); "
-              "[njs.dump(res), utf8]"),
-      njs_str("{read:1,written:3},239,191,189") },
-
-    { njs_str("var str = $262.byteString([0xCE]);"
-              "var en = new TextEncoder();"
-              "var utf8 = new Uint8Array(5);"
-              "en.encodeInto(str, utf8); utf8"),
-      njs_str("239,191,189,0,0") },
-
-    { njs_str("var str = $262.byteString([0xCE, 0xB1, 0xCE]);"
-              "var en = new TextEncoder();"
-              "var utf8 = new Uint8Array(5);"
-              "var res = en.encodeInto(str, utf8);"
-              "[njs.dump(res), utf8]"),
-      njs_str("{read:2,written:5},206,177,239,191,189") },
-
-    { njs_str("var str = $262.byteString([0xCE, 0xCE, 0xB1]);"
-              "var en = new TextEncoder();"
-              "var utf8 = new Uint8Array(5);"
-              "var res = en.encodeInto(str, utf8);"
-              "[njs.dump(res), utf8]"),
-      njs_str("{read:2,written:5},239,191,189,206,177") },
 
     { njs_str("TextEncoder.prototype.encodeInto.apply({}, [])"),
       njs_str("TypeError: \"this\" is not a TextEncoder") },
@@ -20901,11 +20857,6 @@ static njs_unit_test_t  njs_querystring_module_test[] =
               "out.join('; ')"),
       njs_str("baz; fuz; muz; tax") },
 
-    { njs_str("var qs = require('querystring'); "
-              "qs.stringify({a: 'b'}, null, null, "
-              "             {encodeURIComponent: () => $262.byteString([0x9d])})"),
-      njs_str("InternalError: invalid UTF-8 string") },
-
     { njs_str("var qs = require('querystring');"
               "qs.stringify({'baz': 'fuz', 'muz': 'tax'}, null, null, {encodeURIComponent: 123});"
               "out.join('; ')"),
@@ -20954,10 +20905,6 @@ static njs_unit_test_t  njs_querystring_module_test[] =
     { njs_str("var qs = require('querystring');"
               "qs.stringify(123)"),
       njs_str("") },
-
-    { njs_str("var qs = require('querystring');"
-              "qs.stringify({X: $262.byteString(Array(4).fill(0x9d))})"),
-      njs_str("X=%9D%9D%9D%9D") },
 
     { njs_str("var qs = require('querystring');"
               "qs.stringify({X:{toString(){return 3}}})"),
