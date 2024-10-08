@@ -175,6 +175,10 @@ qjs_to_bytes(JSContext *ctx, qjs_bytes_t *bytes, JSValueConst value)
     size_t   byte_offset, byte_length;
     JSValue  val;
 
+    if (JS_IsString(value)) {
+        goto string;
+    }
+
     val = JS_GetTypedArrayBuffer(ctx, value, &byte_offset, &byte_length, NULL);
     if (!JS_IsException(val)) {
         bytes->start = JS_GetArrayBuffer(ctx, &bytes->length, val);
@@ -195,8 +199,6 @@ qjs_to_bytes(JSContext *ctx, qjs_bytes_t *bytes, JSValueConst value)
         return 0;
     }
 
-    bytes->tag = JS_TAG_STRING;
-
     if (!JS_IsString(value)) {
         val = JS_ToString(ctx, value);
 
@@ -209,6 +211,9 @@ qjs_to_bytes(JSContext *ctx, qjs_bytes_t *bytes, JSValueConst value)
         }
     }
 
+string:
+
+    bytes->tag = JS_TAG_STRING;
     bytes->start = (u_char *) JS_ToCStringLen(ctx, &bytes->length, value);
 
     return (bytes->start != NULL) ? 0 : -1;
