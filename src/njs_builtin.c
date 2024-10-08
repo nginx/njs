@@ -126,14 +126,12 @@ njs_builtin_objects_create(njs_vm_t *vm, njs_vm_t *vm_parent)
 
     vm->shared = shared;
 
-    njs_lvlhsh_init(&shared->keywords_hash);
-
     njs_lvlhsh_init(&shared->values_hash);
 
     njs_atom_hash_init();
 
     if (vm_parent == NULL) {
-        /* njs_lvlhsh_init(&vm->atom_hash_shared); // done by zalign */
+        /* njs_lvlhsh_init(&vm->atom_hash_shared); done by zalign. */
 
         ret = njs_flathsh_alloc_copy(vm->mem_pool, &vm->atom_hash,
                                      &njs_atom_hash);
@@ -765,10 +763,13 @@ njs_global_this_prop_handler(njs_vm_t *vm, njs_object_prop_t *prop,
     lhq.key_hash = njs_djb_hash(lhq.key.start, lhq.key.length);
     lhq.proto = &njs_lexer_hash_proto;
 
-    ret = njs_lvlhsh_find(&vm->shared->keywords_hash, &lhq);
+    ret = njs_lvlhsh_find(&vm->atom_hash, &lhq);
 
     if (njs_slow_path(ret != NJS_OK || lhq.value == NULL)) {
-        return NJS_DECLINED;
+        ret = njs_lvlhsh_find(&vm->atom_hash_shared, &lhq);
+        if (njs_slow_path(ret != NJS_OK || lhq.value == NULL)) {
+            return NJS_DECLINED;
+        }
     }
 
     var_node.key = (uintptr_t) lhq.value;

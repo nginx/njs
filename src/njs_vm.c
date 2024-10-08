@@ -68,8 +68,6 @@ njs_vm_create_parent(njs_vm_opt_t *options, njs_vm_t *vm_parent)
         }
     }
 
-//vm->is_cloned = 0; //??
-
     vm->external = options->external;
 
     vm->spare_stack_size = options->max_stack_size;
@@ -231,7 +229,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
     global_items = (vm->global_scope != NULL) ? vm->global_scope->items : 0;
 
     ret = njs_parser_init(vm, &parser, vm->global_scope, &vm->options.file,
-                          *start, end, 0);
+                          *start, end);
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
@@ -339,7 +337,7 @@ njs_vm_compile_module(njs_vm_t *vm, njs_str_t *name, u_char **start,
         return NULL;
     }
 
-    ret = njs_parser_init(vm, &parser, NULL, name, *start, end, 1);
+    ret = njs_parser_init(vm, &parser, NULL, name, *start, end);
     if (njs_slow_path(ret != NJS_OK)) {
         return NULL;
     }
@@ -421,8 +419,7 @@ njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external)
 
     njs_lvlhsh_init(&nvm->atom_hash);
     nvm->atom_hash_mem_pool = nvm->mem_pool;
-    nvm->atom_hash_atom_id = vm->atom_hash_atom_id;
-//??    nvm->is_clone = 1;
+    /* nvm->atom_hash_atom_id = vm->atom_hash_atom_id; already there. */
 
     ret = njs_vm_runtime_init(nvm);
     if (njs_slow_path(ret != NJS_OK)) {
@@ -480,7 +477,7 @@ njs_vm_runtime_init(njs_vm_t *vm)
     }
 
     njs_lvlhsh_init(&vm->values_hash);
-    njs_lvlhsh_init(&vm->keywords_hash);
+
     njs_lvlhsh_init(&vm->modules_hash);
 
     njs_rbtree_init(&vm->global_symbols, njs_symbol_rbtree_cmp);
@@ -1124,7 +1121,8 @@ njs_vm_value_enumerate(njs_vm_t *vm, njs_value_t *value, uint32_t flags,
     njs_rbtree_t             *variables;
     njs_rbtree_node_t        *rb_node;
     njs_variable_node_t      *node;
-    const njs_lexer_entry_t  *lex_entry;
+    njs_lexer_entry_t        lex_entr;
+    njs_lexer_entry_t        *lex_entry = &lex_entr;
 
     static const njs_str_t  njs_this_str = njs_str("this");
 
@@ -1147,7 +1145,7 @@ njs_vm_value_enumerate(njs_vm_t *vm, njs_value_t *value, uint32_t flags,
     while (njs_rbtree_is_there_successor(variables, rb_node)) {
         node = (njs_variable_node_t *) rb_node;
 
-        lex_entry = njs_lexer_entry(node->variable->unique_id);
+        njs_lexer_entry(node->variable->unique_id, lex_entry);
         if (njs_slow_path(lex_entry == NULL)) {
             return NULL;
         }
