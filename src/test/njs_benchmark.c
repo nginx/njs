@@ -265,26 +265,6 @@ static njs_benchmark_test_t  njs_test[] =
       njs_str("4"),
       100000 },
 
-    { "string set 'abcdefABCDEF'",
-      njs_str("benchmark.string('set', 'abcdef', 1000000)"),
-      njs_str("undefined"),
-      1 },
-
-    { "string set 'АБВГДЕ'",
-      njs_str("benchmark.string('set', 'АБВГДЕ', 1000000)"),
-      njs_str("undefined"),
-      1 },
-
-    { "string set 'x'.repeat(24)",
-      njs_str("benchmark.string('set', 'x'.repeat(32), 1000000)"),
-      njs_str("undefined"),
-      1 },
-
-    { "string set 'Д'.repeat(12)",
-      njs_str("benchmark.string('set', 'А'.repeat(16), 1000000)"),
-      njs_str("undefined"),
-      1 },
-
     { "string create 'abcdefABCDEF'",
       njs_str("benchmark.string('create', 'abcdef', 1000000)"),
       njs_str("undefined"),
@@ -723,12 +703,7 @@ njs_benchmark_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    if (memcmp(mode.start, "set", 3) == 0) {
-        for (i = 0; i < n; i++) {
-            njs_string_set(vm, &value, s.start, s.length);
-        }
-
-    } else if (memcmp(mode.start, "create", 6) == 0) {
+    if (memcmp(mode.start, "create", 6) == 0) {
 
         for (i = 0; i < n; i++) {
             njs_string_create(vm, &value, s.start, s.length);
