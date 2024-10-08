@@ -295,7 +295,7 @@ NJS_EXPORT void njs_vm_destroy(njs_vm_t *vm);
 
 NJS_EXPORT njs_int_t njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end);
 NJS_EXPORT void njs_vm_set_module_loader(njs_vm_t *vm,
-        njs_module_loader_t module_loader, void *opaque);
+    njs_module_loader_t module_loader, void *opaque);
 NJS_EXPORT njs_mod_t *njs_vm_add_module(njs_vm_t *vm, njs_str_t *name,
     njs_value_t *value);
 NJS_EXPORT njs_mod_t *njs_vm_compile_module(njs_vm_t *vm, njs_str_t *name,
@@ -314,7 +314,7 @@ NJS_EXPORT njs_int_t njs_vm_execute_pending_job(njs_vm_t *vm);
 NJS_EXPORT njs_int_t njs_vm_pending(njs_vm_t *vm);
 
 NJS_EXPORT void njs_vm_set_rejection_tracker(njs_vm_t *vm,
-        njs_rejection_tracker_t rejection_tracker, void *opaque);
+    njs_rejection_tracker_t rejection_tracker, void *opaque);
 
 /*
  * Runs the specified function with provided arguments.
