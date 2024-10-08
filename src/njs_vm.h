@@ -133,7 +133,6 @@ struct njs_vm_s {
     njs_mp_t                 *atom_hash_mem_pool;
     uint32_t                 atom_hash_atom_id;
 
-    njs_lvlhsh_t             keywords_hash;
     njs_lvlhsh_t             values_hash;
 
     njs_arr_t                *modules;
@@ -208,7 +207,6 @@ typedef struct {
 
 
 struct njs_vm_shared_s {
-    njs_lvlhsh_t             keywords_hash;
     njs_lvlhsh_t             values_hash;
 
     njs_lvlhsh_t             array_instance_hash;
