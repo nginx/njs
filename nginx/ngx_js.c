@@ -1472,6 +1472,10 @@ ngx_qjs_string(ngx_engine_t *e, JSValueConst val, ngx_str_t *dst)
 
     cx = e->u.qjs.ctx;
 
+    if (JS_IsString(val)) {
+        goto string;
+    }
+
     buffer = JS_GetTypedArrayBuffer(cx, val, &byte_offset, &byte_length, NULL);
     if (!JS_IsException(buffer)) {
         start = JS_GetArrayBuffer(cx, &dst->len, buffer);
@@ -1491,6 +1495,8 @@ ngx_qjs_string(ngx_engine_t *e, JSValueConst val, ngx_str_t *dst)
             return NGX_OK;
         }
     }
+
+string:
 
     str = JS_ToCString(cx, val);
     if (str == NULL) {
