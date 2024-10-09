@@ -30,7 +30,7 @@ async function run(tlist) {
         let r = results.map((r, i) => validate(ts.tests, r, i));
 
         r.forEach((v, i) => {
-            assert.sameValue(v, true, `FAILED ${i}: ${JSON.stringify(ts.tests[i])}\n    with reason: ${results[i].reason}`);
+            assert.sameValue(v, true, `FAILED ${ts.name}: ${JSON.stringify(ts.tests[i])}\n    with reason: ${results[i].reason}`);
         })
     }
 }
