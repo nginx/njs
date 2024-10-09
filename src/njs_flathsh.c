@@ -573,3 +573,31 @@ njs_flathsh_each(const njs_flathsh_t *fh, njs_flathsh_each_t *fhe)
 
     return NULL;
 }
+
+
+njs_int_t
+njs_flathsh_alloc_copy(njs_mp_t *mp, njs_flathsh_t *to, njs_flathsh_t *from)
+{
+    void                *from_chunk, *to_chunk;
+    uint32_t            from_size;
+    njs_flathsh_descr_t *from_descr;
+
+    from_descr = from->slot;
+
+    from_size = sizeof(uint32_t) * (from_descr->hash_mask + 1ul) +
+                sizeof(njs_flathsh_descr_t) +
+                sizeof(njs_flathsh_elt_t) * from_descr->elts_size;
+
+    to_chunk = njs_mp_alloc(mp, from_size);
+    if (njs_slow_path(to_chunk == NULL)) {
+        return NJS_ERROR;
+    }
+
+    from_chunk = njs_flathsh_chunk(from_descr);
+
+    memcpy(to_chunk, from_chunk, from_size);
+
+    to->slot = (char *)to_chunk + ((char *)from_descr - (char *)from_chunk);
+
+    return NJS_OK;
+}

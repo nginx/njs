@@ -1956,7 +1956,7 @@ njs_vmcode_template_literal(njs_vm_t *vm, njs_value_t *retval)
 
     array = njs_array(retval);
 
-    ret = njs_function_call(vm, (njs_function_t *) &concat, &njs_string_empty,
+    ret = njs_function_call(vm, (njs_function_t *) &concat, &njs_atom.vs_,
                             array->start, array->length, retval);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
@@ -2190,8 +2190,6 @@ njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
     njs_function_t  *function;
     njs_jump_off_t  ret;
 
-    static const njs_value_t prototype_string = njs_string("prototype");
-
     if (!njs_is_function(constructor)) {
         njs_type_error(vm, "right argument is not callable");
         return NJS_ERROR;
@@ -2207,7 +2205,7 @@ njs_vmcode_instance_of(njs_vm_t *vm, njs_value_t *object,
 
     if (njs_is_object(object)) {
         ret = njs_value_property(vm, constructor,
-                                 njs_value_arg(&prototype_string), &value);
+                                 njs_value_arg(&njs_atom.vs_prototype), &value);
 
         if (njs_slow_path(ret == NJS_ERROR)) {
             return ret;
@@ -2247,33 +2245,33 @@ njs_vmcode_typeof(njs_vm_t *vm, njs_value_t *value, njs_value_t *retval)
     /* ECMAScript 5.1: null, array and regexp are objects. */
 
     static const njs_value_t  *types[NJS_VALUE_TYPE_MAX] = {
-        &njs_string_object,
-        &njs_string_undefined,
-        &njs_string_boolean,
-        &njs_string_number,
-        &njs_string_symbol,
-        &njs_string_string,
-        &njs_string_data,
-        &njs_string_external,
-        &njs_string_invalid,
-        &njs_string_undefined,
-        &njs_string_undefined,
-        &njs_string_undefined,
-        &njs_string_undefined,
-        &njs_string_undefined,
-        &njs_string_undefined,
-        &njs_string_undefined,
+        &njs_atom.vs_object,
+        &njs_atom.vs_undefined,
+        &njs_atom.vs_boolean,
+        &njs_atom.vs_number,
+        &njs_atom.vs_symbol,
+        &njs_atom.vs_string,
+        &njs_atom.vs_data,
+        &njs_atom.vs_external,
+        &njs_atom.vs_invalid,
+        &njs_atom.vs_undefined,
+        &njs_atom.vs_undefined,
+        &njs_atom.vs_undefined,
+        &njs_atom.vs_undefined,
+        &njs_atom.vs_undefined,
+        &njs_atom.vs_undefined,
+        &njs_atom.vs_undefined,
 
-        &njs_string_object,
-        &njs_string_object,
-        &njs_string_function,
-        &njs_string_object,
-        &njs_string_object,
-        &njs_string_object,
-        &njs_string_object,
-        &njs_string_object,
-        &njs_string_object,
-        &njs_string_object,
+        &njs_atom.vs_object,
+        &njs_atom.vs_object,
+        &njs_atom.vs_function,
+        &njs_atom.vs_object,
+        &njs_atom.vs_object,
+        &njs_atom.vs_object,
+        &njs_atom.vs_object,
+        &njs_atom.vs_object,
+        &njs_atom.vs_object,
+        &njs_atom.vs_object,
     };
 
     njs_value_assign(retval, types[value->type]);
@@ -2521,8 +2519,6 @@ njs_function_new_object(njs_vm_t *vm, njs_value_t *constructor)
     njs_function_t  *function;
     njs_jump_off_t  ret;
 
-    const njs_value_t prototype_string = njs_string("prototype");
-
     object = njs_object_alloc(vm);
     if (njs_slow_path(object == NULL)) {
         return NULL;
@@ -2538,8 +2534,8 @@ njs_function_new_object(njs_vm_t *vm, njs_value_t *constructor)
         constructor = &bound;
     }
 
-    ret = njs_value_property(vm, constructor, njs_value_arg(&prototype_string),
-                             &proto);
+    ret = njs_value_property(vm, constructor,
+                             njs_value_arg(&njs_atom.vs_prototype), &proto);
 
     if (njs_slow_path(ret == NJS_ERROR)) {
         return NULL;

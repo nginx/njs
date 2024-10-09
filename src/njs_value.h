@@ -91,33 +91,18 @@ typedef struct njs_property_next_s    njs_property_next_t;
 
 
 union njs_value_s {
-    /*
-     * The njs_value_t size is 16 bytes and must be aligned to 16 bytes
-     * to provide 4 bits to encode scope in njs_index_t.  This space is
-     * used to store short strings.  The maximum size of a short string
-     * is 14 (NJS_STRING_SHORT).  If the short_string.size field is 15
-     * (NJS_STRING_LONG) then the size is in the long_string.size field
-     * and the long_string.data field points to a long string.
-     *
-     * The number of the string types is limited to 2 types to minimize
-     * overhead of processing string fields.  It is also possible to add
-     * strings with size from 14 to 254 which size and length are stored in
-     * the string_size and string_length byte wide fields.  This will lessen
-     * the maximum size of short string to 13.
-     */
     struct {
-        njs_value_type_t              type:8;  /* 6 bits */
+        uint32_t                      magic32;
+        njs_value_type_t              type:8;  /* 5 bits */
+
         /*
          * The truth field is set during value assignment and then can be
          * quickly tested by logical and conditional operations regardless
-         * of value type.  The truth field coincides with short_string.size
-         * and short_string.length so when string size and length are zero
-         * the string's value is false.
+         * of value type.
          */
         uint8_t                       truth;
 
         uint16_t                      magic16;
-        uint32_t                      magic32;
 
         union {
             double                    number;
@@ -139,30 +124,23 @@ union njs_value_s {
     } data;
 
     struct {
-        njs_value_type_t              type:8;  /* 6 bits */
-
-#define NJS_STRING_SHORT              14
-#define NJS_STRING_LONG               15
-
-        uint8_t                       size:4;
-        uint8_t                       length:4;
-
-        u_char                        start[NJS_STRING_SHORT];
-    } short_string;
-
-    struct {
-        njs_value_type_t              type:8;  /* 6 bits */
+        uint32_t                      atom_id;
+        njs_value_type_t              type:8;  /* 5 bits */
         uint8_t                       truth;
 
-        /* 0xff if data is external string. */
-        uint8_t                       external;
-        uint8_t                       _spare;
+        /* token_type is mask: string=0, keyword=2, keyword_reserved=1 */
+        uint8_t                       token_type;
+        /* if token_type != 0 then token_id is token id, else not used. */
+        uint8_t                       token_id;
 
-        uint32_t                      size;
         njs_string_t                  *data;
-    } long_string;
+    } string;
 
-    njs_value_type_t                  type:8;  /* 6 bits */
+    struct {
+        uint32_t                      atom_id;
+        njs_value_type_t              type:8;  /* 5 bits */
+        uint8_t                       truth;
+    };
 };
 
 
@@ -315,10 +293,12 @@ struct njs_object_type_init_s {
 typedef enum {
     NJS_PROPERTY = 0,
     NJS_ACCESSOR,
+    NJS_PROPERTY_HANDLER,
+
     NJS_PROPERTY_REF,
+#define NJS_PROPERTY_NOT_INIT (NJS_PROPERTY_PLACE_REF)
     NJS_PROPERTY_PLACE_REF,
     NJS_PROPERTY_TYPED_ARRAY_REF,
-    NJS_PROPERTY_HANDLER,
     NJS_WHITEOUT,
 } njs_object_prop_type_t;
 
@@ -345,10 +325,16 @@ typedef enum {
 
 
 struct njs_object_prop_s {
-    njs_value_t                 name;
+    union {
+        njs_value_t             *pname;
+        njs_value_t             name;
+    };
 
     union {
-        njs_value_t             value;
+        union {
+            njs_value_t         *pvalue;
+            njs_value_t         value;
+        };
         struct {
             njs_function_t      *getter;
             njs_function_t      *setter;
@@ -390,7 +376,7 @@ typedef struct {
 } njs_property_query_t;
 
 
-#define njs_value(_type, _truth, _number) {                                   \
+#define njs_value(_type, _truth, _number) (njs_value_t) {                     \
     .data = {                                                                 \
         .type = _type,                                                        \
         .truth = _truth,                                                      \
@@ -399,37 +385,28 @@ typedef struct {
 }
 
 
-#define njs_wellknown_symbol(key) {                                           \
+#define njs_symbol(name) {                                                    \
     .data = {                                                                 \
         .type = NJS_SYMBOL,                                                   \
         .truth = 1,                                                           \
-        .magic32 = key,                                                       \
-        .u = { .value = NULL }                                                \
+        .magic32 = 0,                                                         \
+        .u = { .value = name }                                                \
     }                                                                         \
 }
 
 
-#define njs_string(s) {                                                       \
-    .short_string = {                                                         \
+/* Declares an ASCII string value for which size == length. */
+#define njs_string(s, _token_type, _token_id) {                               \
+    .string = {                                                               \
         .type = NJS_STRING,                                                   \
-        .size = njs_length(s),                                                \
-        .length = njs_length(s),                                              \
-        .start = s,                                                           \
-    }                                                                         \
-}
-
-
-/* NJS_STRING_LONG is set for both big and little endian platforms. */
-
-#define njs_long_string(s) {                                                  \
-    .long_string = {                                                          \
-        .type = NJS_STRING,                                                   \
-        .truth = (NJS_STRING_LONG << 4) | NJS_STRING_LONG,                    \
-        .size = njs_length(s),                                                \
-        .data = & (njs_string_t) {                                            \
+        .truth = njs_length(s) ? 1 : 0,                                       \
+        .token_type = _token_type,                                            \
+        .token_id = _token_id,                                                \
+        .data = &(njs_string_t) {                                             \
             .start = (u_char *) s,                                            \
             .length = njs_length(s),                                          \
-        }                                                                     \
+            .size = njs_length(s),                                            \
+        },                                                                    \
     }                                                                         \
 }
 
@@ -446,7 +423,7 @@ typedef struct {
 }
 
 
-#define _njs_native_function(_func, _args, _ctor, _magic) {                   \
+#define _njs_native_function(_func, _args, _ctor, _magic) (njs_value_t) {     \
     .data = {                                                                 \
         .type = NJS_FUNCTION,                                                 \
         .truth = 1,                                                           \
@@ -464,25 +441,23 @@ typedef struct {
     _njs_native_function(_function, _args_count, 0, _magic)
 
 
-#define njs_getter(_function, _magic)                                         \
-    {                                                                         \
-        .getter = & (njs_function_t) _njs_function(_function, 0, 0, _magic),  \
-        .setter = NULL,                                                       \
-    }
+#define njs_getter(_function, _magic) {                                       \
+    .getter = & (njs_function_t) _njs_function(_function, 0, 0, _magic),      \
+    .setter = NULL,                                                           \
+}
 
 
-#define njs_accessor(_getter, _m1, _setter, _m2)                              \
-    {                                                                         \
-        .getter = & (njs_function_t) _njs_function(_getter, 0, 0, _m1),       \
-        .setter = & (njs_function_t) _njs_function(_setter, 0, 0, _m2),       \
-    }
+#define njs_accessor(_getter, _m1, _setter, _m2) {                            \
+    .getter = & (njs_function_t) _njs_function(_getter, 0, 0, _m1),           \
+    .setter = & (njs_function_t) _njs_function(_setter, 0, 0, _m2),           \
+}
 
 
 #define njs_native_ctor(_function, _args_count, _magic)                       \
     _njs_function(_function, _args_count, 1, _magic)
 
 
-#define njs_prop_handler2(_handler, _magic16, _magic32) {                     \
+#define njs_prop_handler2(_handler, _magic16, _magic32) (njs_value_t) {       \
     .data = {                                                                 \
         .type = NJS_INVALID,                                                  \
         .truth = 1,                                                           \
@@ -551,49 +526,12 @@ typedef struct {
     (njs_is_number(value) || njs_is_key(value))
 
 
-/*
- * The truth field coincides with short_string.size and short_string.length
- * so when string size and length are zero the string's value is false and
- * otherwise is true.
- */
-#define njs_string_truth(value, size)
-
-
 #define njs_string_get(value, str)                                            \
     do {                                                                      \
-        if ((value)->short_string.size != NJS_STRING_LONG) {                  \
-            (str)->length = (value)->short_string.size;                       \
-            (str)->start = (u_char *) (value)->short_string.start;            \
-                                                                              \
-        } else {                                                              \
-            (str)->length = (value)->long_string.size;                        \
-            (str)->start = (u_char *) (value)->long_string.data->start;       \
-        }                                                                     \
+        (str)->length = (value)->string.data->size;                           \
+        (str)->start = (u_char *) (value)->string.data->start;                \
     } while (0)
 
-
-#define njs_string_short_start(value)                                         \
-    (value)->short_string.start
-
-
-#define njs_string_short_set(value, _size, _length)                           \
-    do {                                                                      \
-        (value)->type = NJS_STRING;                                           \
-        njs_string_truth(value, _size);                                       \
-        (value)->short_string.size = _size;                                   \
-        (value)->short_string.length = _length;                               \
-    } while (0)
-
-
-#define njs_string_length_set(value, _length)                                 \
-    do {                                                                      \
-        if ((value)->short_string.size != NJS_STRING_LONG) {                  \
-            (value)->short_string.length = length;                            \
-                                                                              \
-        } else {                                                              \
-            (value)->long_string.data->length = length;                       \
-        }                                                                     \
-    } while (0)
 
 #define njs_is_primitive(value)                                               \
     ((value)->type <= NJS_STRING)
@@ -827,31 +765,6 @@ extern const njs_value_t  njs_value_true;
 extern const njs_value_t  njs_value_zero;
 extern const njs_value_t  njs_value_nan;
 extern const njs_value_t  njs_value_invalid;
-
-extern const njs_value_t  njs_string_empty;
-extern const njs_value_t  njs_string_empty_regexp;
-extern const njs_value_t  njs_string_comma;
-extern const njs_value_t  njs_string_null;
-extern const njs_value_t  njs_string_undefined;
-extern const njs_value_t  njs_string_boolean;
-extern const njs_value_t  njs_string_false;
-extern const njs_value_t  njs_string_true;
-extern const njs_value_t  njs_string_number;
-extern const njs_value_t  njs_string_minus_zero;
-extern const njs_value_t  njs_string_minus_infinity;
-extern const njs_value_t  njs_string_plus_infinity;
-extern const njs_value_t  njs_string_nan;
-extern const njs_value_t  njs_string_symbol;
-extern const njs_value_t  njs_string_string;
-extern const njs_value_t  njs_string_data;
-extern const njs_value_t  njs_string_type;
-extern const njs_value_t  njs_string_name;
-extern const njs_value_t  njs_string_external;
-extern const njs_value_t  njs_string_invalid;
-extern const njs_value_t  njs_string_object;
-extern const njs_value_t  njs_string_function;
-extern const njs_value_t  njs_string_anonymous;
-extern const njs_value_t  njs_string_memory_error;
 
 
 njs_inline void

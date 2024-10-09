@@ -44,7 +44,6 @@ njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
     end = external + n;
 
     while (external < end) {
-
         if ((external->flags & NJS_EXTERN_TYPE_MASK) == NJS_EXTERN_SELF) {
             slot->writable = external->u.object.writable;
             slot->configurable = external->u.object.configurable;
@@ -57,8 +56,7 @@ njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
             continue;
         }
 
-        prop = njs_object_prop_alloc(vm, &njs_string_empty,
-                                     &njs_value_invalid, 1);
+        prop = njs_object_prop_alloc(vm, &njs_atom.vs_, &njs_value_invalid, 1);
         if (njs_slow_path(prop == NULL)) {
             goto memory_error;
         }
@@ -68,7 +66,49 @@ njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
         prop->enumerable = external->enumerable;
 
         if (external->flags & NJS_EXTERN_SYMBOL) {
-            njs_set_symbol(&prop->name, external->name.symbol, NULL);
+            switch (external->name.symbol) {
+            case NJS_SYMBOL_ASYNC_ITERATOR:
+                prop->name = njs_atom.vw_asyncIterator;
+                break;
+            case NJS_SYMBOL_HAS_INSTANCE:
+                prop->name = njs_atom.vw_hasInstance;
+                break;
+            case NJS_SYMBOL_IS_CONCAT_SPREADABLE:
+                prop->name = njs_atom.vw_isConcatSpreadable;
+                break;
+            case NJS_SYMBOL_ITERATOR:
+                prop->name = njs_atom.vw_iterator;
+                break;
+            case NJS_SYMBOL_MATCH:
+                prop->name = njs_atom.vw_match;
+                break;
+            case NJS_SYMBOL_MATCH_ALL:
+                prop->name = njs_atom.vw_matchAll;
+                break;
+            case NJS_SYMBOL_REPLACE:
+                prop->name = njs_atom.vw_replace;
+                break;
+            case NJS_SYMBOL_SEARCH:
+                prop->name = njs_atom.vw_search;
+                break;
+            case NJS_SYMBOL_SPECIES:
+                prop->name = njs_atom.vw_species;
+                break;
+            case NJS_SYMBOL_SPLIT:
+                prop->name = njs_atom.vw_split;
+                break;
+            case NJS_SYMBOL_TO_PRIMITIVE:
+                prop->name = njs_atom.vw_toPrimitive;
+                break;
+            case NJS_SYMBOL_TO_STRING_TAG:
+                prop->name = njs_atom.vw_toStringTag;
+                break;
+            case NJS_SYMBOL_UNSCOPABLES:
+                prop->name = njs_atom.vw_unscopables;
+                break;
+            default:
+                return NJS_ERROR;
+            };
 
             lhq.key_hash = external->name.symbol;
 
@@ -325,7 +365,7 @@ njs_vm_external_constructor_handler(njs_vm_t *vm, njs_object_prop_t *prop,
 
 njs_int_t
 njs_vm_external_constructor(njs_vm_t *vm, const njs_str_t *name,
-    njs_function_native_t native, const njs_external_t *ctor_props,
+    const njs_function_native_t native, const njs_external_t *ctor_props,
     njs_uint_t ctor_nprops, const njs_external_t *proto_props,
     njs_uint_t proto_nprops)
 {
