@@ -473,6 +473,7 @@ let indexOf_tsuite = {
         { buf: Buffer.from('abcdef'), value: 'abc', offset: 1, expected: -1 },
         { buf: Buffer.from('abcdef'), value: 'def', offset: 1, expected: 3 },
         { buf: Buffer.from('abcdef'), value: 'def', offset: -3, expected: 3 },
+        { buf: Buffer.from('abcdef'), value: 'efgh', offset: 4, expected: -1 },
         { buf: Buffer.from('abcdef'), value: '626364', encoding: 'hex', expected: 1 },
         { buf: Buffer.from('abcdef'), value: '626364', encoding: 'utf-128',
           exception: 'TypeError: "utf-128" encoding is not supported' },
