@@ -988,10 +988,6 @@ qjs_buffer_prototype_index_of(JSContext *ctx, JSValueConst this_val, int argc,
 
     length = self.length;
 
-    if (length == 0) {
-        return JS_NewInt32(ctx, -1);
-    }
-
     if (last) {
         from = length - 1;
         to = -1;
@@ -1015,30 +1011,11 @@ qjs_buffer_prototype_index_of(JSContext *ctx, JSValueConst this_val, int argc,
             return JS_EXCEPTION;
         }
 
-        if (last) {
-            if (from >= 0) {
-                from = njs_min(from, length - 1);
-
-            } else if (from < 0) {
-                from += length;
-            }
-
-            if (from <= to) {
-                return JS_NewInt32(ctx, -1);
-            }
+        if (from >= 0) {
+            from = njs_min(from, length);
 
         } else {
-            if (from < 0) {
-                from += length;
-
-                if (from < 0) {
-                    from = 0;
-                }
-            }
-
-            if (from >= to) {
-                return JS_NewInt32(ctx, -1);
-            }
+            from = njs_max(0, length + from);
         }
     }
 
@@ -1086,11 +1063,6 @@ encoding:
                                 "or Buffer-like object");
     }
 
-    if (str.length == 0) {
-        JS_FreeValue(ctx, buffer);
-        return JS_NewInt32(ctx, (last) ? length : 0);
-    }
-
     if (last) {
         from = njs_min(from, length - (int64_t) str.length);
 
@@ -1104,6 +1076,11 @@ encoding:
         if (from > to) {
             goto done;
         }
+    }
+
+    if (from == to && str.length == 0) {
+        JS_FreeValue(ctx, buffer);
+        return JS_NewInt32(ctx, 0);
     }
 
     for (i = from; i != to; i += increment) {
