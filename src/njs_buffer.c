@@ -2228,7 +2228,10 @@ encoding:
 
         } else {
             to -= str.length - 1;
-            to = njs_min(to, length);
+
+            if (from > to) {
+                goto done;
+            }
         }
 
         for (i = from; i != to; i += increment) {
