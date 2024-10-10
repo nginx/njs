@@ -1071,7 +1071,7 @@ encoding:
         }
 
     } else {
-        to -= str.length - 1;
+        to -= (int64_t) str.length - 1;
 
         if (from > to) {
             goto done;
