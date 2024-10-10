@@ -1047,6 +1047,10 @@ qjs_buffer_prototype_index_of(JSContext *ctx, JSValueConst this_val, int argc,
             return JS_EXCEPTION;
         }
 
+        if (last) {
+            from = njs_min(from, length - 1);
+        }
+
         for (i = from; i != to; i += increment) {
             if (self.start[i] == (uint8_t) byte) {
                 return JS_NewInt32(ctx, i);
@@ -1087,14 +1091,12 @@ encoding:
         return JS_NewInt32(ctx, (last) ? length : 0);
     }
 
-    if (str.length > (size_t) length) {
-        JS_FreeValue(ctx, buffer);
-        return JS_NewInt32(ctx, -1);
-    }
-
     if (last) {
-        from -= str.length - 1;
-        from = njs_max(from, 0);
+        from = njs_min(from, length - (int64_t) str.length);
+
+        if (to > from) {
+            goto done;
+        }
 
     } else {
         to -= str.length - 1;

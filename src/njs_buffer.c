@@ -2218,13 +2218,12 @@ encoding:
             goto done;
         }
 
-        if (str.length > (size_t) length) {
-            goto done;
-        }
-
         if (last) {
-            from -= str.length - 1;
-            from = njs_max(from, 0);
+            from = njs_min(from, length - (int64_t) str.length);
+
+            if (to > from) {
+                goto done;
+            }
 
         } else {
             to -= str.length - 1;
@@ -2245,6 +2244,10 @@ encoding:
 
     case NJS_NUMBER:
         byte = njs_number_to_uint32(njs_number(value));
+
+        if (last) {
+            from = njs_min(from, length - 1);
+        }
 
         for (i = from; i != to; i += increment) {
             if (u8[i] == byte) {
