@@ -28,6 +28,12 @@ jobs:
           libgd-dev libxml2-dev libedit-dev libperl-dev libtest-harness-perl \
           libgd-perl libgeoip-dev expect
 
+      - name: Install x86 build dependencies
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y gcc-multilib libc6:i386 libpcre2-dev:i386 zlib1g-dev:i386
+
       - name: Check out nginx
         run: |
           git clone https://github.com/nginx/nginx nginx-source
@@ -51,6 +57,19 @@ jobs:
           $MAKE_UTILITY -j$(nproc)
 
       - name: Test njs
+        run: |
+          $MAKE_UTILITY test
+          $MAKE_UTILITY clean
+
+      - name: Configure and make njs, 32-bit
+        run: |
+          ./configure \
+                    --cc-opt="$CC_OPT -m32" \
+                    --ld-opt="$LD_OPT" \
+          || cat build/autoconf.err
+          $MAKE_UTILITY -j$(nproc)
+
+      - name: Test njs, 32-bit
         run: |
           $MAKE_UTILITY test
           $MAKE_UTILITY clean
