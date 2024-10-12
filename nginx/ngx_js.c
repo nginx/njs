@@ -3360,7 +3360,7 @@ ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
     ngx_js_named_path_t  *import, *pi, *pij, *preload;
 
     if (conf->imports == NGX_CONF_UNSET_PTR
-        && conf->type == NGX_CONF_UNSET_UINT
+        && conf->type == prev->type
         && conf->paths == NGX_CONF_UNSET_PTR
         && conf->preload_objects == NGX_CONF_UNSET_PTR)
     {
