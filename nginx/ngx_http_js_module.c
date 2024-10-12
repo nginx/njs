@@ -3474,7 +3474,6 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    promise = 0;
     flags = NGX_HTTP_SUBREQUEST_BACKGROUND;
 
     njs_value_undefined_set(retval);
@@ -5859,7 +5858,6 @@ ngx_http_qjs_ext_subrequest(JSContext *cx, JSValueConst this_val,
                                      "exclusive");
     }
 
-    promise = 0;
     retval = JS_UNDEFINED;
     flags = NGX_HTTP_SUBREQUEST_BACKGROUND;
 
