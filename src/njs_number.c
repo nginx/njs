@@ -434,7 +434,7 @@ static njs_object_prop_t  njs_number_constructor_properties[] =
     NJS_DECLARE_PROP_NAME(njs_atom.vs_Number),
 
     NJS_DECLARE_PROP_HANDLER(njs_atom.vs_prototype, njs_object_prototype_create,
-                             0, 0, 0),
+                             0, 0),
 
     NJS_DECLARE_PROP_VALUE(njs_atom.vs_EPSILON,
                            njs_value(NJS_NUMBER, 1, DBL_EPSILON), 0),
@@ -881,11 +881,11 @@ njs_number_to_string_radix(njs_vm_t *vm, njs_value_t *string,
 static njs_object_prop_t  njs_number_prototype_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(njs_atom.vs___proto__,
-                             njs_primitive_prototype_get_proto, 0, 0,
+                             njs_primitive_prototype_get_proto, 0,
                              NJS_OBJECT_PROP_VALUE_CW),
 
     NJS_DECLARE_PROP_HANDLER(njs_atom.vs_constructor,
-                             njs_object_prototype_create_constructor, 0, 0,
+                             njs_object_prototype_create_constructor, 0,
                              NJS_OBJECT_PROP_VALUE_CW),
 
     NJS_DECLARE_PROP_NATIVE(njs_atom.vs_valueOf, njs_number_prototype_value_of,

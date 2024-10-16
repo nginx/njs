@@ -24,11 +24,11 @@
                            NJS_OBJECT_PROP_VALUE_CW)
 
 
-#define NJS_DECLARE_PROP_HANDLER(_name, _native, _m16, _m32, _fl)             \
+#define NJS_DECLARE_PROP_HANDLER(_name, _native, _m16, _fl)                   \
     {                                                                         \
         .type = NJS_PROPERTY_HANDLER | NJS_PROPERTY_NOT_INIT,                 \
         .pname = &_name,                                                      \
-        .u.pvalue = &njs_prop_handler2(_native, _m16, _m32),                  \
+        .u.pvalue = &njs_prop_handler2(_native, _m16),                        \
         .enumerable = !!(_fl & NJS_OBJECT_PROP_ENUMERABLE),                   \
         .configurable = !!(_fl & NJS_OBJECT_PROP_CONFIGURABLE),               \
         .writable = !!(_fl & NJS_OBJECT_PROP_WRITABLE),                       \

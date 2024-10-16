@@ -2473,11 +2473,11 @@ static njs_object_prop_t  njs_buffer_prototype_properties[] =
                            NJS_OBJECT_PROP_VALUE_C),
 
     NJS_DECLARE_PROP_HANDLER(njs_atom.vs_constructor,
-                             njs_object_prototype_create_constructor,
-                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
+                             njs_object_prototype_create_constructor, 0,
+                             NJS_OBJECT_PROP_VALUE_CW),
 
     NJS_DECLARE_PROP_HANDLER(njs_atom.vs_length, njs_buffer_prototype_length, 0,
-                             0, 0),
+                             0),
 
     NJS_DECLARE_PROP_NATIVE(njs_atom.vs_readInt8, njs_buffer_prototype_read_int,
                             1, njs_buffer_magic(1, 1, 1)),
@@ -2673,7 +2673,7 @@ static njs_object_prop_t  njs_buffer_constructor_properties[] =
     NJS_DECLARE_PROP_NAME(njs_atom.vs_Buffer),
 
     NJS_DECLARE_PROP_HANDLER(njs_atom.vs_prototype, njs_object_prototype_create,
-                             0, 0, 0),
+                             0, 0),
 
     NJS_DECLARE_PROP_NATIVE(njs_atom.vs_alloc, njs_buffer_alloc_safe, 0, 1),
 

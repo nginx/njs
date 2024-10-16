@@ -162,6 +162,8 @@ njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint64_t size,
     value->type = NJS_STRING;
     value->truth = size != 0;
 
+    value->atom_id = 0;
+
     if (size != length && length > NJS_STRING_MAP_STRIDE) {
         map_offset = njs_string_map_offset(size);
         total = map_offset + njs_string_map_size(length);
@@ -479,7 +481,7 @@ static njs_object_prop_t  njs_string_constructor_properties[] =
     NJS_DECLARE_PROP_NAME(njs_atom.vs_String),
 
     NJS_DECLARE_PROP_HANDLER(njs_atom.vs_prototype, njs_object_prototype_create,
-                             0, 0, 0),
+                             0, 0),
 
     NJS_DECLARE_PROP_NATIVE(njs_atom.vs_fromCharCode, njs_string_from_char_code,
                             1, 0),
@@ -3377,14 +3379,14 @@ njs_string_to_index(const njs_value_t *value)
 static njs_object_prop_t  njs_string_prototype_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(njs_atom.vs___proto__,
-                             njs_primitive_prototype_get_proto, 0, 0,
+                             njs_primitive_prototype_get_proto, 0,
                              NJS_OBJECT_PROP_VALUE_CW),
 
     NJS_DECLARE_PROP_LENGTH(0),
 
     NJS_DECLARE_PROP_HANDLER(njs_atom.vs_constructor,
-                             njs_object_prototype_create_constructor,
-                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
+                             njs_object_prototype_create_constructor, 0,
+                             NJS_OBJECT_PROP_VALUE_CW),
 
     NJS_DECLARE_PROP_NATIVE(njs_atom.vs_valueOf, njs_string_prototype_value_of,
                             0, 0),
@@ -3478,7 +3480,7 @@ static const njs_object_init_t  njs_string_prototype_init = {
 static njs_object_prop_t  njs_string_instance_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(njs_atom.vs_length, njs_string_instance_length, 0,
-                             0, 0),
+                             0),
 };
 
 

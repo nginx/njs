@@ -137,42 +137,6 @@ njs_is_generic_descriptor(njs_object_prop_t *prop)
 }
 
 
-njs_inline void
-njs_object_property_key_set(njs_lvlhsh_query_t *lhq, const njs_value_t *key,
-    uint32_t hash)
-{
-    if (njs_is_symbol(key)) {
-
-        lhq->key.length = 0;
-        lhq->key.start = NULL;
-        lhq->key_hash = njs_symbol_key(key);
-
-    } else {
-
-        /* string. */
-
-        njs_string_get(key, &lhq->key);
-
-        if (hash == 0) {
-            lhq->key_hash = njs_djb_hash(lhq->key.start, lhq->key.length);
-
-        } else {
-            lhq->key_hash = hash;
-        }
-    }
-}
-
-
-njs_inline void
-njs_object_property_init(njs_lvlhsh_query_t *lhq, const njs_value_t *key,
-    uint32_t hash)
-{
-    lhq->proto = &njs_object_hash_proto;
-
-    njs_object_property_key_set(lhq, key, hash);
-}
-
-
 njs_inline njs_int_t
 njs_primitive_value_to_key(njs_vm_t *vm, njs_value_t *dst,
     const njs_value_t *src)

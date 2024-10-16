@@ -400,9 +400,15 @@ njs_json_parse_object(njs_json_parse_ctx_t *ctx, njs_value_t *value,
             goto memory_error;
         }
 
-        njs_string_get(&prop_name, &lhq.key);
-        lhq.key_hash = njs_djb_hash(lhq.key.start, lhq.key.length);
+        ret = njs_atom_atomize_key(ctx->vm, &prop->name);
+        if (ret != NJS_OK) {
+            return NULL;
+        }
+
         lhq.value = prop;
+
+        lhq.key_hash = prop->name.atom_id;
+
         lhq.replace = 1;
         lhq.pool = ctx->pool;
         lhq.proto = &njs_object_hash_proto;
@@ -1237,7 +1243,8 @@ njs_object_to_json_function(njs_vm_t *vm, njs_value_t *value)
     njs_lvlhsh_query_t  lhq;
 
     if (njs_is_object(value)) {
-        njs_object_property_init(&lhq, &njs_atom.vs_toJSON, NJS_TO_JSON_HASH);
+        lhq.proto = &njs_object_hash_proto;
+        lhq.key_hash = njs_atom.vs_toJSON.atom_id;
 
         ret = njs_object_property(vm, njs_object(value), &lhq, &retval);
 
@@ -1606,18 +1613,18 @@ njs_json_wrap_value(njs_vm_t *vm, njs_value_t *wrapper,
     wrapper->type = NJS_OBJECT;
     wrapper->data.truth = 1;
 
-    lhq.replace = 0;
-    lhq.proto = &njs_object_hash_proto;
-    lhq.pool = vm->mem_pool;
-    lhq.key = njs_str_value("");
-    lhq.key_hash = NJS_DJB_HASH_INIT;
-
     prop = njs_object_prop_alloc(vm, &njs_atom.vs_, value, 1);
     if (njs_slow_path(prop == NULL)) {
         return NULL;
     }
 
     lhq.value = prop;
+
+    lhq.key_hash = njs_atom.vs_.atom_id;
+
+    lhq.replace = 0;
+    lhq.pool = vm->mem_pool;
+    lhq.proto = &njs_object_hash_proto;
 
     ret = njs_lvlhsh_insert(njs_object_hash(wrapper), &lhq);
     if (njs_slow_path(ret != NJS_OK)) {

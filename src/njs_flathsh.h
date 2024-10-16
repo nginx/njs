@@ -105,8 +105,6 @@ NJS_EXPORT njs_int_t njs_flathsh_delete(njs_flathsh_t *fh,
 
 
 typedef struct {
-    const njs_flathsh_proto_t  *proto;
-    uint32_t                   key_hash;
     uint32_t                   cp;
 } njs_flathsh_each_t;
 
@@ -114,7 +112,6 @@ typedef struct {
 #define njs_flathsh_each_init(lhe, _proto)                                     \
     do {                                                                       \
         njs_memzero(lhe, sizeof(njs_flathsh_each_t));                          \
-        (lhe)->proto = _proto;                                                 \
     } while (0)
 
 

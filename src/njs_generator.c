@@ -5369,6 +5369,7 @@ static njs_int_t
 njs_generate_global_reference(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node, njs_bool_t exception)
 {
+    njs_int_t                ret;
     njs_index_t              index;
     njs_value_t              property;
     njs_vmcode_prop_get_t    *prop_get;
@@ -5390,6 +5391,11 @@ njs_generate_global_reference(njs_vm_t *vm, njs_generator_t *generator,
     }
 
     property = *((njs_value_t *)node->u.reference.unique_id);
+
+    ret = njs_atom_atomize_key(vm, &property);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
 
     prop_get->property = njs_scope_global_index(vm, &property,
                                                 generator->runtime);

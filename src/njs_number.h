@@ -183,6 +183,10 @@ njs_uint32_to_string(njs_vm_t *vm, njs_value_t *value, uint32_t u32)
     value->string.data->length = size;
     value->string.data->size = size;
 
+    if (!(u32 & 0x80000000)) {
+        value->atom_id = u32 | 0x80000000;
+    }
+
     return NJS_OK;
 }
 

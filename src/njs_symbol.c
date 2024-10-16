@@ -71,9 +71,8 @@ njs_symbol_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    key = ++vm->symbol_generator;
-
-    if (njs_slow_path(key >= UINT32_MAX)) {
+    key = (*vm->atom_hash_atom_id)++;
+    if (njs_slow_path(key >= 0x80000000)) {
         njs_internal_error(vm, "Symbol generator overflow");
         return NJS_ERROR;
     }
@@ -126,9 +125,8 @@ njs_symbol_for(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         rb_node = njs_rbtree_node_successor(&vm->global_symbols, rb_node);
     }
 
-    key = ++vm->symbol_generator;
-
-    if (njs_slow_path(key >= UINT32_MAX)) {
+    key = (*vm->atom_hash_atom_id)++;
+    if (njs_slow_path(key >= 0x80000000)) {
         njs_internal_error(vm, "Symbol generator overflow");
         return NJS_ERROR;
     }
@@ -182,7 +180,7 @@ static njs_object_prop_t  njs_symbol_constructor_properties[] =
     NJS_DECLARE_PROP_NAME(njs_atom.vs_Symbol),
 
     NJS_DECLARE_PROP_HANDLER(njs_atom.vs_prototype, njs_object_prototype_create,
-                             0, 0, 0),
+                             0, 0),
 
     NJS_DECLARE_PROP_NATIVE(njs_atom.vs_for, njs_symbol_for, 1, 0),
 
@@ -289,12 +287,12 @@ static njs_object_prop_t  njs_symbol_prototype_properties[] =
                            NJS_OBJECT_PROP_VALUE_C),
 
     NJS_DECLARE_PROP_HANDLER(njs_atom.vs___proto__,
-                             njs_primitive_prototype_get_proto,
-                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
+                             njs_primitive_prototype_get_proto, 0,
+                             NJS_OBJECT_PROP_VALUE_CW),
 
     NJS_DECLARE_PROP_HANDLER(njs_atom.vs_constructor,
-                             njs_object_prototype_create_constructor,
-                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
+                             njs_object_prototype_create_constructor, 0,
+                             NJS_OBJECT_PROP_VALUE_CW),
 
     NJS_DECLARE_PROP_NATIVE(njs_atom.vs_valueOf, njs_symbol_prototype_value_of,
                             0, 0),

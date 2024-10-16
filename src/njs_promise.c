@@ -1739,7 +1739,7 @@ static njs_object_prop_t  njs_promise_constructor_properties[] =
     NJS_DECLARE_PROP_NAME(njs_atom.vs_Promise),
 
     NJS_DECLARE_PROP_HANDLER(njs_atom.vs_prototype, njs_object_prototype_create,
-                             0, 0, 0),
+                             0, 0),
 
     NJS_DECLARE_PROP_NATIVE(njs_atom.vs_resolve, njs_promise_object_resolve, 1,
                             0),
@@ -1770,8 +1770,8 @@ static const njs_object_init_t  njs_promise_constructor_init = {
 static njs_object_prop_t  njs_promise_prototype_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(njs_atom.vs_constructor,
-                             njs_object_prototype_create_constructor,
-                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
+                             njs_object_prototype_create_constructor, 0,
+                             NJS_OBJECT_PROP_VALUE_CW),
 
     NJS_DECLARE_PROP_VALUE(njs_atom.vw_toStringTag, njs_atom.vs_Promise,
                            NJS_OBJECT_PROP_VALUE_C),

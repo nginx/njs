@@ -243,6 +243,7 @@ typedef struct {
     njs_token_type_t                type:16;
     njs_keyword_type_t              keyword_type;
     uint32_t                        line;
+    uint32_t                        atom_id;
     uintptr_t                       unique_id;
     njs_str_t                       text;
     double                          number;

@@ -146,7 +146,7 @@ static njs_object_prop_t  njs_array_buffer_constructor_properties[] =
     NJS_DECLARE_PROP_NAME(njs_atom.vs_ArrayBuffer),
 
     NJS_DECLARE_PROP_HANDLER(njs_atom.vs_prototype, njs_object_prototype_create,
-                             0, 0, 0),
+                             0, 0),
 
     NJS_DECLARE_PROP_GETTER(njs_atom.vw_species,
                             njs_array_buffer_get_this,
@@ -265,8 +265,8 @@ njs_array_buffer_detach(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 static njs_object_prop_t  njs_array_buffer_prototype_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(njs_atom.vs_constructor,
-                             njs_object_prototype_create_constructor,
-                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
+                             njs_object_prototype_create_constructor, 0,
+                             NJS_OBJECT_PROP_VALUE_CW),
 
     NJS_DECLARE_PROP_GETTER(njs_atom.vs_byteLength,
                             njs_array_buffer_prototype_byte_length, 0),

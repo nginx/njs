@@ -400,6 +400,7 @@ typedef struct {
     .string = {                                                               \
         .type = NJS_STRING,                                                   \
         .truth = njs_length(s) ? 1 : 0,                                       \
+        .atom_id = 0,                                                         \
         .token_type = _token_type,                                            \
         .token_id = _token_id,                                                \
         .data = &(njs_string_t) {                                             \
@@ -457,12 +458,12 @@ typedef struct {
     _njs_function(_function, _args_count, 1, _magic)
 
 
-#define njs_prop_handler2(_handler, _magic16, _magic32) (njs_value_t) {       \
+#define njs_prop_handler2(_handler, _magic16) (njs_value_t) {                 \
     .data = {                                                                 \
         .type = NJS_INVALID,                                                  \
         .truth = 1,                                                           \
         .magic16 = _magic16,                                                  \
-        .magic32 = _magic32,                                                  \
+        .magic32 = 2,                                                         \
         .u = { .prop_handler = _handler }                                     \
     }                                                                         \
 }
@@ -785,6 +786,7 @@ njs_set_number(njs_value_t *value, double num)
     value->data.u.number = num;
     value->type = NJS_NUMBER;
     value->data.truth = njs_is_number_true(num);
+    value->atom_id = 0;
 }
 
 
@@ -794,6 +796,7 @@ njs_set_int32(njs_value_t *value, int32_t num)
     value->data.u.number = num;
     value->type = NJS_NUMBER;
     value->data.truth = (num != 0);
+    value->atom_id = 0;
 }
 
 
@@ -803,6 +806,7 @@ njs_set_uint32(njs_value_t *value, uint32_t num)
     value->data.u.number = num;
     value->type = NJS_NUMBER;
     value->data.truth = (num != 0);
+    value->atom_id = 0;
 }
 
 

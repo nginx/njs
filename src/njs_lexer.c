@@ -741,12 +741,12 @@ njs_lexer_keyword_find(njs_vm_t *vm, u_char *key, size_t size, size_t length,
     lhq.key_hash = hash;
     lhq.proto = &njs_lexer_hash_proto;
 
-    ret = njs_lvlhsh_find(&vm->atom_hash, &lhq);
+    ret = njs_lvlhsh_find(vm->atom_hash, &lhq);
     if (ret == NJS_OK) {
         return lhq.value;
     }
 
-    ret = njs_lvlhsh_find(&vm->atom_hash_shared, &lhq);
+    ret = njs_lvlhsh_find(&vm->atom_hash_shared_cell, &lhq);
     if (ret == NJS_OK) {
         return lhq.value;
     }
@@ -761,8 +761,8 @@ njs_lexer_keyword_find(njs_vm_t *vm, u_char *key, size_t size, size_t length,
         return NULL;
     }
 
-    entry->string.atom_id = vm->atom_hash_atom_id++;
-    if (entry->string.atom_id == 0) {
+    entry->string.atom_id = (*vm->atom_hash_atom_id)++;
+    if (entry->string.atom_id >= 0x80000000) {
         return NULL;
     }
     entry->string.token_type = 0;
@@ -770,7 +770,7 @@ njs_lexer_keyword_find(njs_vm_t *vm, u_char *key, size_t size, size_t length,
     lhq.value = entry;
     lhq.pool = vm->atom_hash_mem_pool;
 
-    ret = njs_lvlhsh_insert(&vm->atom_hash, &lhq);
+    ret = njs_lvlhsh_insert(vm->atom_hash, &lhq);
     if (njs_slow_path(ret != NJS_OK)) {
         return NULL;
     }
@@ -838,6 +838,7 @@ njs_lexer_word(njs_lexer_t *lexer, njs_lexer_token_t *token)
         token->type = entry->string.token_id;
         token->keyword_type = entry->string.token_type;
     }
+    token->atom_id = entry->atom_id;
 
     token->unique_id = (uintptr_t) entry;
 

@@ -9,8 +9,7 @@
 
 
 static njs_int_t njs_object_property_query(njs_vm_t *vm,
-    njs_property_query_t *pq, njs_object_t *object,
-    const njs_value_t *key);
+    njs_property_query_t *pq, njs_object_t *object, njs_value_t *key);
 static njs_int_t njs_array_property_query(njs_vm_t *vm,
     njs_property_query_t *pq, njs_array_t *array, uint32_t index);
 static njs_int_t njs_typed_array_property_query(njs_vm_t *vm,
@@ -43,16 +42,10 @@ njs_value_to_primitive(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value,
     njs_value_t         method, retval;
     njs_lvlhsh_query_t  lhq;
 
-    static const uint32_t  hashes[] = {
-        NJS_VALUE_OF_HASH,
-        NJS_TO_STRING_HASH,
+    static const njs_value_t *hashes[] = {
+        &njs_atom.vs_valueOf,
+        &njs_atom.vs_toString,
     };
-
-    static const njs_str_t  names[] = {
-        njs_str("valueOf"),
-        njs_str("toString"),
-    };
-
 
     if (njs_is_primitive(value)) {
         *dst = *value;
@@ -68,8 +61,7 @@ njs_value_to_primitive(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value,
         if (njs_is_object(value) && tries < 2) {
             hint ^= tries++;
 
-            lhq.key_hash = hashes[hint];
-            lhq.key = names[hint];
+            lhq.key_hash = hashes[hint]->atom_id;
 
             ret = njs_object_property(vm, njs_object(value), &lhq, &method);
 
@@ -632,21 +624,23 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *value,
         return NJS_ERROR;
     }
 
+
     ret = njs_primitive_value_to_key(vm, &pq->key, key);
 
     if (njs_fast_path(ret == NJS_OK)) {
-
         if (njs_is_symbol(key)) {
             pq->lhq.key_hash = njs_symbol_key(key);
-            pq->lhq.key.start = NULL;
 
         } else {
             njs_string_get(&pq->key, &pq->lhq.key);
 
-            if (pq->lhq.key_hash == 0) {
-                pq->lhq.key_hash = njs_djb_hash(pq->lhq.key.start,
-                                                pq->lhq.key.length);
+            if (key->atom_id == 0) {
+                ret = njs_atom_atomize_key(vm, key);
+                if (ret != NJS_OK) {
+                    return ret;
+                }
             }
+            pq->lhq.key_hash = key->atom_id;
         }
 
         ret = njs_object_property_query(vm, pq, obj, key);
@@ -662,7 +656,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *value,
 
 static njs_int_t
 njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
-    njs_object_t *object, const njs_value_t *key)
+    njs_object_t *object, njs_value_t *key)
 {
     double              num;
     njs_int_t           ret;
@@ -729,6 +723,14 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
             break;
         }
 
+        if (key->atom_id == 0) {
+            ret = njs_atom_atomize_key(vm, key);
+            if (ret != NJS_OK) {
+                return ret;
+            }
+        }
+        pq->lhq.key_hash = key->atom_id;
+
         ret = njs_lvlhsh_find(&proto->hash, &pq->lhq);
 
         if (ret == NJS_OK) {
@@ -744,7 +746,6 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
 
         } else {
             ret = njs_lvlhsh_find(&proto->shared_hash, &pq->lhq);
-
             if (ret == NJS_OK) {
                 return njs_prop_private_copy(vm, pq, proto);
             }
@@ -826,7 +827,15 @@ njs_array_property_query(njs_vm_t *vm, njs_property_query_t *pq,
             }
         }
 
-        ret = njs_lvlhsh_find(&array->object.hash, &pq->lhq);
+        if (pq->key.atom_id == 0) {
+            ret = njs_atom_atomize_key(vm, &pq->key);
+            if (ret != NJS_OK) {
+                return ret;
+            }
+        }
+        pq->lhq.key_hash = pq->key.atom_id;
+
+        ret = njs_flathsh_find(&array->object.hash, &pq->lhq);
         if (ret == NJS_OK) {
             prop = pq->lhq.value;
 
@@ -1177,6 +1186,7 @@ njs_value_property_set(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
     njs_assert(njs_is_index_or_key(key));
 
     if (njs_fast_path(njs_is_number(key))) {
+
         num = njs_number(key);
 
         if (njs_slow_path(!njs_number_is_integer_index(num))) {
@@ -1264,7 +1274,7 @@ slow_path:
             switch (prop->type) {
             case NJS_PROPERTY:
                 if (njs_is_array(value)) {
-                    if (njs_slow_path(pq.lhq.key_hash == NJS_LENGTH_HASH)) {
+                    if (njs_slow_path(pq.lhq.key_hash == njs_atom.vs_length.atom_id)) {
                         if (njs_strstr_eq(&pq.lhq.key, &length_key)) {
                             return njs_array_length_set(vm, value, prop, setval);
                         }
@@ -1349,6 +1359,7 @@ slow_path:
         if (njs_slow_path(pq.own && njs_is_typed_array(value)
                           && njs_is_string(key)))
         {
+
             /* Integer-Indexed Exotic Objects [[DefineOwnProperty]]. */
             if (!isnan(njs_string_to_index(key))) {
                 return NJS_OK;
@@ -1372,8 +1383,18 @@ slow_path:
         return NJS_ERROR;
     }
 
+    if (!prop->name.atom_id) {
+        ret = njs_atom_atomize_key(vm, &prop->name);
+        if (ret != NJS_OK) {
+            return NJS_ERROR;
+        }
+    }
+
     pq.lhq.replace = 0;
     pq.lhq.value = prop;
+
+    pq.lhq.key_hash = prop->name.atom_id;
+
     pq.lhq.pool = vm->mem_pool;
 
     ret = njs_lvlhsh_insert(njs_object_hash(value), &pq.lhq);

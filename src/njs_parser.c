@@ -570,7 +570,7 @@ njs_parser(njs_vm_t *vm, njs_parser_t *parser)
         parser->ret = NJS_OK;
     }
 
-    parser->undefined_id = (uintptr_t) &njs_atom.vs_undefined; //??? do we need this field?
+    parser->undefined_id = (uintptr_t) &njs_atom.vs_undefined;
 
     njs_queue_init(&parser->stack);
 
@@ -1187,6 +1187,8 @@ reference:
     if (node == NULL) {
         return NJS_ERROR;
     }
+
+    node->u.value.atom_id = token->atom_id;
 
     node->token_line = token->line;
     parser->node = node;
@@ -6677,7 +6679,7 @@ njs_parser_labelled_statement_after(njs_parser_t *parser,
     njs_lexer_token_t *token, njs_queue_link_t *current)
 {
     njs_int_t                ret;
-    njs_str_t                str; //?? remove it
+    njs_str_t                str;
     uintptr_t                unique_id;
     njs_parser_node_t        *node;
     const njs_value_t        *entry;
@@ -8683,6 +8685,7 @@ njs_parser_string_create(njs_vm_t *vm, njs_lexer_token_t *token,
     njs_value_t *value)
 {
     size_t     length;
+    njs_int_t  ret;
     njs_str_t  dst;
 
     length = njs_decode_utf8_length(&token->text, &dst.length);
@@ -8696,6 +8699,11 @@ njs_parser_string_create(njs_vm_t *vm, njs_lexer_token_t *token,
     if (length > NJS_STRING_MAP_STRIDE && dst.length != length) {
         njs_string_utf8_offset_map_init(value->string.data->start,
                                         dst.length);
+    }
+
+    ret = njs_atom_atomize_key(vm, value);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_TOKEN_ERROR;
     }
 
     return NJS_OK;
@@ -8940,6 +8948,11 @@ next_char:
 
     if (length > NJS_STRING_MAP_STRIDE && length != size) {
         njs_string_utf8_offset_map_init(start, size);
+    }
+
+    ret = njs_atom_atomize_key(parser->vm, value);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_TOKEN_ERROR;
     }
 
     return NJS_TOKEN_STRING;

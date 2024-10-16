@@ -559,7 +559,7 @@ ngx_engine_njs_init(ngx_engine_t *engine, ngx_engine_opts_t *opts)
     vm_options.argv = ngx_argv;
     vm_options.argc = ngx_argc;
 
-    vm = njs_vm_create(&vm_options);
+    vm = njs_vm_create_parent(&vm_options, opts->conf->preload_vm);
     if (vm == NULL) {
         return NGX_ERROR;
     }

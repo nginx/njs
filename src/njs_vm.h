@@ -128,10 +128,12 @@ struct njs_vm_s {
     njs_native_frame_t       *top_frame;
     njs_frame_t              *active_frame;
 
-    njs_lvlhsh_t             atom_hash_shared;
-    njs_lvlhsh_t             atom_hash;
+    njs_lvlhsh_t             atom_hash_shared_cell;
+    njs_lvlhsh_t             atom_hash_cell;
+    njs_lvlhsh_t             *atom_hash;
     njs_mp_t                 *atom_hash_mem_pool;
-    uint32_t                 atom_hash_atom_id;
+    uint32_t                 atom_hash_atom_id_cell;
+    uint32_t                 *atom_hash_atom_id;
 
     njs_lvlhsh_t             values_hash;
 
@@ -182,7 +184,6 @@ struct njs_vm_s {
     njs_random_t             random;
 
     njs_rbtree_t             global_symbols;
-    uint64_t                 symbol_generator;
 
     njs_module_loader_t      module_loader;
     void                     *module_loader_opaque;

@@ -1131,7 +1131,7 @@ static njs_object_prop_t  njs_date_constructor_properties[] =
     NJS_DECLARE_PROP_NAME(njs_atom.vs_Date),
 
     NJS_DECLARE_PROP_HANDLER(njs_atom.vs_prototype, njs_object_prototype_create,
-                             0, 0, 0),
+                             0, 0),
 
     NJS_DECLARE_PROP_NATIVE(njs_atom.vs_UTC, njs_date_utc, 7, 0),
 
@@ -1446,8 +1446,8 @@ njs_date_prototype_to_json(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_lvlhsh_query_t  lhq;
 
     if (njs_is_object(njs_argument(args, 0))) {
-        njs_object_property_init(&lhq, &njs_atom.vs_toISOString,
-                                 NJS_TO_ISO_STRING_HASH);
+        lhq.proto = &njs_object_hash_proto;
+        lhq.key_hash = njs_atom.vs_toISOString.atom_id;
 
         ret = njs_object_property(vm, njs_object(njs_argument(args, 0)), &lhq,
                                   &value);
@@ -1471,12 +1471,12 @@ njs_date_prototype_to_json(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 static njs_object_prop_t  njs_date_prototype_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(njs_atom.vs___proto__,
-                             njs_primitive_prototype_get_proto, 0, 0,
+                             njs_primitive_prototype_get_proto, 0,
                              NJS_OBJECT_PROP_VALUE_CW),
 
     NJS_DECLARE_PROP_HANDLER(njs_atom.vs_constructor,
-                             njs_object_prototype_create_constructor,
-                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
+                             njs_object_prototype_create_constructor, 0,
+                             NJS_OBJECT_PROP_VALUE_CW),
 
     NJS_DECLARE_PROP_NATIVE(njs_atom.vs_valueOf, njs_date_prototype_value_of, 0,
                             0),
