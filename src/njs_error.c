@@ -9,6 +9,15 @@
 
 
 typedef struct {
+    union {
+        njs_function_t                *function;
+        u_char                        *pc;
+    } u;
+    uint8_t                           native;
+} njs_stack_entry_t;
+
+
+typedef struct {
     njs_str_t                         name;
     njs_str_t                         file;
     uint32_t                          line;
@@ -16,7 +25,7 @@ typedef struct {
 
 
 static njs_int_t njs_add_backtrace_entry(njs_vm_t *vm, njs_arr_t *stack,
-    njs_native_frame_t *native_frame);
+    njs_stack_entry_t *se);
 static njs_int_t njs_backtrace_to_string(njs_vm_t *vm, njs_arr_t *backtrace,
     njs_str_t *dst);
 
@@ -87,22 +96,13 @@ njs_error_fmt_new(njs_vm_t *vm, njs_value_t *dst, njs_object_type_t type,
 
 
 static njs_int_t
-njs_error_stack_new(njs_vm_t *vm, njs_object_t *error, njs_value_t *retval)
+njs_error_stack_new(njs_vm_t *vm, njs_object_value_t *error)
 {
-    njs_int_t           ret;
-    njs_str_t           string;
     njs_arr_t           *stack;
-    njs_value_t         value;
+    njs_stack_entry_t   *se;
     njs_native_frame_t  *frame;
 
-    njs_set_object(&value, error);
-
-    ret = njs_error_to_string(vm, retval, &value);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
-    }
-
-    stack = njs_arr_create(vm->mem_pool, 4, sizeof(njs_backtrace_entry_t));
+    stack = njs_arr_create(vm->mem_pool, 4, sizeof(njs_stack_entry_t));
     if (njs_slow_path(stack == NULL)) {
         return NJS_ERROR;
     }
@@ -110,10 +110,20 @@ njs_error_stack_new(njs_vm_t *vm, njs_object_t *error, njs_value_t *retval)
     frame = vm->top_frame;
 
     for ( ;; ) {
-        if ((frame->native || frame->pc != NULL)
-            && njs_add_backtrace_entry(vm, stack, frame) != NJS_OK)
-        {
-            break;
+        if (frame->native || frame->pc != NULL) {
+            se = njs_arr_add(stack);
+            if (njs_slow_path(se == NULL)) {
+                return NJS_ERROR;
+            }
+
+            se->native = frame->native;
+
+            if (se->native) {
+                se->u.function = frame->function;
+
+            } else {
+                se->u.pc = frame->pc;
+            }
         }
 
         frame = frame->previous;
@@ -123,25 +133,16 @@ njs_error_stack_new(njs_vm_t *vm, njs_object_t *error, njs_value_t *retval)
         }
     }
 
-    njs_string_get(retval, &string);
+    njs_data(&error->value) = stack;
 
-    ret = njs_backtrace_to_string(vm, stack, &string);
-
-    njs_arr_destroy(stack);
-
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
-    }
-
-    return njs_string_create(vm, retval, string.start, string.length);
+    return NJS_OK;
 }
 
 
 njs_int_t
 njs_error_stack_attach(njs_vm_t *vm, njs_value_t value)
 {
-    njs_int_t    ret;
-    njs_value_t  stack;
+    njs_int_t  ret;
 
     if (njs_slow_path(!njs_is_error(&value))
         || njs_object(&value)->stack_attached)
@@ -153,7 +154,7 @@ njs_error_stack_attach(njs_vm_t *vm, njs_value_t value)
         return NJS_OK;
     }
 
-    ret = njs_error_stack_new(vm, njs_object(&value), &stack);
+    ret = njs_error_stack_new(vm, value.data.u.object_value);
     if (njs_slow_path(ret != NJS_OK)) {
         njs_internal_error(vm, "njs_error_stack_new() failed");
         return NJS_ERROR;
@@ -161,10 +162,7 @@ njs_error_stack_attach(njs_vm_t *vm, njs_value_t value)
 
     njs_object(&value)->stack_attached = 1;
 
-    return njs_object_prop_define(vm, &value,
-                                  njs_value_arg(&njs_error_stack_string),
-                                  &stack, NJS_OBJECT_PROP_VALUE_CW,
-                                  NJS_STACK_HASH);
+    return NJS_OK;
 }
 
 
@@ -194,16 +192,20 @@ njs_error_alloc(njs_vm_t *vm, njs_object_t *proto, const njs_value_t *name,
     njs_int_t           ret;
     njs_object_t        *error;
     njs_object_prop_t   *prop;
+    njs_object_value_t  *ov;
     njs_lvlhsh_query_t  lhq;
 
-    error = njs_mp_alloc(vm->mem_pool, sizeof(njs_object_t));
-    if (njs_slow_path(error == NULL)) {
+    ov = njs_mp_alloc(vm->mem_pool, sizeof(njs_object_value_t));
+    if (njs_slow_path(ov == NULL)) {
         goto memory_error;
     }
 
+    njs_set_data(&ov->value, NULL, NJS_DATA_TAG_ANY);
+
+    error = &ov->object;
     njs_lvlhsh_init(&error->hash);
     njs_lvlhsh_init(&error->shared_hash);
-    error->type = NJS_OBJECT;
+    error->type = NJS_OBJECT_VALUE;
     error->shared = 0;
     error->extensible = 1;
     error->fast_array = 0;
@@ -485,15 +487,18 @@ const njs_object_init_t  njs_aggregate_error_constructor_init = {
 void
 njs_memory_error_set(njs_vm_t *vm, njs_value_t *value)
 {
-    njs_object_t  *object;
+    njs_object_t        *object;
+    njs_object_value_t  *ov;
 
-    object = &vm->memory_error_object;
+    ov = &vm->memory_error_object;
+    njs_set_data(&ov->value, NULL, NJS_DATA_TAG_ANY);
 
+    object = &ov->object;
     njs_lvlhsh_init(&object->hash);
     njs_lvlhsh_init(&object->shared_hash);
     object->__proto__ = njs_vm_proto(vm, NJS_OBJ_TYPE_INTERNAL_ERROR);
     object->slots = NULL;
-    object->type = NJS_OBJECT;
+    object->type = NJS_OBJECT_VALUE;
     object->shared = 1;
 
     /*
@@ -691,6 +696,92 @@ njs_error_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
+static njs_int_t
+njs_error_prototype_stack(njs_vm_t *vm, njs_object_prop_t *prop,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+{
+    njs_int_t          ret;
+    njs_str_t          string;
+    njs_arr_t          *stack, *backtrace;
+    njs_uint_t         i;
+    njs_value_t        rv, *stackval;
+    njs_stack_entry_t  *se;
+
+    if (retval != NULL) {
+        if (!njs_is_error(value)) {
+            njs_set_undefined(retval);
+            return NJS_DECLINED;
+        }
+
+        stackval = njs_object_value(value);
+
+        if (setval != NULL) {
+            njs_value_assign(stackval, setval);
+            return NJS_OK;
+        }
+
+        if (!njs_is_data(stackval, NJS_DATA_TAG_ANY)) {
+            njs_value_assign(retval, stackval);
+            return NJS_OK;
+        }
+
+        stack = njs_data(stackval);
+        if (stack == NULL) {
+            njs_set_undefined(retval);
+            return NJS_OK;
+        }
+
+        se = stack->start;
+
+        backtrace = njs_arr_create(vm->mem_pool, stack->items,
+                                   sizeof(njs_backtrace_entry_t));
+        if (njs_slow_path(backtrace == NULL)) {
+            return NJS_ERROR;
+        }
+
+        for (i = 0; i < stack->items; i++) {
+            if (njs_add_backtrace_entry(vm, backtrace, &se[i]) != NJS_OK) {
+                return NJS_ERROR;
+            }
+        }
+
+        ret = njs_error_to_string2(vm, &rv, value, 0);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+
+        njs_string_get(&rv, &string);
+
+        ret = njs_backtrace_to_string(vm, backtrace, &string);
+
+        njs_arr_destroy(backtrace);
+        njs_arr_destroy(stack);
+
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+
+        ret = njs_string_create(vm, stackval, string.start, string.length);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+
+        njs_value_assign(retval, stackval);
+
+        return NJS_OK;
+    }
+
+    /* Delete. */
+
+    if (njs_is_error(value)) {
+        stackval = njs_object_value(value);
+        njs_set_data(stackval, NULL, NJS_DATA_TAG_ANY);
+    }
+
+    return NJS_OK;
+}
+
+
 njs_int_t
 njs_error_to_string(njs_vm_t *vm, njs_value_t *retval, const njs_value_t *error)
 {
@@ -717,6 +808,9 @@ static const njs_object_prop_t  njs_error_prototype_properties[] =
     NJS_DECLARE_PROP_NATIVE("valueOf", njs_error_prototype_value_of, 0, 0),
 
     NJS_DECLARE_PROP_NATIVE("toString", njs_error_prototype_to_string, 0, 0),
+
+    NJS_DECLARE_PROP_HANDLER("stack", njs_error_prototype_stack,
+                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
 };
 
 
@@ -986,14 +1080,14 @@ const njs_object_type_init_t  njs_aggregate_error_type_init = {
 
 static njs_int_t
 njs_add_backtrace_entry(njs_vm_t *vm, njs_arr_t *stack,
-    njs_native_frame_t *native_frame)
+    njs_stack_entry_t *se)
 {
     njs_int_t              ret;
     njs_vm_code_t          *code;
     njs_function_t         *function;
     njs_backtrace_entry_t  *be;
 
-    function = native_frame->function;
+    function = se->native ? se->u.function : NULL;
 
     if (function != NULL && function->bound != NULL) {
         /* Skip. */
@@ -1019,7 +1113,7 @@ njs_add_backtrace_entry(njs_vm_t *vm, njs_arr_t *stack,
         return NJS_OK;
     }
 
-    code = njs_lookup_code(vm, native_frame->pc);
+    code = njs_lookup_code(vm, se->u.pc);
 
     if (code != NULL) {
         be->name = code->name;
@@ -1028,7 +1122,7 @@ njs_add_backtrace_entry(njs_vm_t *vm, njs_arr_t *stack,
             be->name = njs_entry_anonymous;
         }
 
-        be->line = njs_lookup_line(code->lines, native_frame->pc - code->start);
+        be->line = njs_lookup_line(code->lines, se->u.pc - code->start);
         if (!vm->options.quiet) {
             be->file = code->file;
         }

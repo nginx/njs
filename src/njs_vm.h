@@ -165,7 +165,7 @@ struct njs_vm_s {
      * MemoryError is statically allocated immutable Error object
      * with the InternalError prototype.
      */
-    njs_object_t             memory_error_object;
+    njs_object_value_t       memory_error_object;
 
     njs_object_t             string_object;
     njs_object_t             global_object;

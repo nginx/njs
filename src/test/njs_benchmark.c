@@ -116,6 +116,7 @@ njs_benchmark_test(njs_vm_t *parent, njs_opts_t *opts, njs_value_t *report,
 
     njs_vm_opt_init(&options);
 
+    options.backtrace = 1;
     options.addons = njs_benchmark_addon_external_modules;
 
     vm = NULL;
@@ -468,6 +469,16 @@ static njs_benchmark_test_t  njs_test[] =
       njs_str("$shared.method('YES')"),
       njs_str("shared"),
       1000 },
+
+    { "exception",
+      njs_str("function f() { try { throw new Error('test') } catch (e) { return e.message } } [f].map(v=>v())[0]"),
+      njs_str("test"),
+      10000 },
+
+    { "exception.stack",
+      njs_str("function f() { try { throw new Error('test') } catch (e) { return e.stack } } [f].map(v=>v())[0]"),
+      njs_str("Error: test\n    at f (:1)\n    at anonymous (:1)\n    at Array.prototype.map (native)\n    at main (:1)\n"),
+      100 },
 };
 
 
