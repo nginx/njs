@@ -288,6 +288,8 @@ njs_int_t njs_lexer_in_stack_push(njs_lexer_t *lexer);
 void njs_lexer_in_stack_pop(njs_lexer_t *lexer);
 void njs_lexer_in_fail_set(njs_lexer_t *lexer, njs_int_t flag);
 njs_int_t njs_lexer_in_fail_get(njs_lexer_t *lexer);
+njs_value_t *njs_lexer_keyword_find(njs_vm_t *vm, u_char *key, size_t size,
+    size_t length, uint32_t hash);
 
 
 const njs_lexer_keyword_entry_t *njs_lexer_keyword(const u_char *key,

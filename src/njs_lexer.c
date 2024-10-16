@@ -727,7 +727,7 @@ njs_lexer_hash_test(njs_lvlhsh_query_t *lhq, void *data)
 }
 
 
-static njs_value_t *
+njs_value_t *
 njs_lexer_keyword_find(njs_vm_t *vm, u_char *key, size_t size, size_t length,
     uint32_t hash)
 {
