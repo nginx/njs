@@ -174,6 +174,13 @@ njs_function_name_set(njs_vm_t *vm, njs_function_t *function,
 
     prop->configurable = 1;
 
+    if (!prop->name.atom_id) {
+        ret = njs_atom_atomize_key(vm, &prop->name);
+        if (ret != NJS_OK) {
+            return NJS_ERROR;
+        }
+    }
+
     lhq.key_hash = NJS_NAME_HASH;
     lhq.key = njs_str_value("name");
     lhq.replace = 0;
@@ -916,6 +923,13 @@ njs_function_property_prototype_set(njs_vm_t *vm, njs_lvlhsh_t *hash,
     }
 
     prop->writable = 1;
+
+    if (!prop->name.atom_id) {
+        ret = njs_atom_atomize_key(vm, &prop->name);
+        if (ret != NJS_OK) {
+            return NULL;
+        }
+    }
 
     lhq.value = prop;
     lhq.key_hash = NJS_PROTOTYPE_HASH;

@@ -1120,6 +1120,11 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_value_t *r, njs_utf8_t utf8,
                 goto fail;
             }
 
+            ret = njs_atom_atomize_key(vm, &prop->name);
+            if (njs_slow_path(ret != NJS_OK)) {
+                goto fail;
+            }
+
             prop = njs_object_prop_alloc(vm, &name,
                                          &array->start[group->capture], 1);
             if (njs_slow_path(prop == NULL)) {

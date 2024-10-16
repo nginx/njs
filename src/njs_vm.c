@@ -892,6 +892,11 @@ njs_vm_bind2(njs_vm_t *vm, const njs_str_t *var_name, njs_object_prop_t *prop,
         return NJS_ERROR;
     }
 
+    ret = njs_atom_atomize_key(vm, &prop->name);
+    if (ret != NJS_OK) {
+        return ret;
+    }
+
     lhq.value = prop;
     lhq.key = *var_name;
     lhq.key_hash = njs_djb_hash(lhq.key.start, lhq.key.length);
@@ -1240,6 +1245,13 @@ njs_vm_object_alloc(njs_vm_t *vm, njs_value_t *retval, ...)
         prop = njs_object_prop_alloc(vm, name, value, 1);
         if (njs_slow_path(prop == NULL)) {
             goto done;
+        }
+
+        if (!prop->name.atom_id) {
+            ret = njs_atom_atomize_key(vm, &prop->name);
+            if (ret != NJS_OK) {
+                goto done;
+            }
         }
 
         lhq.value = prop;

@@ -400,6 +400,15 @@ njs_json_parse_object(njs_json_parse_ctx_t *ctx, njs_value_t *value,
             goto memory_error;
         }
 
+        prop->name.atom_id = 0;
+
+        if (!prop->name.atom_id) {
+            ret = njs_atom_atomize_key(ctx->vm, &prop->name);
+            if (ret != NJS_OK) {
+                return NULL;
+            }
+        }
+
         njs_string_get(&prop_name, &lhq.key);
         lhq.key_hash = njs_djb_hash(lhq.key.start, lhq.key.length);
         lhq.value = prop;

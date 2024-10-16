@@ -146,7 +146,7 @@ njs_object_hash_create(njs_vm_t *vm, njs_lvlhsh_t *hash,
 
             prop->name = *prop->pname;
             if (prop->type != NJS_ACCESSOR) {
-	        prop->u.value = *prop->u.pvalue;
+                prop->u.value = *prop->u.pvalue;
             }
         }
 
@@ -1352,6 +1352,13 @@ njs_object_define_property(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     value = njs_argument(args, 1);
     name = njs_lvalue_arg(&lvalue, args, nargs, 2);
 
+    if (!name->atom_id) {
+        ret = njs_atom_atomize_key(vm, name);
+        if (ret != NJS_OK) {
+            return NJS_ERROR;
+        }
+    }
+
     ret = njs_object_prop_define(vm, value, name, desc,
                                  NJS_OBJECT_PROP_DESCRIPTOR, 0);
     if (njs_slow_path(ret != NJS_OK)) {
@@ -1413,6 +1420,13 @@ njs_object_define_properties(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         ret = njs_value_property(vm, descs, &keys->start[i], &desc);
         if (njs_slow_path(ret == NJS_ERROR)) {
             goto done;
+        }
+
+        if (!(&keys->start[i])->atom_id) {
+            ret = njs_atom_atomize_key(vm, &keys->start[i]);
+            if (ret != NJS_OK) {
+                goto done;
+            }
         }
 
         ret = njs_object_prop_define(vm, value, &keys->start[i], &desc,
@@ -1494,6 +1508,15 @@ njs_object_get_own_property_descriptors(njs_vm_t *vm, njs_value_t *args,
 
     for (i = 0; i < length; i++) {
         key = &names->start[i];
+        if (!key->atom_id) {
+
+            ret = njs_atom_atomize_key(vm, key);
+            if (ret != NJS_OK) {
+                ret = NJS_ERROR;
+                goto done;
+            }
+        }
+
         ret = njs_object_prop_descriptor(vm, &descriptor, value, key);
         if (njs_slow_path(ret != NJS_OK)) {
             ret = NJS_ERROR;
@@ -1975,6 +1998,13 @@ njs_property_prototype_create(njs_vm_t *vm, njs_lvlhsh_t *hash,
         return NULL;
     }
 
+    if (!prop->name.atom_id) {
+        ret = njs_atom_atomize_key(vm, &prop->name);
+        if (ret != NJS_OK) {
+            return NULL;
+        }
+    }
+
     njs_set_type_object(njs_prop_value(prop), prototype, prototype->type);
 
     lhq.value = prop;
@@ -2233,6 +2263,13 @@ njs_property_constructor_set(njs_vm_t *vm, njs_lvlhsh_t *hash,
 
     njs_value_assign(njs_prop_value(prop), constructor);
     prop->enumerable = 0;
+
+    if (!prop->name.atom_id) {
+        ret = njs_atom_atomize_key(vm, &prop->name);
+        if (ret != NJS_OK) {
+            return NULL;
+        }
+    }
 
     lhq.value = prop;
     lhq.key_hash = NJS_CONSTRUCTOR_HASH;

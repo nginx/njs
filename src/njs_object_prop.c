@@ -163,6 +163,13 @@ njs_object_property_add(njs_vm_t *vm, njs_value_t *object, njs_value_t *key,
         return NULL;
     }
 
+    if (!prop->name.atom_id) {
+        ret = njs_atom_atomize_key(vm, &prop->name);
+        if (ret != NJS_OK) {
+            return NULL;
+        }
+    }
+
     lhq.proto = &njs_object_hash_proto;
     njs_string_get(&key_value, &lhq.key);
     lhq.key_hash = njs_djb_hash(lhq.key.start, lhq.key.length);
@@ -331,6 +338,13 @@ set_prop:
             }
 
         } else {
+
+            if (!prop->name.atom_id) {
+                ret = njs_atom_atomize_key(vm, &prop->name);
+                if (ret != NJS_OK) {
+                    return NJS_ERROR;
+                }
+            }
 
             if ((flags & NJS_OBJECT_PROP_CREATE)) {
                 ret = njs_primitive_value_to_key(vm, &pq.key, name);
@@ -1095,6 +1109,13 @@ njs_object_prop_init(njs_vm_t *vm, const njs_object_init_t* init,
 
     prop->type = NJS_PROPERTY;
     njs_set_object(njs_prop_value(prop), object);
+
+    if (!prop->name.atom_id) {
+        ret = njs_atom_atomize_key(vm, &prop->name);
+        if (ret != NJS_OK) {
+            return ret;
+        }
+    }
 
     lhq.proto = &njs_object_hash_proto;
     njs_string_get(&prop->name, &lhq.key);

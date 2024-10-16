@@ -9,8 +9,7 @@
 
 
 static njs_int_t njs_object_property_query(njs_vm_t *vm,
-    njs_property_query_t *pq, njs_object_t *object,
-    const njs_value_t *key);
+    njs_property_query_t *pq, njs_object_t *object, njs_value_t *key);
 static njs_int_t njs_array_property_query(njs_vm_t *vm,
     njs_property_query_t *pq, njs_array_t *array, uint32_t index);
 static njs_int_t njs_typed_array_property_query(njs_vm_t *vm,
@@ -643,6 +642,13 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *value,
         } else {
             njs_string_get(&pq->key, &pq->lhq.key);
 
+            if (key->atom_id == 0) {
+                ret = njs_atom_atomize_key(vm, key);
+                if (ret != NJS_OK) {
+                    return ret;
+                }
+            }
+
             if (pq->lhq.key_hash == 0) {
                 pq->lhq.key_hash = njs_djb_hash(pq->lhq.key.start,
                                                 pq->lhq.key.length);
@@ -662,7 +668,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *value,
 
 static njs_int_t
 njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
-    njs_object_t *object, const njs_value_t *key)
+    njs_object_t *object, njs_value_t *key)
 {
     double              num;
     njs_int_t           ret;
@@ -727,6 +733,13 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
 
         default:
             break;
+        }
+
+        if (key->atom_id == 0) {
+            ret = njs_atom_atomize_key(vm, key);
+            if (ret != NJS_OK) {
+                return ret;
+            }
         }
 
         ret = njs_lvlhsh_find(&proto->hash, &pq->lhq);
@@ -822,6 +835,20 @@ njs_array_property_query(njs_vm_t *vm, njs_property_query_t *pq,
         if ((index + 1) > length) {
             ret = njs_array_length_redefine(vm, &value, index + 1, 1);
             if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
+        }
+
+        if (pq->key.atom_id == 0) {
+            ret = njs_atom_atomize_key(vm, &pq->key);
+            if (ret != NJS_OK) {
+                return ret;
+            }
+        }
+
+        if (pq->key.atom_id == 0) {
+            ret = njs_atom_atomize_key(vm, &pq->key);
+            if (ret != NJS_OK) {
                 return ret;
             }
         }
@@ -1370,6 +1397,13 @@ slow_path:
     prop = njs_object_prop_alloc(vm, &pq.key, &njs_value_undefined, 1);
     if (njs_slow_path(prop == NULL)) {
         return NJS_ERROR;
+    }
+
+    if (!prop->name.atom_id) {
+        ret = njs_atom_atomize_key(vm, &prop->name);
+        if (ret != NJS_OK) {
+            return NJS_ERROR;
+        }
     }
 
     pq.lhq.replace = 0;
