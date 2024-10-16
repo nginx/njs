@@ -44,7 +44,6 @@ njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
     end = external + n;
 
     while (external < end) {
-
         if ((external->flags & NJS_EXTERN_TYPE_MASK) == NJS_EXTERN_SELF) {
             slot->writable = external->u.object.writable;
             slot->configurable = external->u.object.configurable;
@@ -57,8 +56,7 @@ njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
             continue;
         }
 
-        prop = njs_object_prop_alloc(vm, &njs_string_empty,
-                                     &njs_value_invalid, 1);
+        prop = njs_object_prop_alloc(vm, &njs_atom.vs_, &njs_value_invalid, 1);
         if (njs_slow_path(prop == NULL)) {
             goto memory_error;
         }
@@ -69,7 +67,6 @@ njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
 
         if (external->flags & NJS_EXTERN_SYMBOL) {
             njs_set_symbol(&prop->name, external->name.symbol, NULL);
-
             lhq.key_hash = external->name.symbol;
 
         } else {
@@ -80,9 +77,16 @@ njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
                 return NJS_ERROR;
             }
 
+            ret = njs_atom_atomize_key(vm, &prop->name);
+            if (ret != NJS_OK) {
+                return ret;
+            }
+
             lhq.key = external->name.string;
             lhq.key_hash = njs_djb_hash(lhq.key.start, lhq.key.length);
         }
+
+
 
         lhq.value = prop;
 
@@ -235,6 +239,11 @@ njs_external_prop_handler(njs_vm_t *vm, njs_object_prop_t *self,
     prop->configurable = self->configurable;
     prop->enumerable = self->enumerable;
 
+    ret = njs_atom_atomize_key(vm, &prop->name);
+    if (ret != NJS_OK) {
+        return ret;
+    }
+
     lhq.value = prop;
     njs_string_get(&self->name, &lhq.key);
     lhq.key_hash = njs_prop_magic32(self);
@@ -325,7 +334,7 @@ njs_vm_external_constructor_handler(njs_vm_t *vm, njs_object_prop_t *prop,
 
 njs_int_t
 njs_vm_external_constructor(njs_vm_t *vm, const njs_str_t *name,
-    njs_function_native_t native, const njs_external_t *ctor_props,
+    const njs_function_native_t native, const njs_external_t *ctor_props,
     njs_uint_t ctor_nprops, const njs_external_t *proto_props,
     njs_uint_t proto_nprops)
 {

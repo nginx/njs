@@ -109,7 +109,7 @@ typedef njs_int_t (*njs_function_native_t) (njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t magic8, njs_value_t *retval);
 
 
-typedef enum {
+enum {
     NJS_SYMBOL_INVALID,
     NJS_SYMBOL_ASYNC_ITERATOR,
     NJS_SYMBOL_HAS_INSTANCE,
@@ -125,7 +125,7 @@ typedef enum {
     NJS_SYMBOL_TO_STRING_TAG,
     NJS_SYMBOL_UNSCOPABLES,
     NJS_SYMBOL_KNOWN_MAX,
-} njs_wellknown_symbol_t;
+};
 
 
 typedef enum {
@@ -290,6 +290,8 @@ typedef njs_int_t (*njs_iterator_handler_t)(njs_vm_t *vm,
 
 
 NJS_EXPORT void njs_vm_opt_init(njs_vm_opt_t *options);
+NJS_EXPORT njs_vm_t *njs_vm_create_parent(njs_vm_opt_t *options,
+    njs_vm_t *vm_parent);
 NJS_EXPORT njs_vm_t *njs_vm_create(njs_vm_opt_t *options);
 NJS_EXPORT void njs_vm_destroy(njs_vm_t *vm);
 
