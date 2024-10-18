@@ -55,6 +55,11 @@ http {
             proxy_pass http://127.0.0.1:8081/source;
         }
 
+        location /buffer_type_nonutf8 {
+            js_body_filter test.buffer_type buffer_type=buffer;
+            proxy_pass http://127.0.0.1:8081/nonutf8_source;
+        }
+
         location /forward {
             js_body_filter test.forward buffer_type=string;
             proxy_pass http://127.0.0.1:8081/source;
@@ -79,6 +84,11 @@ http {
         location /source {
             postpone_output 1;
             js_content test.source;
+        }
+
+        location /nonutf8_source {
+            postpone_output 1;
+            js_content test.nonutf8_source;
         }
     }
 }
@@ -128,6 +138,17 @@ $t->write_file('test.js', <<EOF);
         chain(chunks, 0);
     }
 
+    function nonutf8_source(r) {
+        var chunks = ['aaaa', 'bb', 'cc', 'dddd'].map(v=>Buffer.from(v, 'hex'));
+        chunks.delay = 5;
+        chunks.r = r;
+        chunks.chain = chain;
+
+        r.status = 200;
+        r.sendHeader();
+        chain(chunks, 0);
+    }
+
     function filter(r, data, flags) {
         if (flags.last || data.length >= Number(r.args.len)) {
             r.sendBuffer(`\${data}|`, flags);
@@ -149,16 +170,18 @@ $t->write_file('test.js', <<EOF);
     }
 
     export default {njs: test_njs, append, buffer_type, filter, forward,
-                    prepend, source};
+                    prepend, source, nonutf8_source};
 
 EOF
 
-$t->try_run('no njs body filter')->plan(6);
+$t->try_run('no njs body filter')->plan(7);
 
 ###############################################################################
 
 like(http_get('/append'), qr/AAABBCDDDDXXX/, 'append');
 like(http_get('/buffer_type'), qr/AAABBCDDDD/, 'buffer type');
+like(http_get('/buffer_type_nonutf8'), qr/\xaa\xaa\xbb\xcc\xdd\xdd/,
+	'buffer type nonutf8');
 like(http_get('/forward'), qr/AAABBCDDDD/, 'forward');
 like(http_get('/filter?len=3'), qr/AAA|DDDD|/, 'filter 3');
 like(http_get('/filter?len=2&dup=1'), qr/AAA|AAABB|BBDDDD|DDDD/,
