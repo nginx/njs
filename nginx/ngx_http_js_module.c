@@ -7921,20 +7921,24 @@ ngx_http_js_body_filter_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     jlcf->buffer_type = NGX_JS_STRING;
 
-    if (cf->args->nelts == 3
-         && ngx_strncmp(value[2].data, "buffer_type=", 12) == 0)
-    {
-        if (ngx_strcmp(&value[2].data[12], "string") == 0) {
-            jlcf->buffer_type = NGX_JS_STRING;
+    if (cf->args->nelts == 3) {
+        if (ngx_strncmp(value[2].data, "buffer_type=", 12) == 0) {
+            if (ngx_strcmp(&value[2].data[12], "string") == 0) {
+                jlcf->buffer_type = NGX_JS_STRING;
 
-        } else if (ngx_strcmp(&value[2].data[12], "buffer") == 0) {
-            jlcf->buffer_type = NGX_JS_BUFFER;
+            } else if (ngx_strcmp(&value[2].data[12], "buffer") == 0) {
+                jlcf->buffer_type = NGX_JS_BUFFER;
 
+            } else {
+                ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                                   "invalid buffer_type value \"%V\", "
+                                   "it must be \"string\" or \"buffer\"",
+                                   &value[2]);
+                return NGX_CONF_ERROR;
+            }
         } else {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-                               "invalid buffer_type value \"%V\", "
-                               "it must be \"string\" or \"buffer\"",
-                               &value[2]);
+                               "invalid parameter \"%V\"", &value[2]);
             return NGX_CONF_ERROR;
         }
     }
