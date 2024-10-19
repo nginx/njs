@@ -1979,10 +1979,15 @@ ngx_qjs_module_loader(JSContext *cx, const char *module_name, void *opaque)
     info.name.start = (u_char *) module_name;
     info.name.length = njs_strlen(module_name);
 
+    errno = 0;
     ret = ngx_js_module_lookup(conf, &info);
     if (ret != NJS_OK) {
-        JS_ThrowReferenceError(cx, "could not load module filename '%s'",
-                               module_name);
+        if (errno != 0) {
+            JS_ThrowReferenceError(cx, "Cannot load module \"%s\" "
+                                   "(%s:%s)", module_name,
+                                   ngx_js_errno_string(errno), strerror(errno));
+        }
+
         return NULL;
     }
 
@@ -3764,8 +3769,14 @@ ngx_js_module_loader(njs_vm_t *vm, njs_external_ptr_t external, njs_str_t *name)
 
     info.name = *name;
 
+    errno = 0;
     ret = ngx_js_module_lookup(conf, &info);
     if (njs_slow_path(ret != NJS_OK)) {
+        if (errno != 0) {
+            njs_vm_ref_error(vm, "Cannot load module \"%V\" (%s:%s)", name,
+                             ngx_js_errno_string(errno), strerror(errno));
+        }
+
         return NULL;
     }
 
@@ -4073,6 +4084,341 @@ ngx_js_monotonic_time(void)
 
     return (uint64_t) tv.tv_sec * 1000000000 + tv.tv_usec * 1000;
 #endif
+}
+
+
+#define ngx_js_errno_case(e)                                                \
+    case e:                                                                 \
+        return #e;
+
+
+const char*
+ngx_js_errno_string(int errnum)
+{
+    switch (errnum) {
+#ifdef EACCES
+    ngx_js_errno_case(EACCES);
+#endif
+
+#ifdef EADDRINUSE
+    ngx_js_errno_case(EADDRINUSE);
+#endif
+
+#ifdef EADDRNOTAVAIL
+    ngx_js_errno_case(EADDRNOTAVAIL);
+#endif
+
+#ifdef EAFNOSUPPORT
+    ngx_js_errno_case(EAFNOSUPPORT);
+#endif
+
+#ifdef EAGAIN
+    ngx_js_errno_case(EAGAIN);
+#endif
+
+#ifdef EWOULDBLOCK
+#if EAGAIN != EWOULDBLOCK
+    ngx_js_errno_case(EWOULDBLOCK);
+#endif
+#endif
+
+#ifdef EALREADY
+    ngx_js_errno_case(EALREADY);
+#endif
+
+#ifdef EBADF
+    ngx_js_errno_case(EBADF);
+#endif
+
+#ifdef EBADMSG
+    ngx_js_errno_case(EBADMSG);
+#endif
+
+#ifdef EBUSY
+    ngx_js_errno_case(EBUSY);
+#endif
+
+#ifdef ECANCELED
+    ngx_js_errno_case(ECANCELED);
+#endif
+
+#ifdef ECHILD
+    ngx_js_errno_case(ECHILD);
+#endif
+
+#ifdef ECONNABORTED
+    ngx_js_errno_case(ECONNABORTED);
+#endif
+
+#ifdef ECONNREFUSED
+    ngx_js_errno_case(ECONNREFUSED);
+#endif
+
+#ifdef ECONNRESET
+    ngx_js_errno_case(ECONNRESET);
+#endif
+
+#ifdef EDEADLK
+    ngx_js_errno_case(EDEADLK);
+#endif
+
+#ifdef EDESTADDRREQ
+    ngx_js_errno_case(EDESTADDRREQ);
+#endif
+
+#ifdef EDOM
+    ngx_js_errno_case(EDOM);
+#endif
+
+#ifdef EDQUOT
+    ngx_js_errno_case(EDQUOT);
+#endif
+
+#ifdef EEXIST
+    ngx_js_errno_case(EEXIST);
+#endif
+
+#ifdef EFAULT
+    ngx_js_errno_case(EFAULT);
+#endif
+
+#ifdef EFBIG
+    ngx_js_errno_case(EFBIG);
+#endif
+
+#ifdef EHOSTUNREACH
+    ngx_js_errno_case(EHOSTUNREACH);
+#endif
+
+#ifdef EIDRM
+    ngx_js_errno_case(EIDRM);
+#endif
+
+#ifdef EILSEQ
+    ngx_js_errno_case(EILSEQ);
+#endif
+
+#ifdef EINPROGRESS
+    ngx_js_errno_case(EINPROGRESS);
+#endif
+
+#ifdef EINTR
+    ngx_js_errno_case(EINTR);
+#endif
+
+#ifdef EINVAL
+    ngx_js_errno_case(EINVAL);
+#endif
+
+#ifdef EIO
+    ngx_js_errno_case(EIO);
+#endif
+
+#ifdef EISCONN
+    ngx_js_errno_case(EISCONN);
+#endif
+
+#ifdef EISDIR
+    ngx_js_errno_case(EISDIR);
+#endif
+
+#ifdef ELOOP
+    ngx_js_errno_case(ELOOP);
+#endif
+
+#ifdef EMFILE
+    ngx_js_errno_case(EMFILE);
+#endif
+
+#ifdef EMLINK
+    ngx_js_errno_case(EMLINK);
+#endif
+
+#ifdef EMSGSIZE
+    ngx_js_errno_case(EMSGSIZE);
+#endif
+
+#ifdef EMULTIHOP
+    ngx_js_errno_case(EMULTIHOP);
+#endif
+
+#ifdef ENAMETOOLONG
+    ngx_js_errno_case(ENAMETOOLONG);
+#endif
+
+#ifdef ENETDOWN
+    ngx_js_errno_case(ENETDOWN);
+#endif
+
+#ifdef ENETRESET
+    ngx_js_errno_case(ENETRESET);
+#endif
+
+#ifdef ENETUNREACH
+    ngx_js_errno_case(ENETUNREACH);
+#endif
+
+#ifdef ENFILE
+    ngx_js_errno_case(ENFILE);
+#endif
+
+#ifdef ENOBUFS
+    ngx_js_errno_case(ENOBUFS);
+#endif
+
+#ifdef ENODATA
+    ngx_js_errno_case(ENODATA);
+#endif
+
+#ifdef ENODEV
+    ngx_js_errno_case(ENODEV);
+#endif
+
+#ifdef ENOENT
+    ngx_js_errno_case(ENOENT);
+#endif
+
+#ifdef ENOEXEC
+    ngx_js_errno_case(ENOEXEC);
+#endif
+
+#ifdef ENOLINK
+    ngx_js_errno_case(ENOLINK);
+#endif
+
+#ifdef ENOLCK
+#if ENOLINK != ENOLCK
+    ngx_js_errno_case(ENOLCK);
+#endif
+#endif
+
+#ifdef ENOMEM
+    ngx_js_errno_case(ENOMEM);
+#endif
+
+#ifdef ENOMSG
+    ngx_js_errno_case(ENOMSG);
+#endif
+
+#ifdef ENOPROTOOPT
+    ngx_js_errno_case(ENOPROTOOPT);
+#endif
+
+#ifdef ENOSPC
+    ngx_js_errno_case(ENOSPC);
+#endif
+
+#ifdef ENOSR
+    ngx_js_errno_case(ENOSR);
+#endif
+
+#ifdef ENOSTR
+    ngx_js_errno_case(ENOSTR);
+#endif
+
+#ifdef ENOSYS
+    ngx_js_errno_case(ENOSYS);
+#endif
+
+#ifdef ENOTCONN
+    ngx_js_errno_case(ENOTCONN);
+#endif
+
+#ifdef ENOTDIR
+    ngx_js_errno_case(ENOTDIR);
+#endif
+
+#ifdef ENOTEMPTY
+#if ENOTEMPTY != EEXIST
+    ngx_js_errno_case(ENOTEMPTY);
+#endif
+#endif
+
+#ifdef ENOTSOCK
+    ngx_js_errno_case(ENOTSOCK);
+#endif
+
+#ifdef ENOTSUP
+    ngx_js_errno_case(ENOTSUP);
+#else
+#ifdef EOPNOTSUPP
+    ngx_js_errno_case(EOPNOTSUPP);
+#endif
+#endif
+
+#ifdef ENOTTY
+    ngx_js_errno_case(ENOTTY);
+#endif
+
+#ifdef ENXIO
+    ngx_js_errno_case(ENXIO);
+#endif
+
+#ifdef EOVERFLOW
+    ngx_js_errno_case(EOVERFLOW);
+#endif
+
+#ifdef EPERM
+    ngx_js_errno_case(EPERM);
+#endif
+
+#ifdef EPIPE
+    ngx_js_errno_case(EPIPE);
+#endif
+
+#ifdef EPROTO
+    ngx_js_errno_case(EPROTO);
+#endif
+
+#ifdef EPROTONOSUPPORT
+    ngx_js_errno_case(EPROTONOSUPPORT);
+#endif
+
+#ifdef EPROTOTYPE
+    ngx_js_errno_case(EPROTOTYPE);
+#endif
+
+#ifdef ERANGE
+    ngx_js_errno_case(ERANGE);
+#endif
+
+#ifdef EROFS
+    ngx_js_errno_case(EROFS);
+#endif
+
+#ifdef ESPIPE
+    ngx_js_errno_case(ESPIPE);
+#endif
+
+#ifdef ESRCH
+    ngx_js_errno_case(ESRCH);
+#endif
+
+#ifdef ESTALE
+    ngx_js_errno_case(ESTALE);
+#endif
+
+#ifdef ETIME
+    ngx_js_errno_case(ETIME);
+#endif
+
+#ifdef ETIMEDOUT
+    ngx_js_errno_case(ETIMEDOUT);
+#endif
+
+#ifdef ETXTBSY
+    ngx_js_errno_case(ETXTBSY);
+#endif
+
+#ifdef EXDEV
+    ngx_js_errno_case(EXDEV);
+#endif
+
+    default:
+        break;
+    }
+
+    return "UNKNOWN CODE";
 }
 
 

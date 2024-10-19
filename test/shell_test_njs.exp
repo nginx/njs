@@ -173,13 +173,13 @@ njs_test {
 # quiet mode
 
 njs_run {"-q" "test/js/import_chain.t.js"} \
-        "SyntaxError: Cannot find module \"lib2.js\" in 7"
+        "ReferenceError: Cannot load module \"lib2.js\" in 7"
 
 # sandboxing
 
 njs_test {
     {"var fs = require('fs')\r\n"
-     "Error: Cannot find module \"fs\"\r\n"}
+     "Error: Cannot load module \"fs\"\r\n"}
 } "-s"
 
 njs_test {
