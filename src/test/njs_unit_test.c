@@ -18975,7 +18975,7 @@ static njs_unit_test_t  njs_test[] =
     /* require(). */
 
     { njs_str("require('unknown_module')"),
-      njs_str("Error: Cannot find module \"unknown_module\"") },
+      njs_str("Error: Cannot load module \"unknown_module\"") },
 
     { njs_str("require()"),
       njs_str("TypeError: missing path") },
@@ -19045,7 +19045,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("SyntaxError: Unexpected token \"{\" in 1") },
 
     { njs_str("import x from ''"),
-      njs_str("SyntaxError: Cannot find module \"\" in 1") },
+      njs_str("ReferenceError: Cannot load module \"\" in 1") },
 
     { njs_str("export"),
       njs_str("SyntaxError: Illegal export statement in 1") },

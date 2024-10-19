@@ -148,7 +148,7 @@ njs_module_require(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     module = njs_module_find(vm, &name, 0);
     if (njs_slow_path(module == NULL)) {
-        njs_error(vm, "Cannot find module \"%V\"", &name);
+        njs_error(vm, "Cannot load module \"%V\"", &name);
 
         return NJS_ERROR;
     }

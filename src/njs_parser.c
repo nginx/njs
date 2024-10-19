@@ -8114,7 +8114,7 @@ njs_parser_module(njs_parser_t *parser, njs_str_t *name)
     vm = parser->vm;
 
     if (name->length == 0) {
-        njs_parser_syntax_error(parser, "Cannot find module \"%V\"", name);
+        njs_parser_ref_error(parser, "Cannot load module \"%V\"", name);
         return NULL;
     }
 
@@ -8124,13 +8124,16 @@ njs_parser_module(njs_parser_t *parser, njs_str_t *name)
     }
 
     if (vm->module_loader == NULL) {
-        njs_parser_syntax_error(parser, "Cannot load module \"%V\"", name);
+        njs_parser_ref_error(parser, "Module loader callback is not provided");
         return NULL;
     }
 
     module = vm->module_loader(vm, vm->module_loader_opaque, name);
     if (module == NULL) {
-        njs_parser_syntax_error(parser, "Cannot find module \"%V\"", name);
+        if (!njs_is_valid(&vm->exception)) {
+            njs_parser_ref_error(parser, "Cannot load module \"%V\"", name);
+        }
+
         return NULL;
     }
 

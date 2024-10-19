@@ -72,6 +72,8 @@ extern const njs_value_t            njs_value_undefined;
     njs_vm_error2(vm, 2, fmt, ##__VA_ARGS__)
 #define njs_vm_range_error(vm, fmt, ...)                                      \
     njs_vm_error2(vm, 3, fmt, ##__VA_ARGS__)
+#define njs_vm_ref_error(vm, fmt, ...)                                        \
+    njs_vm_error2(vm, 4, fmt, ##__VA_ARGS__)
 #define njs_vm_syntax_error(vm, fmt, ...)                                     \
     njs_vm_error2(vm, 5, fmt, ##__VA_ARGS__)
 #define njs_vm_type_error(vm, fmt, ...)                                       \

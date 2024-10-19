@@ -412,6 +412,7 @@ njs_int_t ngx_js_ext_flags(njs_vm_t *vm, njs_object_prop_t *prop,
 
 ngx_int_t ngx_js_string(njs_vm_t *vm, njs_value_t *value, njs_str_t *str);
 ngx_int_t ngx_js_integer(njs_vm_t *vm, njs_value_t *value, ngx_int_t *n);
+const char *ngx_js_errno_string(int errnum);
 
 ngx_js_queue_t *ngx_js_queue_create(ngx_pool_t *pool, ngx_uint_t capacity);
 ngx_int_t ngx_js_queue_push(ngx_js_queue_t *queue, void *item);
