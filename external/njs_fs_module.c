@@ -160,6 +160,8 @@ static njs_int_t njs_fs_read_file(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t calltype, njs_value_t *retval);
 static njs_int_t njs_fs_readdir(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t calltype, njs_value_t *retval);
+static njs_int_t njs_fs_readlink(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t calltype, njs_value_t *retval);
 static njs_int_t njs_fs_realpath(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t calltype, njs_value_t *retval);
 static njs_int_t njs_fs_rename(njs_vm_t *vm, njs_value_t *args,
@@ -411,6 +413,17 @@ static njs_external_t  njs_ext_fs_promises[] = {
         .configurable = 1,
         .u.method = {
             .native = njs_fs_readdir,
+            .magic8 = NJS_FS_PROMISE,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("readlink"),
+        .writable = 1,
+        .configurable = 1,
+        .u.method = {
+            .native = njs_fs_readlink,
             .magic8 = NJS_FS_PROMISE,
         }
     },
@@ -722,6 +735,28 @@ static njs_external_t  njs_ext_fs[] = {
         .configurable = 1,
         .u.method = {
             .native = njs_fs_read,
+            .magic8 = NJS_FS_DIRECT,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("readlink"),
+        .writable = 1,
+        .configurable = 1,
+        .u.method = {
+            .native = njs_fs_readlink,
+            .magic8 = NJS_FS_CALLBACK,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("readlinkSync"),
+        .writable = 1,
+        .configurable = 1,
+        .u.method = {
+            .native = njs_fs_readlink,
             .magic8 = NJS_FS_DIRECT,
         }
     },
@@ -2026,6 +2061,99 @@ done:
     if (dir != NULL) {
         (void) closedir(dir);
     }
+
+    if (ret == NJS_OK) {
+        return njs_fs_result(vm, &result, calltype, callback, 2, retval);
+    }
+
+    return NJS_ERROR;
+}
+
+
+static njs_int_t
+njs_fs_readlink(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t calltype, njs_value_t *retval)
+{
+    ssize_t                      n;
+    njs_int_t                    ret;
+    njs_str_t                    s;
+    const char                   *path;
+    njs_value_t                  *callback, *options;
+    njs_opaque_value_t           encode, result;
+    const njs_buffer_encoding_t  *encoding;
+    char                         path_buf[NJS_MAX_PATH + 1],
+                                 dst_buf[NJS_MAX_PATH + 1];
+
+    path = njs_fs_path(vm, path_buf, njs_arg(args, nargs, 1), "path");
+    if (njs_slow_path(path == NULL)) {
+        return NJS_ERROR;
+    }
+
+    callback = NULL;
+    options = njs_arg(args, nargs, 2);
+
+    if (calltype == NJS_FS_CALLBACK) {
+        callback = njs_arg(args, nargs, njs_min(nargs - 1, 3));
+        if (!njs_value_is_function(callback)) {
+            njs_vm_type_error(vm, "\"callback\" must be a function");
+            return NJS_ERROR;
+        }
+
+        if (options == callback) {
+            options = njs_value_arg(&njs_value_undefined);
+        }
+    }
+
+    njs_value_undefined_set(njs_value_arg(&encode));
+
+    if (njs_value_is_string(options)) {
+        njs_value_assign(&encode, options);
+
+    } else if (!njs_value_is_undefined(options)) {
+        if (!njs_value_is_object(options)) {
+            njs_vm_type_error(vm, "Unknown options type "
+                              "(a string or object required)");
+            return NJS_ERROR;
+        }
+
+        (void) njs_vm_object_prop(vm, options, &string_encoding, &encode);
+    }
+
+    encoding = NULL;
+
+    if (njs_value_is_string(njs_value_arg(&encode))) {
+        njs_value_string_get(njs_value_arg(&encode), &s);
+
+    } else {
+        s.length = 0;
+        s.start = NULL;
+    }
+
+    if (!njs_strstr_eq(&s, &string_buffer)) {
+        encoding = njs_buffer_encoding(vm, njs_value_arg(&encode), 1);
+        if (njs_slow_path(encoding == NULL)) {
+            return NJS_ERROR;
+        }
+    }
+
+    s.start = (u_char *) dst_buf;
+    n = readlink(path, dst_buf, sizeof(dst_buf) - 1);
+    if (njs_slow_path(n < 0)) {
+        ret = njs_fs_error(vm, "readlink", strerror(errno), path, errno,
+                           &result);
+        goto done;
+    }
+
+    s.length = n;
+
+    if (encoding == NULL) {
+        ret = njs_buffer_new(vm, njs_value_arg(&result), s.start, s.length);
+
+    } else {
+        ret = encoding->encode(vm, njs_value_arg(&result), &s);
+    }
+
+done:
 
     if (ret == NJS_OK) {
         return njs_fs_result(vm, &result, calltype, callback, 2, retval);

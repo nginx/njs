@@ -435,6 +435,56 @@ let realpathP_tsuite = {
     get tests() { return realpath_tests() },
 };
 
+async function readlink_test(params) {
+    let lname = params.args[0];
+    try { fs.unlinkSync(lname); } catch (e) {}
+    fs.symlinkSync("test/fs/ascii", lname);
+
+    let data = await method("readlink", params);
+
+    if (!params.check(data)) {
+        throw Error(`readlink failed check`);
+    }
+
+    return 'SUCCESS';
+}
+
+let readlink_tests = () => [
+    { args: [`${test_dir}/symlink`],
+      check: (data) => data.endsWith("test/fs/ascii") },
+    { args: [`${test_dir}/symlink`, {encoding:'buffer'}],
+      check: (data) => data instanceof Buffer },
+    { args: [`${test_dir}/symlink`, {encoding:'hex'}],
+      check: (data) => data.endsWith("746573742f66732f6173636969") },
+];
+
+let readlink_tsuite = {
+    name: "fs readlink",
+    skip: () => (!has_fs() || !has_buffer()),
+    T: readlink_test,
+    prepare_args: p,
+    opts: { type: "callback" },
+    get tests() { return readlink_tests() },
+};
+
+let readlinkSync_tsuite = {
+    name: "fs readlinkSync",
+    skip: () => (!has_fs() || !has_buffer()),
+    T: readlink_test,
+    prepare_args: p,
+    opts: { type: "sync" },
+    get tests() { return readlink_tests() },
+};
+
+let readlinkP_tsuite = {
+    name: "fsp readlink",
+    skip: () => (!has_fs() || !has_buffer()),
+    T: readlink_test,
+    prepare_args: p,
+    opts: { type: "promise" },
+    get tests() { return readlink_tests() },
+};
+
 async function method_test(params) {
     if (params.init) {
         params.init(params);
@@ -1190,6 +1240,9 @@ run([
     realpath_tsuite,
     realpathSync_tsuite,
     realpathP_tsuite,
+    readlink_tsuite,
+    readlinkSync_tsuite,
+    readlinkP_tsuite,
     stat_tsuite,
     statSync_tsuite,
     statP_tsuite,
