@@ -1,3 +1,28 @@
+Changes with njs 0.8.7                                       22 Oct 2024
+
+    nginx modules:
+
+    *) Bugfix: eliminated unnecessary VM creation.
+       Previously, njs consumed memory proportionally to the number of
+       nginx locations. The issue was introduced in 9b674412 (0.8.6).
+
+    *) Improvement: added strict syntax validation for js_body_filter.
+
+    *) Improvement: improved error messages for module loading
+       failures.
+
+    Core:
+
+    *) Feature: implemented fs.readlink() and friends.
+
+    *) Improvement: implemented lazy stack symbolization.
+
+    *) Bugfix: fixed heap-buffer-overflow in Buffer.prototype.indexOf().
+       The issue was introduced in 5d15a8d6 (0.8.6).
+
+    *) Bugfix: fixed Buffer.prototype.lastIndexOf() when `from` is
+       provided.
+
 Changes with njs 0.8.6                                       02 Oct 2024
 
     nginx modules:
