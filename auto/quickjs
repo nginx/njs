@@ -25,7 +25,6 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
                           JSRuntime *rt;
 
                           rt = JS_NewRuntime();
-                          (void) JS_GetClassID;
                           JS_FreeRuntime(rt);
                           return 0;
                      }"
@@ -55,6 +54,28 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
     fi
 
     if [ $njs_found = yes ]; then
+
+        njs_feature="QuickJS JS_GetClassID()"
+        njs_feature_test="#if defined(__GNUC__) && (__GNUC__ >= 8)
+                          #pragma GCC diagnostic push
+                          #pragma GCC diagnostic ignored \"-Wcast-function-type\"
+                          #endif
+
+                          #include <quickjs.h>
+
+                          int main() {
+                              (void) JS_GetClassID;
+                              return 0;
+                         }"
+
+        . auto/feature
+
+        if [ $njs_found = no ]; then
+            echo
+            echo $0: error: QuickJS library found, but JS_GetClassID\(\) is missing.
+            echo
+            exit 1;
+        fi
 
         njs_feature="QuickJS JS_NewTypedArray()"
         njs_feature_test="#if defined(__GNUC__) && (__GNUC__ >= 8)
