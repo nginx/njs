@@ -258,6 +258,12 @@ sudo apt install gcc make
 sudo apt install libpcre3-dev zlib1g-dev libssl-dev libxml2-dev libxslt-dev
 ```
 
+For building with [QuickJS](https://nginx.org/en/docs/njs/engine.html), you will also need to clone the QuickJS repository:
+
+```bash
+git clone https://github.com/bellard/quickjs
+```
+
 > [!WARNING]
 > This is the minimal set of dependency libraries needed to build NGINX and NJS. Other dependencies may be required if you choose to build NGINX with additional modules. Monitor the output of the `configure` command discussed in the following sections for information on which modules may be missing.
 
@@ -304,6 +310,12 @@ To build NGINX JavaScript as a dynamic module, execute the following commands fr
 
 ```bash
 auto/configure --add-dynamic-module=<NJS_SRC_ROOT_DIR>/nginx
+```
+
+To build with [QuickJS](https://nginx.org/en/docs/njs/engine.html) support, provide include and library path using `--with-cc-opt=` and `--with-ld-opt=` options:
+```bash
+auto/configure --add-dynamic-module=<NJS_SRC_ROOT_DIR>/nginx \
+    --with-cc-opt="-I<QUICKJS_SRC_ROOT_DIR>" --with-ld-opt="-L<QUICKJS_SRC_ROOT_DIR>"
 ```
 
 > [!WARNING]
