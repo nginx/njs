@@ -1136,6 +1136,7 @@ static JSClassDef ngx_http_qjs_headers_out_class = {
 
 qjs_module_t *njs_http_qjs_addon_modules[] = {
     &ngx_qjs_ngx_module,
+    &ngx_qjs_ngx_shared_dict_module,
     /*
      * Shared addons should be in the same order and the same positions
      * in all nginx modules.

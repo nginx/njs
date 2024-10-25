@@ -42,6 +42,7 @@ http {
     js_shared_dict_zone zone=bar:64k type=string;
     js_shared_dict_zone zone=waka:32k timeout=1000s type=number;
     js_shared_dict_zone zone=no_timeout:32k;
+    js_shared_dict_zone zone=overflow:32k;
 
     server {
         listen       127.0.0.1:8080;
@@ -101,6 +102,10 @@ http {
 
         location /name {
             js_content test.name;
+        }
+
+        location /overflow {
+            js_content test.overflow;
         }
 
         location /pop {
@@ -264,6 +269,27 @@ $t->write_file('test.js', <<'EOF');
         r.return(200, dict.replace(r.args.key, value));
     }
 
+    function overflow(r) {
+        var dict = ngx.shared.overflow;
+
+        var v = 'x'.repeat(1024);
+        try {
+            for (var i = 0; i < 1024; i++) {
+                dict.set('key' + i, v);
+            }
+        } catch (e) {
+            if (e instanceof SharedMemoryError) {
+                r.return(200, 'SharedMemoryError');
+                return;
+            }
+
+            r.return(200, e.toString());
+            return;
+        }
+
+        r.return(200, 'no exception');
+    }
+
     function pop(r) {
         var dict = ngx.shared[r.args.dict];
         var val = dict.pop(r.args.key);
@@ -311,14 +337,12 @@ $t->write_file('test.js', <<'EOF');
 
     export default { add, capacity, chain, clear, del, free_space, get, has,
                      incr, items, keys, name, njs: test_njs, pop, replace, set,
-                     set_clear, size, zones, engine };
+                     set_clear, size, zones, engine, overflow };
 EOF
 
 $t->try_run('no js_shared_dict_zone');
 
-plan(skip_all => 'not yet') if http_get('/engine') =~ /QuickJS$/m;
-
-$t->plan(51);
+$t->plan(52);
 
 ###############################################################################
 
@@ -414,6 +438,13 @@ like(http_get('/clear?dict=foo'), qr/undefined/, 'clear foo');
 like(http_get('/size?dict=foo'), qr/size: 0/, 'no of items in foo after clear');
 like(http_get('/set_clear'), qr/size: 0/,
 	'no of items in no_timeout after clear');
+
+TODO: {
+local $TODO = 'not yet' unless has_version('0.8.8');
+
+like(http_get('/overflow'), qr/SharedMemoryError/, 'overflow exception');
+
+}
 
 ###############################################################################
 

@@ -127,8 +127,6 @@ EOF
 
 $t->try_run('no js_shared_dict_zone');
 
-plan(skip_all => 'not yet') if http_get('/engine') =~ /QuickJS$/m;
-
 $t->plan(9);
 
 $t->run_daemon(\&stream_daemon, port(8090));
