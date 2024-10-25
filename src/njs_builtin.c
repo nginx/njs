@@ -7,6 +7,7 @@
 
 
 #include <njs_main.h>
+#include <signal.h>
 
 
 typedef struct {
@@ -20,6 +21,12 @@ typedef struct {
     njs_lvlhsh_t               keys;
     njs_str_t                  match;
 } njs_builtin_traverse_t;
+
+
+typedef struct {
+    njs_str_t       name;
+    int             value;
+} njs_signal_entry_t;
 
 
 static njs_int_t njs_global_this_prop_handler(njs_vm_t *vm,
@@ -96,6 +103,31 @@ static const njs_object_type_init_t *const
     &njs_uri_error_type_init,
     &njs_memory_error_type_init,
     &njs_aggregate_error_type_init,
+};
+
+
+/* P1990 signals from `man 7 signal` are supported */
+static njs_signal_entry_t njs_signals_table[] = {
+    { njs_str("ABRT"), SIGABRT },
+    { njs_str("ALRM"), SIGALRM },
+    { njs_str("CHLD"), SIGCHLD },
+    { njs_str("CONT"), SIGCONT },
+    { njs_str("FPE"),  SIGFPE  },
+    { njs_str("HUP"),  SIGHUP  },
+    { njs_str("ILL"),  SIGILL  },
+    { njs_str("INT"),  SIGINT  },
+    { njs_str("KILL"), SIGKILL },
+    { njs_str("PIPE"), SIGPIPE },
+    { njs_str("QUIT"), SIGQUIT },
+    { njs_str("SEGV"), SIGSEGV },
+    { njs_str("STOP"), SIGSTOP },
+    { njs_str("TSTP"), SIGTSTP },
+    { njs_str("TERM"), SIGTERM },
+    { njs_str("TTIN"), SIGTTIN },
+    { njs_str("TTOU"), SIGTTOU },
+    { njs_str("USR1"), SIGUSR1 },
+    { njs_str("USR2"), SIGUSR2 },
+    { njs_null_str, 0 }
 };
 
 
@@ -1380,6 +1412,67 @@ njs_process_object_ppid(njs_vm_t *vm, njs_object_prop_t *prop,
 }
 
 
+static njs_int_t
+njs_ext_process_kill(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t magic, njs_value_t *retval)
+{
+    int                 signal;
+    njs_str_t           str;
+    njs_uint_t          pid;
+    njs_value_t         *arg;
+    njs_signal_entry_t  *s;
+
+    arg = njs_arg(args, nargs, 1);
+    if (!njs_value_is_number(arg)) {
+        njs_vm_type_error(vm, "\"pid\" is not a number");
+        return NJS_ERROR;
+    }
+
+    pid = njs_value_number(arg);
+    signal = SIGTERM;
+
+    arg = njs_arg(args, nargs, 2);
+    if (njs_value_is_number(arg)) {
+        signal = njs_value_number(arg);
+
+    } else if (njs_value_is_string(arg)) {
+        njs_value_string_get(arg, &str);
+
+        if (str.length < 3 || memcmp(str.start, "SIG", 3) != 0) {
+            njs_vm_type_error(vm, "\"signal\" unknown value: \"%V\"", &str);
+            return NJS_ERROR;
+        }
+
+        str.start += 3;
+        str.length -= 3;
+
+        for (s = &njs_signals_table[0]; s->name.length != 0; s++) {
+            if (njs_strstr_eq(&str, &s->name)) {
+                signal = s->value;
+                break;
+            }
+        }
+
+        if (s->name.length == 0) {
+            njs_vm_type_error(vm, "\"signal\" unknown value");
+            return NJS_ERROR;
+        }
+
+    } else if (!njs_value_is_undefined(arg)) {
+        njs_vm_type_error(vm, "\"signal\" invalid type");
+        return NJS_ERROR;
+    }
+
+    if (kill(pid, signal) < 0) {
+        njs_vm_error(vm, "kill failed with (%d:%s)", errno, strerror(errno));
+        return NJS_ERROR;
+    }
+
+    njs_set_boolean(retval, 1);
+    return NJS_OK;
+}
+
+
 static const njs_object_prop_t  njs_process_object_properties[] =
 {
     {
@@ -1396,6 +1489,8 @@ static const njs_object_prop_t  njs_process_object_properties[] =
     NJS_DECLARE_PROP_HANDLER("pid", njs_process_object_pid, 0, 0, 0),
 
     NJS_DECLARE_PROP_HANDLER("ppid", njs_process_object_ppid, 0, 0, 0),
+
+    NJS_DECLARE_PROP_NATIVE("kill", njs_ext_process_kill, 2, 0),
 };
 
 

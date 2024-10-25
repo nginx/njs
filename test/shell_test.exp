@@ -423,6 +423,9 @@ njs_run {"-c" "console.log(process.pid)"} "\\d+"
 
 njs_run {"-c" "console.log(process.ppid)"} "\\d+"
 
+njs_run {"-c" "console.log(process.kill(process.pid, 0))"} "true"
+njs_run {"-c" "console.log(process.kill(process.pid, 'SIGCHLD'))"} "true"
+
 
 # script args
 

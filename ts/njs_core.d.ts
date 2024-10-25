@@ -579,6 +579,11 @@ interface NjsProcess {
     readonly ppid: number;
     readonly argv: string[];
     readonly env: NjsEnv;
+
+    /**
+     * @since 0.8.8
+     */
+    kill(pid: number, signal?: string | number): true;
 }
 
 declare const process: NjsProcess;
