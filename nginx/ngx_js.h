@@ -60,6 +60,9 @@
 #define NGX_QJS_CLASS_ID_STREAM_PERIODIC (NGX_QJS_CLASS_ID_OFFSET + 8)
 #define NGX_QJS_CLASS_ID_STREAM_FLAGS (NGX_QJS_CLASS_ID_OFFSET + 9)
 #define NGX_QJS_CLASS_ID_STREAM_VARS (NGX_QJS_CLASS_ID_OFFSET + 10)
+#define NGX_QJS_CLASS_ID_SHARED (NGX_QJS_CLASS_ID_OFFSET + 11)
+#define NGX_QJS_CLASS_ID_SHARED_DICT (NGX_QJS_CLASS_ID_OFFSET + 12)
+#define NGX_QJS_CLASS_ID_SHARED_DICT_ERROR (NGX_QJS_CLASS_ID_OFFSET + 13)
 
 
 typedef struct ngx_js_loc_conf_s ngx_js_loc_conf_t;
@@ -377,6 +380,7 @@ ngx_int_t ngx_qjs_string(ngx_engine_t *e, JSValueConst val, ngx_str_t *str);
 
 extern qjs_module_t  qjs_zlib_module;
 extern qjs_module_t  ngx_qjs_ngx_module;
+extern qjs_module_t  ngx_qjs_ngx_shared_dict_module;
 
 #endif
 
