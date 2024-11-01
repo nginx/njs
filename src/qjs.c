@@ -7,12 +7,40 @@
 #include <qjs.h>
 #include <njs.h> /* NJS_VERSION */
 
+#include <sys/types.h>
+#include <unistd.h>
+
+
+extern char  **environ;
+
 
 static JSValue qjs_njs_getter(JSContext *ctx, JSValueConst this_val);
+static JSValue qjs_njs_to_string_tag(JSContext *ctx, JSValueConst this_val);
+static JSValue qjs_process_to_string_tag(JSContext *ctx, JSValueConst this_val);
+static JSValue qjs_process_argv(JSContext *ctx, JSValueConst this_val);
+static JSValue qjs_process_env(JSContext *ctx, JSValueConst this_val);
+static JSValue qjs_process_pid(JSContext *ctx, JSValueConst this_val);
+static JSValue qjs_process_ppid(JSContext *ctx, JSValueConst this_val);
 
 
 static const JSCFunctionListEntry qjs_global_proto[] = {
     JS_CGETSET_DEF("njs", qjs_njs_getter, NULL),
+};
+
+static const JSCFunctionListEntry qjs_njs_proto[] = {
+    JS_CGETSET_DEF("[Symbol.toStringTag]", qjs_njs_to_string_tag, NULL),
+    JS_PROP_STRING_DEF("version", NJS_VERSION, JS_PROP_C_W_E),
+    JS_PROP_INT32_DEF("version_number", NJS_VERSION_NUMBER,
+                      JS_PROP_C_W_E),
+    JS_PROP_STRING_DEF("engine", "QuickJS", JS_PROP_C_W_E),
+};
+
+static const JSCFunctionListEntry qjs_process_proto[] = {
+    JS_CGETSET_DEF("[Symbol.toStringTag]", qjs_process_to_string_tag, NULL),
+    JS_CGETSET_DEF("argv", qjs_process_argv, NULL),
+    JS_CGETSET_DEF("env", qjs_process_env, NULL),
+    JS_CGETSET_DEF("pid", qjs_process_pid, NULL),
+    JS_CGETSET_DEF("ppid", qjs_process_ppid, NULL),
 };
 
 
@@ -91,7 +119,6 @@ qjs_new_context(JSRuntime *rt, qjs_module_t **addons)
 static JSValue
 qjs_njs_getter(JSContext *ctx, JSValueConst this_val)
 {
-    int      ret;
     JSValue  obj;
 
     obj = JS_NewObject(ctx);
@@ -99,73 +126,166 @@ qjs_njs_getter(JSContext *ctx, JSValueConst this_val)
         return JS_EXCEPTION;
     }
 
-    ret = qjs_set_to_string_tag(ctx, obj, "njs");
-    if (ret == -1) {
-        JS_FreeValue(ctx, obj);
+    JS_SetPropertyFunctionList(ctx, obj, qjs_njs_proto,
+                               njs_nitems(qjs_njs_proto));
+
+    return obj;
+}
+
+
+static JSValue
+qjs_njs_to_string_tag(JSContext *ctx, JSValueConst this_val)
+{
+    return JS_NewString(ctx, "njs");
+}
+
+
+static JSValue
+qjs_process_to_string_tag(JSContext *ctx, JSValueConst this_val)
+{
+    return JS_NewString(ctx, "process");
+}
+
+
+static JSValue
+qjs_process_argv(JSContext *ctx, JSValueConst this_val)
+{
+    int         i, ret, argc;
+    JSValue     val, str;
+    const char  **argv;
+
+    val = JS_GetPropertyStr(ctx, this_val, "argc");
+    if (JS_IsException(val)) {
         return JS_EXCEPTION;
     }
 
-    ret = JS_SetPropertyStr(ctx, obj, "version_number",
-                            JS_NewInt32(ctx, NJS_VERSION_NUMBER));
-    if (ret == -1) {
-        JS_FreeValue(ctx, obj);
+    if (JS_ToInt32(ctx, &argc, val) < 0) {
         return JS_EXCEPTION;
     }
 
-    ret = JS_SetPropertyStr(ctx, obj, "version",
-                            JS_NewString(ctx, NJS_VERSION));
-    if (ret == -1) {
-        JS_FreeValue(ctx, obj);
+    argv = JS_GetOpaque(this_val, JS_GetClassID(this_val));
+    if (argv == NULL) {
+        return JS_NewArray(ctx);
+    }
+
+    val = JS_NewArray(ctx);
+    if (JS_IsException(val)) {
         return JS_EXCEPTION;
     }
 
-    ret = JS_SetPropertyStr(ctx, obj, "engine", JS_NewString(ctx, "QuickJS"));
-    if (ret == -1) {
-        JS_FreeValue(ctx, obj);
+    for (i = 0; i < argc; i++) {
+        str = JS_NewStringLen(ctx, argv[i], njs_strlen(argv[i]));
+        if (JS_IsException(str)) {
+            JS_FreeValue(ctx, val);
+            return JS_EXCEPTION;
+        }
+
+        ret = JS_DefinePropertyValueUint32(ctx, val, i, str, JS_PROP_C_W_E);
+        if (ret < 0) {
+            JS_FreeValue(ctx, str);
+            JS_FreeValue(ctx, val);
+            return JS_EXCEPTION;
+        }
+    }
+
+    return val;
+}
+
+
+static JSValue
+qjs_process_env(JSContext *ctx, JSValueConst this_val)
+{
+    int         ret;
+    char        **ep;
+    JSValue     obj;
+    JSAtom      atom;
+    JSValue     str, name;
+    const char  *entry, *value;
+
+    obj = JS_NewObject(ctx);
+    if (JS_IsException(obj)) {
         return JS_EXCEPTION;
+    }
+
+    ep = environ;
+
+    while (*ep != NULL) {
+        entry = *ep++;
+
+        value = (const char *) njs_strchr(entry, '=');
+        if (value == NULL) {
+            continue;
+        }
+
+        str = JS_UNDEFINED;
+        name = JS_NewStringLen(ctx, entry, value - entry);
+        if (JS_IsException(name)) {
+            goto error;
+        }
+
+        value++;
+
+        str = JS_NewStringLen(ctx, value, njs_strlen(value));
+        if (JS_IsException(str)) {
+            goto error;
+        }
+
+        atom = JS_ValueToAtom(ctx, name);
+        if (atom == JS_ATOM_NULL) {
+            goto error;
+        }
+
+        ret = JS_DefinePropertyValue(ctx, obj, atom, str, JS_PROP_C_W_E);
+        JS_FreeAtom(ctx, atom);
+        if (ret < 0) {
+error:
+            JS_FreeValue(ctx, name);
+            JS_FreeValue(ctx, str);
+            return JS_EXCEPTION;
+        }
+
+        JS_FreeValue(ctx, name);
     }
 
     return obj;
 }
 
 
-int
-qjs_set_to_string_tag(JSContext *ctx, JSValueConst val, const char *tag)
+static JSValue
+qjs_process_pid(JSContext *ctx, JSValueConst this_val)
 {
-    int      ret;
-    JSAtom   atom;
-    JSValue  global_obj, symbol, toStringTag;
+    return JS_NewInt32(ctx, getpid());
+}
 
-    global_obj = JS_GetGlobalObject(ctx);
 
-    symbol = JS_GetPropertyStr(ctx, global_obj, "Symbol");
-    JS_FreeValue(ctx, global_obj);
-    if (JS_IsException(symbol)) {
-        return -1;
+static JSValue
+qjs_process_ppid(JSContext *ctx, JSValueConst this_val)
+{
+    return JS_NewInt32(ctx, getppid());
+}
+
+
+JSValue
+qjs_process_object(JSContext *ctx, int argc, const char **argv)
+{
+    JSValue  obj;
+
+    obj = JS_NewObject(ctx);
+    if (JS_IsException(obj)) {
+        return JS_EXCEPTION;
     }
 
-    toStringTag = JS_GetPropertyStr(ctx, symbol, "toStringTag");
-    if (JS_IsException(toStringTag)) {
-        JS_FreeValue(ctx, symbol);
-        return -1;
+    JS_SetPropertyFunctionList(ctx, obj, qjs_process_proto,
+                               njs_nitems(qjs_process_proto));
+
+    JS_SetOpaque(obj, argv);
+
+    if (JS_SetPropertyStr(ctx, obj, "argc", JS_NewInt32(ctx, argc)) < 0) {
+        JS_FreeValue(ctx, obj);
+        return JS_EXCEPTION;
     }
 
-    atom = JS_ValueToAtom(ctx, toStringTag);
-
-    JS_FreeValue(ctx, symbol);
-    JS_FreeValue(ctx, toStringTag);
-
-    if (atom == JS_ATOM_NULL) {
-        JS_ThrowInternalError(ctx, "failed to get atom");
-        return -1;
-    }
-
-    ret = JS_DefinePropertyValue(ctx, val, atom, JS_NewString(ctx, tag),
-                                 JS_PROP_C_W_E);
-
-    JS_FreeAtom(ctx, atom);
-
-    return ret;
+    return obj;
 }
 
 
