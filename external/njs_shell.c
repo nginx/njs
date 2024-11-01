@@ -1902,14 +1902,16 @@ njs_qjs_clear_timeout(JSContext *ctx, JSValueConst this_val, int argc,
 
 
 static JSValue
+njs_qjs_console_to_string_tag(JSContext *ctx, JSValueConst this_val)
+{
+    return JS_NewString(ctx, "Console");
+}
+
+
+static JSValue
 njs_qjs_process_getter(JSContext *ctx, JSValueConst this_val)
 {
-    char           **ep;
-    JSAtom         atom;
-    JSValue        obj, val, str, name, env;
-    njs_int_t      ret;
-    njs_uint_t     i;
-    const char     *entry, *value;
+    JSValue         obj;
     njs_console_t  *console;
 
     console = JS_GetRuntimeOpaque(JS_GetRuntime(ctx));
@@ -1918,106 +1920,8 @@ njs_qjs_process_getter(JSContext *ctx, JSValueConst this_val)
         return JS_DupValue(ctx, console->process);
     }
 
-    obj = JS_NewObject(ctx);
+    obj = qjs_process_object(ctx, console->argc, (const char **) console->argv);
     if (JS_IsException(obj)) {
-        return JS_EXCEPTION;
-    }
-
-    ret = qjs_set_to_string_tag(ctx, obj, "process");
-    if (ret == -1) {
-        JS_FreeValue(ctx, obj);
-        return JS_EXCEPTION;
-    }
-
-    val = JS_NewArray(ctx);
-    if (JS_IsException(val)) {
-        JS_FreeValue(ctx, obj);
-        return JS_EXCEPTION;
-    }
-
-    ret = JS_SetPropertyStr(ctx, obj, "argv", val);
-    if (ret == -1) {
-        JS_FreeValue(ctx, obj);
-        JS_FreeValue(ctx, val);
-        return JS_EXCEPTION;
-    }
-
-    for (i = 0; i < console->argc; i++) {
-        str = JS_NewStringLen(ctx, console->argv[i],
-                              njs_strlen(console->argv[i]));
-        if (JS_IsException(str)) {
-            JS_FreeValue(ctx, obj);
-            return JS_EXCEPTION;
-        }
-
-        ret = JS_DefinePropertyValueUint32(ctx, val, i, str, JS_PROP_C_W_E);
-        if (ret == -1) {
-            JS_FreeValue(ctx, obj);
-            return JS_EXCEPTION;
-        }
-    }
-
-    env = JS_NewObject(ctx);
-    if (JS_IsException(obj)) {
-        JS_FreeValue(ctx, obj);
-        return JS_EXCEPTION;
-    }
-
-    ret = JS_SetPropertyStr(ctx, obj, "env", env);
-    if (ret == -1) {
-        JS_FreeValue(ctx, obj);
-        JS_FreeValue(ctx, env);
-        return JS_EXCEPTION;
-    }
-
-    ep = environ;
-
-    while (*ep != NULL) {
-        entry = *ep++;
-
-        value = (const char *) njs_strchr(entry, '=');
-        if (njs_slow_path(value == NULL)) {
-            continue;
-        }
-
-        str = JS_UNDEFINED;
-        name = JS_NewStringLen(ctx, entry, value - entry);
-        if (JS_IsException(name)) {
-            goto error;
-        }
-
-        str = JS_NewStringLen(ctx, value, njs_strlen(value));
-        if (JS_IsException(str)) {
-            goto error;
-        }
-
-        atom = JS_ValueToAtom(ctx, name);
-        if (atom == JS_ATOM_NULL) {
-            goto error;
-        }
-
-        ret = JS_DefinePropertyValue(ctx, env, atom, str, JS_PROP_C_W_E);
-        JS_FreeAtom(ctx, atom);
-        if (ret == -1) {
-error:
-            JS_FreeValue(ctx, name);
-            JS_FreeValue(ctx, str);
-            JS_FreeValue(ctx, obj);
-            return JS_EXCEPTION;
-        }
-
-        JS_FreeValue(ctx, name);
-    }
-
-    ret = JS_SetPropertyStr(ctx, obj, "pid", JS_NewInt32(ctx, getpid()));
-    if (ret == -1) {
-        JS_FreeValue(ctx, obj);
-        return JS_EXCEPTION;
-    }
-
-    ret = JS_SetPropertyStr(ctx, obj, "ppid", JS_NewInt32(ctx, getppid()));
-    if (ret == -1) {
-        JS_FreeValue(ctx, obj);
         return JS_EXCEPTION;
     }
 
@@ -2583,6 +2487,7 @@ static const JSCFunctionListEntry njs_qjs_global_proto[] = {
 
 
 static const JSCFunctionListEntry njs_qjs_console_proto[] = {
+    JS_CGETSET_DEF("[Symbol.toStringTag]", njs_qjs_console_to_string_tag, NULL),
     JS_CFUNC_MAGIC_DEF("error", 0, njs_qjs_console_log, NJS_LOG_ERROR),
     JS_CFUNC_MAGIC_DEF("info", 0, njs_qjs_console_log, NJS_LOG_INFO),
     JS_CFUNC_MAGIC_DEF("log", 0, njs_qjs_console_log, NJS_LOG_INFO),
@@ -2755,13 +2660,6 @@ njs_engine_qjs_init(njs_engine_t *engine, njs_opts_t *opts)
     obj = JS_NewObject(ctx);
     if (JS_IsException(obj)) {
         njs_stderror("JS_NewObject() failed\n");
-        ret = NJS_ERROR;
-        goto done;
-    }
-
-    ret = qjs_set_to_string_tag(ctx, obj, "Console");
-    if (ret == -1) {
-        njs_stderror("qjs_set_to_string_tag() failed\n");
         ret = NJS_ERROR;
         goto done;
     }

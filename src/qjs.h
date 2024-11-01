@@ -70,7 +70,7 @@ typedef struct {
 const qjs_buffer_encoding_t *qjs_buffer_encoding(JSContext *ctx,
     JSValueConst value, JS_BOOL thrw);
 
-int qjs_set_to_string_tag(JSContext *ctx, JSValueConst val, const char *tag);
+JSValue qjs_process_object(JSContext *ctx, int argc, const char **argv);
 
 typedef struct {
     int                         tag;
