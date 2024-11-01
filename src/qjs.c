@@ -9,6 +9,14 @@
 
 #include <sys/types.h>
 #include <unistd.h>
+#include <errno.h>
+#include <signal.h>
+
+
+typedef struct {
+    njs_str_t       name;
+    int             value;
+} qjs_signal_entry_t;
 
 
 extern char  **environ;
@@ -19,8 +27,35 @@ static JSValue qjs_njs_to_string_tag(JSContext *ctx, JSValueConst this_val);
 static JSValue qjs_process_to_string_tag(JSContext *ctx, JSValueConst this_val);
 static JSValue qjs_process_argv(JSContext *ctx, JSValueConst this_val);
 static JSValue qjs_process_env(JSContext *ctx, JSValueConst this_val);
+static JSValue qjs_process_kill(JSContext *ctx, JSValueConst this_val,
+    int argc, JSValueConst *argv);
 static JSValue qjs_process_pid(JSContext *ctx, JSValueConst this_val);
 static JSValue qjs_process_ppid(JSContext *ctx, JSValueConst this_val);
+
+
+/* P1990 signals from `man 7 signal` are supported */
+static qjs_signal_entry_t qjs_signals_table[] = {
+    { njs_str("ABRT"), SIGABRT },
+    { njs_str("ALRM"), SIGALRM },
+    { njs_str("CHLD"), SIGCHLD },
+    { njs_str("CONT"), SIGCONT },
+    { njs_str("FPE"),  SIGFPE  },
+    { njs_str("HUP"),  SIGHUP  },
+    { njs_str("ILL"),  SIGILL  },
+    { njs_str("INT"),  SIGINT  },
+    { njs_str("KILL"), SIGKILL },
+    { njs_str("PIPE"), SIGPIPE },
+    { njs_str("QUIT"), SIGQUIT },
+    { njs_str("SEGV"), SIGSEGV },
+    { njs_str("STOP"), SIGSTOP },
+    { njs_str("TSTP"), SIGTSTP },
+    { njs_str("TERM"), SIGTERM },
+    { njs_str("TTIN"), SIGTTIN },
+    { njs_str("TTOU"), SIGTTOU },
+    { njs_str("USR1"), SIGUSR1 },
+    { njs_str("USR2"), SIGUSR2 },
+    { njs_null_str, 0 }
+};
 
 
 static const JSCFunctionListEntry qjs_global_proto[] = {
@@ -39,6 +74,7 @@ static const JSCFunctionListEntry qjs_process_proto[] = {
     JS_CGETSET_DEF("[Symbol.toStringTag]", qjs_process_to_string_tag, NULL),
     JS_CGETSET_DEF("argv", qjs_process_argv, NULL),
     JS_CGETSET_DEF("env", qjs_process_env, NULL),
+    JS_CFUNC_DEF("kill", 2, qjs_process_kill),
     JS_CGETSET_DEF("pid", qjs_process_pid, NULL),
     JS_CGETSET_DEF("ppid", qjs_process_ppid, NULL),
 };
@@ -248,6 +284,72 @@ error:
     }
 
     return obj;
+}
+
+
+static JSValue
+qjs_process_kill(JSContext *ctx, JSValueConst this_val, int argc,
+    JSValueConst *argv)
+{
+    int                  signo, pid;
+    JSValue              val;
+    njs_str_t            name;
+    const char           *signal;
+    qjs_signal_entry_t   *entry;
+
+    if (JS_ToInt32(ctx, &pid, argv[0]) < 0) {
+        return JS_EXCEPTION;
+    }
+
+    if (JS_IsNumber(argv[1])) {
+        if (JS_ToInt32(ctx, &signo, argv[1]) < 0) {
+            return JS_EXCEPTION;
+        }
+
+        if (signo < 0 || signo >= NSIG) {
+            return JS_ThrowTypeError(ctx, "unknown signal: %d", signo);
+        }
+
+    } else {
+        val = JS_ToString(ctx, argv[1]);
+        if (JS_IsException(val)) {
+            return JS_EXCEPTION;
+        }
+
+        signal = JS_ToCString(ctx, val);
+        if (signal == NULL) {
+            JS_FreeValue(ctx, val);
+            return JS_EXCEPTION;
+        }
+
+        if (njs_strlen(signal) < 3 || memcmp(signal, "SIG", 3) != 0) {
+            JS_FreeCString(ctx, signal);
+            return JS_ThrowTypeError(ctx, "unknown signal: %s", signal);
+        }
+
+        name.start = (u_char *) signal + 3;
+        name.length = njs_strlen(signal) - 3;
+
+        for (entry = qjs_signals_table; entry->name.length != 0; entry++) {
+            if (njs_strstr_eq(&entry->name, &name)) {
+                signo = entry->value;
+                break;
+            }
+        }
+
+        JS_FreeCString(ctx, signal);
+
+        if (entry->name.length == 0) {
+            return JS_ThrowTypeError(ctx, "unknown signal: %s", signal);
+        }
+    }
+
+    if (kill(pid, signo) < 0) {
+        return JS_ThrowTypeError(ctx, "kill failed with (%d:%s)", errno,
+                                 strerror(errno));
+    }
+
+    return JS_TRUE;
 }
 
 
