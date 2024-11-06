@@ -397,17 +397,6 @@ static njs_external_t  njs_ext_fs_promises[] = {
 
     {
         .flags = NJS_EXTERN_METHOD,
-        .name.string = njs_str("readSync"),
-        .writable = 1,
-        .configurable = 1,
-        .u.method = {
-            .native = njs_fs_read,
-            .magic8 = NJS_FS_PROMISE,
-        }
-    },
-
-    {
-        .flags = NJS_EXTERN_METHOD,
         .name.string = njs_str("readdir"),
         .writable = 1,
         .configurable = 1,
