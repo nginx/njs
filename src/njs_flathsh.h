@@ -29,6 +29,14 @@ typedef void (*njs_flathsh_free_t)(void *ctx, void *p, size_t size);
 typedef struct njs_flathsh_proto_s  njs_flathsh_proto_t;
 
 
+struct njs_flathsh_descr_s {
+    uint32_t     hash_mask;
+    uint32_t     elts_size;          /* allocated properties */
+    uint32_t     elts_count;         /* include deleted properties */
+    uint32_t     elts_deleted_count;
+};
+
+
 struct njs_flathsh_proto_s {
     uint32_t                   not_used;
     njs_flathsh_test_t         test;
@@ -62,6 +70,20 @@ struct njs_flathsh_query_s {
 
 #define njs_flathsh_eq(fhl, fhr)                                               \
     ((fhl)->slot == (fhr)->slot)
+
+
+njs_inline uint32_t *
+njs_hash_cells_end(njs_flathsh_descr_t *h)
+{
+    return (uint32_t *) h;
+}
+
+
+njs_inline njs_flathsh_elt_t *
+njs_hash_elts(njs_flathsh_descr_t *h)
+{
+    return (njs_flathsh_elt_t *) ((char *) h + sizeof(njs_flathsh_descr_t));
+}
 
 
 /*
@@ -128,6 +150,8 @@ NJS_EXPORT njs_flathsh_elt_t *njs_flathsh_add_elt(njs_flathsh_t *fh,
 
 NJS_EXPORT njs_flathsh_descr_t *njs_flathsh_new(njs_flathsh_query_t *fhq);
 NJS_EXPORT void njs_flathsh_destroy(njs_flathsh_t *fh, njs_flathsh_query_t *fhq);
+NJS_EXPORT njs_flathsh_descr_t * njs_expand_elts(njs_flathsh_query_t *fhq,
+    njs_flathsh_descr_t *h);
 
 NJS_EXPORT njs_int_t njs_flathsh_alloc_copy(njs_mp_t *mp, njs_flathsh_t *to,
     njs_flathsh_t *from);
