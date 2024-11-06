@@ -301,6 +301,8 @@ qjs_process_kill(JSContext *ctx, JSValueConst this_val, int argc,
         return JS_EXCEPTION;
     }
 
+    signo = SIGTERM;
+
     if (JS_IsNumber(argv[1])) {
         if (JS_ToInt32(ctx, &signo, argv[1]) < 0) {
             return JS_EXCEPTION;
