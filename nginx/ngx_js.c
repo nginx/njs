@@ -3832,6 +3832,10 @@ ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
     ngx_pool_cleanup_t   *cln;
     ngx_js_named_path_t  *import;
 
+    if (ngx_set_environment(cf->cycle, NULL) == NULL) {
+        return NGX_ERROR;
+    }
+
     if (conf->preload_objects != NGX_CONF_UNSET_PTR) {
        if (ngx_js_init_preload_vm(cf, (ngx_js_loc_conf_t *)conf) != NGX_OK) {
            return NGX_ERROR;
