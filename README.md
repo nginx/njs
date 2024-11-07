@@ -258,10 +258,12 @@ sudo apt install gcc make
 sudo apt install libpcre3-dev zlib1g-dev libssl-dev libxml2-dev libxslt-dev
 ```
 
-For building with [QuickJS](https://nginx.org/en/docs/njs/engine.html), you will also need to clone the QuickJS repository:
+For building with [QuickJS](https://nginx.org/en/docs/njs/engine.html), you will also need to build the QuickJS library:
 
 ```bash
 git clone https://github.com/bellard/quickjs
+cd quickjs
+CFLAGS='-fPIC' make libquickjs.a
 ```
 
 > [!WARNING]
