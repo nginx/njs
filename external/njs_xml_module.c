@@ -1318,12 +1318,12 @@ njs_xml_node_tags_handler(njs_vm_t *vm, xmlNode *current, njs_str_t *name,
             xmlFreeNode(node);
             goto error;
         }
+    }
 
-        ret = xmlReconciliateNs(current->doc, copy);
-        if (njs_slow_path(ret == -1)) {
-            njs_vm_internal_error(vm, "xmlReconciliateNs() failed");
-            goto error;
-        }
+    ret = xmlReconciliateNs(current->doc, copy);
+    if (njs_slow_path(ret == -1)) {
+        njs_vm_internal_error(vm, "xmlReconciliateNs() failed");
+        goto error;
     }
 
     njs_value_undefined_set(retval);
