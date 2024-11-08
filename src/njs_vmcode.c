@@ -2637,7 +2637,6 @@ njs_vmcode_await(njs_vm_t *vm, njs_vmcode_await_t *await,
     njs_int_t           ret;
     njs_frame_t         *frame;
     njs_value_t         ctor, val, on_fulfilled, on_rejected, *value, retval;
-    njs_promise_t       *promise;
     njs_function_t      *fulfilled, *rejected;
     njs_native_frame_t  *active;
 
@@ -2651,8 +2650,8 @@ njs_vmcode_await(njs_vm_t *vm, njs_vmcode_await_t *await,
 
     njs_set_function(&ctor, &njs_vm_ctor(vm, NJS_OBJ_TYPE_PROMISE));
 
-    promise = njs_promise_resolve(vm, &ctor, value);
-    if (njs_slow_path(promise == NULL)) {
+    ret = njs_promise_resolve(vm, &ctor, value, &val);
+    if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
 
@@ -2710,7 +2709,6 @@ njs_vmcode_await(njs_vm_t *vm, njs_vmcode_await_t *await,
     rejected->args_count = 1;
     rejected->u.native = njs_await_rejected;
 
-    njs_set_promise(&val, promise);
     njs_set_function(&on_fulfilled, fulfilled);
     njs_set_function(&on_rejected, rejected);
 

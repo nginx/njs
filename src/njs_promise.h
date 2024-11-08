@@ -36,8 +36,8 @@ njs_function_t *njs_promise_create_function(njs_vm_t *vm, size_t context_size);
 njs_int_t njs_promise_perform_then(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *fulfilled, njs_value_t *rejected,
     njs_promise_capability_t *capability, njs_value_t *retval);
-njs_promise_t *njs_promise_resolve(njs_vm_t *vm, njs_value_t *constructor,
-    njs_value_t *x);
+njs_int_t njs_promise_resolve(njs_vm_t *vm, njs_value_t *constructor,
+    njs_value_t *x, njs_value_t *retval);
 
 
 extern const njs_object_type_init_t  njs_promise_type_init;
