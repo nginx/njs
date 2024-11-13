@@ -72,6 +72,7 @@ njs_array_t *njs_object_own_enumerate(njs_vm_t *vm, const njs_object_t *object,
     uint32_t flags);
 njs_int_t njs_object_traverse(njs_vm_t *vm, njs_object_t *object, void *ctx,
     njs_object_traverse_cb_t cb);
+njs_int_t njs_object_make_shared(njs_vm_t *vm, njs_object_t *object);
 njs_int_t njs_object_hash_create(njs_vm_t *vm, njs_lvlhsh_t *hash,
     const njs_object_prop_t *prop, njs_uint_t n);
 njs_int_t njs_primitive_prototype_get_proto(njs_vm_t *vm,

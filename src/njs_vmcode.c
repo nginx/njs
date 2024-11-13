@@ -2600,6 +2600,8 @@ njs_vmcode_import(njs_vm_t *vm, njs_mod_t *module, njs_value_t *retval)
         njs_memzero(m->start, m->items * sizeof(njs_value_t));
     }
 
+    njs_assert(module->index < vm->modules->items);
+
     value = njs_arr_item(vm->modules, module->index);
 
     if (!njs_is_null(value)) {

@@ -694,6 +694,7 @@ njs_prop_private_copy(njs_vm_t *vm, njs_property_query_t *pq,
 
     switch (value->type) {
     case NJS_OBJECT:
+    case NJS_ARRAY:
     case NJS_OBJECT_VALUE:
         object = njs_object_value_copy(vm, value);
         if (njs_slow_path(object == NULL)) {

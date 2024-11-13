@@ -139,6 +139,7 @@ typedef enum {
     NJS_ENUM_STRING = 8,
     NJS_ENUM_SYMBOL = 16,
     NJS_ENUM_ENUMERABLE_ONLY = 32,
+    NJS_ENUM_NON_SHARED_ONLY = 64,
 } njs_object_enum_t;
 
 
@@ -302,6 +303,7 @@ NJS_EXPORT njs_mod_t *njs_vm_add_module(njs_vm_t *vm, njs_str_t *name,
     njs_value_t *value);
 NJS_EXPORT njs_mod_t *njs_vm_compile_module(njs_vm_t *vm, njs_str_t *name,
     u_char **start, u_char *end);
+NJS_EXPORT njs_int_t njs_vm_reuse(njs_vm_t *vm);
 NJS_EXPORT njs_vm_t *njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external);
 
 NJS_EXPORT njs_int_t njs_vm_enqueue_job(njs_vm_t *vm, njs_function_t *function,
