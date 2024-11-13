@@ -21863,6 +21863,27 @@ static njs_unit_test_t  njs_shared_test[] =
               "cr.abc = 1; cr.abc"),
       njs_str("1") },
 #endif
+
+    { njs_str("JSON.stringify(preload)"),
+      njs_str("{\"a\":[1,{\"b\":2,\"c\":3}]}") },
+
+    { njs_str("preload.a.prop = 1"),
+      njs_str("TypeError: Cannot add property \"prop\", object is not extensible\n"
+              "    at main (:1)\n") },
+
+    { njs_str("preload.a[0] = 2"),
+      njs_str("TypeError: Cannot assign to read-only property \"0\" of array\n"
+              "    at main (:1)\n") },
+
+    { njs_str("preload.a.push(2)"),
+      njs_str("TypeError: (intermediate value)[\"push\"] is not a function\n"
+              "    at main (:1)\n") },
+
+    { njs_str("Array.prototype.push.call(preload.a, 'waka')"),
+      njs_str("TypeError: Cannot add property \"2\", object is not extensible\n"
+              "    at Array.prototype.push (native)\n"
+              "    at Function.prototype.call (native)\n"
+              "    at main (:1)\n") },
 };
 
 
@@ -22400,6 +22421,7 @@ typedef struct {
     njs_bool_t  backtrace;
     njs_bool_t  handler;
     njs_bool_t  async;
+    njs_bool_t  preload;
     unsigned    seed;
 } njs_opts_t;
 
@@ -22701,7 +22723,20 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
     njs_stat_t            prev;
     njs_vm_opt_t          options;
     njs_runtime_t         *rt;
+    njs_opaque_value_t    retval;
     njs_external_state_t  *state;
+
+    njs_str_t preload = njs_str(
+        "globalThis.preload = JSON.parse("
+            "'{\"a\": [1, {\"b\": 2, \"c\": 3}]}',"
+            "function (k, v) {"
+                "if (v instanceof Object) {"
+                    "Object.freeze(Object.setPrototypeOf(v, null));"
+                "}"
+                "return v;"
+            "}"
+        ");"
+    );
 
     vm = NULL;
     rt = NULL;
@@ -22718,6 +22753,7 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
 
         njs_vm_opt_init(&options);
 
+        options.init = opts->preload;
         options.module = opts->module;
         options.unsafe = opts->unsafe;
         options.backtrace = opts->backtrace;
@@ -22728,6 +22764,29 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
         if (vm == NULL) {
             njs_printf("njs_vm_create() failed\n");
             goto done;
+        }
+
+        if (opts->preload) {
+            start = preload.start;
+            end = start + preload.length;
+
+            ret = njs_vm_compile(vm, &start, end);
+            if (ret != NJS_OK) {
+                njs_printf("njs_vm_compile() preload failed\n");
+                goto done;
+            }
+
+            ret = njs_vm_start(vm, njs_value_arg(&retval));
+            if (ret != NJS_OK) {
+                njs_printf("njs_vm_start() preload failed\n");
+                goto done;
+            }
+
+            ret = njs_vm_reuse(vm);
+            if (ret != NJS_OK) {
+                njs_printf("njs_vm_reuse() failed\n");
+                goto done;
+            }
         }
 
         start = tests[i].script.start;
@@ -23953,7 +24012,7 @@ njs_disabled_denormals_tests(njs_unit_test_t tests[], size_t num,
 static njs_test_suite_t  njs_suites[] =
 {
     { njs_str("script"),
-      { .repeat = 1, .unsafe = 1 },
+      { .repeat = 1, .unsafe = 1, .preload = 1 },
       njs_test,
       njs_nitems(njs_test),
       njs_unit_test },
@@ -24040,7 +24099,7 @@ static njs_test_suite_t  njs_suites[] =
       njs_unit_test },
 
     { njs_str("shared"),
-      { .externals = 1, .repeat = 128, .seed = 42, .unsafe = 1, .backtrace = 1 },
+      { .externals = 1, .repeat = 128, .seed = 42, .unsafe = 1, .preload = 1, .backtrace = 1 },
       njs_shared_test,
       njs_nitems(njs_shared_test),
       njs_unit_test },

@@ -873,6 +873,8 @@ njs_top_level_object(njs_vm_t *vm, njs_object_prop_t *self,
         if (njs_slow_path(object == NULL)) {
             return NJS_ERROR;
         }
+
+        object->__proto__ = njs_vm_proto(vm, NJS_OBJ_TYPE_OBJECT);
     }
 
     prop = njs_object_prop_alloc(vm, &self->name, retval, 1);
@@ -920,6 +922,8 @@ njs_top_level_constructor(njs_vm_t *vm, njs_object_prop_t *self,
         ctor = &njs_vm_ctor(vm, njs_prop_magic16(self));
 
         njs_set_function(retval, ctor);
+
+        return NJS_OK;
     }
 
     prop = njs_object_prop_alloc(vm, &self->name, retval, 1);

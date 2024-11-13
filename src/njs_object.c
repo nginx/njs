@@ -65,7 +65,7 @@ njs_object_t *
 njs_object_value_copy(njs_vm_t *vm, njs_value_t *value)
 {
     size_t        size;
-    njs_object_t  *object;
+    njs_object_t  *object, *proto;
 
     object = njs_object(value);
 
@@ -73,13 +73,37 @@ njs_object_value_copy(njs_vm_t *vm, njs_value_t *value)
         return object;
     }
 
-    size = njs_is_object_value(value) ? sizeof(njs_object_value_t)
-                                      : sizeof(njs_object_t);
+    switch (object->type) {
+    case NJS_OBJECT:
+        size = sizeof(njs_object_t);
+        proto = (object->__proto__ != NULL)
+                    ? njs_vm_proto(vm, NJS_OBJ_TYPE_OBJECT)
+                    : NULL;
+        break;
+    case NJS_ARRAY:
+        size = sizeof(njs_array_t);
+        njs_assert_msg(!object->fast_array,
+                       "shared fast_array is not supported");
+        proto = (object->__proto__ != NULL)
+                    ? njs_vm_proto(vm, NJS_OBJ_TYPE_ARRAY)
+                    : NULL;
+        break;
+    case NJS_OBJECT_VALUE:
+        size = sizeof(njs_object_value_t);
+        proto = (object->__proto__ != NULL)
+                    ? njs_vm_proto(vm, NJS_OBJ_TYPE_OBJECT)
+                    : NULL;
+        break;
+    default:
+        njs_internal_error(vm, "unexpected object type to copy");
+        return NULL;
+    }
+
     object = njs_mp_alloc(vm->mem_pool, size);
 
     if (njs_fast_path(object != NULL)) {
         memcpy(object, njs_object(value), size);
-        object->__proto__ = njs_vm_proto(vm, NJS_OBJ_TYPE_OBJECT);
+        object->__proto__ = proto;
         object->shared = 0;
         value->data.u.object = object;
         return object;
@@ -917,6 +941,10 @@ njs_get_own_ordered_keys(njs_vm_t *vm, const njs_object_t *object,
     njs_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
     hash = &object->shared_hash;
 
+    if (flags & NJS_ENUM_NON_SHARED_ONLY) {
+        goto local_hash;
+    }
+
     for ( ;; ) {
         prop = njs_lvlhsh_each(hash, &lhe);
 
@@ -983,6 +1011,8 @@ njs_get_own_ordered_keys(njs_vm_t *vm, const njs_object_t *object,
             }
         }
     }
+
+local_hash:
 
     njs_lvlhsh_each_init(&lhe, &njs_object_hash_proto);
     hash = &object->hash;
@@ -1184,6 +1214,189 @@ njs_traverse_visited(njs_arr_t *list, const njs_value_t *value)
     }
 
     return 0;
+}
+
+
+static njs_int_t
+njs_object_copy_shared_hash(njs_vm_t *vm, njs_object_t *object)
+{
+    njs_int_t            ret;
+    njs_flathsh_t        new_hash, *shared_hash;
+    njs_object_prop_t    *prop;
+    njs_flathsh_each_t   fhe;
+    njs_flathsh_query_t  fhq;
+
+    fhq.replace = 0;
+    fhq.proto = &njs_object_hash_proto;
+    fhq.pool = vm->mem_pool;
+
+    njs_flathsh_init(&new_hash);
+    shared_hash = &object->shared_hash;
+
+    njs_flathsh_each_init(&fhe, &njs_object_hash_proto);
+
+    for ( ;; ) {
+        prop = njs_flathsh_each(shared_hash, &fhe);
+
+        if (prop == NULL) {
+            break;
+        }
+
+        if (njs_is_symbol(&prop->name)) {
+            fhq.key_hash = njs_symbol_key(&prop->name);
+            fhq.key.start = NULL;
+
+        } else {
+            njs_string_get(&prop->name, &fhq.key);
+            fhq.key_hash = njs_djb_hash(fhq.key.start, fhq.key.length);
+        }
+
+        fhq.value = prop;
+
+        ret = njs_flathsh_insert(&new_hash, &fhq);
+        if (njs_slow_path(ret != NJS_OK)) {
+            njs_internal_error(vm, "flathsh insert failed");
+            return NJS_ERROR;
+        }
+    }
+
+    object->shared_hash = new_hash;
+
+    return NJS_OK;
+}
+
+
+njs_int_t
+njs_object_make_shared(njs_vm_t *vm, njs_object_t *object)
+{
+    njs_int_t             ret;
+    njs_arr_t             visited;
+    njs_object_t          **start;
+    njs_value_t           value, *key;
+    njs_traverse_t        *s;
+    njs_object_prop_t     *prop;
+    njs_property_query_t  pq;
+    njs_traverse_t        state[NJS_TRAVERSE_MAX_DEPTH];
+
+    s = &state[0];
+    s->parent = NULL;
+    s->index = 0;
+    njs_set_object(&s->value, object);
+
+    s->keys = njs_value_own_enumerate(vm, &s->value, NJS_ENUM_KEYS
+                                      | NJS_ENUM_STRING
+                                      | NJS_ENUM_NON_SHARED_ONLY);
+    if (njs_slow_path(s->keys == NULL)) {
+        return NJS_ERROR;
+    }
+
+    if (s->keys->length != 0
+        && !njs_flathsh_is_empty(&object->shared_hash))
+    {
+        /*
+         * object->shared_hash can be shared with other objects
+         * and we do not want to modify other objects.
+         */
+
+        ret = njs_object_copy_shared_hash(vm, object);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
+    }
+
+    start = njs_arr_init(vm->mem_pool, &visited, NULL, 8, sizeof(void *));
+    if (njs_slow_path(start == NULL)) {
+        return NJS_ERROR;
+    }
+
+    (void) njs_traverse_visit(&visited, &s->value);
+
+    pq.lhq.replace = 0;
+    pq.lhq.pool = vm->mem_pool;
+
+    for ( ;; ) {
+
+        if (s->index >= s->keys->length) {
+            njs_flathsh_init(&njs_object(&s->value)->hash);
+            njs_object(&s->value)->shared = 1;
+            njs_array_destroy(vm, s->keys);
+            s->keys = NULL;
+
+            if (s == &state[0]) {
+                goto done;
+            }
+
+            s--;
+            continue;
+        }
+
+
+        njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 0, 0);
+        key = &s->keys->start[s->index++];
+
+        ret = njs_property_query(vm, &pq, &s->value, key);
+        if (njs_slow_path(ret != NJS_OK)) {
+            if (ret == NJS_DECLINED) {
+                continue;
+            }
+
+            return NJS_ERROR;
+        }
+
+
+        prop = pq.lhq.value;
+
+        ret = njs_flathsh_insert(&njs_object(&s->value)->shared_hash, &pq.lhq);
+        if (njs_slow_path(ret != NJS_OK)) {
+            njs_internal_error(vm, "flathsh insert failed");
+            return NJS_ERROR;
+        }
+
+        njs_value_assign(&value, njs_prop_value(prop));
+
+        if (njs_is_object(&value)
+            && !njs_object(&value)->shared
+            && !njs_traverse_visited(&visited, &value))
+        {
+            ret = njs_traverse_visit(&visited, &value);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return NJS_ERROR;
+            }
+
+            if (s == &state[NJS_TRAVERSE_MAX_DEPTH - 1]) {
+                njs_type_error(vm, "njs_object_traverse() recursion limit:%d",
+                               NJS_TRAVERSE_MAX_DEPTH);
+                return NJS_ERROR;
+            }
+
+            s++;
+            s->prop = NULL;
+            s->parent = &s[-1];
+            s->index = 0;
+            njs_value_assign(&s->value, &value);
+            s->keys = njs_value_own_enumerate(vm, &s->value, NJS_ENUM_KEYS
+                                           | NJS_ENUM_STRING
+                                           | NJS_ENUM_NON_SHARED_ONLY);
+            if (njs_slow_path(s->keys == NULL)) {
+                return NJS_ERROR;
+            }
+
+            if (s->keys->length != 0
+                && !njs_flathsh_is_empty(&njs_object(&s->value)->shared_hash))
+            {
+                ret = njs_object_copy_shared_hash(vm, njs_object(&s->value));
+                if (njs_slow_path(ret != NJS_OK)) {
+                    return NJS_ERROR;
+                }
+            }
+        }
+    }
+
+done:
+
+    njs_arr_destroy(&visited);
+
+    return NJS_OK;
 }
 
 

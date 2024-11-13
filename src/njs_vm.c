@@ -378,6 +378,17 @@ njs_vm_compile_module(njs_vm_t *vm, njs_str_t *name, u_char **start,
 }
 
 
+njs_int_t
+njs_vm_reuse(njs_vm_t *vm)
+{
+    vm->active_frame = NULL;
+    vm->top_frame = NULL;
+    vm->modules = NULL;
+
+    return njs_object_make_shared(vm, njs_object(&vm->global_value));
+}
+
+
 njs_vm_t *
 njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external)
 {
@@ -464,17 +475,19 @@ njs_vm_runtime_init(njs_vm_t *vm)
     njs_int_t    ret;
     njs_frame_t  *frame;
 
-    frame = (njs_frame_t *) njs_function_frame_alloc(vm, NJS_FRAME_SIZE);
-    if (njs_slow_path(frame == NULL)) {
-        njs_memory_error(vm);
-        return NJS_ERROR;
+    if (vm->active_frame == NULL) {
+        frame = (njs_frame_t *) njs_function_frame_alloc(vm, NJS_FRAME_SIZE);
+        if (njs_slow_path(frame == NULL)) {
+            njs_memory_error(vm);
+            return NJS_ERROR;
+        }
+
+        frame->exception.catch = NULL;
+        frame->exception.next = NULL;
+        frame->previous_active_frame = NULL;
+
+        vm->active_frame = frame;
     }
-
-    frame->exception.catch = NULL;
-    frame->exception.next = NULL;
-    frame->previous_active_frame = NULL;
-
-    vm->active_frame = frame;
 
     ret = njs_regexp_init(vm);
     if (njs_slow_path(ret != NJS_OK)) {
