@@ -2159,6 +2159,8 @@ njs_object_prototype_create_constructor(njs_vm_t *vm, njs_object_prop_t *prop,
 
         } while (object != NULL);
 
+        njs_internal_error(vm, "prototype not found");
+
         return NJS_ERROR;
 
     } else {
