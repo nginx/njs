@@ -384,7 +384,7 @@ njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external)
     njs_mp_t     *nmp;
     njs_vm_t     *nvm;
     njs_int_t    ret;
-    njs_value_t  **global;
+    njs_value_t  **global, **value;
 
     njs_thread_log_debug("CLONE:");
 
@@ -421,6 +421,24 @@ njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external)
     global = njs_scope_make(nvm, nvm->global_scope->items);
     if (njs_slow_path(global == NULL)) {
         goto fail;
+    }
+
+    if (nvm->options.unsafe) {
+        nvm->scope_absolute = njs_arr_create(nvm->mem_pool,
+                                             vm->scope_absolute->items,
+                                             sizeof(njs_value_t *));
+        if (njs_slow_path(nvm->scope_absolute == NULL)) {
+            goto fail;
+        }
+
+        value = njs_arr_add_multiple(nvm->scope_absolute,
+                                     vm->scope_absolute->items);
+        if (njs_slow_path(value == NULL)) {
+            goto fail;
+        }
+
+        memcpy(value, vm->scope_absolute->start,
+               vm->scope_absolute->items * sizeof(njs_value_t *));
     }
 
     nvm->levels[NJS_LEVEL_GLOBAL] = global;
