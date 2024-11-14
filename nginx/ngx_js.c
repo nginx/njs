@@ -57,6 +57,7 @@ static ngx_int_t ngx_engine_njs_string(ngx_engine_t *e,
     njs_opaque_value_t *value, ngx_str_t *str);
 static void ngx_engine_njs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
     ngx_js_loc_conf_t *conf);
+static ngx_int_t ngx_js_init_preload_vm(njs_vm_t *vm, ngx_js_loc_conf_t *conf);
 
 #if (NJS_HAVE_QUICKJS)
 static ngx_int_t ngx_engine_qjs_init(ngx_engine_t *engine,
@@ -547,8 +548,8 @@ static ngx_int_t
 ngx_engine_njs_init(ngx_engine_t *engine, ngx_engine_opts_t *opts)
 {
     njs_vm_t      *vm;
-    ngx_int_t      rc;
-    njs_vm_opt_t   vm_options;
+    ngx_int_t     rc;
+    njs_vm_opt_t  vm_options;
 
     njs_vm_opt_init(&vm_options);
 
@@ -558,6 +559,7 @@ ngx_engine_njs_init(ngx_engine_t *engine, ngx_engine_opts_t *opts)
     vm_options.file = opts->file;
     vm_options.argv = ngx_argv;
     vm_options.argc = ngx_argc;
+    vm_options.init = 1;
 
     vm = njs_vm_create(&vm_options);
     if (vm == NULL) {
@@ -596,6 +598,15 @@ ngx_engine_njs_compile(ngx_js_loc_conf_t *conf, ngx_log_t *log, u_char *start,
     static const njs_str_t file_name_key = njs_str("fileName");
 
     vm = conf->engine->u.njs.vm;
+
+    if (conf->preload_objects != NGX_CONF_UNSET_PTR) {
+       if (ngx_js_init_preload_vm(vm, conf) != NGX_OK) {
+            ngx_log_error(NGX_LOG_EMERG, log, 0,
+                          "failed to initialize preload objects");
+           return NGX_ERROR;
+       }
+    }
+
     end = start + size;
 
     rc = njs_vm_compile(vm, &start, end);
@@ -641,14 +652,10 @@ ngx_engine_njs_compile(ngx_js_loc_conf_t *conf, ngx_log_t *log, u_char *start,
 ngx_engine_t *
 ngx_njs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
 {
-    njs_vm_t             *vm;
-    njs_int_t             rc;
-    njs_str_t             key;
-    ngx_str_t             exception;
-    ngx_uint_t            i;
-    ngx_engine_t         *engine;
-    njs_opaque_value_t    retval;
-    ngx_js_named_path_t  *preload;
+    njs_vm_t            *vm;
+    ngx_str_t            exception;
+    ngx_engine_t        *engine;
+    njs_opaque_value_t   retval;
 
     vm = njs_vm_clone(cf->engine->u.njs.vm, external);
     if (vm == NULL) {
@@ -663,27 +670,6 @@ ngx_njs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
     memcpy(engine, cf->engine, sizeof(ngx_engine_t));
     engine->pool = njs_vm_memory_pool(vm);
     engine->u.njs.vm = vm;
-
-    /* bind objects from preload vm */
-
-    if (cf->preload_objects != NGX_CONF_UNSET_PTR) {
-        preload = cf->preload_objects->elts;
-
-        for (i = 0; i < cf->preload_objects->nelts; i++) {
-            key.start = preload[i].name.data;
-            key.length = preload[i].name.len;
-
-            rc = njs_vm_value(cf->preload_vm, &key, njs_value_arg(&retval));
-            if (rc != NJS_OK) {
-                return NULL;
-            }
-
-            rc = njs_vm_bind(vm, &key, njs_value_arg(&retval), 0);
-            if (rc != NJS_OK) {
-                return NULL;
-            }
-        }
-    }
 
     if (njs_vm_start(vm, njs_value_arg(&retval)) == NJS_ERROR) {
         ngx_js_exception(vm, &exception);
@@ -977,9 +963,6 @@ ngx_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
     JS_SetContextOpaque(cx, external);
 
     JS_SetHostPromiseRejectionTracker(rt, ngx_qjs_rejection_tracker, ctx);
-
-
-    /* TODO: bind objects from preload vm */
 
     rv = JS_UNDEFINED;
     pc = engine->precompiled->start;
@@ -3271,32 +3254,20 @@ ngx_js_preload_object(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 }
 
 
-ngx_int_t
-ngx_js_init_preload_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf)
+static ngx_int_t
+ngx_js_init_preload_vm(njs_vm_t *vm, ngx_js_loc_conf_t *conf)
 {
     u_char               *p, *start;
     size_t                size;
-    njs_vm_t             *vm;
     njs_int_t             ret;
     ngx_uint_t            i;
-    njs_vm_opt_t          options;
     njs_opaque_value_t    retval;
     ngx_js_named_path_t  *preload;
 
-    njs_vm_opt_init(&options);
-
-    options.init = 1;
-    options.addons = njs_js_addon_modules_shared;
-
-    vm = njs_vm_create(&options);
-    if (vm == NULL) {
-        goto error;
-    }
-
     njs_str_t str = njs_str(
-        "import fs from 'fs';"
+        "import __fs from 'fs';"
 
-        "let g = (function (np, no, nf, nsp, r) {"
+        "{ let g = (function (np, no, nf, nsp, r) {"
             "return function (n, p) {"
                 "p = (p[0] == '/') ? p : ngx.conf_prefix + p;"
                 "let o = r(p);"
@@ -3312,7 +3283,7 @@ ngx_js_init_preload_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf)
                 "return;"
             "}"
         "})(JSON.parse,Object,Object.freeze,"
-           "Object.setPrototypeOf,fs.readFileSync);\n"
+           "Object.setPrototypeOf,__fs.readFileSync);\n"
     );
 
     size = str.length;
@@ -3323,7 +3294,9 @@ ngx_js_init_preload_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf)
                 + preload[i].path.len;
     }
 
-    start = ngx_pnalloc(cf->pool, size);
+    size += sizeof("}\n") - 1;
+
+    start = njs_mp_alloc(njs_vm_memory_pool(vm), size);
     if (start == NULL) {
         return NGX_ERROR;
     }
@@ -3339,27 +3312,24 @@ ngx_js_init_preload_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf)
        p = ngx_cpymem(p, "');\n", sizeof("');\n") - 1);
     }
 
+    p = ngx_cpymem(p, "}\n", sizeof("}\n") - 1);
+
     ret = njs_vm_compile(vm, &start,  start + size);
     if (ret != NJS_OK) {
-        goto error;
+        return NGX_ERROR;
     }
 
     ret = njs_vm_start(vm, njs_value_arg(&retval));
     if (ret != NJS_OK) {
-        goto error;
+        return NGX_ERROR;
     }
 
-    conf->preload_vm = vm;
+    ret = njs_vm_reuse(vm);
+    if (ret != NJS_OK) {
+        return NGX_ERROR;
+    }
 
     return NGX_OK;
-
-error:
-
-    if (vm != NULL) {
-        njs_vm_destroy(vm);
-    }
-
-    return NGX_ERROR;
 }
 
 
@@ -3384,9 +3354,6 @@ ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
             conf->type = prev->type;
             conf->paths = prev->paths;
             conf->engine = prev->engine;
-
-            conf->preload_vm = prev->preload_vm;
-
             return NGX_OK;
         }
     }
@@ -3836,12 +3803,6 @@ ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
         return NGX_ERROR;
     }
 
-    if (conf->preload_objects != NGX_CONF_UNSET_PTR) {
-       if (ngx_js_init_preload_vm(cf, (ngx_js_loc_conf_t *)conf) != NGX_OK) {
-           return NGX_ERROR;
-       }
-    }
-
     size = 0;
 
     import = conf->imports->elts;
@@ -3950,10 +3911,6 @@ ngx_js_cleanup_vm(void *data)
     ngx_js_loc_conf_t  *jscf = data;
 
     jscf->engine->destroy(jscf->engine, NULL, NULL);
-
-    if (jscf->preload_objects != NGX_CONF_UNSET_PTR) {
-        njs_vm_destroy(jscf->preload_vm);
-    }
 }
 
 

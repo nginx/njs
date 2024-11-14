@@ -126,7 +126,6 @@ typedef struct {
     ngx_array_t           *imports;                                           \
     ngx_array_t           *paths;                                             \
                                                                               \
-    njs_vm_t              *preload_vm;                                        \
     ngx_array_t           *preload_objects;                                   \
                                                                               \
     size_t                 buffer_size;                                       \
@@ -393,7 +392,6 @@ void ngx_js_logger(ngx_connection_t *c, ngx_uint_t level,
 char * ngx_js_import(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 char * ngx_js_engine(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 char * ngx_js_preload_object(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
-ngx_int_t ngx_js_init_preload_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf);
 ngx_int_t ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
     ngx_js_loc_conf_t *prev,
     ngx_int_t (*init_vm)(ngx_conf_t *cf, ngx_js_loc_conf_t *conf));
