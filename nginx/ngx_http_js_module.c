@@ -1230,14 +1230,17 @@ ngx_http_js_content_write_event_handler(ngx_http_request_t *r)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http js content write event handler");
 
+    c = r->connection;
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
     if (!ngx_js_ctx_pending(ctx)) {
         ngx_http_js_content_finalize(r, ctx);
-        return;
+
+        if (!c->buffered) {
+            return;
+        }
     }
 
-    c = r->connection;
     wev = c->write;
 
     if (wev->timedout) {

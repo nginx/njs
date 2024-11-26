@@ -47,6 +47,11 @@ http {
             js_content test.returnf;
         }
 
+        location /limit {
+            sendfile_max_chunk 5;
+            js_content test.returnf;
+        }
+
         location /njs {
             js_content test.njs;
         }
@@ -61,14 +66,19 @@ $t->write_file('test.js', <<EOF);
     }
 
     function returnf(r) {
-        r.return(Number(r.args.c), r.args.t);
+        let body = r.args.t;
+        if (body && r.args.repeat) {
+            body = body.repeat(r.args.repeat);
+        }
+
+        r.return(Number(r.args.c), body);
     }
 
     export default {njs:test_njs, returnf};
 
 EOF
 
-$t->try_run('no njs return')->plan(6);
+$t->try_run('no njs return')->plan(7);
 
 ###############################################################################
 
@@ -82,6 +92,14 @@ TODO: {
 local $TODO = 'not yet' unless has_version('0.8.6');
 
 unlike(http_get('/?c=404&t='), qr/Not.*html/s, 'return empty body');
+
+}
+
+TODO: {
+local $TODO = 'not yet' unless has_version('0.8.8');
+
+like(http_get('/limit?c=200&t=X&repeat=50'), qr/200 OK.*X{50}/s,
+	'return limited');
 
 }
 

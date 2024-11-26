@@ -139,6 +139,11 @@ http {
             js_content test.sr_cache;
         }
 
+        location /sr_limit {
+            sendfile_max_chunk 5;
+            js_content test.sr_limit;
+        }
+
 
         location /sr_unavail {
             js_content test.sr_unavail;
@@ -385,6 +390,12 @@ $t->write_file('test.js', <<EOF);
         r.subrequest('/p/t', body_fwd_cb);
     }
 
+    function sr_limit(r) {
+        r.subrequest('/file/t', function (reply) {
+            r.return(200, "x".repeat(100));
+        });
+    }
+
     function sr_unavail(req) {
         subrequest_fn(req, ['/unavail'], ['status']);
     }
@@ -520,13 +531,13 @@ $t->write_file('test.js', <<EOF);
                     sr_js_in_subrequest, sr_js_in_subrequest_pr, js_sub,
                     sr_in_sr_callback, sr_out_of_order, sr_except_not_a_func,
                     sr_uri_except, sr_except_failed_to_convert_options_arg,
-                    sr_unsafe, sr_error_in_callback};
+                    sr_unsafe, sr_error_in_callback, sr_limit};
 
 EOF
 
 $t->write_file('t', '["SEE-THIS"]');
 
-$t->try_run('no njs available')->plan(33);
+$t->try_run('no njs available')->plan(34);
 $t->run_daemon(\&http_daemon);
 
 ###############################################################################
@@ -595,6 +606,12 @@ http_get('/sr_error_in_callback');
 ok(index($t->read_file('error.log'), 'subrequest can only be created for') > 0,
    'subrequest creation failed');
 
+}
+
+TODO: {
+local $TODO = 'not yet' unless has_version('0.8.8');
+
+like(http_get('/sr_limit'), qr/x{100}/, 'sr_limit');
 }
 
 $t->stop();
