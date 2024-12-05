@@ -153,7 +153,7 @@ function p(args, default_opts) {
 
 let hmac_tsuite = {
     name: "HMAC sign",
-    skip: () => (!has_fs() || !has_buffer() || !has_webcrypto()),
+    skip: () => (!has_buffer() || !has_webcrypto()),
     T: test,
     prepare_args: p,
     opts: {
@@ -208,7 +208,7 @@ let hmac_tsuite = {
 
 let rsassa_pkcs1_v1_5_tsuite = {
     name: "RSASSA-PKCS1-v1_5 sign",
-    skip: () => (!has_fs() || !has_buffer() || !has_webcrypto()),
+    skip: () => (!has_buffer() || !has_webcrypto()),
     T: test,
     prepare_args: p,
     opts: {
@@ -354,7 +354,7 @@ let rsassa_pkcs1_v1_5_tsuite = {
 
 let rsa_pss_tsuite = {
     name: "RSA-PSS sign",
-    skip: () => (!has_fs() || !has_buffer() || !has_webcrypto()),
+    skip: () => (!has_buffer() || !has_webcrypto()),
     T: test,
     prepare_args: p,
     opts: {
@@ -397,7 +397,7 @@ let rsa_pss_tsuite = {
 
 let ecdsa_tsuite = {
     name: "ECDSA sign",
-    skip: () => (!has_fs() || !has_buffer() || !has_webcrypto()),
+    skip: () => (!has_buffer() || !has_webcrypto()),
     T: test,
     prepare_args: p,
     opts: {

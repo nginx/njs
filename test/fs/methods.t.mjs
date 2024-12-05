@@ -157,7 +157,7 @@ let readfile_tests = () => [
 
 let readFile_tsuite = {
     name: "fs readFile",
-    skip: () => (!has_fs() || !has_buffer()),
+    skip: () => (!has_buffer()),
     T: readfile_test,
     prepare_args: p,
     opts: { type: "callback" },
@@ -166,7 +166,7 @@ let readFile_tsuite = {
 
 let readFileSync_tsuite = {
     name: "fs readFileSync",
-    skip: () => (!has_fs() || !has_buffer()),
+    skip: () => (!has_buffer()),
     T: readfile_test,
     prepare_args: p,
     opts: { type: "sync" },
@@ -175,7 +175,7 @@ let readFileSync_tsuite = {
 
 let readFileP_tsuite = {
     name: "fsp readFile",
-    skip: () => (!has_fs() || !has_buffer()),
+    skip: () => (!has_buffer()),
     T: readfile_test,
     prepare_args: p,
     opts: { type: "promise" },
@@ -246,7 +246,7 @@ let writefile_tests = () => [
 
 let writeFile_tsuite = {
     name: "fs writeFile",
-    skip: () => (!has_fs() || !has_buffer()),
+    skip: () => (!has_buffer()),
     T: writefile_test,
     prepare_args: p,
     opts: { type: "callback" },
@@ -255,7 +255,7 @@ let writeFile_tsuite = {
 
 let writeFileSync_tsuite = {
     name: "fs writeFileSync",
-    skip: () => (!has_fs() || !has_buffer()),
+    skip: () => (!has_buffer()),
     T: writefile_test,
     prepare_args: p,
     opts: { type: "sync" },
@@ -264,7 +264,7 @@ let writeFileSync_tsuite = {
 
 let writeFileP_tsuite = {
     name: "fsp writeFile",
-    skip: () => (!has_fs() || !has_buffer()),
+    skip: () => (!has_buffer()),
     T: writefile_test,
     prepare_args: p,
     opts: { type: "promise" },
@@ -336,7 +336,7 @@ let append_tests = () => [
 
 let appendFile_tsuite = {
     name: "fs appendFile",
-    skip: () => (!has_fs() || !has_buffer()),
+    skip: () => (!has_buffer()),
     T: append_test,
     prepare_args: p,
     opts: { type: "callback" },
@@ -345,7 +345,7 @@ let appendFile_tsuite = {
 
 let appendFileSync_tsuite = {
     name: "fs appendFileSync",
-    skip: () => (!has_fs() || !has_buffer()),
+    skip: () => (!has_buffer()),
     T: append_test,
     prepare_args: p,
     opts: { type: "sync" },
@@ -354,7 +354,7 @@ let appendFileSync_tsuite = {
 
 let appendFileP_tsuite = {
     name: "fsp appendFile",
-    skip: () => (!has_fs() || !has_buffer()),
+    skip: () => (!has_buffer()),
     T: append_test,
     prepare_args: p,
     opts: { type: "promise" },
@@ -384,7 +384,7 @@ let exists_tests = () => [
 
 let existsSync_tsuite = {
     name: "fs existsSync",
-    skip: () => (!has_fs() || !has_buffer()),
+    skip: () => (!has_buffer()),
     T: exists_test,
     prepare_args: p,
     opts: { type: "sync" },
@@ -410,7 +410,7 @@ let realpath_tests = () => [
 
 let realpath_tsuite = {
     name: "fs realpath",
-    skip: () => (!has_fs() || !has_buffer()),
+    skip: () => (!has_buffer()),
     T: realpath_test,
     prepare_args: p,
     opts: { type: "callback" },
@@ -419,7 +419,7 @@ let realpath_tsuite = {
 
 let realpathSync_tsuite = {
     name: "fs realpathSync",
-    skip: () => (!has_fs() || !has_buffer()),
+    skip: () => (!has_buffer()),
     T: realpath_test,
     prepare_args: p,
     opts: { type: "sync" },
@@ -428,7 +428,7 @@ let realpathSync_tsuite = {
 
 let realpathP_tsuite = {
     name: "fsp realpath",
-    skip: () => (!has_fs() || !has_buffer()),
+    skip: () => (!has_buffer()),
     T: realpath_test,
     prepare_args: p,
     opts: { type: "promise" },
@@ -460,7 +460,7 @@ let readlink_tests = () => [
 
 let readlink_tsuite = {
     name: "fs readlink",
-    skip: () => (!has_fs() || !has_buffer()),
+    skip: () => (!has_buffer()),
     T: readlink_test,
     prepare_args: p,
     opts: { type: "callback" },
@@ -469,7 +469,7 @@ let readlink_tsuite = {
 
 let readlinkSync_tsuite = {
     name: "fs readlinkSync",
-    skip: () => (!has_fs() || !has_buffer()),
+    skip: () => (!has_buffer()),
     T: readlink_test,
     prepare_args: p,
     opts: { type: "sync" },
@@ -478,7 +478,7 @@ let readlinkSync_tsuite = {
 
 let readlinkP_tsuite = {
     name: "fsp readlink",
-    skip: () => (!has_fs() || !has_buffer()),
+    skip: () => (!has_buffer()),
     T: readlink_test,
     prepare_args: p,
     opts: { type: "promise" },
@@ -620,7 +620,7 @@ let stat_tests = () => [
 
 let stat_tsuite = {
     name: "fs stat",
-    skip: () => (!has_fs() || !has_fs_symbolic_link() || !has_buffer()),
+    skip: () => (!has_fs_symbolic_link() || !has_buffer()),
     T: method_test,
     prepare_args: p,
     opts: { type: "callback", method: "stat" },
@@ -629,7 +629,7 @@ let stat_tsuite = {
 
 let statSync_tsuite = {
     name: "fs statSync",
-    skip: () => (!has_fs() || !has_fs_symbolic_link() || !has_buffer()),
+    skip: () => (!has_fs_symbolic_link() || !has_buffer()),
     T: method_test,
     prepare_args: p,
     opts: { type: "sync", method: "stat" },
@@ -638,7 +638,7 @@ let statSync_tsuite = {
 
 let statP_tsuite = {
     name: "fsp stat",
-    skip: () => (!has_fs() || !has_fs_symbolic_link() || !has_buffer()),
+    skip: () => (!has_fs_symbolic_link() || !has_buffer()),
     T: method_test,
     prepare_args: p,
     opts: { type: "promise", method: "stat" },
@@ -647,7 +647,7 @@ let statP_tsuite = {
 
 let lstat_tsuite = {
     name: "fs lstat",
-    skip: () => (!has_fs() || !has_fs_symbolic_link() || !has_buffer()),
+    skip: () => (!has_fs_symbolic_link() || !has_buffer()),
     T: method_test,
     prepare_args: p,
     opts: { type: "callback", method: "lstat" },
@@ -656,7 +656,7 @@ let lstat_tsuite = {
 
 let lstatSync_tsuite = {
     name: "fs lstatSync",
-    skip: () => (!has_fs() || !has_fs_symbolic_link() || !has_buffer()),
+    skip: () => (!has_fs_symbolic_link() || !has_buffer()),
     T: method_test,
     prepare_args: p,
     opts: { type: "sync", method: "lstat" },
@@ -665,7 +665,7 @@ let lstatSync_tsuite = {
 
 let lstatP_tsuite = {
     name: "fsp lstat",
-    skip: () => (!has_fs() || !has_fs_symbolic_link() || !has_buffer()),
+    skip: () => (!has_fs_symbolic_link() || !has_buffer()),
     T: method_test,
     prepare_args: p,
     opts: { type: "promise", method: "lstat" },
@@ -770,7 +770,7 @@ let open_tests = () => [
 
 let openSync_tsuite = {
     name: "fs openSync",
-    skip: () => (!has_fs() || !has_buffer()),
+    skip: () => (!has_buffer()),
     T: method_test,
     prepare_args: p,
     opts: { type: "sync", method: "open" },
@@ -779,7 +779,7 @@ let openSync_tsuite = {
 
 let openP_tsuite = {
     name: "fsp open",
-    skip: () => (!has_fs() || !has_buffer()),
+    skip: () => (!has_buffer()),
     T: method_test,
     prepare_args: p,
     opts:  { type: "promise", method: "open" },
@@ -813,7 +813,7 @@ let close_tests = () => [
 
 let closeSync_tsuite = {
     name: "fs closeSync",
-    skip: () => (!has_fs() || !has_buffer()),
+    skip: () => (!has_buffer()),
     T: method_test,
     prepare_args: p,
     opts: { type: "sync", method: "close" },
@@ -1005,7 +1005,7 @@ let read_tests = () => [
 
 let readSync_tsuite = {
     name: "fs readSync",
-    skip: () => (!has_fs() || !has_buffer()),
+    skip: () => (!has_buffer()),
     T: read_test,
     prepare_args: p,
     opts: {},
@@ -1014,7 +1014,7 @@ let readSync_tsuite = {
 
 let readFh_tsuite = {
     name: "fh read",
-    skip: () => (!has_fs() || !has_buffer()),
+    skip: () => (!has_buffer()),
     T: readFh_test,
     prepare_args: p,
     opts: {},
@@ -1210,7 +1210,7 @@ let write_tests = () => [
 
 let writeSync_tsuite = {
     name: "fs writeSync",
-    skip: () => (!has_fs() || !has_buffer()),
+    skip: () => (!has_buffer()),
     T: write_test,
     prepare_args: p,
     opts: {},
@@ -1219,7 +1219,7 @@ let writeSync_tsuite = {
 
 let writeFh_tsuite = {
     name: "fh write",
-    skip: () => (!has_fs() || !has_buffer()),
+    skip: () => (!has_buffer()),
     T: writeFh_test,
     prepare_args: p,
     opts: {},

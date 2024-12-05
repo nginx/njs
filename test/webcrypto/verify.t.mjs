@@ -53,7 +53,7 @@ function p(args, default_opts) {
 
 let hmac_tsuite = {
     name: "HMAC verify",
-    skip: () => (!has_fs() || !has_buffer() || !has_webcrypto()),
+    skip: () => (!has_buffer() || !has_webcrypto()),
     T: test,
     prepare_args: p,
     opts: {
@@ -78,7 +78,7 @@ let hmac_tsuite = {
 
 let rsassa_pkcs1_v1_5_tsuite = {
     name: "RSASSA-PKCS1-v1_5 verify",
-    skip: () => (!has_fs() || !has_buffer() || !has_webcrypto()),
+    skip: () => (!has_buffer() || !has_webcrypto()),
     T: test,
     prepare_args: p,
     opts: {
@@ -103,7 +103,7 @@ let rsassa_pkcs1_v1_5_tsuite = {
 
 let rsa_pss_tsuite = {
     name: "RSA-PSS verify",
-    skip: () => (!has_fs() || !has_buffer() || !has_webcrypto()),
+    skip: () => (!has_buffer() || !has_webcrypto()),
     T: test,
     prepare_args: p,
     opts: {
@@ -133,7 +133,7 @@ let rsa_pss_tsuite = {
 
 let ecdsa_tsuite = {
     name: "ECDSA verify",
-    skip: () => (!has_fs() || !has_buffer() || !has_webcrypto()),
+    skip: () => (!has_buffer() || !has_webcrypto()),
     T: test,
     prepare_args: p,
     opts: {

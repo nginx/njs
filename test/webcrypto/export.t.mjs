@@ -247,7 +247,7 @@ function validate_rsa_jwk(exp, params) {
 
 let rsa_tsuite = {
     name: "RSA exporting",
-    skip: () => (!has_fs() || !has_webcrypto()),
+    skip: () => (!has_webcrypto()),
     T: test,
     prepare_args: p,
     opts: {
@@ -368,7 +368,7 @@ function validate_ec_jwk(exp, params) {
 
 let ec_tsuite = {
     name: "EC exporting",
-    skip: () => (!has_fs() || !has_webcrypto()),
+    skip: () => (!has_webcrypto()),
     T: test,
     prepare_args: p,
     opts: {
@@ -430,7 +430,7 @@ function validate_hmac_jwk(exp, params) {
 
 let hmac_tsuite = {
     name: "HMAC exporting",
-    skip: () => (!has_fs() || !has_webcrypto()),
+    skip: () => (!has_webcrypto()),
     T: test,
     prepare_args: p,
     opts: {
@@ -515,7 +515,7 @@ function validate_aes_jwk(exp, params) {
 
 let aes_tsuite = {
     name: "AES exporting",
-    skip: () => (!has_fs() || !has_webcrypto()),
+    skip: () => (!has_webcrypto()),
     T: test,
     prepare_args: p,
     opts: {

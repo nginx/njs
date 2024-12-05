@@ -94,12 +94,9 @@ let testFsp = () => Promise.resolve()
 })
 
 let p = Promise.resolve()
-if (has_fs()) {
-    p = p
-        .then(testSync)
-        .then(testCallback)
-        .then(testFsp)
-        .then(() => assert.compareArray(stages, ['unlinkSync', 'unlink', 'fsp.unlink']))
-}
+    .then(testSync)
+    .then(testCallback)
+    .then(testFsp)
+    .then(() => assert.compareArray(stages, ['unlinkSync', 'unlink', 'fsp.unlink']))
 
 p.then($DONE, $DONE);

@@ -43,7 +43,7 @@ function p(args, default_opts) {
 
 let derive_tsuite = {
     name: "derive",
-    skip: () => (!has_fs() || !has_buffer() || !has_webcrypto()),
+    skip: () => (!has_buffer() || !has_webcrypto()),
     T: test,
     prepare_args: p,
     opts: {

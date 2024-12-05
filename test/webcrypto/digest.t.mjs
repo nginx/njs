@@ -22,7 +22,7 @@ function p(args) {
 
 let digest_tsuite = {
     name: "SHA digest",
-    skip: () => (!has_fs() || !has_buffer() || !has_webcrypto()),
+    skip: () => (!has_buffer() || !has_webcrypto()),
     T: test,
     prepare_args: p,
     opts: { },
