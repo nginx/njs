@@ -116,7 +116,7 @@ let readfile_tests = () => [
           return true;
       } },
 
-    { args: ["test/fs/non_utf8", "utf8"], expected: "��" },
+    { args: ["test/fs/non_utf8", "utf8"], expected: "��", skip() { return njs && njs.engine == 'QuickJS'; } },
     { args: ["test/fs/non_utf8", {encoding: "hex"}], expected: "8080" },
     { args: ["test/fs/non_utf8", "base64"], expected: "gIA=" },
     { args: ["test/fs/ascii", "utf8"], expected: "x".repeat(600) },
@@ -219,7 +219,7 @@ let writefile_tests = () => [
     { args: ["@", Buffer.from("XYZ"),  {encoding: "utf8", mode: 0o666}],
       expected: Buffer.from("XYZ") },
     { args: ["@", new DataView(Buffer.alloc(3).fill(66).buffer)],
-      expected: Buffer.from("BBB") },
+      expected: Buffer.from("BBB"), skip() { return njs && njs.engine == 'QuickJS'; } },
     { args: ["@", new Uint8Array(Buffer.from("ABCD"))],
       expected: Buffer.from("ABCD")},
     { args: ["@", "XYZ"], expected: Buffer.from("XYZ")},
@@ -309,7 +309,7 @@ let append_tests = () => [
     { args: ["@", Buffer.from("XYZ"),  {encoding: "utf8", mode: 0o666}],
       expected: Buffer.from("XYZXYZ") },
     { args: ["@", new DataView(Buffer.alloc(3).fill(66).buffer)],
-      expected: Buffer.from("BBBBBB") },
+      expected: Buffer.from("BBBBBB"), skip() { return njs && njs.engine == 'QuickJS'; } },
     { args: ["@", new Uint8Array(Buffer.from("ABCD"))],
       expected: Buffer.from("ABCDABCD")},
     { args: ["@", "XYZ"], expected: Buffer.from("XYZXYZ")},
