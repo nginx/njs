@@ -46,7 +46,7 @@ function p(args, default_opts) {
 
 let aes_tsuite = {
     name: "AES encoding/decoding",
-    skip: () => (!has_fs() || !has_buffer() || !has_webcrypto()),
+    skip: () => (!has_buffer() || !has_webcrypto()),
     T: test,
     prepare_args: p,
     opts: {

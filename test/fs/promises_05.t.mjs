@@ -143,12 +143,9 @@ let testFsp = () => Promise.resolve()
 })
 
 let p = Promise.resolve()
-if (has_fs()) {
-    p = p
-        .then(testSync)
-        .then(testCallback)
-        .then(testFsp)
-        .then(() => assert.compareArray(stages, ['mkdirSync', 'mkdir', 'fsp.mkdir']))
-}
+    .then(testSync)
+    .then(testCallback)
+    .then(testFsp)
+    .then(() => assert.compareArray(stages, ['mkdirSync', 'mkdir', 'fsp.mkdir']))
 
 p.then($DONE, $DONE);

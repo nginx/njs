@@ -101,7 +101,7 @@ var testSync = () => new Promise((resolve, reject) => {
 });
 
 let p = Promise.resolve()
-if (has_fs() && has_fs_symbolic_link()) {
+if (has_fs_symbolic_link()) {
     p = p
         .then(testSync)
         .then(() => assert.compareArray(stages, ['rmdirSync']))

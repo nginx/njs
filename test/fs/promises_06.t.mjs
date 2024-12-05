@@ -94,12 +94,9 @@ let testFsp = () => Promise.resolve()
 })
 
 let p = Promise.resolve()
-if (has_fs()) {
-    p = p
-        .then(testSync)
-        .then(testCallback)
-        .then(testFsp)
-        .then(() => assert.compareArray(stages, ["renameSync", "rename", "fsp.rename"]))
-}
+    .then(testSync)
+    .then(testCallback)
+    .then(testFsp)
+    .then(() => assert.compareArray(stages, ["renameSync", "rename", "fsp.rename"]))
 
 p.then($DONE, $DONE);

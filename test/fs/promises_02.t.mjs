@@ -80,12 +80,9 @@ let testFsp = () => Promise.resolve()
 })
 
 let p = Promise.resolve()
-if (has_fs()) {
-    p = p
-        .then(testSync)
-        .then(testCallback)
-        .then(testFsp)
-        .then(() => assert.compareArray(stages, ["testSync", "testCallback", "testPromise"]))
-}
+    .then(testSync)
+    .then(testCallback)
+    .then(testFsp)
+    .then(() => assert.compareArray(stages, ["testSync", "testCallback", "testPromise"]))
 
 p.then($DONE, $DONE);

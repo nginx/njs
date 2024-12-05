@@ -4,7 +4,7 @@ flags: [async]
 ---*/
 
 async function test(params) {
-    if (!has_fs() || !has_buffer() || !has_webcrypto()) {
+    if (!has_buffer() || !has_webcrypto()) {
         return 'SKIPPED';
     }
 

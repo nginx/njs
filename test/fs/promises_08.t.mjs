@@ -78,10 +78,7 @@ var testSync = () => new Promise((resolve, reject) => {
 });
 
 let p = Promise.resolve()
-if (has_fs()) {
-    p = p
-        .then(testSync)
-        .then(() => assert.compareArray(stages, ["mkdirSync"]))
-}
+    .then(testSync)
+    .then(() => assert.compareArray(stages, ["mkdirSync"]))
 
 p.then($DONE, $DONE);

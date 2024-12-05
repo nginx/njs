@@ -41,10 +41,7 @@ let test = () => Promise.resolve()
 })
 
 let p = Promise.resolve()
-if (has_fs()) {
-    p = p
-        .then(test)
-        .then(() => assert.compareArray(stages, ["init", "short circut", "chain", "errors ok"]))
-}
+    .then(test)
+    .then(() => assert.compareArray(stages, ["init", "short circut", "chain", "errors ok"]))
 
 p.then($DONE, $DONE);
