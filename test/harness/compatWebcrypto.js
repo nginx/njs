@@ -3,6 +3,6 @@ if (typeof crypto == 'undefined' && typeof require == 'function') {
 }
 
 function has_webcrypto() {
-    return (typeof crypto != 'undefied') ? crypto : null;
+    return (typeof crypto != 'undefined') ? crypto : null;
 }
 
