@@ -22,6 +22,10 @@ async function run(tlist) {
     function map(ts) {
         return ts.tests.map(t => {
             try {
+                if (t.skip && t.skip()) {
+                    return Promise.resolve("SKIPPED");
+                }
+
                 return ts.T(ts.prepare_args(t, ts.opts));
 
             } catch (e) {
