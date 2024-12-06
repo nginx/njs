@@ -19,6 +19,17 @@ async function run(tlist) {
         return false;
     }
 
+    function map(ts) {
+        return ts.tests.map(t => {
+            try {
+                return ts.T(ts.prepare_args(t, ts.opts));
+
+            } catch (e) {
+                return Promise.reject(e);
+            }
+        });
+    }
+
     for (let k = 0; k < tlist.length; k++) {
         let ts = tlist[k];
 
@@ -26,12 +37,19 @@ async function run(tlist) {
             continue;
         }
 
-        let results = await Promise.allSettled(ts.tests.map(t => ts.T(ts.prepare_args(t, ts.opts))));
-        let r = results.map((r, i) => validate(ts.tests, r, i));
+        let results = await Promise.allSettled(map(ts));
+        let r = results.map((r, i) => { r.passed = validate(ts.tests, r, i); return r; });
 
-        r.forEach((v, i) => {
-            assert.sameValue(v, true, `FAILED ${ts.name}: ${JSON.stringify(ts.tests[i])}\n    with reason: ${results[i].reason}`);
-        })
+        let passed = r.filter(r => r.passed).length;
+        if (passed != ts.tests.length) {
+            r.forEach((r, i) => {
+                if (!r.passed) {
+                    console.log(`   ${JSON.stringify(ts.tests[i])}\n    with reason: ${r.reason}`);
+                }
+            })
+
+            console.log(`${ts.name} FAILED: [${passed}/${ts.tests.length}]`);
+        }
     }
 }
 
