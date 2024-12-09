@@ -1,3 +1,28 @@
+Changes with njs 0.8.8                                       10 Dec 2024
+
+    nginx modules:
+
+    *) Feature: implemented shared dictionary for QuickJS engine.
+
+    *) Improvement: js_preload_object is refactored.
+
+    *) Bugfix: fixed limit rated output.
+
+    *) Bugfix: optimized use of SSL contexts for
+       js_fetch_trusted_certificate directive.
+
+    Core:
+
+    *) Feature: implemented process object for QuickJS engine.
+
+    *) Feature: implemented process.kill() method.
+
+    *) Bugfix: fixed tests with libxml2 2.13 and later.
+
+    *) Bugfix: fixed promise resolving when Promise is inherited.
+
+    *) Bugfix: fixed absolute scope in cloned VMs.
+
 Changes with njs 0.8.7                                       22 Oct 2024
 
     nginx modules:
