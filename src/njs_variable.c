@@ -151,7 +151,8 @@ njs_variable_scope_find(njs_parser_t *parser, njs_parser_scope_t *scope,
     njs_bool_t               module;
     njs_variable_t           *var;
     njs_parser_scope_t       *root;
-    const njs_lexer_entry_t  *entry;
+    njs_lexer_entry_t        entr;
+    njs_lexer_entry_t        *entry = &entr;
 
     root = njs_variable_scope(scope, unique_id, &var, type);
     if (njs_slow_path(root == NULL)) {
@@ -239,7 +240,7 @@ njs_variable_scope_find(njs_parser_t *parser, njs_parser_scope_t *scope,
 
 failed:
 
-    entry = njs_lexer_entry(unique_id);
+    njs_lexer_entry(unique_id, entry);
 
     njs_parser_syntax_error(parser, "\"%V\" has already been declared",
                             &entry->name);
