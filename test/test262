@@ -8,6 +8,8 @@ set -e
 . test/options
 . test/setup
 
+export NJS_TEST_DIR
+
 for njs_test in $NJS_TESTS; do
     . test/prepare
 
