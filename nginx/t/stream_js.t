@@ -394,7 +394,7 @@ $t->write_file('test.js', <<EOF);
 EOF
 
 $t->run_daemon(\&stream_daemon, port(8090));
-$t->try_run('no stream njs available')->plan(24);
+$t->try_run('no stream njs available')->plan(25);
 $t->waitforsocket('127.0.0.1:' . port(8090));
 
 ###############################################################################
@@ -449,6 +449,10 @@ my @p = (port(8087), port(8088), port(8089));
 like($t->read_file('status.log'), qr/$p[0]:200/, 'status undecided');
 like($t->read_file('status.log'), qr/$p[1]:200/, 'status allow');
 like($t->read_file('status.log'), qr/$p[2]:403/, 'status deny');
+
+my $content = $t->read_file('error.log');
+my $count = () = $content =~ m/ js vm init/g;
+ok($count == 2, 'http and stream js blocks imported once each');
 
 ###############################################################################
 
