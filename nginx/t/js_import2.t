@@ -41,6 +41,7 @@ http {
 
         js_set $test foo.bar.p;
 
+        # context 1
         js_import foo from main.js;
 
         location /njs {
@@ -52,11 +53,13 @@ http {
         }
 
         location /test_lib {
+            # context 2
             js_import lib.js;
             js_content lib.test;
         }
 
         location /test_fun {
+            # context 3
             js_import fun.js;
             js_content fun;
         }
@@ -75,6 +78,7 @@ http {
         server_name  localhost;
 
         location /test_fun {
+            # context 4
             js_import fun.js;
             js_content fun;
         }
@@ -114,7 +118,7 @@ $t->write_file('main.js', <<EOF);
 
 EOF
 
-$t->try_run('no njs available')->plan(5);
+$t->try_run('no njs available')->plan(6);
 
 ###############################################################################
 
@@ -123,5 +127,11 @@ like(http_get('/test_lib'), qr/LIB-TEST/s, 'lib.test');
 like(http_get('/test_fun'), qr/FUN-TEST/s, 'fun');
 like(http_get('/proxy/test_fun'), qr/FUN-TEST/s, 'proxy fun');
 like(http_get('/test_var'), qr/P-TEST/s, 'foo.bar.p');
+
+$t->stop();
+
+my $content = $t->read_file('error.log');
+my $count = () = $content =~ m/js vm init/g;
+ok($count == 4, 'uniq js vm contexts');
 
 ###############################################################################
