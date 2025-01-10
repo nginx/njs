@@ -20840,35 +20840,6 @@ static njs_unit_test_t  njs_querystring_module_test[] =
 };
 
 
-static njs_unit_test_t  njs_webcrypto_test[] =
-{
-    /* Statistic test
-     * bits1 is a random variable with Binomial distribution
-     * Expected value is N / 2
-     * Standard deviation is sqrt(N / 4)
-     */
-    { njs_str("function count1(v) {return v.toString(2).match(/1/g).length;}"
-              "let buf = new Uint32Array(32);"
-              "crypto.getRandomValues(buf);"
-              "let bits1 = buf.reduce((a, v)=> a + count1(v), 0);"
-              "let nbits = buf.length * 32;"
-              "let mean = nbits / 2;"
-              "let stddev = Math.sqrt(nbits / 4);"
-              "let condition = bits1 > (mean - 10 * stddev) && bits1 < (mean + 10 * stddev);"
-              "condition ? true : [buf, nbits, bits1, mean, stddev]"),
-      njs_str("true") },
-
-    { njs_str("let buf = new Uint32Array(4);"
-              "buf === crypto.getRandomValues(buf)"),
-      njs_str("true") },
-
-    { njs_str("crypto.subtle;"
-              "var d = Object.getOwnPropertyDescriptor(crypto, 'subtle');"
-              "d.enumerable && !d.configurable && d.writable"),
-      njs_str("true") },
-};
-
-
 #define NJS_XML_DOC "const xml = require('xml');" \
                     "let data = `<note><to b=\"bar\" a= \"foo\" >Tove</to><from>Jani</from></note>`;" \
                     "let doc = xml.parse(data);"
@@ -23917,17 +23888,6 @@ static njs_test_suite_t  njs_suites[] =
       njs_disabled_denormals_test,
       njs_nitems(njs_disabled_denormals_test),
       njs_disabled_denormals_tests },
-
-    {
-#if (NJS_HAVE_OPENSSL && !NJS_HAVE_MEMORY_SANITIZER)
-        njs_str("webcrypto"),
-#else
-        njs_str(""),
-#endif
-      { .externals = 1, .repeat = 1, .unsafe = 1 },
-      njs_webcrypto_test,
-      njs_nitems(njs_webcrypto_test),
-      njs_unit_test },
 
     {
 #if (NJS_HAVE_LIBXML2 && !NJS_HAVE_MEMORY_SANITIZER)

@@ -1027,6 +1027,20 @@ qjs_typed_array_data(JSContext *ctx, JSValueConst value, njs_str_t *data)
 }
 
 
+static void
+js_array_buffer_free(JSRuntime *rt, void *opaque, void *ptr)
+{
+    js_free_rt(rt, ptr);
+}
+
+
+JSValue
+qjs_new_array_buffer(JSContext *cx, uint8_t *src, size_t len)
+{
+    return JS_NewArrayBuffer(cx, src, len, js_array_buffer_free, NULL, 0);
+}
+
+
 JSValue
 qjs_string_create_chb(JSContext *cx, njs_chb_t *chain)
 {

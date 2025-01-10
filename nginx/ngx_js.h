@@ -377,6 +377,7 @@ ngx_int_t ngx_qjs_string(ngx_engine_t *e, JSValueConst val, ngx_str_t *str);
 #define ngx_qjs_external_ctx(cx, e)                                          \
     ((ngx_js_external_ctx_pt) ngx_qjs_meta(cx, 11))(e)
 
+extern qjs_module_t  qjs_webcrypto_module;
 extern qjs_module_t  qjs_zlib_module;
 extern qjs_module_t  ngx_qjs_ngx_module;
 extern qjs_module_t  ngx_qjs_ngx_shared_dict_module;

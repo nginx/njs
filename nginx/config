@@ -117,6 +117,10 @@ if [ $NJS_OPENSSL != NO ]; then
     have=NJS_HAVE_OPENSSL . auto/have
     NJS_SRCS="$NJS_SRCS $ngx_addon_dir/../external/njs_webcrypto_module.c"
 
+    if [ "$NJS_HAVE_QUICKJS" = "YES" ];  then
+        NJS_SRCS="$NJS_SRCS $ngx_addon_dir/../external/qjs_webcrypto_module.c"
+    fi
+
     echo " enabled webcrypto module"
 fi
 
