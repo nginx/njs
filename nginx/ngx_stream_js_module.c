@@ -840,6 +840,9 @@ qjs_module_t *njs_stream_qjs_addon_modules[] = {
      * Shared addons should be in the same order and the same positions
      * in all nginx modules.
      */
+#ifdef NJS_HAVE_OPENSSL
+    &qjs_webcrypto_module,
+#endif
 #ifdef NJS_HAVE_ZLIB
     &qjs_zlib_module,
 #endif

@@ -13,10 +13,12 @@ async function test(params) {
                                        key, params.signature,
                                        params.text)
                     .catch (e => {
-                        if (e.toString().startsWith("Error: EVP_PKEY_CTX_set_signature_md() failed")) {
+                        if (e.message.startsWith("EVP_PKEY_CTX_set_signature_md() failed")) {
                             /* Red Hat Enterprise Linux: SHA-1 is disabled */
                             return "SKIPPED";
                         }
+
+                        throw e;
                     });
 
     if (r == "SKIPPED") {

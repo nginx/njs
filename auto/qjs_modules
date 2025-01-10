@@ -13,6 +13,14 @@ njs_module_srcs=external/qjs_fs_module.c
 
 . auto/qjs_module
 
+if [ $NJS_OPENSSL = YES -a $NJS_HAVE_OPENSSL = YES ]; then
+	njs_module_name=qjs_webcrypto_module
+	njs_module_incs=
+	njs_module_srcs=external/qjs_webcrypto_module.c
+
+	. auto/qjs_module
+fi
+
 if [ $NJS_ZLIB = YES -a $NJS_HAVE_ZLIB = YES ]; then
     njs_module_name=qjs_zlib_module
     njs_module_incs=

@@ -51,10 +51,12 @@ async function test(params) {
     let sig = await crypto.subtle.sign(params.sign_alg, skey,
                                        encoder.encode(params.text))
                     .catch (e => {
-                        if (e.toString().startsWith("Error: EVP_PKEY_CTX_set_signature_md() failed")) {
+                        if (e.message.startsWith("EVP_PKEY_CTX_set_signature_md() failed")) {
                             /* Red Hat Enterprise Linux: SHA-1 is disabled */
                             return "SKIPPED";
                         }
+
+                        throw e;
                     });
 
     if (sig == "SKIPPED") {
