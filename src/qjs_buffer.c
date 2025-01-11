@@ -90,8 +90,6 @@ static int qjs_hex_encode(JSContext *ctx, const njs_str_t *src, njs_str_t *dst);
 static size_t qjs_hex_encode_length(JSContext *ctx, const njs_str_t *src);
 static int qjs_hex_decode(JSContext *ctx, const njs_str_t *src, njs_str_t *dst);
 static size_t qjs_hex_decode_length(JSContext *ctx, const njs_str_t *src);
-static JSValue qjs_new_uint8_array(JSContext *ctx, int argc,
-    JSValueConst *argv);
 static JSModuleDef *qjs_buffer_init(JSContext *ctx, const char *name);
 
 
@@ -2465,7 +2463,7 @@ qjs_buffer_chb_alloc(JSContext *ctx, njs_chb_t *chain)
 }
 
 
-static JSValue
+JSValue
 qjs_new_uint8_array(JSContext *ctx, int argc, JSValueConst *argv)
 {
     JSValue  ret;
