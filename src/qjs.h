@@ -36,10 +36,12 @@
 #define QJS_CORE_CLASS_ID_OFFSET    64
 #define QJS_CORE_CLASS_ID_BUFFER    (QJS_CORE_CLASS_ID_OFFSET)
 #define QJS_CORE_CLASS_ID_UINT8_ARRAY_CTOR (QJS_CORE_CLASS_ID_OFFSET + 1)
-#define QJS_CORE_CLASS_ID_FS_STATS  (QJS_CORE_CLASS_ID_OFFSET + 2)
-#define QJS_CORE_CLASS_ID_FS_DIRENT (QJS_CORE_CLASS_ID_OFFSET + 3)
-#define QJS_CORE_CLASS_ID_FS_FILEHANDLE (QJS_CORE_CLASS_ID_OFFSET + 4)
-#define QJS_CORE_CLASS_ID_LAST      (QJS_CORE_CLASS_ID_OFFSET + 5)
+#define QJS_CORE_CLASS_ID_TEXT_DECODER (QJS_CORE_CLASS_ID_OFFSET + 2)
+#define QJS_CORE_CLASS_ID_TEXT_ENCODER (QJS_CORE_CLASS_ID_OFFSET + 3)
+#define QJS_CORE_CLASS_ID_FS_STATS  (QJS_CORE_CLASS_ID_OFFSET + 4)
+#define QJS_CORE_CLASS_ID_FS_DIRENT (QJS_CORE_CLASS_ID_OFFSET + 5)
+#define QJS_CORE_CLASS_ID_FS_FILEHANDLE (QJS_CORE_CLASS_ID_OFFSET + 6)
+#define QJS_CORE_CLASS_ID_LAST      (QJS_CORE_CLASS_ID_OFFSET + 7)
 
 
 typedef JSModuleDef *(*qjs_addon_init_pt)(JSContext *ctx, const char *name);
@@ -53,6 +55,7 @@ typedef struct {
 JSContext *qjs_new_context(JSRuntime *rt, qjs_module_t **addons);
 
 
+JSValue qjs_new_uint8_array(JSContext *ctx, int argc, JSValueConst *argv);
 JSValue qjs_buffer_alloc(JSContext *ctx, size_t size);
 JSValue qjs_buffer_create(JSContext *ctx, u_char *start, size_t size);
 JSValue qjs_buffer_chb_alloc(JSContext *ctx, njs_chb_t *chain);
