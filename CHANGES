@@ -1,3 +1,20 @@
+Changes with njs 0.8.9                                       14 Jan 2025
+
+    nginx modules:
+
+    *) Bugfix: removed extra VM creation per server.
+       Previously, when js_import was declared in http or stream blocks,
+       an extra copy of the VM instance was created for each server
+       block. This was not needed and consumed a lot of memory for
+       configurations with many server blocks.
+
+      This issue was introduced in 9b674412 (0.8.6) and was partially
+      fixed for location blocks only in 685b64f0 (0.8.7).
+
+    Core:
+
+    *) Feature: added fs module for QuickJS engine.
+
 Changes with njs 0.8.8                                       10 Dec 2024
 
     nginx modules:
