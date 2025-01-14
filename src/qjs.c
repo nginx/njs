@@ -456,17 +456,25 @@ qjs_bytes_free(JSContext *ctx, qjs_bytes_t *bytes)
 JSValue
 qjs_typed_array_data(JSContext *ctx, JSValueConst value, njs_str_t *data)
 {
-    size_t  byte_offset, byte_length;
+    size_t   byte_offset, byte_length;
+    JSValue  ab;
 
-    value = JS_GetTypedArrayBuffer(ctx, value, &byte_offset, &byte_length,
+    /* TODO: DataView. */
+
+    ab = JS_GetTypedArrayBuffer(ctx, value, &byte_offset, &byte_length,
                                    NULL);
-    if (JS_IsException(value)) {
-        return value;
+    if (JS_IsException(ab)) {
+        data->start = JS_GetArrayBuffer(ctx, &data->length, value);
+        if (data->start == NULL) {
+            return JS_EXCEPTION;
+        }
+
+        return JS_UNDEFINED;
     }
 
-    data->start = JS_GetArrayBuffer(ctx, &data->length, value);
+    data->start = JS_GetArrayBuffer(ctx, &data->length, ab);
 
-    JS_FreeValue(ctx, value);
+    JS_FreeValue(ctx, ab);
 
     if (data->start == NULL) {
         return JS_EXCEPTION;
