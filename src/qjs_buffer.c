@@ -158,7 +158,7 @@ static const JSCFunctionListEntry qjs_buffer_props[] = {
     JS_CFUNC_MAGIC_DEF("allocUnsafe", 3, qjs_bufferobj_alloc, 1),
     JS_CFUNC_DEF("byteLength", 2, qjs_buffer_byte_length),
     JS_CFUNC_DEF("compare", 6, qjs_buffer_compare),
-    JS_CFUNC_DEF("concat", 1, qjs_buffer_concat),
+    JS_CFUNC_DEF("concat", 2, qjs_buffer_concat),
     JS_CFUNC_DEF("from", 3, qjs_buffer_from),
     JS_CFUNC_DEF("isBuffer", 1, qjs_buffer_is_buffer),
     JS_CFUNC_DEF("isEncoding", 1, qjs_buffer_is_encoding),
