@@ -83,29 +83,12 @@ http {
             return 200 $test_global;
         }
 
-        location /body {
-            js_content test.request_body;
-        }
-
-        location /in_file {
-            client_body_in_file_only on;
-            js_content test.request_body;
-        }
-
         location /status {
             js_content test.status;
         }
 
         location /buffer_variable {
             js_content test.buffer_variable;
-        }
-
-        location /request_body {
-            js_content test.request_body;
-        }
-
-        location /request_body_cache {
-            js_content test.request_body_cache;
         }
 
         location /send {
@@ -194,22 +177,6 @@ $t->write_file('test.js', <<EOF);
         r.finish();
     }
 
-    function request_body(r) {
-        try {
-            var body = r.requestText;
-            r.return(200, body);
-
-        } catch (e) {
-            r.return(500, e.message);
-        }
-    }
-
-    function request_body_cache(r) {
-        function t(v) {return Buffer.isBuffer(v) ? 'buffer' : (typeof v);}
-        r.return(200,
-      `requestText:\${t(r.requestText)} requestBuffer:\${t(r.requestBuffer)}`);
-    }
-
     function send(r) {
         var a, s;
         r.status = 200;
@@ -271,14 +238,13 @@ $t->write_file('test.js', <<EOF);
     }
 
     export default {njs:test_njs, method, version, addr, uri, buffer,
-                    variable, global_obj, status, request_body, internal,
-                    request_body_cache, send, return_method, sub_internal,
-                    type, log, buffer_variable, except, content_except,
-                    content_empty, send_buffer};
+                    variable, global_obj, status, internal, send,
+                    return_method, sub_internal, type, log, buffer_variable,
+                    except, content_except, content_empty, send_buffer};
 
 EOF
 
-$t->try_run('no njs available')->plan(29);
+$t->try_run('no njs available')->plan(25);
 
 ###############################################################################
 
@@ -288,12 +254,6 @@ like(http_get('/addr'), qr/addr=127.0.0.1/, 'r.remoteAddress');
 like(http_get('/uri'), qr/uri=\/uri/, 'r.uri');
 
 like(http_get('/status'), qr/204 No Content/, 'r.status');
-
-like(http_post('/body'), qr/REQ-BODY/, 'request body');
-like(http_post('/in_file'), qr/request body is in a file/,
-	'request body in file');
-like(http_post_big('/body'), qr/200.*^(1234567890){1024}$/ms,
-	'request body big');
 
 like(http_get('/send?foo=12345&n=11&foo-2=bar&ndd=&foo-3=z'),
 	qr/n=foo, v=12 n=foo-2, v=ba n=foo-3, v=z/, 'r.send');
@@ -323,8 +283,6 @@ like(http_post('/type?path=requestText'), qr/200 OK.*type: string$/s,
 	'requestText type');
 like(http_post('/type?path=requestBuffer'), qr/200 OK.*type: buffer$/s,
 	'requestBuffer type');
-like(http_post('/request_body_cache'),
-	qr/requestText:string requestBuffer:buffer$/s, 'request body cache');
 
 like(http_get('/var'), qr/variable=127.0.0.1/, 'r.variables');
 like(http_get('/global'), qr/global=njs/, 'global code');
@@ -410,18 +368,6 @@ sub http_post {
 		"Content-Length: 8" . CRLF .
 		CRLF .
 		"REQ-BODY";
-
-	return http($p, %extra);
-}
-
-sub http_post_big {
-	my ($url, %extra) = @_;
-
-	my $p = "POST $url HTTP/1.0" . CRLF .
-		"Host: localhost" . CRLF .
-		"Content-Length: 10240" . CRLF .
-		CRLF .
-		("1234567890" x 1024);
 
 	return http($p, %extra);
 }

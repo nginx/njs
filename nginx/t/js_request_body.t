@@ -56,6 +56,10 @@ http {
             client_body_in_file_only clean;
             js_content test.read_body_from_temp_file;
         }
+
+        location /request_body_cache {
+            js_content test.request_body_cache;
+        }
     }
 }
 
@@ -79,11 +83,17 @@ $t->write_file('test.js', <<EOF);
         r.return(200, fs.readFileSync(fn));
     }
 
-    export default {body, read_body_from_temp_file};
+    function request_body_cache(r) {
+        function t(v) {return Buffer.isBuffer(v) ? 'buffer' : (typeof v);}
+        r.return(200,
+      `requestText:\${t(r.requestText)} requestBuffer:\${t(r.requestBuffer)}`);
+    }
+
+    export default {body, read_body_from_temp_file, request_body_cache};
 
 EOF
 
-$t->try_run('no njs request body')->plan(4);
+$t->try_run('no njs request body')->plan(5);
 
 ###############################################################################
 
@@ -94,6 +104,8 @@ like(http_post_big('/body'), qr/200.*^(1234567890){1024}$/ms,
 		'request body big');
 like(http_post_big('/read_body_from_temp_file'),
 	qr/200.*^(1234567890){1024}$/ms, 'request body big from temp file');
+like(http_post('/request_body_cache'),
+	qr/requestText:string requestBuffer:buffer$/s, 'request body cache');
 
 ###############################################################################
 
