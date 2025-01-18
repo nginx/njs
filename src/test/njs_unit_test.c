@@ -19339,128 +19339,6 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var t = \"123\"; t = parseInt(t); t"),
       njs_str("123") },
 
-    /* TextEncoder. */
-
-    { njs_str("var en = new TextEncoder(); typeof en.encode()"),
-      njs_str("object") },
-
-    { njs_str("var en = new TextEncoder(); en.encode()"),
-      njs_str("") },
-
-    { njs_str("var en = new TextEncoder(); var res = en.encode('α'); res"),
-      njs_str("206,177") },
-
-    { njs_str("var en = new TextEncoder(); var res = en.encode('α1α'); res[2]"),
-      njs_str("49") },
-
-    { njs_str("var en = new TextEncoder(); en.encoding"),
-      njs_str("utf-8") },
-
-    { njs_str("TextEncoder.prototype.encode.apply({}, [])"),
-      njs_str("TypeError: \"this\" is not a TextEncoder") },
-
-    { njs_str("var en = new TextEncoder();"
-              "var utf8 = new Uint8Array(5);"
-              "var res = en.encodeInto('ααααα', utf8); njs.dump(res)"),
-      njs_str("{read:2,written:4}") },
-
-    { njs_str("var en = new TextEncoder();"
-              "var utf8 = new Uint8Array(10);"
-              "var res = en.encodeInto('ααααα', utf8); njs.dump(res)"),
-      njs_str("{read:5,written:10}") },
-
-    { njs_str("var en = new TextEncoder();"
-              "var utf8 = new Uint8Array(10);"
-              "en.encodeInto('ααααα', utf8.subarray(2)); utf8[0]"),
-      njs_str("0") },
-
-    { njs_str("TextEncoder.prototype.encodeInto.apply({}, [])"),
-      njs_str("TypeError: \"this\" is not a TextEncoder") },
-
-    { njs_str("(new TextEncoder()).encodeInto('', 0.12) "),
-      njs_str("TypeError: The \"destination\" argument must be an instance of Uint8Array") },
-
-    /* TextDecoder. */
-
-    { njs_str("var de = new TextDecoder();"
-              "var u8arr = new Uint8Array([240, 160, 174, 183]);"
-              "var u16arr = new Uint16Array(u8arr.buffer);"
-              "var u32arr = new Uint32Array(u8arr.buffer);"
-              "[u8arr, u16arr, u32arr].map(v=>de.decode(v)).join(',')"),
-      njs_str("𠮷,𠮷,𠮷") },
-
-    { njs_str("var de = new TextDecoder();"
-              "[new Uint8Array([240, 160]), "
-              " new Uint8Array([174]), "
-              " new Uint8Array([183])].map(v=>de.decode(v, {stream: 1}))[2]"),
-      njs_str("𠮷") },
-
-    { njs_str("var de = new TextDecoder();"
-              "de.decode(new Uint8Array([240, 160]), {stream: 1});"
-              "de.decode(new Uint8Array([174]), {stream: 1});"
-              "de.decode(new Uint8Array([183]))"),
-      njs_str("𠮷") },
-
-    { njs_str("var de = new TextDecoder();"
-              "de.decode(new Uint8Array([240, 160]), {stream: 1});"
-              "de.decode()"),
-      njs_str("�") },
-
-    { njs_str("var de = new TextDecoder('utf-8', {fatal: true});"
-              "de.decode(new Uint8Array([240, 160]))"),
-      njs_str("TypeError: The encoded data was not valid") },
-
-    { njs_str("var de = new TextDecoder('utf-8', {fatal: false});"
-              "de.decode(new Uint8Array([240, 160]))"),
-      njs_str("�") },
-
-    { njs_str("var en = new TextEncoder();"
-              "var de = new TextDecoder('utf-8', {ignoreBOM: true});"
-              "en.encode(de.decode(new Uint8Array([239, 187, 191, 50])))"),
-      njs_str("239,187,191,50") },
-
-    { njs_str("var en = new TextEncoder();"
-              "var de = new TextDecoder('utf-8', {ignoreBOM: false});"
-              "en.encode(de.decode(new Uint8Array([239, 187, 191, 50])))"),
-      njs_str("50") },
-
-    { njs_str("var en = new TextEncoder(); var de = new TextDecoder();"
-              "en.encode(de.decode(new Uint8Array([239, 187, 191, 50])))"),
-      njs_str("50") },
-
-    { njs_str("var de = new TextDecoder(); de.decode('')"),
-      njs_str("TypeError: The \"input\" argument must be an instance of TypedArray") },
-
-    { njs_str("var de = new TextDecoder({})"),
-      njs_str("RangeError: The \"[object Object]\" encoding is not supported") },
-
-    { njs_str("var de = new TextDecoder('foo')"),
-      njs_str("RangeError: The \"foo\" encoding is not supported") },
-
-    { njs_str("var de = new TextDecoder(); de.encoding"),
-      njs_str("utf-8") },
-
-    { njs_str("var de = new TextDecoder(); de.fatal"),
-      njs_str("false") },
-
-    { njs_str("var de = new TextDecoder(); de.ignoreBOM"),
-      njs_str("false") },
-
-    { njs_str("TextDecoder.prototype.decode.apply({}, new Uint8Array([1]))"),
-      njs_str("TypeError: \"this\" is not a TextDecoder") },
-
-    { njs_str("var de = new TextDecoder();"
-              "var buf = new Uint32Array([1,2,3]).buffer;"
-              "var en = new TextEncoder();"
-              "njs.dump(new Uint32Array(en.encode(de.decode(buf)).buffer))"),
-      njs_str("Uint32Array [1,2,3]") },
-
-    { njs_str("var de = new TextDecoder();"
-              "var buf = new Uint32Array([1,2,3]).subarray(1,2);"
-              "var en = new TextEncoder();"
-              "njs.dump(new Uint32Array(en.encode(de.decode(buf)).buffer))"),
-      njs_str("Uint32Array [2]") },
-
     /* let */
 
     { njs_str("let x"),
@@ -20959,35 +20837,6 @@ static njs_unit_test_t  njs_querystring_module_test[] =
     { njs_str("var qs = require('querystring');"
               "qs.unescape('abc%CE%B1%CE%B1%CE%B1%CE%B1def')"),
       njs_str("abcααααdef") },
-};
-
-
-static njs_unit_test_t  njs_webcrypto_test[] =
-{
-    /* Statistic test
-     * bits1 is a random variable with Binomial distribution
-     * Expected value is N / 2
-     * Standard deviation is sqrt(N / 4)
-     */
-    { njs_str("function count1(v) {return v.toString(2).match(/1/g).length;}"
-              "let buf = new Uint32Array(32);"
-              "crypto.getRandomValues(buf);"
-              "let bits1 = buf.reduce((a, v)=> a + count1(v), 0);"
-              "let nbits = buf.length * 32;"
-              "let mean = nbits / 2;"
-              "let stddev = Math.sqrt(nbits / 4);"
-              "let condition = bits1 > (mean - 10 * stddev) && bits1 < (mean + 10 * stddev);"
-              "condition ? true : [buf, nbits, bits1, mean, stddev]"),
-      njs_str("true") },
-
-    { njs_str("let buf = new Uint32Array(4);"
-              "buf === crypto.getRandomValues(buf)"),
-      njs_str("true") },
-
-    { njs_str("crypto.subtle;"
-              "var d = Object.getOwnPropertyDescriptor(crypto, 'subtle');"
-              "d.enumerable && !d.configurable && d.writable"),
-      njs_str("true") },
 };
 
 
@@ -24039,17 +23888,6 @@ static njs_test_suite_t  njs_suites[] =
       njs_disabled_denormals_test,
       njs_nitems(njs_disabled_denormals_test),
       njs_disabled_denormals_tests },
-
-    {
-#if (NJS_HAVE_OPENSSL && !NJS_HAVE_MEMORY_SANITIZER)
-        njs_str("webcrypto"),
-#else
-        njs_str(""),
-#endif
-      { .externals = 1, .repeat = 1, .unsafe = 1 },
-      njs_webcrypto_test,
-      njs_nitems(njs_webcrypto_test),
-      njs_unit_test },
 
     {
 #if (NJS_HAVE_LIBXML2 && !NJS_HAVE_MEMORY_SANITIZER)

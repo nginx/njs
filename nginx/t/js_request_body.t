@@ -51,12 +51,23 @@ http {
             client_body_in_file_only on;
             js_content test.body;
         }
+
+        location /read_body_from_temp_file {
+            client_body_in_file_only clean;
+            js_content test.read_body_from_temp_file;
+        }
+
+        location /request_body_cache {
+            js_content test.request_body_cache;
+        }
     }
 }
 
 EOF
 
 $t->write_file('test.js', <<EOF);
+    import fs from 'fs';
+
     function body(r) {
         try {
             var body = r.requestText;
@@ -67,11 +78,22 @@ $t->write_file('test.js', <<EOF);
         }
     }
 
-    export default {body};
+    function read_body_from_temp_file(r) {
+        let fn = r.variables.request_body_file;
+        r.return(200, fs.readFileSync(fn));
+    }
+
+    function request_body_cache(r) {
+        function t(v) {return Buffer.isBuffer(v) ? 'buffer' : (typeof v);}
+        r.return(200,
+      `requestText:\${t(r.requestText)} requestBuffer:\${t(r.requestBuffer)}`);
+    }
+
+    export default {body, read_body_from_temp_file, request_body_cache};
 
 EOF
 
-$t->try_run('no njs request body')->plan(3);
+$t->try_run('no njs request body')->plan(5);
 
 ###############################################################################
 
@@ -80,6 +102,10 @@ like(http_post('/in_file'), qr/request body is in a file/,
 	'request body in file');
 like(http_post_big('/body'), qr/200.*^(1234567890){1024}$/ms,
 		'request body big');
+like(http_post_big('/read_body_from_temp_file'),
+	qr/200.*^(1234567890){1024}$/ms, 'request body big from temp file');
+like(http_post('/request_body_cache'),
+	qr/requestText:string requestBuffer:buffer$/s, 'request body cache');
 
 ###############################################################################
 

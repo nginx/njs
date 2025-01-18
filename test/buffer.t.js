@@ -79,7 +79,14 @@ let concat_tsuite = {
     name: "Buffer.concat() tests",
     skip: () => (!has_buffer()),
     T: async (params) => {
-        let r = Buffer.concat(params.buffers, params.length);
+        let r;
+
+        if (params.length) {
+            r = Buffer.concat(params.buffers, params.length);
+
+        } else {
+            r = Buffer.concat(params.buffers);
+        }
 
         if (r.toString() !== params.expected) {
             throw Error(`unexpected output "${r.toString()}" != "${params.expected}"`);
