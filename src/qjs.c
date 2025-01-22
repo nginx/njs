@@ -45,7 +45,6 @@ extern char  **environ;
 static JSValue qjs_njs_getter(JSContext *ctx, JSValueConst this_val);
 static JSValue qjs_njs_to_string_tag(JSContext *ctx, JSValueConst this_val);
 static JSValue qjs_process_to_string_tag(JSContext *ctx, JSValueConst this_val);
-static JSValue qjs_process_argv(JSContext *ctx, JSValueConst this_val);
 static JSValue qjs_process_env(JSContext *ctx, JSValueConst this_val);
 static JSValue qjs_process_kill(JSContext *ctx, JSValueConst this_val,
     int argc, JSValueConst *argv);
@@ -137,7 +136,6 @@ static const JSCFunctionListEntry qjs_njs_proto[] = {
 
 static const JSCFunctionListEntry qjs_process_proto[] = {
     JS_CGETSET_DEF("[Symbol.toStringTag]", qjs_process_to_string_tag, NULL),
-    JS_CGETSET_DEF("argv", qjs_process_argv, NULL),
     JS_CGETSET_DEF("env", qjs_process_env, NULL),
     JS_CFUNC_DEF("kill", 2, qjs_process_kill),
     JS_CGETSET_DEF("pid", qjs_process_pid, NULL),
@@ -259,51 +257,6 @@ static JSValue
 qjs_process_to_string_tag(JSContext *ctx, JSValueConst this_val)
 {
     return JS_NewString(ctx, "process");
-}
-
-
-static JSValue
-qjs_process_argv(JSContext *ctx, JSValueConst this_val)
-{
-    int         i, ret, argc;
-    JSValue     val, str;
-    const char  **argv;
-
-    val = JS_GetPropertyStr(ctx, this_val, "argc");
-    if (JS_IsException(val)) {
-        return JS_EXCEPTION;
-    }
-
-    if (JS_ToInt32(ctx, &argc, val) < 0) {
-        return JS_EXCEPTION;
-    }
-
-    argv = JS_GetOpaque(this_val, JS_GetClassID(this_val));
-    if (argv == NULL) {
-        return JS_NewArray(ctx);
-    }
-
-    val = JS_NewArray(ctx);
-    if (JS_IsException(val)) {
-        return JS_EXCEPTION;
-    }
-
-    for (i = 0; i < argc; i++) {
-        str = JS_NewStringLen(ctx, argv[i], njs_strlen(argv[i]));
-        if (JS_IsException(str)) {
-            JS_FreeValue(ctx, val);
-            return JS_EXCEPTION;
-        }
-
-        ret = JS_DefinePropertyValueUint32(ctx, val, i, str, JS_PROP_C_W_E);
-        if (ret < 0) {
-            JS_FreeValue(ctx, str);
-            JS_FreeValue(ctx, val);
-            return JS_EXCEPTION;
-        }
-    }
-
-    return val;
 }
 
 
@@ -451,20 +404,39 @@ qjs_process_ppid(JSContext *ctx, JSValueConst this_val)
 JSValue
 qjs_process_object(JSContext *ctx, int argc, const char **argv)
 {
-    JSValue  obj;
+    int      i;
+    JSValue  obj, str, val;
+
+    val = JS_NewArray(ctx);
+    if (JS_IsException(val)) {
+        return JS_EXCEPTION;
+    }
+
+    for (i = 0; i < argc; i++) {
+        str = JS_NewStringLen(ctx, argv[i], njs_strlen(argv[i]));
+        if (JS_IsException(str)) {
+            JS_FreeValue(ctx, val);
+            return JS_EXCEPTION;
+        }
+
+        if (JS_DefinePropertyValueUint32(ctx, val, i, str, JS_PROP_C_W_E) < 0) {
+            JS_FreeValue(ctx, str);
+            JS_FreeValue(ctx, val);
+            return JS_EXCEPTION;
+        }
+    }
 
     obj = JS_NewObject(ctx);
     if (JS_IsException(obj)) {
+        JS_FreeValue(ctx, val);
         return JS_EXCEPTION;
     }
 
     JS_SetPropertyFunctionList(ctx, obj, qjs_process_proto,
                                njs_nitems(qjs_process_proto));
 
-    JS_SetOpaque(obj, argv);
-
-    if (JS_SetPropertyStr(ctx, obj, "argc", JS_NewInt32(ctx, argc)) < 0) {
-        JS_FreeValue(ctx, obj);
+    if (JS_SetPropertyStr(ctx, obj, "argv", val) < 0) {
+        JS_FreeValue(ctx, val);
         return JS_EXCEPTION;
     }
 
