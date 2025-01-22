@@ -39,7 +39,6 @@ if [ $NJS_QUICKJS != NO ]; then
     ngx_feature_test="JSRuntime *rt;
 
                       rt = JS_NewRuntime();
-                      (void) JS_GetClassID;
                       JS_FreeRuntime(rt);
                       return 0;"
     . auto/feature
@@ -66,17 +65,44 @@ if [ $NJS_QUICKJS != NO ]; then
         . auto/feature
     fi
 
+    if [ $ngx_found = no ]; then
+        ngx_feature="QuickJS-NG library -lqjs"
+        ngx_feature_path=""
+        ngx_feature_libs="-lqjs -lm -ldl -lpthread"
+
+        . auto/feature
+    fi
+
     if [ $ngx_found = yes ]; then
 
+        ngx_feature="QuickJS JS_GetClassID()"
+        ngx_feature_name=NJS_HAVE_QUICKJS_GET_CLASS_ID
+        ngx_feature_run=no
+        ngx_feature_test="(void) JS_GetClassID(JS_UNDEFINED);"
+
+        . auto/feature
+
+        if [ $ngx_found = no ]; then
+            echo
+            echo $0: error: QuickJS library found, but JS_GetClassID\(\) is missing.
+            echo
+            exit 1;
+        fi
+
         ngx_feature="QuickJS JS_NewTypedArray()"
-        ngx_feature_test="(void) JS_NewTypedArray;
+        ngx_feature_name=NJS_HAVE_QUICKJS_NEW_TYPED_ARRAY
+        ngx_feature_test="JSValue argv;
+                         (void) JS_NewTypedArray(NULL, 1, &argv,
+                                                 JS_TYPED_ARRAY_UINT8);
                           return 0;"
 
         . auto/feature
 
-        if [ $ngx_found = yes ]; then
-            have=NJS_HAVE_QUICKJS_NEW_TYPED_ARRAY . auto/have
-        fi
+        ngx_feature="QuickJS JS_IsSameValue()"
+        ngx_feature_name=NJS_HAVE_QUICKJS_IS_SAME_VALUE
+        ngx_feature_test="(void) JS_IsSameValue(NULL, JS_UNDEFINED, JS_UNDEFINED);"
+
+        . auto/feature
 
         NJS_HAVE_QUICKJS=YES
         NJS_QUICKJS_LIB="$ngx_feature_libs"

@@ -397,7 +397,7 @@ qjs_fs_access(JSContext *cx, JSValueConst this_val, int argc,
             return JS_EXCEPTION;
         }
 
-        if (JS_SameValue(cx, mode, callback)) {
+        if (qjs_is_same_value(cx, mode, callback)) {
             mode = JS_UNDEFINED;
         }
     }
@@ -586,7 +586,7 @@ qjs_fs_mkdir(JSContext *cx, JSValueConst this_val, int argc,
             return JS_EXCEPTION;
         }
 
-        if (JS_SameValue(cx, options, callback)) {
+        if (qjs_is_same_value(cx, options, callback)) {
             options = JS_UNDEFINED;
         }
     }
@@ -894,7 +894,7 @@ qjs_fs_read_file(JSContext *cx, JSValueConst this_val, int argc,
             return JS_EXCEPTION;
         }
 
-        if (JS_SameValue(cx, options, callback)) {
+        if (qjs_is_same_value(cx, options, callback)) {
             options = JS_UNDEFINED;
         }
     }
@@ -955,7 +955,7 @@ qjs_fs_read_file(JSContext *cx, JSValueConst this_val, int argc,
     str.length = sb.st_size;
 
     v = qjs_fs_fd_read(cx, fd, &str);
-    if (!JS_SameValue(cx, v, JS_TRUE)) {
+    if (!qjs_is_same_value(cx, v, JS_TRUE)) {
         if (JS_IsException(v)) {
             result = JS_EXCEPTION;
 
@@ -1012,7 +1012,7 @@ qjs_fs_readlink(JSContext *cx, JSValueConst this_val, int argc,
             return JS_EXCEPTION;
         }
 
-        if (JS_SameValue(cx, options, callback)) {
+        if (qjs_is_same_value(cx, options, callback)) {
             options = JS_UNDEFINED;
         }
     }
@@ -1150,7 +1150,7 @@ qjs_fs_readdir(JSContext *cx, JSValueConst this_val, int argc,
             return JS_EXCEPTION;
         }
 
-        if (JS_SameValue(cx, options, callback)) {
+        if (qjs_is_same_value(cx, options, callback)) {
             options = JS_UNDEFINED;
         }
     }
@@ -1309,7 +1309,7 @@ qjs_fs_realpath(JSContext *cx, JSValueConst this_val, int argc,
             return JS_EXCEPTION;
         }
 
-        if (JS_SameValue(cx, options, callback)) {
+        if (qjs_is_same_value(cx, options, callback)) {
             options = JS_UNDEFINED;
         }
     }
@@ -1655,7 +1655,7 @@ qjs_fs_rmdir(JSContext *cx, JSValueConst this_val, int argc,
             return JS_EXCEPTION;
         }
 
-        if (JS_SameValue(cx, options, callback)) {
+        if (qjs_is_same_value(cx, options, callback)) {
             options = JS_UNDEFINED;
         }
     }
@@ -1817,7 +1817,7 @@ qjs_fs_stat(JSContext *cx, JSValueConst this_val, int argc, JSValueConst *argv,
             return JS_EXCEPTION;
         }
 
-        if (JS_SameValue(cx, options, callback)) {
+        if (qjs_is_same_value(cx, options, callback)) {
             options = JS_UNDEFINED;
         }
     }
@@ -1916,7 +1916,7 @@ qjs_fs_symlink(JSContext *cx, JSValueConst this_val, int argc,
             return JS_EXCEPTION;
         }
 
-        if (JS_SameValue(cx, type, callback)) {
+        if (qjs_is_same_value(cx, type, callback)) {
             type = JS_UNDEFINED;
         }
     }
@@ -2168,7 +2168,7 @@ qjs_fs_write_file(JSContext *cx, JSValueConst this_val, int argc,
             return JS_EXCEPTION;
         }
 
-        if (JS_SameValue(cx, options, callback)) {
+        if (qjs_is_same_value(cx, options, callback)) {
             options = JS_UNDEFINED;
         }
     }

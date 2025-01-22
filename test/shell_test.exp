@@ -302,11 +302,11 @@ njs_test {
 
 njs_test {
     {"function f() { return ({}.a.a); }\r\n"
-     "undefined"}
-    {"var e; try {f()} catch (ee) {e = ee}\r\n"
-     "undefined"}
+     "undefined\r\n>> "}
+    {"var e; try {f()} catch (ee) {e = ee}; undefined\r\n"
+     "undefined\r\n>> "}
     {"Object.keys(null)\r\n"
-     "Thrown:\r\nTypeError: cannot convert*to object"}
+     "Thrown:\r\nTypeError: *annot convert*to object"}
     {"e\r\n"
      "TypeError: cannot * property *a* of undefined"}
 }
@@ -382,11 +382,11 @@ njs_test {
 
 njs_run {"-c" "setTimeout(() => {console.log('A'.repeat(1024))}, 0); ref"} \
 "^Thrown:
-ReferenceError: \['\"\]ref\['\"\] is not defined.*"
+ReferenceError: .* is not defined.*"
 
 njs_run {"-c" "setTimeout(() => {ref}, 0); setTimeout(() => {console.log('A'.repeat(1024))}, 0)"} \
 "^Thrown:
-ReferenceError: \['\"\]ref\['\"\] is not defined.*"
+ReferenceError: .* is not defined.*"
 
 njs_test {
     {"setImmediate(() => { console.log('x'); return Promise.reject('xx'); })\r\n"

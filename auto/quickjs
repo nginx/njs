@@ -53,9 +53,19 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
         . auto/feature
     fi
 
+    if [ $njs_found = no ]; then
+        njs_feature="QuickJS-NG library -lqjs"
+        njs_feature_incs=""
+        njs_feature_libs="-lqjs -lm -ldl -lpthread"
+
+        . auto/feature
+    fi
+
+
     if [ $njs_found = yes ]; then
 
         njs_feature="QuickJS JS_GetClassID()"
+        njs_feature_name=NJS_HAVE_QUICKJS_GET_CLASS_ID
         njs_feature_test="#if defined(__GNUC__) && (__GNUC__ >= 8)
                           #pragma GCC diagnostic push
                           #pragma GCC diagnostic ignored \"-Wcast-function-type\"
@@ -64,7 +74,7 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
                           #include <quickjs.h>
 
                           int main() {
-                              (void) JS_GetClassID;
+                              (void) JS_GetClassID(JS_UNDEFINED);
                               return 0;
                          }"
 
@@ -78,6 +88,7 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
         fi
 
         njs_feature="QuickJS JS_NewTypedArray()"
+        njs_feature_name=NJS_HAVE_QUICKJS_NEW_TYPED_ARRAY
         njs_feature_test="#if defined(__GNUC__) && (__GNUC__ >= 8)
                           #pragma GCC diagnostic push
                           #pragma GCC diagnostic ignored \"-Wcast-function-type\"
@@ -86,15 +97,66 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
                           #include <quickjs.h>
 
                           int main() {
-                              (void) JS_NewTypedArray;
+                              JSValue   ta, argv;
+                              JSRuntime *rt;
+                              JSContext *ctx;
+
+                              rt = JS_NewRuntime();
+                              ctx = JS_NewContext(rt);
+                              argv = JS_NewInt64(ctx, 1);
+                              ta = JS_NewTypedArray(ctx, 1, &argv,
+                                                    JS_TYPED_ARRAY_UINT8);
+                              JS_FreeValue(ctx, ta);
+                              JS_FreeContext(ctx);
+                              JS_FreeRuntime(rt);
                               return 0;
                          }"
 
         . auto/feature
 
-        if [ $njs_found = yes ]; then
-            njs_define=NJS_HAVE_QUICKJS_NEW_TYPED_ARRAY . auto/define
-        fi
+        njs_feature="QuickJS JS_IsSameValue()"
+        njs_feature_name=NJS_HAVE_QUICKJS_IS_SAME_VALUE
+        njs_feature_test="#if defined(__GNUC__) && (__GNUC__ >= 8)
+                          #pragma GCC diagnostic push
+                          #pragma GCC diagnostic ignored \"-Wcast-function-type\"
+                          #endif
+
+                          #include <quickjs.h>
+
+                          int main() {
+                              JSRuntime *rt;
+                              JSContext *ctx;
+
+                              rt = JS_NewRuntime();
+                              ctx = JS_NewContext(rt);
+                              (void) JS_IsSameValue(ctx, JS_UNDEFINED, JS_UNDEFINED);
+                              JS_FreeContext(ctx);
+                              JS_FreeRuntime(rt);
+                              return 0;
+                         }"
+
+        . auto/feature
+
+        njs_feature="QuickJS version"
+        njs_feature_name=NJS_QUICKJS_VERSION
+        njs_feature_run=value
+        njs_feature_test="#if defined(__GNUC__) && (__GNUC__ >= 8)
+                          #pragma GCC diagnostic push
+                          #pragma GCC diagnostic ignored \"-Wcast-function-type\"
+                          #endif
+
+                          #include <quickjs.h>
+
+                          int main() {
+#if defined(QJS_VERSION_MAJOR)
+                              printf(\"\\\"%s\\\"\", JS_GetVersion());
+#else
+                              printf(\"\\\"Unknown\\\"\");
+#endif
+                              return 0;
+                         }"
+
+        . auto/feature
 
         NJS_HAVE_QUICKJS=YES
         NJS_QUICKJS_LIB="$njs_feature_libs"

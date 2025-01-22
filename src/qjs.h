@@ -29,7 +29,6 @@
 #if defined(__GNUC__) && (__GNUC__ >= 8)
 #pragma GCC diagnostic pop
 #endif
-#define NJS_QUICKJS_VERSION  "Unknown version"
 #include <pthread.h>
 
 
@@ -99,6 +98,13 @@ static inline JS_BOOL JS_IsNullOrUndefined(JSValueConst v)
     return JS_VALUE_GET_TAG(v) == JS_TAG_NULL
            || JS_VALUE_GET_TAG(v) == JS_TAG_UNDEFINED;
 }
+
+
+#ifdef NJS_HAVE_QUICKJS_IS_SAME_VALUE
+#define qjs_is_same_value(cx, a, b) JS_IsSameValue(cx, a, b)
+#else
+#define qjs_is_same_value(cx, a, b) JS_SameValue(cx, a, b)
+#endif
 
 
 extern qjs_module_t              *qjs_modules[];
