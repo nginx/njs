@@ -4848,7 +4848,7 @@ ngx_http_qjs_ext_args(JSContext *cx, JSValueConst this_val)
             return JS_EXCEPTION;
         }
 
-        val = qjs_string_create(cx, v + 1, p - v - 1);
+        val = qjs_string_create(cx, v + 1, (p == v) ? 0 : p - v - 1);
         if (JS_IsException(val)) {
             chain.free(cx, decoded.start);
             JS_FreeAtom(cx, key);
