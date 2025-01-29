@@ -2916,6 +2916,7 @@ ngx_http_js_ext_get_request_body(njs_vm_t *vm, njs_object_prop_t *prop,
 {
     u_char              *p, *body;
     size_t               len;
+    ssize_t              n;
     uint32_t             buffer_type;
     ngx_buf_t           *buf;
     njs_int_t            ret;
@@ -2948,13 +2949,34 @@ ngx_http_js_ext_get_request_body(njs_vm_t *vm, njs_object_prop_t *prop,
         return NJS_DECLINED;
     }
 
-    if (r->request_body->temp_file) {
-        njs_vm_error(vm, "request body is in a file");
-        return NJS_ERROR;
-    }
-
     cl = r->request_body->bufs;
     buf = cl->buf;
+
+    if (r->request_body->temp_file) {
+        ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
+                      "http js reading request body from a temporary file");
+
+        if (buf == NULL || !buf->in_file) {
+            njs_vm_internal_error(vm, "cannot find request body");
+            return NJS_ERROR;
+        }
+
+        len = buf->file_last - buf->file_pos;
+
+        body = ngx_pnalloc(r->pool, len);
+        if (body == NULL) {
+            njs_vm_memory_error(vm);
+            return NJS_ERROR;
+        }
+
+        n = ngx_read_file(buf->file, body, len, buf->file_pos);
+        if (n != (ssize_t) len) {
+            njs_vm_internal_error(vm, "failed to read request body");
+            return NJS_ERROR;
+        }
+
+        goto done;
+    }
 
     if (cl->next == NULL) {
         len = buf->last - buf->pos;
@@ -5259,6 +5281,7 @@ ngx_http_qjs_ext_request_body(JSContext *cx, JSValueConst this_val, int type)
 {
     u_char                  *p, *data;
     size_t                   len;
+    ssize_t                  n;
     JSValue                  body;
     uint32_t                 buffer_type;
     ngx_buf_t               *buf;
@@ -5287,12 +5310,31 @@ ngx_http_qjs_ext_request_body(JSContext *cx, JSValueConst this_val, int type)
         return JS_UNDEFINED;
     }
 
-    if (r->request_body->temp_file) {
-        return JS_ThrowTypeError(cx, "request body is in a file");
-    }
-
     cl = r->request_body->bufs;
     buf = cl->buf;
+
+    if (r->request_body->temp_file) {
+        ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
+                      "http js reading request body from a temporary file");
+
+        if (buf == NULL || !buf->in_file) {
+            return JS_ThrowInternalError(cx, "cannot find body file");
+        }
+
+        len = buf->file_last - buf->file_pos;
+
+        data = ngx_pnalloc(r->pool, len);
+        if (data == NULL) {
+            return JS_ThrowOutOfMemory(cx);
+        }
+
+        n = ngx_read_file(buf->file, data, len, buf->file_pos);
+        if (n != (ssize_t) len) {
+            return JS_ThrowInternalError(cx, "failed to read request body");
+        }
+
+        goto done;
+    }
 
     if (cl->next == NULL) {
         len = buf->last - buf->pos;
