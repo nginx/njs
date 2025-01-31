@@ -63,7 +63,7 @@ function merge(to, from) {
         if (typeof r[v] == 'object' && typeof from[v] == 'object') {
             r[v] = merge(r[v], from[v]);
 
-        } else if (typeof from[v] == 'object') {
+        } else if (typeof from[v] == 'object' && from[v] !== null) {
             if (Buffer.isBuffer(from[v])) {
                 r[v] = Buffer.from(from[v]);
 
