@@ -128,7 +128,13 @@ struct njs_vm_s {
     njs_native_frame_t       *top_frame;
     njs_frame_t              *active_frame;
 
-    njs_lvlhsh_t             keywords_hash;
+    njs_lvlhsh_t             atom_hash_shared_cell;
+    njs_lvlhsh_t             atom_hash_cell;
+    njs_lvlhsh_t             *atom_hash;
+    njs_mp_t                 *atom_hash_mem_pool;
+    uint32_t                 atom_hash_atom_id_cell;
+    uint32_t                 *atom_hash_atom_id;
+
     njs_lvlhsh_t             values_hash;
 
     njs_arr_t                *modules;
@@ -178,7 +184,6 @@ struct njs_vm_s {
     njs_random_t             random;
 
     njs_rbtree_t             global_symbols;
-    uint64_t                 symbol_generator;
 
     njs_module_loader_t      module_loader;
     void                     *module_loader_opaque;
@@ -203,7 +208,6 @@ typedef struct {
 
 
 struct njs_vm_shared_s {
-    njs_lvlhsh_t             keywords_hash;
     njs_lvlhsh_t             values_hash;
 
     njs_lvlhsh_t             array_instance_hash;
@@ -243,7 +247,7 @@ void njs_vm_constructors_init(njs_vm_t *vm);
 njs_value_t njs_vm_exception(njs_vm_t *vm);
 void njs_vm_scopes_restore(njs_vm_t *vm, njs_native_frame_t *frame);
 
-njs_int_t njs_builtin_objects_create(njs_vm_t *vm);
+njs_int_t njs_builtin_objects_create(njs_vm_t *vm, njs_vm_t *vm_parent);
 njs_int_t njs_builtin_match_native_function(njs_vm_t *vm,
     njs_function_t *function, njs_str_t *name);
 
