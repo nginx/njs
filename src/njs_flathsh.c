@@ -78,7 +78,7 @@
 
 static njs_flathsh_descr_t *njs_flathsh_alloc(njs_flathsh_query_t *fhq,
     size_t hash_size, size_t elts_size);
-static njs_flathsh_descr_t *njs_expand_elts(njs_flathsh_query_t *fhq,
+njs_flathsh_descr_t *njs_expand_elts(njs_flathsh_query_t *fhq,
     njs_flathsh_descr_t *h);
 
 
@@ -119,13 +119,6 @@ njs_inline njs_flathsh_descr_t *
 njs_flathsh_descr(void *chunk, size_t hash_size)
 {
     return (njs_flathsh_descr_t *) ((uint32_t *) chunk + hash_size);
-}
-
-
-njs_inline uint32_t *
-njs_hash_cells_end(njs_flathsh_descr_t *h)
-{
-    return (uint32_t *) h;
 }
 
 
@@ -221,7 +214,7 @@ njs_flathsh_add_elt(njs_flathsh_t *fh, njs_flathsh_query_t *fhq)
 }
 
 
-static njs_flathsh_descr_t *
+njs_flathsh_descr_t *
 njs_expand_elts(njs_flathsh_query_t *fhq, njs_flathsh_descr_t *h)
 {
     void                 *chunk;

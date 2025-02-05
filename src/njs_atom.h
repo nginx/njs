@@ -45,8 +45,6 @@ enum {
 #include <njs_atom_map.h>
 
 njs_int_t njs_atom_hash_init(njs_vm_t *vm);
-njs_int_t njs_atom_atomize_key(njs_vm_t *vm, njs_value_t *value);
-njs_int_t njs_atom_atomize_key_s(njs_vm_t *vm, njs_value_t *value);
 
 extern const njs_atom_values_t    njs_atom;
 extern const njs_flathsh_proto_t  njs_atom_hash_proto;

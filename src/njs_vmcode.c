@@ -1518,7 +1518,7 @@ NEXT_LBL;
 
         njs_vmcode_operand(vm, (njs_index_t) value2, retval);
 
-        ret = njs_value_to_key(vm, retval, value1);
+        ret = njs_value_to_key_(vm, retval, value1);
         if (njs_fast_path(ret == NJS_ERROR)) {
             goto error;
         }
@@ -1540,7 +1540,7 @@ NEXT_LBL;
             goto error;
         }
 
-        ret = njs_value_to_key(vm, retval, value1);
+        ret = njs_value_to_key_(vm, retval, value1);
         if (njs_fast_path(ret == NJS_ERROR)) {
             goto error;
         }

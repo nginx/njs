@@ -219,6 +219,86 @@ njs_value_to_key(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value)
 }
 
 
+/*
+ *  version of value_to_key* functions to avoid number to string conversion for input
+ *  like: a[i] += x
+ */
+
+njs_inline njs_int_t
+njs_primitive_value_to_key_(njs_vm_t *vm, njs_value_t *dst,
+    const njs_value_t *src)
+{
+    const njs_value_t  *value;
+
+    switch (src->type) {
+
+    case NJS_NULL:
+        value = &njs_atom.vs_null;
+        break;
+
+    case NJS_UNDEFINED:
+        value = &njs_atom.vs_undefined;
+        break;
+
+    case NJS_BOOLEAN:
+        value = njs_is_true(src) ? &njs_atom.vs_true : &njs_atom.vs_false;
+        break;
+
+    case NJS_NUMBER:
+    case NJS_SYMBOL:
+    case NJS_STRING:
+        value = src;
+        break;
+
+    default:
+        return NJS_ERROR;
+    }
+
+    *dst = *value;
+
+    return NJS_OK;
+}
+
+
+njs_inline njs_int_t
+njs_value_to_key2_(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value,
+    njs_bool_t convert)
+{
+    njs_int_t    ret;
+    njs_value_t  primitive;
+
+    if (njs_slow_path(!njs_is_primitive(value))) {
+        if (njs_slow_path(njs_is_object_symbol(value))) {
+            /* should fail */
+            value = njs_object_value(value);
+
+        } else {
+            if (convert) {
+                ret = njs_value_to_primitive(vm, &primitive, value, 1);
+
+            } else {
+                ret = njs_object_to_string(vm, value, &primitive);
+            }
+
+            if (njs_slow_path(ret != NJS_OK)) {
+                return ret;
+            }
+
+            value = &primitive;
+        }
+    }
+
+    return njs_primitive_value_to_key_(vm, dst, value);
+}
+
+
+njs_inline njs_int_t
+njs_value_to_key_(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value)
+{
+    return njs_value_to_key2_(vm, dst, value, 1);
+}
+
+
 njs_inline njs_int_t
 njs_key_string_get(njs_vm_t *vm, njs_value_t *key, njs_str_t *str)
 {
