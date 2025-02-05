@@ -474,7 +474,7 @@ njs_string_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_object_prop_t  njs_string_constructor_properties[] =
+static njs_object_propi_t  njs_string_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(1),
 
@@ -499,7 +499,8 @@ static const njs_object_init_t  njs_string_constructor_init = {
 
 static njs_int_t
 njs_string_instance_length(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval)
 {
     uintptr_t           length;
     njs_object_value_t  *ov;
@@ -3376,7 +3377,7 @@ njs_string_to_index(const njs_value_t *value)
 }
 
 
-static njs_object_prop_t  njs_string_prototype_properties[] =
+static njs_object_propi_t  njs_string_prototype_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(vs___proto__,
                              njs_primitive_prototype_get_proto, 0,
@@ -3477,7 +3478,7 @@ static const njs_object_init_t  njs_string_prototype_init = {
 };
 
 
-static njs_object_prop_t  njs_string_instance_properties[] =
+static njs_object_propi_t  njs_string_instance_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(vs_length, njs_string_instance_length, 0,
                              0),

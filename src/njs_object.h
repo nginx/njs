@@ -39,7 +39,7 @@ typedef enum {
 
 
 struct njs_object_init_s {
-    njs_object_prop_t           *properties;
+    njs_object_propi_t          *properties;
     njs_uint_t                  items;
 };
 
@@ -49,6 +49,7 @@ typedef struct njs_traverse_s  njs_traverse_t;
 struct njs_traverse_s {
     struct njs_traverse_s      *parent;
     njs_object_prop_t          *prop;
+    uint32_t                   prop_atom_id;
 
     njs_value_t                value;
     njs_array_t                *keys;
@@ -73,21 +74,23 @@ njs_array_t *njs_object_own_enumerate(njs_vm_t *vm, const njs_object_t *object,
 njs_int_t njs_object_traverse(njs_vm_t *vm, njs_object_t *object, void *ctx,
     njs_object_traverse_cb_t cb);
 njs_int_t njs_object_make_shared(njs_vm_t *vm, njs_object_t *object);
-njs_int_t njs_object_hash_create(njs_vm_t *vm, njs_lvlhsh_t *hash,
-    njs_object_prop_t *prop, njs_uint_t n);
+njs_int_t njs_object_hash_create(njs_vm_t *vm, njs_flathsh_obj_t *hash,
+    njs_object_propi_t *prop, njs_uint_t n);
 njs_int_t njs_primitive_prototype_get_proto(njs_vm_t *vm,
-    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
-    njs_value_t *retval);
+    njs_object_prop_t *prop, uint32_t unused, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval);
 njs_int_t njs_object_prototype_create(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
-njs_value_t *njs_property_prototype_create(njs_vm_t *vm, njs_lvlhsh_t *hash,
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
+njs_value_t *njs_property_prototype_create(njs_vm_t *vm, njs_flathsh_obj_t *hash,
     njs_object_t *prototype);
 njs_int_t njs_object_prototype_proto(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
-njs_int_t njs_object_prototype_create_constructor(njs_vm_t *vm,
-    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval);
-njs_value_t *njs_property_constructor_set(njs_vm_t *vm, njs_lvlhsh_t *hash,
+njs_int_t njs_object_prototype_create_constructor(njs_vm_t *vm,
+    njs_object_prop_t *prop, uint32_t unused, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval);
+njs_value_t *njs_property_constructor_set(njs_vm_t *vm, njs_flathsh_obj_t *hash,
     njs_value_t *constructor);
 njs_int_t njs_object_to_string(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *retval);
@@ -97,10 +100,10 @@ njs_int_t njs_object_length(njs_vm_t *vm, njs_value_t *value, int64_t *dst);
 
 njs_int_t njs_prop_private_copy(njs_vm_t *vm, njs_property_query_t *pq,
     njs_object_t *proto);
-njs_object_prop_t *njs_object_prop_alloc(njs_vm_t *vm, const njs_value_t *name,
+njs_object_prop_t *njs_object_prop_alloc(njs_vm_t *vm,
     const njs_value_t *value, uint8_t attributes);
 njs_int_t njs_object_property(njs_vm_t *vm, njs_object_t *object,
-    njs_lvlhsh_query_t *lhq, njs_value_t *retval);
+    njs_flathsh_obj_query_t *lhq, njs_value_t *retval);
 njs_object_prop_t *njs_object_property_add(njs_vm_t *vm, njs_value_t *object,
     njs_value_t *key, njs_bool_t replace);
 njs_int_t njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,
@@ -111,7 +114,8 @@ njs_int_t njs_object_get_prototype_of(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 const char *njs_prop_type_string(njs_object_prop_type_t type);
 njs_int_t njs_object_prop_init(njs_vm_t *vm, const njs_object_init_t* init,
-    njs_object_prop_t *base, njs_value_t *value, njs_value_t *retval);
+    njs_object_prop_t *base, uint32_t atom_id, njs_value_t *value,
+    njs_value_t *retval);
 
 
 njs_inline njs_bool_t

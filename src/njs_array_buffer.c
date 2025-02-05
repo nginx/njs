@@ -139,7 +139,7 @@ njs_array_buffer_writable(njs_vm_t *vm, njs_array_buffer_t *buffer)
 }
 
 
-static njs_object_prop_t  njs_array_buffer_constructor_properties[] =
+static njs_object_propi_t  njs_array_buffer_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(1),
 
@@ -262,7 +262,7 @@ njs_array_buffer_detach(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 
-static njs_object_prop_t  njs_array_buffer_prototype_properties[] =
+static njs_object_propi_t  njs_array_buffer_prototype_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(vs_constructor,
                              njs_object_prototype_create_constructor, 0,

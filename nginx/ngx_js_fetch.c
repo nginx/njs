@@ -217,8 +217,8 @@ static njs_int_t ngx_headers_js_ext_get(njs_vm_t *vm, njs_value_t *args,
 static njs_int_t ngx_headers_js_ext_has(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t ngx_headers_js_ext_prop(njs_vm_t *vm,
-    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
-    njs_value_t *retval);
+    njs_object_prop_t *prop, uint32_t atom_id, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval);
 static njs_int_t ngx_headers_js_ext_keys(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *keys);
 static njs_int_t ngx_headers_js_ext_set(njs_vm_t *vm, njs_value_t *args,
@@ -226,37 +226,38 @@ static njs_int_t ngx_headers_js_ext_set(njs_vm_t *vm, njs_value_t *args,
 static njs_int_t ngx_request_js_ext_body(njs_vm_t *vm, njs_value_t *args,
      njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t ngx_request_js_ext_body_used(njs_vm_t *vm,
-    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
-    njs_value_t *retval);
+    njs_object_prop_t *prop, uint32_t unused, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval);
 static njs_int_t ngx_request_js_ext_cache(njs_vm_t *vm,
-    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
-    njs_value_t *retval);
+    njs_object_prop_t *prop, uint32_t unused, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval);
 static njs_int_t ngx_request_js_ext_credentials(njs_vm_t *vm,
-    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
-    njs_value_t *retval);
+    njs_object_prop_t *prop, uint32_t unused, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval);
 static njs_int_t ngx_request_js_ext_headers(njs_vm_t *vm,
-    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
-    njs_value_t *retval);
+    njs_object_prop_t *prop, uint32_t unused, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval);
 static njs_int_t ngx_request_js_ext_mode(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
 static njs_int_t ngx_response_js_ext_status(njs_vm_t *vm,
-    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
-    njs_value_t *retval);
+    njs_object_prop_t *prop, uint32_t unused, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval);
 static njs_int_t ngx_response_js_ext_status_text(njs_vm_t *vm,
-    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
-    njs_value_t *retval);
+    njs_object_prop_t *prop, uint32_t unused, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval);
 static njs_int_t ngx_response_js_ext_ok(njs_vm_t *vm,
-    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
-    njs_value_t *retval);
+    njs_object_prop_t *prop, uint32_t unused, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval);
 static njs_int_t ngx_response_js_ext_body_used(njs_vm_t *vm,
-    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
-    njs_value_t *retval);
+    njs_object_prop_t *prop, uint32_t unused, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval);
 static njs_int_t ngx_response_js_ext_headers(njs_vm_t *vm,
-    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
-    njs_value_t *retval);
+    njs_object_prop_t *prop, uint32_t unused, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval);
 static njs_int_t ngx_response_js_ext_type(njs_vm_t *vm,
-    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
-    njs_value_t *retval);
+    njs_object_prop_t *prop, uint32_t unused, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval);
 static njs_int_t ngx_response_js_ext_body(njs_vm_t *vm, njs_value_t *args,
      njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 
@@ -3480,13 +3481,13 @@ ngx_headers_js_ext_has(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
-ngx_headers_js_ext_prop(njs_vm_t *vm, njs_object_prop_t *prop,
+ngx_headers_js_ext_prop(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t atom_id,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     njs_int_t  ret;
     njs_str_t  name;
 
-    ret = njs_vm_prop_name(vm, prop, &name);
+    ret = njs_vm_prop_name(vm, atom_id, &name);
     if (ret != NJS_OK) {
         return NJS_ERROR;
     }
@@ -3719,7 +3720,8 @@ ngx_request_js_ext_body(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 ngx_request_js_ext_body_used(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval)
 {
     ngx_js_request_t  *request;
 
@@ -3736,7 +3738,7 @@ ngx_request_js_ext_body_used(njs_vm_t *vm, njs_object_prop_t *prop,
 
 
 static njs_int_t
-ngx_request_js_ext_cache(njs_vm_t *vm, njs_object_prop_t *prop,
+ngx_request_js_ext_cache(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     ngx_js_request_t  *request;
@@ -3754,7 +3756,8 @@ ngx_request_js_ext_cache(njs_vm_t *vm, njs_object_prop_t *prop,
 
 static njs_int_t
 ngx_request_js_ext_credentials(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval)
 {
     ngx_js_request_t  *request;
 
@@ -3771,7 +3774,8 @@ ngx_request_js_ext_credentials(njs_vm_t *vm, njs_object_prop_t *prop,
 
 static njs_int_t
 ngx_request_js_ext_headers(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval)
 {
     njs_int_t          ret;
     ngx_js_request_t  *request;
@@ -3799,7 +3803,7 @@ ngx_request_js_ext_headers(njs_vm_t *vm, njs_object_prop_t *prop,
 
 
 static njs_int_t
-ngx_request_js_ext_mode(njs_vm_t *vm, njs_object_prop_t *prop,
+ngx_request_js_ext_mode(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     ngx_js_request_t  *request;
@@ -3878,7 +3882,8 @@ ngx_response_js_ext_body(njs_vm_t *vm, njs_value_t *args,
 
 static njs_int_t
 ngx_response_js_ext_body_used(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval)
 {
     ngx_js_response_t  *response;
 
@@ -3896,7 +3901,8 @@ ngx_response_js_ext_body_used(njs_vm_t *vm, njs_object_prop_t *prop,
 
 static njs_int_t
 ngx_response_js_ext_headers(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval)
 {
     njs_int_t           ret;
     ngx_js_response_t  *response;
@@ -3924,7 +3930,7 @@ ngx_response_js_ext_headers(njs_vm_t *vm, njs_object_prop_t *prop,
 
 
 static njs_int_t
-ngx_response_js_ext_ok(njs_vm_t *vm, njs_object_prop_t *prop,
+ngx_response_js_ext_ok(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     ngx_uint_t          code;
@@ -3946,7 +3952,8 @@ ngx_response_js_ext_ok(njs_vm_t *vm, njs_object_prop_t *prop,
 
 static njs_int_t
 ngx_response_js_ext_status(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval)
 {
     ngx_js_response_t  *response;
 
@@ -3964,7 +3971,8 @@ ngx_response_js_ext_status(njs_vm_t *vm, njs_object_prop_t *prop,
 
 static njs_int_t
 ngx_response_js_ext_status_text(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval)
 {
     ngx_js_response_t  *response;
 
@@ -3982,7 +3990,7 @@ ngx_response_js_ext_status_text(njs_vm_t *vm, njs_object_prop_t *prop,
 
 
 static njs_int_t
-ngx_response_js_ext_type(njs_vm_t *vm, njs_object_prop_t *prop,
+ngx_response_js_ext_type(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     ngx_js_response_t  *response;

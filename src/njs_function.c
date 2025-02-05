@@ -118,15 +118,15 @@ njs_int_t
 njs_function_name_set(njs_vm_t *vm, njs_function_t *function,
     njs_value_t *name, const char *prefix)
 {
-    u_char              *p;
-    size_t              len, symbol;
-    njs_int_t           ret;
-    njs_value_t         value;
-    njs_string_prop_t   string;
-    njs_object_prop_t   *prop;
-    njs_lvlhsh_query_t  lhq;
+    u_char                   *p;
+    size_t                   len, symbol;
+    njs_int_t                ret;
+    njs_value_t              value;
+    njs_string_prop_t        string;
+    njs_object_prop_t        *prop;
+    njs_flathsh_obj_query_t  lhq;
 
-    prop = njs_object_prop_alloc(vm, &njs_atom.vs_name, name, 0);
+    prop = njs_object_prop_alloc(vm, name, 0);
     if (njs_slow_path(prop == NULL)) {
         return NJS_ERROR;
     }
@@ -176,13 +176,13 @@ njs_function_name_set(njs_vm_t *vm, njs_function_t *function,
 
     lhq.value = prop;
 
-    lhq.key_hash = prop->atom_id;
+    lhq.key_hash = njs_atom_vs_name;;
 
     lhq.replace = 0;
     lhq.pool = vm->mem_pool;
     lhq.proto = &njs_object_hash_proto;
 
-    ret = njs_lvlhsh_insert(&function->object.hash, &lhq);
+    ret = njs_flathsh_obj_insert(&function->object.hash, &lhq);
     if (njs_slow_path(ret != NJS_OK)) {
         njs_internal_error(vm, "lvlhsh insert failed");
         return NJS_ERROR;
@@ -328,7 +328,7 @@ njs_function_prototype_thrower(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-njs_object_prop_t  njs_arguments_object_instance_properties[] =
+njs_object_propi_t  njs_arguments_object_instance_properties[] =
 {
     {
         .type = NJS_ACCESSOR | NJS_PROPERTY_NOT_INIT,
@@ -905,14 +905,14 @@ njs_function_capture_global_closures(njs_vm_t *vm, njs_function_t *function)
 
 
 static njs_value_t *
-njs_function_property_prototype_set(njs_vm_t *vm, njs_lvlhsh_t *hash,
+njs_function_property_prototype_set(njs_vm_t *vm, njs_flathsh_obj_t *hash,
     njs_value_t *prototype)
 {
-    njs_int_t           ret;
-    njs_object_prop_t   *prop;
-    njs_lvlhsh_query_t  lhq;
+    njs_int_t                ret;
+    njs_object_prop_t        *prop;
+    njs_flathsh_obj_query_t  lhq;
 
-    prop = njs_object_prop_alloc(vm, &njs_atom.vs_prototype, prototype, 0);
+    prop = njs_object_prop_alloc(vm, prototype, 0);
     if (njs_slow_path(prop == NULL)) {
         return NULL;
     }
@@ -921,13 +921,13 @@ njs_function_property_prototype_set(njs_vm_t *vm, njs_lvlhsh_t *hash,
 
     lhq.value = prop;
 
-    lhq.key_hash = prop->atom_id;
+    lhq.key_hash = njs_atom_vs_prototype;
 
     lhq.replace = 1;
     lhq.pool = vm->mem_pool;
     lhq.proto = &njs_object_hash_proto;
 
-    ret = njs_lvlhsh_insert(hash, &lhq);
+    ret = njs_flathsh_obj_insert(hash, &lhq);
 
     if (njs_fast_path(ret == NJS_OK)) {
         return njs_prop_value(prop);
@@ -951,7 +951,8 @@ njs_function_property_prototype_set(njs_vm_t *vm, njs_lvlhsh_t *hash,
 
 njs_int_t
 njs_function_prototype_create(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval)
 {
     njs_value_t     *proto, proto_value, *cons;
     njs_object_t    *prototype;
@@ -1155,7 +1156,7 @@ fail:
 }
 
 
-static njs_object_prop_t  njs_function_constructor_properties[] =
+static njs_object_propi_t  njs_function_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(1),
 
@@ -1174,7 +1175,8 @@ static const njs_object_init_t  njs_function_constructor_init = {
 
 njs_int_t
 njs_function_instance_length(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval)
 {
     njs_function_t  *function;
 
@@ -1193,7 +1195,8 @@ njs_function_instance_length(njs_vm_t *vm, njs_object_prop_t *prop,
 
 njs_int_t
 njs_function_instance_name(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval)
 {
     njs_function_t  *function;
 
@@ -1428,7 +1431,7 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_object_prop_t  njs_function_prototype_properties[] =
+static njs_object_propi_t  njs_function_prototype_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(0),
 
@@ -1471,7 +1474,7 @@ static const njs_object_init_t  njs_function_prototype_init = {
 };
 
 
-njs_object_prop_t  njs_function_instance_properties[] =
+njs_object_propi_t  njs_function_instance_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(vs_length, njs_function_instance_length,
                              0, NJS_OBJECT_PROP_VALUE_C),
@@ -1491,7 +1494,7 @@ const njs_object_init_t  njs_function_instance_init = {
 };
 
 
-njs_object_prop_t  njs_arrow_instance_properties[] =
+njs_object_propi_t  njs_arrow_instance_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(vs_length, njs_function_instance_length,
                              0, NJS_OBJECT_PROP_VALUE_C),
