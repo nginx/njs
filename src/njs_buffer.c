@@ -86,14 +86,14 @@ static njs_int_t njs_buffer_fill_typed_array(njs_vm_t *vm,
     uint8_t *end);
 
 static njs_int_t njs_buffer(njs_vm_t *vm,
-    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
-    njs_value_t *retval);
+    njs_object_prop_t *prop, uint32_t atom_id, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval);
 static njs_int_t njs_buffer_constants(njs_vm_t *vm,
-    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
-    njs_value_t *retval);
+    njs_object_prop_t *prop, uint32_t atom_id, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval);
 static njs_int_t njs_buffer_constant(njs_vm_t *vm,
-    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
-    njs_value_t *retval);
+    njs_object_prop_t *prop, uint32_t atom_id, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval);
 
 static njs_int_t njs_buffer_init(njs_vm_t *vm);
 
@@ -977,7 +977,8 @@ njs_buffer_is_encoding(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 njs_buffer_prototype_length(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval)
 {
     njs_typed_array_t  *array;
 
@@ -2467,7 +2468,7 @@ njs_buffer_decode_string(njs_vm_t *vm, const njs_value_t *value,
 }
 
 
-static njs_object_prop_t  njs_buffer_prototype_properties[] =
+static njs_object_propi_t  njs_buffer_prototype_properties[] =
 {
     NJS_DECLARE_PROP_VALUE(vw_toStringTag, njs_atom.vs_Buffer,
                            NJS_OBJECT_PROP_VALUE_C),
@@ -2666,7 +2667,7 @@ static const njs_object_init_t  njs_buffer_prototype_init = {
 };
 
 
-static njs_object_prop_t  njs_buffer_constructor_properties[] =
+static njs_object_propi_t  njs_buffer_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(0),
 
@@ -2713,7 +2714,7 @@ const njs_object_type_init_t  njs_buffer_type_init = {
 };
 
 
-static njs_object_prop_t  njs_buffer_constants_properties[] =
+static njs_object_propi_t  njs_buffer_constants_properties[] =
 {
     NJS_DECLARE_PROP_VALUE(vs_MAX_LENGTH,
                            njs_value(NJS_NUMBER, 1, INT32_MAX),
@@ -2732,25 +2733,25 @@ static const njs_object_init_t  njs_buffer_constants_init = {
 
 
 static njs_int_t
-njs_buffer(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
-    njs_value_t *unused, njs_value_t *retval)
+njs_buffer(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t atom_id,
+    njs_value_t *value, njs_value_t *unused, njs_value_t *retval)
 {
-    return njs_object_prop_init(vm, &njs_buffer_constructor_init, prop, value,
-                                retval);
+    return njs_object_prop_init(vm, &njs_buffer_constructor_init, prop, atom_id,
+                                value, retval);
 }
 
 
 static njs_int_t
-njs_buffer_constants(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
-    njs_value_t *unused, njs_value_t *retval)
+njs_buffer_constants(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t atom_id,
+    njs_value_t *value, njs_value_t *unused, njs_value_t *retval)
 {
-    return njs_object_prop_init(vm, &njs_buffer_constants_init, prop, value,
-                                retval);
+    return njs_object_prop_init(vm, &njs_buffer_constants_init, prop, atom_id,
+                                value, retval);
 }
 
 
 static njs_int_t
-njs_buffer_constant(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
+njs_buffer_constant(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t not_used, njs_value_t *value,
     njs_value_t *unused, njs_value_t *retval)
 {
     njs_value_number_set(retval, njs_vm_prop_magic32(prop));

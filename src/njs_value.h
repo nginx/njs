@@ -155,16 +155,16 @@ typedef struct {
     njs_exotic_keys_t   keys;
 
     /* A shared hash of njs_object_prop_t for externals. */
-    njs_lvlhsh_t        external_shared_hash;
+    njs_flathsh_obj_t   external_shared_hash;
 } njs_exotic_slots_t;
 
 
 struct njs_object_s {
     /* A private hash of njs_object_prop_t. */
-    njs_lvlhsh_t                      hash;
+    njs_flathsh_obj_t                 hash;
 
     /* A shared hash of njs_object_prop_t. */
-    njs_lvlhsh_t                      shared_hash;
+    njs_flathsh_obj_t                 shared_hash;
 
     njs_object_t                      *__proto__;
     njs_exotic_slots_t                *slots;
@@ -324,54 +324,31 @@ typedef enum {
 } njs_object_attribute_t;
 
 
-struct njs_object_prop_s {
-    uint32_t                    atom_id;
-
-    union {
-        union {
-            njs_value_t         *pvalue;
-            njs_value_t         value;
-        };
-        struct {
-            njs_function_t      *getter;
-            njs_function_t      *setter;
-        } accessor;
-    } u;
-
-#define njs_prop_value(_p)      (&(_p)->u.value)
-#define njs_prop_handler(_p)    (_p)->u.value.data.u.prop_handler
-#define njs_prop_ref(_p)        (_p)->u.value.data.u.value
-#define njs_prop_typed_ref(_p)  (_p)->u.value.data.u.typed_array
-#define njs_prop_magic16(_p)    (_p)->u.value.data.magic16
-#define njs_prop_magic32(_p)    (_p)->u.value.data.magic32
-#define NJS_PROP_PTR_UNSET      ((void *) (uintptr_t) -1)
-#define njs_prop_getter(_p)     (_p)->u.accessor.getter
-#define njs_prop_setter(_p)     (_p)->u.accessor.setter
-
-    njs_object_prop_type_t      type:8;          /* 3 bits */
-    njs_object_prop_type_t      enum_in_object_hash:8; /* 3 bits */
-
-    njs_object_attribute_t      writable:8;      /* 2 bits */
-    njs_object_attribute_t      enumerable:8;    /* 2 bits */
+#define NJS_COMMON_OBJECT_PROP                                                 \
+    union {                                                                    \
+        union {                                                                \
+            njs_value_t         *pvalue;                                       \
+            njs_value_t         value;                                         \
+        };                                                                     \
+        struct {                                                               \
+            njs_function_t      *getter;                                       \
+            njs_function_t      *setter;                                       \
+        } accessor;                                                            \
+    } u;                                                                       \
+                                                                               \
+                                                                               \
+    njs_object_prop_type_t      type:8;          /* 3 bits */                  \
+    njs_object_prop_type_t      enum_in_object_hash:8; /* 3 bits */            \
+                                                                               \
+    njs_object_attribute_t      writable:8;      /* 2 bits */                  \
+    njs_object_attribute_t      enumerable:8;    /* 2 bits */                  \
     njs_object_attribute_t      configurable:8;  /* 2 bits */
+
+
+struct njs_object_prop_s {
+    NJS_COMMON_OBJECT_PROP
 };
 
-struct njs_object_prop_old_s {
-    union {
-        njs_value_t             *pname;
-        njs_value_t             name;
-    };
-
-    union {
-        union {
-            njs_value_t         *pvalue;
-            njs_value_t         value;
-        };
-        struct {
-            njs_function_t      *getter;
-            njs_function_t      *setter;
-        } accessor;
-    } u;
 
 #define njs_prop_value(_p)      (&(_p)->u.value)
 #define njs_prop_handler(_p)    (_p)->u.value.data.u.prop_handler
@@ -383,17 +360,16 @@ struct njs_object_prop_old_s {
 #define njs_prop_getter(_p)     (_p)->u.accessor.getter
 #define njs_prop_setter(_p)     (_p)->u.accessor.setter
 
-    njs_object_prop_type_t      type:8;          /* 3 bits */
-    njs_object_prop_type_t      enum_in_object_hash:8; /* 3 bits */
 
-    njs_object_attribute_t      writable:8;      /* 2 bits */
-    njs_object_attribute_t      enumerable:8;    /* 2 bits */
-    njs_object_attribute_t      configurable:8;  /* 2 bits */
+struct njs_object_propi_s {
+    NJS_COMMON_OBJECT_PROP
+
+    uint32_t                    atom_id;
 };
 
 
 typedef struct {
-    njs_lvlhsh_query_t          lhq;
+    njs_flathsh_obj_query_t     lhq;
 
     uint8_t                     query;
 
@@ -401,7 +377,7 @@ typedef struct {
     njs_object_prop_t           scratch;
 
     njs_value_t                 key;
-    njs_lvlhsh_t                *own_whiteout;
+    njs_flathsh_obj_t           *own_whiteout;
 
     uint8_t                     temp;
     uint8_t                     own;

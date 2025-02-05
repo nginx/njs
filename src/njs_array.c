@@ -606,7 +606,7 @@ njs_array_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_object_prop_t  njs_array_constructor_properties[] =
+static njs_object_propi_t  njs_array_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(1),
 
@@ -630,8 +630,8 @@ static const njs_object_init_t  njs_array_constructor_init = {
 
 
 static njs_int_t
-njs_array_length(njs_vm_t *vm,njs_object_prop_t *prop, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval)
+njs_array_length(njs_vm_t *vm,njs_object_prop_t *prop, uint32_t unused,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     double        num;
     int64_t       size;
@@ -1615,9 +1615,9 @@ njs_int_t
 njs_array_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
 {
-    njs_int_t           ret;
-    njs_value_t         value;
-    njs_lvlhsh_query_t  lhq;
+    njs_int_t                ret;
+    njs_value_t              value;
+    njs_flathsh_obj_query_t  lhq;
 
     if (njs_is_object(njs_argument(args, 0))) {
         lhq.proto = &njs_object_hash_proto;
@@ -3188,7 +3188,7 @@ njs_array_prototype_iterator_obj(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_object_prop_t  njs_array_prototype_properties[] =
+static njs_object_propi_t  njs_array_prototype_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(vs_length, njs_array_length, 0,
                              NJS_OBJECT_PROP_VALUE_W),
@@ -3295,7 +3295,7 @@ static const njs_object_init_t  njs_array_prototype_init = {
 };
 
 
-njs_object_prop_t  njs_array_instance_properties[] =
+njs_object_propi_t  njs_array_instance_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(vs_length, njs_array_length, 0,
                              NJS_OBJECT_PROP_VALUE_W),

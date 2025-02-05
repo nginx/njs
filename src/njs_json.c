@@ -88,7 +88,7 @@ static njs_object_t *njs_json_wrap_value(njs_vm_t *vm, njs_value_t *wrapper,
     const njs_value_t *value);
 
 
-static njs_object_prop_t  njs_json_object_properties[];
+static njs_object_propi_t  njs_json_object_properties[];
 
 
 static njs_int_t
@@ -336,11 +336,11 @@ static const u_char *
 njs_json_parse_object(njs_json_parse_ctx_t *ctx, njs_value_t *value,
     const u_char *p)
 {
-    njs_int_t           ret;
-    njs_object_t        *object;
-    njs_value_t         prop_name, prop_value;
-    njs_object_prop_t   *prop;
-    njs_lvlhsh_query_t  lhq;
+    njs_int_t                ret;
+    njs_object_t             *object;
+    njs_value_t              prop_name, prop_value;
+    njs_object_prop_t        *prop;
+    njs_flathsh_obj_query_t  lhq;
 
     if (njs_slow_path(--ctx->depth == 0)) {
         njs_json_parse_exception(ctx, "Nested too deep", p);
@@ -400,20 +400,20 @@ njs_json_parse_object(njs_json_parse_ctx_t *ctx, njs_value_t *value,
             return NULL;
         }
 
-        prop = njs_object_prop_alloc(ctx->vm, &prop_name, &prop_value, 1);
+        prop = njs_object_prop_alloc(ctx->vm, &prop_value, 1);
         if (njs_slow_path(prop == NULL)) {
             goto memory_error;
         }
 
         lhq.value = prop;
 
-        lhq.key_hash = prop->atom_id;
+        lhq.key_hash = prop_name.atom_id;
 
         lhq.replace = 1;
         lhq.pool = ctx->pool;
         lhq.proto = &njs_object_hash_proto;
 
-        ret = njs_lvlhsh_insert(&object->hash, &lhq);
+        ret = njs_flathsh_obj_insert(&object->hash, &lhq);
         if (njs_slow_path(ret != NJS_OK)) {
             njs_internal_error(ctx->vm, "lvlhsh insert/replace failed");
             return NULL;
@@ -1238,9 +1238,9 @@ memory_error:
 static njs_function_t *
 njs_object_to_json_function(njs_vm_t *vm, njs_value_t *value)
 {
-    njs_int_t           ret;
-    njs_value_t         retval;
-    njs_lvlhsh_query_t  lhq;
+    njs_int_t                ret;
+    njs_value_t              retval;
+    njs_flathsh_obj_query_t  lhq;
 
     if (njs_is_object(value)) {
         lhq.proto = &njs_object_hash_proto;
@@ -1601,9 +1601,9 @@ static njs_object_t *
 njs_json_wrap_value(njs_vm_t *vm, njs_value_t *wrapper,
     const njs_value_t *value)
 {
-    njs_int_t           ret;
-    njs_object_prop_t   *prop;
-    njs_lvlhsh_query_t  lhq;
+    njs_int_t                ret;
+    njs_object_prop_t        *prop;
+    njs_flathsh_obj_query_t  lhq;
 
     wrapper->data.u.object = njs_object_alloc(vm);
     if (njs_slow_path(njs_object(wrapper) == NULL)) {
@@ -1613,7 +1613,7 @@ njs_json_wrap_value(njs_vm_t *vm, njs_value_t *wrapper,
     wrapper->type = NJS_OBJECT;
     wrapper->data.truth = 1;
 
-    prop = njs_object_prop_alloc(vm, &njs_atom.vs_, value, 1);
+    prop = njs_object_prop_alloc(vm, value, 1);
     if (njs_slow_path(prop == NULL)) {
         return NULL;
     }
@@ -1626,7 +1626,7 @@ njs_json_wrap_value(njs_vm_t *vm, njs_value_t *wrapper,
     lhq.pool = vm->mem_pool;
     lhq.proto = &njs_object_hash_proto;
 
-    ret = njs_lvlhsh_insert(njs_object_hash(wrapper), &lhq);
+    ret = njs_flathsh_obj_insert(njs_object_hash(wrapper), &lhq);
     if (njs_slow_path(ret != NJS_OK)) {
         return NULL;
     }
@@ -1635,7 +1635,7 @@ njs_json_wrap_value(njs_vm_t *vm, njs_value_t *wrapper,
 }
 
 
-static njs_object_prop_t  njs_json_object_properties[] =
+static njs_object_propi_t  njs_json_object_properties[] =
 {
     NJS_DECLARE_PROP_VALUE(vw_toStringTag, njs_atom.vs_JSON,
                            NJS_OBJECT_PROP_VALUE_C),
@@ -2089,7 +2089,8 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, njs_value_t *value,
         if (prop->type == NJS_PROPERTY_HANDLER) {
             pq.scratch = *prop;
             prop = &pq.scratch;
-            ret = njs_prop_handler(prop)(vm, prop, &state->value, NULL,
+            ret = njs_prop_handler(prop)(vm, prop, pq.lhq.key_hash,
+                                         &state->value, NULL,
                                          njs_prop_value(prop));
 
             if (njs_slow_path(ret == NJS_ERROR)) {

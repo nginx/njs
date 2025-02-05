@@ -15,7 +15,8 @@ static njs_int_t njs_zlib_ext_deflate(njs_vm_t *vm, njs_value_t *args,
 static njs_int_t njs_zlib_ext_inflate(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 njs_int_t njs_zlib_constant(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
 static njs_int_t njs_zlib_init(njs_vm_t *vm);
 static void *njs_zlib_alloc(void *opaque, u_int items, u_int size);
 static void njs_zlib_free(void *opaque, void *address);
@@ -520,7 +521,7 @@ fail:
 
 
 njs_int_t
-njs_zlib_constant(njs_vm_t *vm, njs_object_prop_t *prop,
+njs_zlib_constant(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     njs_value_number_set(retval,  njs_vm_prop_magic32(prop));

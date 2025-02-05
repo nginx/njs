@@ -374,7 +374,7 @@ njs_object_math_random(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_object_prop_t  njs_math_object_properties[] =
+static njs_object_propi_t  njs_math_object_properties[] =
 {
     NJS_DECLARE_PROP_VALUE(vw_toStringTag, njs_atom.vs_Math,
                            NJS_OBJECT_PROP_VALUE_C),

@@ -168,7 +168,7 @@ njs_symbol_key_for(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_object_prop_t  njs_symbol_constructor_properties[] =
+static njs_object_propi_t  njs_symbol_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(0),
 
@@ -276,7 +276,7 @@ njs_symbol_prototype_description(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_object_prop_t  njs_symbol_prototype_properties[] =
+static njs_object_propi_t  njs_symbol_prototype_properties[] =
 {
     NJS_DECLARE_PROP_VALUE(vw_toStringTag, njs_atom.vs_Symbol,
                            NJS_OBJECT_PROP_VALUE_C),
