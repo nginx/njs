@@ -65,6 +65,9 @@
 #include <njs_array_buffer.h>
 #include <njs_typed_array.h>
 #include <njs_function.h>
+
+#include <njs_inlines.h>
+
 #include <njs_regexp.h>
 #include <njs_regexp_pattern.h>
 #include <njs_date.h>

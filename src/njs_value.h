@@ -960,9 +960,6 @@ njs_int_t njs_int64_to_string(njs_vm_t *vm, njs_value_t *value, int64_t i64);
 
 njs_bool_t njs_string_eq(const njs_value_t *v1, const njs_value_t *v2);
 
-njs_int_t njs_property_query(njs_vm_t *vm, njs_property_query_t *pq,
-    njs_value_t *value, njs_value_t *key);
-
 njs_int_t njs_value_property(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *key, njs_value_t *retval);
 njs_int_t njs_value_property_set(njs_vm_t *vm, njs_value_t *value,
@@ -981,6 +978,16 @@ njs_int_t njs_value_species_constructor(njs_vm_t *vm, njs_value_t *object,
 njs_int_t njs_value_method(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
     njs_value_t *retval);
 
+njs_inline njs_int_t njs_object_property_query(njs_vm_t *vm,
+    njs_property_query_t *pq, njs_object_t *object, njs_value_t *key);
+njs_int_t njs_array_property_query(njs_vm_t *vm,
+    njs_property_query_t *pq, njs_array_t *array, uint32_t index);
+njs_int_t njs_typed_array_property_query(njs_vm_t *vm,
+    njs_property_query_t *pq, njs_typed_array_t *array, uint32_t index);
+njs_int_t njs_string_property_query(njs_vm_t *vm,
+    njs_property_query_t *pq, njs_value_t *object, uint32_t index);
+njs_int_t njs_external_property_query(njs_vm_t *vm,
+    njs_property_query_t *pq, njs_value_t *value);
 
 njs_inline void
 njs_property_query_init(njs_property_query_t *pq, njs_prop_query_t query,
