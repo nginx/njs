@@ -183,11 +183,11 @@ njs_object_t *
 njs_error_alloc(njs_vm_t *vm, njs_object_t *proto, const njs_value_t *name,
     const njs_value_t *message, const njs_value_t *errors)
 {
-    njs_int_t           ret;
-    njs_object_t        *error;
-    njs_object_prop_t   *prop;
-    njs_object_value_t  *ov;
-    njs_lvlhsh_query_t  lhq;
+    njs_int_t                ret;
+    njs_object_t             *error;
+    njs_object_prop_t        *prop;
+    njs_object_value_t       *ov;
+    njs_flathsh_obj_query_t  lhq;
 
     ov = njs_mp_alloc(vm->mem_pool, sizeof(njs_object_value_t));
     if (njs_slow_path(ov == NULL)) {
@@ -215,7 +215,7 @@ njs_error_alloc(njs_vm_t *vm, njs_object_t *proto, const njs_value_t *name,
     if (name != NULL) {
         lhq.key_hash = njs_atom.vs_name.atom_id;
 
-        prop = njs_object_prop_alloc(vm, &njs_atom.vs_name, name, 1);
+        prop = njs_object_prop_alloc(vm, name, 1);
         if (njs_slow_path(prop == NULL)) {
             goto memory_error;
         }
@@ -224,7 +224,7 @@ njs_error_alloc(njs_vm_t *vm, njs_object_t *proto, const njs_value_t *name,
 
         lhq.key_hash = njs_atom.vs_name.atom_id;
 
-        ret = njs_lvlhsh_insert(&error->hash, &lhq);
+        ret = njs_flathsh_obj_insert(&error->hash, &lhq);
         if (njs_slow_path(ret != NJS_OK)) {
             njs_internal_error(vm, "lvlhsh insert failed");
             return NULL;
@@ -234,7 +234,7 @@ njs_error_alloc(njs_vm_t *vm, njs_object_t *proto, const njs_value_t *name,
     if (message!= NULL) {
         lhq.key_hash = njs_atom.vs_message.atom_id;
 
-        prop = njs_object_prop_alloc(vm, &njs_atom.vs_message, message, 1);
+        prop = njs_object_prop_alloc(vm, message, 1);
         if (njs_slow_path(prop == NULL)) {
             goto memory_error;
         }
@@ -245,7 +245,7 @@ njs_error_alloc(njs_vm_t *vm, njs_object_t *proto, const njs_value_t *name,
 
         lhq.key_hash = njs_atom.vs_message.atom_id;
 
-        ret = njs_lvlhsh_insert(&error->hash, &lhq);
+        ret = njs_flathsh_obj_insert(&error->hash, &lhq);
         if (njs_slow_path(ret != NJS_OK)) {
             njs_internal_error(vm, "lvlhsh insert failed");
             return NULL;
@@ -254,7 +254,7 @@ njs_error_alloc(njs_vm_t *vm, njs_object_t *proto, const njs_value_t *name,
 
     if (errors != NULL) {
 
-        prop = njs_object_prop_alloc(vm, &njs_atom.vs_errors, errors, 1);
+        prop = njs_object_prop_alloc(vm, errors, 1);
         if (njs_slow_path(prop == NULL)) {
             goto memory_error;
         }
@@ -265,7 +265,7 @@ njs_error_alloc(njs_vm_t *vm, njs_object_t *proto, const njs_value_t *name,
 
         lhq.key_hash = njs_atom.vs_errors.atom_id;
 
-        ret = njs_lvlhsh_insert(&error->hash, &lhq);
+        ret = njs_flathsh_obj_insert(&error->hash, &lhq);
         if (njs_slow_path(ret != NJS_OK)) {
             njs_internal_error(vm, "lvlhsh insert failed");
             return NULL;
@@ -336,7 +336,7 @@ njs_error_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_object_prop_t  njs_error_constructor_properties[] =
+static njs_object_propi_t  njs_error_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(1),
 
@@ -353,7 +353,7 @@ static const njs_object_init_t  njs_error_constructor_init = {
 };
 
 
-static njs_object_prop_t  njs_eval_error_constructor_properties[] =
+static njs_object_propi_t  njs_eval_error_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(1),
 
@@ -370,7 +370,7 @@ static const njs_object_init_t  njs_eval_error_constructor_init = {
 };
 
 
-static njs_object_prop_t  njs_internal_error_constructor_properties[] =
+static njs_object_propi_t  njs_internal_error_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(1),
 
@@ -387,7 +387,7 @@ static const njs_object_init_t  njs_internal_error_constructor_init = {
 };
 
 
-static njs_object_prop_t  njs_range_error_constructor_properties[] =
+static njs_object_propi_t  njs_range_error_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(1),
 
@@ -404,7 +404,7 @@ static const njs_object_init_t  njs_range_error_constructor_init = {
 };
 
 
-static njs_object_prop_t  njs_reference_error_constructor_properties[] =
+static njs_object_propi_t  njs_reference_error_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(1),
 
@@ -421,7 +421,7 @@ static const njs_object_init_t  njs_reference_error_constructor_init = {
 };
 
 
-static njs_object_prop_t  njs_syntax_error_constructor_properties[] =
+static njs_object_propi_t  njs_syntax_error_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(1),
 
@@ -438,7 +438,7 @@ static const njs_object_init_t  njs_syntax_error_constructor_init = {
 };
 
 
-static njs_object_prop_t  njs_type_error_constructor_properties[] =
+static njs_object_propi_t  njs_type_error_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(1),
 
@@ -455,7 +455,7 @@ static const njs_object_init_t  njs_type_error_constructor_init = {
 };
 
 
-static njs_object_prop_t  njs_uri_error_constructor_properties[] =
+static njs_object_propi_t  njs_uri_error_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(1),
 
@@ -472,7 +472,7 @@ static const njs_object_init_t  njs_uri_error_constructor_init = {
 };
 
 
-static njs_object_prop_t  njs_aggregate_error_constructor_properties[] =
+static njs_object_propi_t  njs_aggregate_error_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(1),
 
@@ -537,7 +537,8 @@ njs_memory_error_constructor(njs_vm_t *vm, njs_value_t *args,
 
 static njs_int_t
 njs_memory_error_prototype_create(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval)
 {
     int32_t            index;
     njs_function_t     *function;
@@ -560,7 +561,7 @@ njs_memory_error_prototype_create(njs_vm_t *vm, njs_object_prop_t *prop,
 }
 
 
-static njs_object_prop_t  njs_memory_error_constructor_properties[] =
+static njs_object_propi_t  njs_memory_error_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(1),
 
@@ -698,7 +699,7 @@ njs_error_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
-njs_error_prototype_stack(njs_vm_t *vm, njs_object_prop_t *prop,
+njs_error_prototype_stack(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     njs_int_t          ret;
@@ -795,7 +796,7 @@ njs_error_to_string(njs_vm_t *vm, njs_value_t *retval, const njs_value_t *error)
 }
 
 
-static njs_object_prop_t  njs_error_prototype_properties[] =
+static njs_object_propi_t  njs_error_prototype_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(vs_constructor,
                              njs_object_prototype_create_constructor, 0,
@@ -833,7 +834,7 @@ const njs_object_type_init_t  njs_error_type_init = {
 };
 
 
-static njs_object_prop_t  njs_eval_error_prototype_properties[] =
+static njs_object_propi_t  njs_eval_error_prototype_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(vs_constructor,
                              njs_object_prototype_create_constructor, 0,
@@ -878,7 +879,7 @@ njs_internal_error_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_object_prop_t  njs_internal_error_prototype_properties[] =
+static njs_object_propi_t  njs_internal_error_prototype_properties[] =
 {
     NJS_DECLARE_PROP_VALUE(vs_name, njs_atom.vs_InternalError,
                            NJS_OBJECT_PROP_VALUE_CW),
@@ -914,7 +915,7 @@ const njs_object_type_init_t  njs_memory_error_type_init = {
 };
 
 
-static njs_object_prop_t  njs_range_error_prototype_properties[] =
+static njs_object_propi_t  njs_range_error_prototype_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(vs_constructor,
                              njs_object_prototype_create_constructor, 0,
@@ -943,7 +944,7 @@ const njs_object_type_init_t  njs_range_error_type_init = {
 };
 
 
-static njs_object_prop_t  njs_reference_error_prototype_properties[] =
+static njs_object_propi_t  njs_reference_error_prototype_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(vs_constructor,
                              njs_object_prototype_create_constructor, 0,
@@ -972,7 +973,7 @@ const njs_object_type_init_t  njs_reference_error_type_init = {
 };
 
 
-static njs_object_prop_t  njs_syntax_error_prototype_properties[] =
+static njs_object_propi_t  njs_syntax_error_prototype_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(vs_constructor,
                              njs_object_prototype_create_constructor, 0,
@@ -1000,7 +1001,7 @@ const njs_object_type_init_t  njs_syntax_error_type_init = {
 };
 
 
-static njs_object_prop_t  njs_type_error_prototype_properties[] =
+static njs_object_propi_t  njs_type_error_prototype_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(vs_constructor,
                              njs_object_prototype_create_constructor, 0,
@@ -1028,7 +1029,7 @@ const njs_object_type_init_t  njs_type_error_type_init = {
 };
 
 
-static njs_object_prop_t  njs_uri_error_prototype_properties[] =
+static njs_object_propi_t  njs_uri_error_prototype_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(vs_constructor,
                              njs_object_prototype_create_constructor, 0,
@@ -1056,7 +1057,7 @@ const njs_object_type_init_t  njs_uri_error_type_init = {
 };
 
 
-static njs_object_prop_t  njs_aggregate_error_prototype_properties[] =
+static njs_object_propi_t  njs_aggregate_error_prototype_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(vs_constructor,
                              njs_object_prototype_create_constructor, 0,

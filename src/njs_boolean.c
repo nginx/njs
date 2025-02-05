@@ -38,7 +38,7 @@ njs_boolean_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_object_prop_t  njs_boolean_constructor_properties[] =
+static njs_object_propi_t  njs_boolean_constructor_properties[] =
 {
     NJS_DECLARE_PROP_VALUE(vs_name, njs_atom.vs_Boolean,
                            NJS_OBJECT_PROP_VALUE_C),
@@ -110,7 +110,7 @@ njs_boolean_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_object_prop_t  njs_boolean_prototype_properties[] =
+static njs_object_propi_t  njs_boolean_prototype_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(vs___proto__,
                              njs_primitive_prototype_get_proto, 0,

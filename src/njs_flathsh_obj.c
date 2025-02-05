@@ -6,67 +6,9 @@
 #include <njs_main.h>
 
 /*
- * Flat hash consists of dynamic DATA STRUCTURE and set of OPERATIONS.
- *
- * DATA STRUCTURE
- *    Consists of 3 parts allocated one by one in chunk of memory:
- *
- *    HASH_CELLS   array of indices of 1st list element in ELEMENTS array,
- *                 or 0 if list is empty. HASH_CELLS_length is power of 2.
- *    DESCRIPTOR   contains hash_mask (= HASH_CELLS_Length - 1), ELEMENTS_size,
- *                 number of last used element in ELEMENTS,
- *                 number of deleted elements in ELEMENTS;
- *    ELEMENTS     array of: [index of next element, hash_function(KEY),
- *                 link to stored value or NULL if element is not used)].
- *
- * PROPERTIES of flat hash
- *     It is relocatable in memory, preserve insertion order, expand and shrink
- *     depending on number elements in it, maximum occupancy is 2^32-2 elements.
- *
- * OPERATIONS
- *    ADD element by key S with value V
- *      Prerequisite: be sure if flat hash not contains S. If ELEMENTS has free
- *      space after last element, then this element is populated by: V,
- *      hash_function(S), S. Then element is added to correspondent HASH_CELL.
- *      In case when no free element in ELEMENTS, DATA STRUCTURE is expanded by
- *      expnad_elts(). It does the following: ELEMENTS_size is increased by
- *      EXPAND_FACTOR, which value is expected to be > 1. For fast access to
- *      stored values, HASH_CELLS_size need to be big enough to provide its low
- *      population: in average less than 1 element per HASH_CELL.  So,
- *      if HASH_CELLS_size < ELEMENTS_size then it will try doubling
- *      HASH_CELLS_size, until new HASH_CELLS_size >= ELEMENTS_size. Now
- *      new HASH_CELLS_size and new ELEMENTS_size are both defined. New
- *      expanded hash is obtained as:
- *          if HASH_CELLS_size is not increased, then
- *              reallocate full DATA STRUCTURE,
- *          else
- *              create new DATA STRUCTURE and populate it
- *              by ELEMENTS from old DATA STRUCTURE.
- *          Replace old DATA STRUCTURE by new one and release old one.
- *
- *    FIND element by key S
- *      HASH_CELLS is array which contains cells of hash
- *      table. As entry to the table the following index is used:
- *          cell_num = hash_function(S) & hash_nask
- *      hash_function is external and it is not specified here, it is needed to
- *      be good hash function for Ss, and produce results in range from 0 to
- *      at least 2^32 - 1; hash_mask is located in DESCRIPTOR, and it is equal
- *      to HASH_CELLS_size - 1, where HASH_CELLS_size is always power of 2.
- *      hash cell contains (may be empty) list of hash elements with same
- *      cell_num. Now run over the list of elements and test if some element
- *      contains link to S. Test function is external and is not specified here.
- *
- *    DELETE element by key S
- *      Locate S in ELEMENTS and remove it from elements list. Update number
- *      of removed elements in hash_decriptor. Mark deleted
- *      element as not used/deleted. If number of deleted elements is big
- *      enough, then use shrink_elts(): it removes gaps in ELEMENTS, shrinks if
- *      required HASH_CELLS, and creates new DATA STRUCTURE.
- *
- *    ENUMERATE all elements in order of insertion
- *      Returns one by one used elements from ELEMENTS.
+ * This code derived from flat hash for case when key_hash has unique value,
+ * so no need for separate test if elements are equal.
  */
-
 
 #define NJS_FLATHSH_OBJ_ELTS_INITIAL_SIZE         2
 #define NJS_FLATHSH_OBJ_HASH_INITIAL_SIZE         4
@@ -76,10 +18,10 @@
 #define NJS_FLATHSH_OBJ_ELTS_MINIMUM_TO_SHRINK    8
 
 
-static njs_flathsh_obj_descr_t *njs_flathsh_obj_alloc(njs_flathsh_obj_query_t *fhq,
-    size_t hash_size, size_t elts_size);
-njs_flathsh_obj_descr_t *njs_flathsh_obj_expand_elts(njs_flathsh_obj_query_t *fhq,
-    njs_flathsh_obj_descr_t *h);
+static njs_flathsh_obj_descr_t *njs_flathsh_obj_alloc(
+    njs_flathsh_obj_query_t *fhq, size_t hash_size, size_t elts_size);
+njs_flathsh_obj_descr_t *njs_flathsh_obj_expand_elts(
+    njs_flathsh_obj_query_t *fhq, njs_flathsh_obj_descr_t *h);
 
 
 njs_inline size_t
@@ -323,8 +265,7 @@ njs_flathsh_obj_find(const njs_flathsh_obj_t *fh, njs_flathsh_obj_query_t *fhq)
 
         /* TODO: need to be replaced by atomic test. */
 
-        if (e->key_hash == fhq->key_hash &&
-            fhq->proto->test(fhq, e->value) == NJS_OK)
+        if (e->key_hash == fhq->key_hash)
         {
             fhq->value = e->value;
             return NJS_OK;
@@ -365,8 +306,7 @@ njs_flathsh_obj_insert(njs_flathsh_obj_t *fh, njs_flathsh_obj_query_t *fhq)
 
         /* TODO: need to be replaced by atomic test. */
 
-        if (elt->key_hash == fhq->key_hash &&
-            fhq->proto->test(fhq, elt->value) == NJS_OK)
+        if (elt->key_hash == fhq->key_hash)
         {
             if (fhq->replace) {
                 tmp = fhq->value;
@@ -482,8 +422,7 @@ njs_flathsh_obj_delete(njs_flathsh_obj_t *fh, njs_flathsh_obj_query_t *fhq)
 
         /* TODO: use atomic comparision. */
 
-        if (elt->key_hash == fhq->key_hash &&
-            fhq->proto->test(fhq, elt->value) == NJS_OK)
+        if (elt->key_hash == fhq->key_hash)
         {
             fhq->value = elt->value;
 
@@ -528,11 +467,10 @@ njs_flathsh_obj_delete(njs_flathsh_obj_t *fh, njs_flathsh_obj_query_t *fhq)
 }
 
 
-void *
+njs_flathsh_obj_elt_t *
 njs_flathsh_obj_each(const njs_flathsh_obj_t *fh, njs_flathsh_obj_each_t *fhe)
 {
-    void                     *v;
-    njs_flathsh_obj_elt_t    *elt;
+    njs_flathsh_obj_elt_t    *e, *elt;
     njs_flathsh_obj_descr_t  *h;
 
     h = fh->slot;
@@ -543,9 +481,9 @@ njs_flathsh_obj_each(const njs_flathsh_obj_t *fh, njs_flathsh_obj_each_t *fhe)
     elt = njs_flathsh_obj_hash_elts(h);
 
     while (fhe->cp < h->elts_count) {
-        v = elt[fhe->cp++].value;
-        if (v != NULL) {
-            return v;
+        e = &elt[fhe->cp++];
+        if (e->value != NULL) {
+            return e;
         }
     }
 

@@ -230,7 +230,7 @@ njs_text_encoder_encode_into(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_object_prop_t  njs_text_encoder_properties[] =
+static njs_object_propi_t  njs_text_encoder_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(vs_constructor,
                              njs_object_prototype_create_constructor, 0,
@@ -251,7 +251,7 @@ static const njs_object_init_t  njs_text_encoder_init = {
 };
 
 
-static njs_object_prop_t  njs_text_encoder_constructor_properties[] =
+static njs_object_propi_t  njs_text_encoder_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(0),
 
@@ -397,7 +397,7 @@ njs_text_decoder_arg_options(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
-njs_text_decoder_encoding(njs_vm_t *vm, njs_object_prop_t *prop,
+njs_text_decoder_encoding(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     njs_encoding_decode_t  *data;
@@ -424,7 +424,7 @@ njs_text_decoder_encoding(njs_vm_t *vm, njs_object_prop_t *prop,
 
 
 static njs_int_t
-njs_text_decoder_fatal(njs_vm_t *vm, njs_object_prop_t *prop,
+njs_text_decoder_fatal(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     njs_encoding_decode_t  *data;
@@ -444,7 +444,8 @@ njs_text_decoder_fatal(njs_vm_t *vm, njs_object_prop_t *prop,
 
 static njs_int_t
 njs_text_decoder_ignore_bom(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval)
 {
     njs_encoding_decode_t  *data;
 
@@ -561,7 +562,7 @@ njs_text_decoder_decode(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_object_prop_t  njs_text_decoder_properties[] =
+static njs_object_propi_t  njs_text_decoder_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(vs_constructor,
                              njs_object_prototype_create_constructor, 0,
@@ -585,7 +586,7 @@ static const njs_object_init_t  njs_text_decoder_init = {
 };
 
 
-static njs_object_prop_t  njs_text_decoder_constructor_properties[] =
+static njs_object_propi_t  njs_text_decoder_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(0),
 

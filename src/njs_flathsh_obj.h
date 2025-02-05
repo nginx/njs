@@ -39,7 +39,6 @@ struct njs_flathsh_obj_descr_s {
 
 
 struct njs_flathsh_obj_proto_s {
-    njs_flathsh_obj_test_t         test;
     njs_flathsh_obj_alloc_t        alloc;
     njs_flathsh_obj_free_t         free;
 };
@@ -138,8 +137,8 @@ typedef struct {
     } while (0)
 
 
-NJS_EXPORT void *njs_flathsh_obj_each(const njs_flathsh_obj_t *fh,
-    njs_flathsh_obj_each_t *fhe);
+NJS_EXPORT njs_flathsh_obj_elt_t *njs_flathsh_obj_each(
+    const njs_flathsh_obj_t *fh, njs_flathsh_obj_each_t *fhe);
 
 /*
  * Add element into hash.
@@ -153,8 +152,8 @@ NJS_EXPORT njs_flathsh_obj_descr_t *njs_flathsh_obj_new(
     njs_flathsh_obj_query_t *fhq);
 NJS_EXPORT void njs_flathsh_obj_destroy(njs_flathsh_obj_t *fh,
     njs_flathsh_obj_query_t *fhq);
-NJS_EXPORT njs_flathsh_obj_descr_t * njs_flathsh_obj_expand_elts(njs_flathsh_obj_query_t *fhq,
-    njs_flathsh_obj_descr_t *h);
+NJS_EXPORT njs_flathsh_obj_descr_t * njs_flathsh_obj_expand_elts(
+    njs_flathsh_obj_query_t *fhq, njs_flathsh_obj_descr_t *h);
 
 NJS_EXPORT njs_int_t njs_flathsh_obj_alloc_copy(njs_mp_t *mp,
     njs_flathsh_obj_t *to, njs_flathsh_obj_t *from);

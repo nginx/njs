@@ -1124,7 +1124,7 @@ njs_date_number_parse(int64_t *value, const u_char *p, const u_char *end,
 }
 
 
-static njs_object_prop_t  njs_date_constructor_properties[] =
+static njs_object_propi_t  njs_date_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(7),
 
@@ -1441,9 +1441,9 @@ static njs_int_t
 njs_date_prototype_to_json(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
 {
-    njs_int_t           ret;
-    njs_value_t         value;
-    njs_lvlhsh_query_t  lhq;
+    njs_int_t                ret;
+    njs_value_t              value;
+    njs_flathsh_obj_query_t  lhq;
 
     if (njs_is_object(njs_argument(args, 0))) {
         lhq.proto = &njs_object_hash_proto;
@@ -1468,7 +1468,7 @@ njs_date_prototype_to_json(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_object_prop_t  njs_date_prototype_properties[] =
+static njs_object_propi_t  njs_date_prototype_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(vs___proto__,
                              njs_primitive_prototype_get_proto, 0,
