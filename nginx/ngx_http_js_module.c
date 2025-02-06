@@ -276,8 +276,6 @@ static njs_int_t ngx_http_js_server(njs_vm_t *vm, ngx_http_request_t *r,
     njs_value_t *retval);
 
 #if (NJS_HAVE_QUICKJS)
-static JSValue ngx_http_qjs_ext_to_string_tag(JSContext *cx,
-    JSValueConst this_val);
 static JSValue ngx_http_qjs_ext_args(JSContext *cx, JSValueConst this_val);
 static JSValue ngx_http_qjs_ext_done(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv);
@@ -294,8 +292,6 @@ static JSValue ngx_http_qjs_ext_internal_redirect(JSContext *cx,
     JSValueConst this_val, int argc, JSValueConst *argv);
 static JSValue ngx_http_qjs_ext_log(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv, int level);
-static JSValue ngx_http_qjs_ext_periodic_to_string_tag(JSContext *cx,
-    JSValueConst this_val);
 static JSValue ngx_http_qjs_ext_periodic_variables(JSContext *cx,
     JSValueConst this_val, int type);
 static JSValue ngx_http_qjs_ext_parent(JSContext *cx, JSValueConst this_val);
@@ -1035,8 +1031,7 @@ static ngx_http_js_entry_t ngx_http_methods[] = {
 #if (NJS_HAVE_QUICKJS)
 
 static const JSCFunctionListEntry ngx_http_qjs_ext_request[] = {
-    JS_CGETSET_DEF("[Symbol.toStringTag]", ngx_http_qjs_ext_to_string_tag,
-                   NULL),
+    JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Request", JS_PROP_CONFIGURABLE),
     JS_CGETSET_DEF("args", ngx_http_qjs_ext_args, NULL),
     JS_CFUNC_DEF("done", 0, ngx_http_qjs_ext_done),
     JS_CFUNC_MAGIC_DEF("error", 1, ngx_http_qjs_ext_log, NGX_LOG_ERR),
@@ -1081,8 +1076,8 @@ static const JSCFunctionListEntry ngx_http_qjs_ext_request[] = {
 
 
 static const JSCFunctionListEntry ngx_http_qjs_ext_periodic[] = {
-    JS_CGETSET_DEF("[Symbol.toStringTag]",
-                   ngx_http_qjs_ext_periodic_to_string_tag, NULL),
+    JS_PROP_STRING_DEF("[Symbol.toStringTag]", "PeriodicSession",
+                       JS_PROP_CONFIGURABLE),
     JS_CGETSET_MAGIC_DEF("rawVariables", ngx_http_qjs_ext_periodic_variables,
                    NULL, NGX_JS_BUFFER),
     JS_CGETSET_MAGIC_DEF("variables", ngx_http_qjs_ext_periodic_variables,
@@ -4826,14 +4821,6 @@ ngx_http_qjs_query_string_decode(njs_chb_t *chain, const u_char *start,
 
 
 static JSValue
-ngx_http_qjs_ext_to_string_tag(JSContext *cx,
-    JSValueConst this_val)
-{
-    return JS_NewString(cx, "Request");
-}
-
-
-static JSValue
 ngx_http_qjs_ext_args(JSContext *cx, JSValueConst this_val)
 {
     u_char                  *start, *end, *p, *v;
@@ -5178,14 +5165,6 @@ ngx_http_qjs_ext_log(JSContext *cx, JSValueConst this_val, int argc,
     }
 
     return JS_UNDEFINED;
-}
-
-
-static JSValue
-ngx_http_qjs_ext_periodic_to_string_tag(JSContext *cx,
-    JSValueConst this_val)
-{
-    return JS_NewString(cx, "PeriodicSession");
 }
 
 

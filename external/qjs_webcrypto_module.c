@@ -128,8 +128,6 @@ static JSValue qjs_webcrypto_import_key(JSContext *cx, JSValueConst this_val,
 static JSValue qjs_webcrypto_sign(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv, int verify);
 
-static JSValue qjs_webcrypto_key_to_string_tag(JSContext *cx,
-    JSValueConst this_val);
 static JSValue qjs_webcrypto_key_algorithm(JSContext *cx,
     JSValueConst this_val);
 static JSValue qjs_webcrypto_key_extractable(JSContext *cx,
@@ -444,8 +442,8 @@ static const JSCFunctionListEntry qjs_webcrypto_subtle[] = {
 
 
 static const JSCFunctionListEntry qjs_webcrypto_key_proto[] = {
-    JS_CGETSET_DEF("[Symbol.toStringTag]", qjs_webcrypto_key_to_string_tag,
-                   NULL),
+    JS_PROP_STRING_DEF("[Symbol.toStringTag]", "CryptoKey",
+                       JS_PROP_CONFIGURABLE),
     JS_CGETSET_DEF("algorithm", qjs_webcrypto_key_algorithm, NULL),
     JS_CGETSET_DEF("extractable", qjs_webcrypto_key_extractable, NULL),
     JS_CGETSET_DEF("type", qjs_webcrypto_key_type, NULL),
@@ -3997,13 +3995,6 @@ fail:
     }
 
     return qjs_webcrypto_result(cx, JS_UNDEFINED, -1);
-}
-
-
-static JSValue
-qjs_webcrypto_key_to_string_tag(JSContext *cx, JSValueConst this_val)
-{
-    return JS_NewString(cx, "CryptoKey");
 }
 
 

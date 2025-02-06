@@ -146,9 +146,7 @@ static JSValue ngx_qjs_ext_shared_dict_set(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv, int flags);
 static JSValue ngx_qjs_ext_shared_dict_size(JSContext *cx,
     JSValueConst this_val, int argc, JSValueConst *argv);
-static JSValue ngx_qjs_ext_shared_dict_tag(JSContext *cx,
-    JSValueConst this_val);
-static JSValue ngx_qjs_ext_shared_dict_type(JSContext *cx,
+    static JSValue ngx_qjs_ext_shared_dict_type(JSContext *cx,
     JSValueConst this_val);
 
 static JSValue ngx_qjs_dict_copy_value_locked(JSContext *cx,
@@ -425,7 +423,8 @@ static const JSCFunctionListEntry ngx_qjs_ext_ngx[] = {
 };
 
 static const JSCFunctionListEntry ngx_qjs_ext_shared_dict[] = {
-    JS_CGETSET_DEF("[Symbol.toStringTag]", ngx_qjs_ext_shared_dict_tag, NULL),
+    JS_PROP_STRING_DEF("[Symbol.toStringTag]", "SharedDict",
+                       JS_PROP_CONFIGURABLE),
     JS_CFUNC_MAGIC_DEF("add", 3, ngx_qjs_ext_shared_dict_set,
                        NGX_JS_DICT_FLAG_MUST_NOT_EXIST),
     JS_CGETSET_DEF("capacity", ngx_qjs_ext_shared_dict_capacity, NULL),
@@ -2601,13 +2600,6 @@ ngx_qjs_ext_shared_dict_size(JSContext *cx, JSValueConst this_val,
     ngx_rwlock_unlock(&dict->sh->rwlock);
 
     return JS_NewInt32(cx, items);
-}
-
-
-static JSValue
-ngx_qjs_ext_shared_dict_tag(JSContext *cx, JSValueConst this_val)
-{
-    return JS_NewString(cx, "SharedDict");
 }
 
 
