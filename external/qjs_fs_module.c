@@ -167,7 +167,6 @@ static JSValue qjs_fs_write_file(JSContext *cx, JSValueConst this_val, int argc,
 static JSValue qjs_fs_unlink(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv, int calltype);
 
-static JSValue qjs_fs_stats_to_string_tag(JSContext *cx, JSValueConst this_val);
 static JSValue qjs_fs_stats_test(JSContext *cx, JSValueConst this_val, int argc,
     JSValueConst *argv, int testtype);
 static int qjs_fs_stats_get_own_property(JSContext *cx,
@@ -176,15 +175,11 @@ static int qjs_fs_stats_get_own_property_names(JSContext *cx,
     JSPropertyEnum **ptab, uint32_t *plen, JSValueConst obj);
 static void qjs_fs_stats_finalizer(JSRuntime *rt, JSValue val);
 
-static JSValue qjs_fs_dirent_to_string_tag(JSContext *cx,
-    JSValueConst this_val);
 static JSValue qjs_fs_dirent_ctor(JSContext *cx, JSValueConst new_target,
     int argc, JSValueConst *argv);
 static JSValue qjs_fs_dirent_test(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv, int testtype);
 
-static JSValue qjs_fs_filehandle_to_string_tag(JSContext *cx,
-    JSValueConst this_val);
 static JSValue qjs_fs_filehandle_fd(JSContext *cx, JSValueConst this_val);
 static JSValue qjs_fs_filehandle_value_of(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv);
@@ -222,7 +217,7 @@ static qjs_fs_entry_t qjs_flags_table[] = {
 
 
 static const JSCFunctionListEntry qjs_fs_stats_proto[] = {
-    JS_CGETSET_DEF("[Symbol.toStringTag]", qjs_fs_stats_to_string_tag, NULL),
+    JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Stats", JS_PROP_CONFIGURABLE),
     JS_CFUNC_MAGIC_DEF("isBlockDevice", 0, qjs_fs_stats_test, DT_BLK),
     JS_CFUNC_MAGIC_DEF("isCharacterDevice", 0, qjs_fs_stats_test, DT_CHR),
     JS_CFUNC_MAGIC_DEF("isDirectory", 0, qjs_fs_stats_test, DT_DIR),
@@ -234,7 +229,7 @@ static const JSCFunctionListEntry qjs_fs_stats_proto[] = {
 
 
 static const JSCFunctionListEntry qjs_fs_dirent_proto[] = {
-    JS_CGETSET_DEF("[Symbol.toStringTag]", qjs_fs_dirent_to_string_tag, NULL),
+    JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Dirent", JS_PROP_CONFIGURABLE),
     JS_CFUNC_MAGIC_DEF("isBlockDevice", 0, qjs_fs_dirent_test, DT_BLK),
     JS_CFUNC_MAGIC_DEF("isCharacterDevice", 0, qjs_fs_dirent_test, DT_CHR),
     JS_CFUNC_MAGIC_DEF("isDirectory", 0, qjs_fs_dirent_test, DT_DIR),
@@ -247,8 +242,8 @@ static const JSCFunctionListEntry qjs_fs_dirent_proto[] = {
 
 
 static const JSCFunctionListEntry qjs_fs_filehandle_proto[] = {
-    JS_CGETSET_DEF("[Symbol.toStringTag]", qjs_fs_filehandle_to_string_tag,
-                   NULL),
+    JS_PROP_STRING_DEF("[Symbol.toStringTag]", "FileHandle",
+                       JS_PROP_CONFIGURABLE),
     JS_CFUNC_MAGIC_DEF("close", 0, qjs_fs_close, QJS_FS_PROMISE),
     JS_CGETSET_DEF("fd", qjs_fs_filehandle_fd, NULL),
     JS_CFUNC_MAGIC_DEF("stat", 4, qjs_fs_stat,
@@ -2342,13 +2337,6 @@ qjs_fs_unlink(JSContext *cx, JSValueConst this_val, int argc,
 
 
 static JSValue
-qjs_fs_stats_to_string_tag(JSContext *cx, JSValueConst this_val)
-{
-    return JS_NewString(cx, "Stats");
-}
-
-
-static JSValue
 qjs_fs_stats_test(JSContext *cx, JSValueConst this_val, int argc,
     JSValueConst *argv, int testtype)
 {
@@ -2630,13 +2618,6 @@ qjs_fs_stats_finalizer(JSRuntime *rt, JSValue val)
 
 
 static JSValue
-qjs_fs_dirent_to_string_tag(JSContext *cx, JSValueConst this_val)
-{
-    return JS_NewString(cx, "Dirent");
-}
-
-
-static JSValue
 qjs_fs_dirent_test(JSContext *cx, JSValueConst this_val, int argc,
     JSValueConst *argv, int testtype)
 {
@@ -2663,13 +2644,6 @@ qjs_fs_dirent_test(JSContext *cx, JSValueConst this_val, int argc,
     }
 
     return JS_NewBool(cx, testtype == value);
-}
-
-
-static JSValue
-qjs_fs_filehandle_to_string_tag(JSContext *cx, JSValueConst this_val)
-{
-    return JS_NewString(cx, "FileHandle");
 }
 
 

@@ -43,8 +43,6 @@ extern char  **environ;
 
 
 static JSValue qjs_njs_getter(JSContext *ctx, JSValueConst this_val);
-static JSValue qjs_njs_to_string_tag(JSContext *ctx, JSValueConst this_val);
-static JSValue qjs_process_to_string_tag(JSContext *ctx, JSValueConst this_val);
 static JSValue qjs_process_env(JSContext *ctx, JSValueConst this_val);
 static JSValue qjs_process_kill(JSContext *ctx, JSValueConst this_val,
     int argc, JSValueConst *argv);
@@ -52,8 +50,6 @@ static JSValue qjs_process_pid(JSContext *ctx, JSValueConst this_val);
 static JSValue qjs_process_ppid(JSContext *ctx, JSValueConst this_val);
 
 static int qjs_add_intrinsic_text_decoder(JSContext *cx, JSValueConst global);
-static JSValue qjs_text_decoder_to_string_tag(JSContext *ctx,
-    JSValueConst this_val);
 static JSValue qjs_text_decoder_decode(JSContext *ctx, JSValueConst this_val,
     int argc, JSValueConst *argv);
 static JSValue qjs_text_decoder_encoding(JSContext *ctx, JSValueConst this_val);
@@ -63,8 +59,6 @@ static JSValue qjs_text_decoder_ignore_bom(JSContext *ctx,
 static void qjs_text_decoder_finalizer(JSRuntime *rt, JSValue val);
 
 static int qjs_add_intrinsic_text_encoder(JSContext *cx, JSValueConst global);
-static JSValue qjs_text_encoder_to_string_tag(JSContext *ctx,
-    JSValueConst this_val);
 static JSValue qjs_text_encoder_encode(JSContext *ctx, JSValueConst this_val,
     int argc, JSValueConst *argv);
 static JSValue qjs_text_encoder_encode_into(JSContext *ctx,
@@ -110,8 +104,8 @@ static const JSCFunctionListEntry qjs_global_proto[] = {
 };
 
 static const JSCFunctionListEntry qjs_text_decoder_proto[] = {
-    JS_CGETSET_DEF("[Symbol.toStringTag]", qjs_text_decoder_to_string_tag,
-                   NULL),
+    JS_PROP_STRING_DEF("[Symbol.toStringTag]", "TextDecoder",
+                       JS_PROP_CONFIGURABLE),
     JS_CFUNC_DEF("decode", 1, qjs_text_decoder_decode),
     JS_CGETSET_DEF("encoding", qjs_text_decoder_encoding, NULL),
     JS_CGETSET_DEF("fatal", qjs_text_decoder_fatal, NULL),
@@ -119,15 +113,15 @@ static const JSCFunctionListEntry qjs_text_decoder_proto[] = {
 };
 
 static const JSCFunctionListEntry qjs_text_encoder_proto[] = {
-    JS_CGETSET_DEF("[Symbol.toStringTag]", qjs_text_encoder_to_string_tag,
-                   NULL),
+    JS_PROP_STRING_DEF("[Symbol.toStringTag]", "TextEncoder",
+                       JS_PROP_CONFIGURABLE),
     JS_CFUNC_DEF("encode", 1, qjs_text_encoder_encode),
     JS_CFUNC_DEF("encodeInto", 1, qjs_text_encoder_encode_into),
     JS_CGETSET_DEF("encoding", qjs_text_encoder_encoding, NULL),
 };
 
 static const JSCFunctionListEntry qjs_njs_proto[] = {
-    JS_CGETSET_DEF("[Symbol.toStringTag]", qjs_njs_to_string_tag, NULL),
+    JS_PROP_STRING_DEF("[Symbol.toStringTag]", "njs", JS_PROP_CONFIGURABLE),
     JS_PROP_STRING_DEF("version", NJS_VERSION, JS_PROP_C_W_E),
     JS_PROP_INT32_DEF("version_number", NJS_VERSION_NUMBER,
                       JS_PROP_C_W_E),
@@ -135,7 +129,7 @@ static const JSCFunctionListEntry qjs_njs_proto[] = {
 };
 
 static const JSCFunctionListEntry qjs_process_proto[] = {
-    JS_CGETSET_DEF("[Symbol.toStringTag]", qjs_process_to_string_tag, NULL),
+    JS_PROP_STRING_DEF("[Symbol.toStringTag]", "process", JS_PROP_CONFIGURABLE),
     JS_CGETSET_DEF("env", qjs_process_env, NULL),
     JS_CFUNC_DEF("kill", 2, qjs_process_kill),
     JS_CGETSET_DEF("pid", qjs_process_pid, NULL),
@@ -243,20 +237,6 @@ qjs_njs_getter(JSContext *ctx, JSValueConst this_val)
                                njs_nitems(qjs_njs_proto));
 
     return obj;
-}
-
-
-static JSValue
-qjs_njs_to_string_tag(JSContext *ctx, JSValueConst this_val)
-{
-    return JS_NewString(ctx, "njs");
-}
-
-
-static JSValue
-qjs_process_to_string_tag(JSContext *ctx, JSValueConst this_val)
-{
-    return JS_NewString(ctx, "process");
 }
 
 
@@ -584,13 +564,6 @@ qjs_add_intrinsic_text_decoder(JSContext *cx, JSValueConst global)
 
 
 static JSValue
-qjs_text_decoder_to_string_tag(JSContext *ctx, JSValueConst this_val)
-{
-    return JS_NewString(ctx, "TextDecoder");
-}
-
-
-static JSValue
 qjs_text_decoder_decode(JSContext *cx, JSValueConst this_val, int argc,
     JSValueConst *argv)
 {
@@ -759,13 +732,6 @@ qjs_add_intrinsic_text_encoder(JSContext *cx, JSValueConst global)
     JS_SetConstructor(cx, ctor, proto);
 
     return JS_SetPropertyStr(cx, global, "TextEncoder", ctor);
-}
-
-
-static JSValue
-qjs_text_encoder_to_string_tag(JSContext *ctx, JSValueConst this_val)
-{
-    return JS_NewString(ctx, "TextEncoder");
 }
 
 

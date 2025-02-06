@@ -145,8 +145,6 @@ static njs_int_t ngx_stream_js_periodic_variables(njs_vm_t *vm,
 
 #if (NJS_HAVE_QUICKJS)
 
-static JSValue ngx_stream_qjs_ext_to_string_tag(JSContext *cx,
-    JSValueConst this_val);
 static JSValue ngx_stream_qjs_ext_done(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv, int magic);
 static JSValue ngx_stream_qjs_ext_log(JSContext *cx, JSValueConst this_val,
@@ -155,8 +153,6 @@ static JSValue ngx_stream_qjs_ext_on(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv);
 static JSValue ngx_stream_qjs_ext_off(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv);
-static JSValue ngx_stream_qjs_ext_periodic_to_string_tag(JSContext *cx,
-    JSValueConst this_val);
 static JSValue ngx_stream_qjs_ext_periodic_variables(JSContext *cx,
     JSValueConst this_val, int type);
 static JSValue ngx_stream_qjs_ext_remote_address(JSContext *cx,
@@ -762,8 +758,8 @@ njs_module_t *njs_stream_js_addon_modules[] = {
 #if (NJS_HAVE_QUICKJS)
 
 static const JSCFunctionListEntry ngx_stream_qjs_ext_session[] = {
-    JS_CGETSET_DEF("[Symbol.toStringTag]", ngx_stream_qjs_ext_to_string_tag,
-                   NULL),
+    JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Stream Session",
+                       JS_PROP_CONFIGURABLE),
     JS_CFUNC_MAGIC_DEF("allow", 1, ngx_stream_qjs_ext_done, NGX_OK),
     JS_CFUNC_MAGIC_DEF("decline", 1, ngx_stream_qjs_ext_done, -NGX_DECLINED),
     JS_CFUNC_MAGIC_DEF("deny", 1, ngx_stream_qjs_ext_done, -NGX_DONE),
@@ -790,8 +786,8 @@ static const JSCFunctionListEntry ngx_stream_qjs_ext_session[] = {
 
 
 static const JSCFunctionListEntry ngx_stream_qjs_ext_periodic[] = {
-    JS_CGETSET_DEF("[Symbol.toStringTag]",
-                   ngx_stream_qjs_ext_periodic_to_string_tag, NULL),
+    JS_PROP_STRING_DEF("[Symbol.toStringTag]", "PeriodicSession",
+                       JS_PROP_CONFIGURABLE),
     JS_CGETSET_MAGIC_DEF("rawVariables", ngx_stream_qjs_ext_periodic_variables,
                    NULL, NGX_JS_BUFFER),
     JS_CGETSET_MAGIC_DEF("variables", ngx_stream_qjs_ext_periodic_variables,
@@ -1999,13 +1995,6 @@ ngx_engine_njs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf,
 #if (NJS_HAVE_QUICKJS)
 
 static JSValue
-ngx_stream_qjs_ext_to_string_tag(JSContext *cx, JSValueConst this_val)
-{
-    return JS_NewString(cx, "Stream Session");
-}
-
-
-static JSValue
 ngx_stream_qjs_ext_done(JSContext *cx, JSValueConst this_val, int argc,
     JSValueConst *argv, int magic)
 {
@@ -2219,14 +2208,6 @@ ngx_stream_qjs_ext_off(JSContext *cx, JSValueConst this_val, int argc,
     ctx->events[e->id].data_type = NGX_JS_UNSET;
 
     return JS_UNDEFINED;
-}
-
-
-static JSValue
-ngx_stream_qjs_ext_periodic_to_string_tag(JSContext *cx,
-    JSValueConst this_val)
-{
-    return JS_NewString(cx, "PeriodicSession");
 }
 
 

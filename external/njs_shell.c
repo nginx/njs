@@ -1902,13 +1902,6 @@ njs_qjs_clear_timeout(JSContext *ctx, JSValueConst this_val, int argc,
 
 
 static JSValue
-njs_qjs_console_to_string_tag(JSContext *ctx, JSValueConst this_val)
-{
-    return JS_NewString(ctx, "Console");
-}
-
-
-static JSValue
 njs_qjs_process_getter(JSContext *ctx, JSValueConst this_val)
 {
     JSValue         obj;
@@ -2487,7 +2480,8 @@ static const JSCFunctionListEntry njs_qjs_global_proto[] = {
 
 
 static const JSCFunctionListEntry njs_qjs_console_proto[] = {
-    JS_CGETSET_DEF("[Symbol.toStringTag]", njs_qjs_console_to_string_tag, NULL),
+    JS_PROP_STRING_DEF("[Symbol.toStringTag]", "Console",
+                       JS_PROP_CONFIGURABLE),
     JS_CFUNC_MAGIC_DEF("error", 0, njs_qjs_console_log, NJS_LOG_ERROR),
     JS_CFUNC_MAGIC_DEF("info", 0, njs_qjs_console_log, NJS_LOG_INFO),
     JS_CFUNC_MAGIC_DEF("log", 0, njs_qjs_console_log, NJS_LOG_INFO),
