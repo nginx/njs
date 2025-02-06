@@ -5,7 +5,7 @@
  *
  * njs public header.
  */
-
+// test change
 #ifndef _NJS_H_INCLUDED_
 #define _NJS_H_INCLUDED_
 
