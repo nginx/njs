@@ -4827,9 +4827,6 @@ qjs_webcrypto_init(JSContext *cx, const char *name)
     JSValue      crypto, proto, global_obj;
     JSModuleDef  *m;
 
-    (void) qjs_webcrypto_alg_name;
-    (void) qjs_algorithm_hash_name;
-
     if (!JS_IsRegisteredClass(JS_GetRuntime(cx),
                               QJS_CORE_CLASS_ID_WEBCRYPTO_KEY))
     {
