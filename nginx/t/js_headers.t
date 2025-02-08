@@ -116,6 +116,10 @@ http {
             return 200 $test_ifoo_in;
         }
 
+        location /in_lowkey {
+            js_content test.in_lowkey;
+        }
+
         location /hdr_in {
             js_content test.hdr_in;
         }
@@ -355,6 +359,12 @@ $t->write_file('test.js', <<EOF);
         return s;
     }
 
+    function in_lowkey(r) {
+        const name = 'X'.repeat(16);
+		let v = r.headersIn[name];
+		r.return(200, name);
+    }
+
     function hdr_out(r) {
         r.status = 200;
         r.headersOut['Foo'] = r.args.foo;
@@ -466,12 +476,12 @@ $t->write_file('test.js', <<EOF);
                     hdr_out, raw_hdr_out, hdr_out_array, hdr_out_single,
                     hdr_out_set_cookie, ihdr_out, hdr_out_special_set,
                     copy_subrequest_hdrs, subrequest, date, last_modified,
-                    location, location_sr, server};
+                    location, location_sr, server, in_lowkey};
 
 
 EOF
 
-$t->try_run('no njs')->plan(49);
+$t->try_run('no njs')->plan(50);
 
 ###############################################################################
 
@@ -571,6 +581,8 @@ like(http(
 	. 'Foo: bar2' . CRLF
 	. 'Host: localhost' . CRLF . CRLF
 ), qr/foo: bar1,\s?bar2/, 'r.headersIn duplicate generic');
+
+like(http_get('/in_lowkey'), qr/X{16}/, 'r.headersIn name is not overwritten');
 
 like(http(
 	'GET /raw_hdr_in?filter=foo HTTP/1.0' . CRLF

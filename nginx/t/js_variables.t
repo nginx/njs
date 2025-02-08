@@ -44,6 +44,7 @@ http {
         server_name  localhost;
 
         set $foo       test.foo_orig;
+        set $XXXXXXXXXXXXXXXX 1;
 
         location /var_set {
             return 200 $test_var$foo;
@@ -55,6 +56,10 @@ http {
 
         location /not_found_set {
             js_content test.not_found_set;
+        }
+
+        location /variable_lowkey {
+            js_content test.variable_lowkey;
         }
     }
 }
@@ -80,16 +85,33 @@ $t->write_file('test.js', <<EOF);
         }
     }
 
-    export default {variable, content_set, not_found_set};
+    function variable_lowkey(r) {
+        const name = 'X'.repeat(16);
+
+        if (r.args.set) {
+            r.variables[name] = "1";
+
+        } else {
+            let v = r.variables[name];
+        }
+
+        r.return(200, name);
+    }
+
+    export default {variable, content_set, not_found_set, variable_lowkey};
 
 EOF
 
-$t->try_run('no njs')->plan(3);
+$t->try_run('no njs')->plan(5);
 
 ###############################################################################
 
 like(http_get('/var_set?a=bar'), qr/test_varbar/, 'var set');
 like(http_get('/content_set?a=bar'), qr/bar/, 'content set');
 like(http_get('/not_found_set'), qr/variable not found/, 'not found exception');
+like(http_get('/variable_lowkey'), qr/X{16}/,
+	'variable name is not overwritten while reading');
+like(http_get('/variable_lowkey?set=1'), qr/X{16}/,
+	'variable name is not overwritten while setting');
 
 ###############################################################################
