@@ -2254,6 +2254,15 @@ njs_parser_initializer_assign(njs_parser_t *parser, njs_token_type_t type)
 }
 
 
+static njs_int_t
+njs_parser_tagged_template_literal_after(njs_parser_t *parser,
+    njs_lexer_token_t *token, njs_queue_link_t *current)
+{
+    parser->scope->in_tagged_template--;
+
+    return njs_parser_stack_pop(parser);
+}
+
 /*
  * 12.3 Left-Hand-Side Expressions.
  */
@@ -2334,9 +2343,12 @@ njs_parser_property(njs_parser_t *parser, njs_lexer_token_t *token,
 
         parser->node = node;
 
+        parser->scope->in_tagged_template++;
+
         njs_parser_next(parser, njs_parser_template_literal);
 
-        break;
+        return njs_parser_after(parser, current, node, 1,
+                                njs_parser_tagged_template_literal_after);
 
     default:
         return NJS_DONE;
@@ -3577,6 +3589,12 @@ njs_parser_await(njs_parser_t *parser, njs_lexer_token_t *token,
 
     if (parser->scope->in_args > 0) {
         njs_parser_syntax_error(parser, "await in arguments not supported");
+        return NJS_ERROR;
+    }
+
+    if (parser->scope->in_tagged_template > 0) {
+        njs_parser_syntax_error(parser,
+                                "await in tagged template not supported");
         return NJS_ERROR;
     }
 

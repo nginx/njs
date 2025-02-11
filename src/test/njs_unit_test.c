@@ -19821,6 +19821,12 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("async function f1() {try {f(await f1)} catch(e) {}}"),
       njs_str("SyntaxError: await in arguments not supported in 1") },
 
+    { njs_str("(async () => (function (){}) `${(async () => 1)(await 1)}`)()"),
+      njs_str("SyntaxError: await in arguments not supported in 1") },
+
+    { njs_str("(async () => (function (){}) `${await 1}`)()"),
+      njs_str("SyntaxError: await in tagged template not supported in 1") },
+
     { njs_str("async function af() {await encrypt({},}"),
       njs_str("SyntaxError: Unexpected token \"}\" in 1") },
 
