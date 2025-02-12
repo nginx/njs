@@ -3064,50 +3064,49 @@ qjs_import_jwk_oct(JSContext *cx, JSValue jwk, qjs_webcrypto_key_t *key)
     qjs_base64url_decode(cx, &b64, &key->u.s.raw);
     JS_FreeCString(cx, (char *) b64.start);
 
-    size = 16;
-
     val = JS_GetPropertyStr(cx, jwk, "alg");
     if (JS_IsException(val)) {
         return JS_EXCEPTION;
     }
 
-    if (JS_IsString(val)) {
-        alg.start = (u_char *) JS_ToCStringLen(cx, &alg.length, val);
+    if (!JS_IsString(val)) {
         JS_FreeValue(cx, val);
-        val = JS_UNDEFINED;
+        return JS_ThrowTypeError(cx, "Invalid JWK oct alg");
+    }
 
-        if (alg.start == NULL) {
-            JS_ThrowOutOfMemory(cx);
-            return JS_EXCEPTION;
-        }
-
-        if (key->alg->type == QJS_ALGORITHM_HMAC) {
-            for (w = &hashes[0]; w->name.length != 0; w++) {
-                if (njs_strstr_eq(&alg, &w->name)) {
-                    key->hash = w->value;
-                    goto done;
-                }
-            }
-
-        } else {
-            type = key->alg->type;
-            a = &qjs_webcrypto_alg_aes_name[type - QJS_ALGORITHM_AES_GCM][0];
-            for (; a->length != 0; a++) {
-                if (njs_strstr_eq(&alg, a)) {
-                    goto done;
-                }
-
-                size += 8;
-            }
-        }
-
-        JS_ThrowTypeError(cx, "unexpected \"alg\" value \"%s\" for JWK key",
-                          alg.start);
-        JS_FreeCString(cx, (char *) alg.start);
+    alg.start = (u_char *) JS_ToCStringLen(cx, &alg.length, val);
+    JS_FreeValue(cx, val);
+    if (alg.start == NULL) {
+        JS_ThrowOutOfMemory(cx);
         return JS_EXCEPTION;
     }
 
-    JS_FreeValue(cx, val);
+    size = 16;
+
+    if (key->alg->type == QJS_ALGORITHM_HMAC) {
+        for (w = &hashes[0]; w->name.length != 0; w++) {
+            if (njs_strstr_eq(&alg, &w->name)) {
+                key->hash = w->value;
+                goto done;
+            }
+        }
+
+    } else {
+        type = key->alg->type;
+        a = &qjs_webcrypto_alg_aes_name[type - QJS_ALGORITHM_AES_GCM][0];
+        for (; a->length != 0; a++) {
+            if (njs_strstr_eq(&alg, a)) {
+                goto done;
+            }
+
+            size += 8;
+        }
+    }
+
+    JS_ThrowTypeError(cx, "unexpected \"alg\" value \"%s\" for JWK key",
+                      alg.start);
+    JS_FreeCString(cx, (char *) alg.start);
+    return JS_EXCEPTION;
 
 done:
 
