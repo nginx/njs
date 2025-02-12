@@ -3207,36 +3207,39 @@ njs_import_jwk_oct(njs_vm_t *vm, njs_value_t *jwk, njs_webcrypto_key_t *key)
 
     njs_decode_base64url(&key->u.s.raw, &b64);
 
+    val = njs_vm_object_prop(vm, jwk, &string_alg, &value);
+    if (njs_slow_path(val == NULL || !njs_value_is_string(val))) {
+        njs_vm_type_error(vm, "Invalid JWK oct alg");
+        return NJS_ERROR;
+    }
+
+    njs_value_string_get(val, &alg);
+
     size = 16;
 
-    val = njs_vm_object_prop(vm, jwk, &string_alg, &value);
-    if (val != NULL && njs_value_is_string(val)) {
-        njs_value_string_get(val, &alg);
-
-        if (key->alg->type == NJS_ALGORITHM_HMAC) {
-            for (w = &hashes[0]; w->name.length != 0; w++) {
-                if (njs_strstr_eq(&alg, &w->name)) {
-                    key->hash = w->value;
-                    goto done;
-                }
-            }
-
-        } else {
-            type = key->alg->type;
-            a = &njs_webcrypto_alg_aes_name[type - NJS_ALGORITHM_AES_GCM][0];
-            for (; a->length != 0; a++) {
-                if (njs_strstr_eq(&alg, a)) {
-                    goto done;
-                }
-
-                size += 8;
+    if (key->alg->type == NJS_ALGORITHM_HMAC) {
+        for (w = &hashes[0]; w->name.length != 0; w++) {
+            if (njs_strstr_eq(&alg, &w->name)) {
+                key->hash = w->value;
+                goto done;
             }
         }
 
-        njs_vm_type_error(vm, "unexpected \"alg\" value \"%V\" for JWK key",
-                          &alg);
-        return NJS_ERROR;
+    } else {
+        type = key->alg->type;
+        a = &njs_webcrypto_alg_aes_name[type - NJS_ALGORITHM_AES_GCM][0];
+        for (; a->length != 0; a++) {
+            if (njs_strstr_eq(&alg, a)) {
+                goto done;
+            }
+
+            size += 8;
+        }
     }
+
+    njs_vm_type_error(vm, "unexpected \"alg\" value \"%V\" for JWK key",
+                      &alg);
+    return NJS_ERROR;
 
 done:
 
