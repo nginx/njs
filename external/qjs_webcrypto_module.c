@@ -3242,14 +3242,14 @@ qjs_webcrypto_import_key(JSContext *cx, JSValueConst this_val, int argc,
     case QJS_KEY_FORMAT_PKCS8:
         bio = BIO_new_mem_buf(key_data.start, key_data.length);
         if (bio == NULL) {
-            JS_ThrowTypeError(cx, "BIO_new_mem_buf() failed");
+            qjs_webcrypto_error(cx, "BIO_new_mem_buf() failed");
             goto fail;
         }
 
         pkcs8 = d2i_PKCS8_PRIV_KEY_INFO_bio(bio, NULL);
         if (pkcs8 == NULL) {
             BIO_free(bio);
-            JS_ThrowTypeError(cx, "d2i_PKCS8_PRIV_KEY_INFO_bio() failed");
+            qjs_webcrypto_error(cx, "d2i_PKCS8_PRIV_KEY_INFO_bio() failed");
             goto fail;
         }
 
@@ -3257,7 +3257,7 @@ qjs_webcrypto_import_key(JSContext *cx, JSValueConst this_val, int argc,
         if (pkey == NULL) {
             PKCS8_PRIV_KEY_INFO_free(pkcs8);
             BIO_free(bio);
-            JS_ThrowTypeError(cx, "EVP_PKCS82PKEY() failed");
+            qjs_webcrypto_error(cx, "EVP_PKCS82PKEY() failed");
             goto fail;
         }
 
@@ -3272,7 +3272,7 @@ qjs_webcrypto_import_key(JSContext *cx, JSValueConst this_val, int argc,
         start = key_data.start;
         pkey = d2i_PUBKEY(NULL, &start, key_data.length);
         if (pkey == NULL) {
-            JS_ThrowTypeError(cx, "d2i_PUBKEY() failed");
+            qjs_webcrypto_error(cx, "d2i_PUBKEY() failed");
             goto fail;
         }
 
@@ -3720,7 +3720,7 @@ qjs_convert_p1363_to_der(JSContext *cx, EVP_PKEY *pkey, u_char *p1363,
 
     if (len < 0) {
         js_free(cx, data);
-        JS_ThrowTypeError(cx, "i2d_ECDSA_SIG() failed");
+        qjs_webcrypto_error(cx, "i2d_ECDSA_SIG() failed");
         goto fail;
     }
 
