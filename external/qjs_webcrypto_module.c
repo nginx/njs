@@ -4637,9 +4637,16 @@ qjs_key_usage(JSContext *cx, JSValue value, unsigned *mask)
         for (e = &qjs_webcrypto_usage[0]; e->name.length != 0; e++) {
             if (njs_strstr_eq(&s, &e->name)) {
                 *mask |= e->value;
-                break;
+                goto done;
             }
         }
+
+        JS_ThrowTypeError(cx, "unknown key usage: \"%.*s\"", (int) s.length,
+                          s.start);
+        JS_FreeCString(cx, (char *) s.start);
+        return JS_EXCEPTION;
+
+done:
 
         JS_FreeCString(cx, (char *) s.start);
     }
