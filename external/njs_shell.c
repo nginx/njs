@@ -2590,7 +2590,7 @@ njs_qjs_module_loader(JSContext *ctx, const char *module_name, void *opaque)
     (void) close(info.fd);
 
     if (njs_slow_path(ret != NJS_OK)) {
-        JS_ThrowInternalError(ctx, "while reading \"%*s\" module",
+        JS_ThrowInternalError(ctx, "while reading \"%.*s\" module",
                               (int) info.file.length, info.file.start);
         return NULL;
     }
@@ -2599,7 +2599,7 @@ njs_qjs_module_loader(JSContext *ctx, const char *module_name, void *opaque)
 
     ret = njs_console_set_cwd(console, &info.file);
     if (njs_slow_path(ret != NJS_OK)) {
-        JS_ThrowInternalError(ctx, "while setting cwd for \"%*s\" module",
+        JS_ThrowInternalError(ctx, "while setting cwd for \"%.*s\" module",
                               (int) info.file.length, info.file.start);
         return NULL;
     }
@@ -2827,7 +2827,7 @@ njs_engine_qjs_unhandled_rejection(njs_engine_t *engine)
         return -1;
     }
 
-    JS_ThrowTypeError(ctx, "unhandled promise rejection: %*s", (int) len, str);
+    JS_ThrowTypeError(ctx, "unhandled promise rejection: %.*s", (int) len, str);
     JS_FreeCString(ctx, str);
 
     for (i = 0; i < console->rejected_promises->items; i++) {

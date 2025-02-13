@@ -1988,7 +1988,7 @@ ngx_qjs_module_loader(JSContext *cx, const char *module_name, void *opaque)
     (void) close(info.fd);
 
     if (ret != NJS_OK) {
-        JS_ThrowInternalError(cx, "while reading \"%*s\" module",
+        JS_ThrowInternalError(cx, "while reading \"%.*s\" module",
                               (int) info.file.length, info.file.start);
         return NULL;
     }
@@ -2057,7 +2057,7 @@ ngx_qjs_unhandled_rejection(ngx_js_ctx_t *ctx)
         return -1;
     }
 
-    JS_ThrowTypeError(cx, "unhandled promise rejection: %*s", (int) len, str);
+    JS_ThrowTypeError(cx, "unhandled promise rejection: %.*s", (int) len, str);
     JS_FreeCString(cx, str);
 
     for (i = 0; i < ctx->rejected_promises->items; i++) {
