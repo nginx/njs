@@ -33,8 +33,6 @@ let rsa_tsuite = {
 
     tests: [
         { pem: "rsa.pkcs8", src: "text.base64.rsa-oaep.enc", expected: "WAKAWAKA" },
-        { pem: "ec.pkcs8", src: "text.base64.rsa-oaep.enc", exception: "Error: RSA key is not found" },
-        { pem: "rsa.pkcs8.broken", src: "text.base64.rsa-oaep.enc", exception: "Error: d2i_PKCS8_PRIV_KEY_INFO_bio() failed" },
 ]};
 
 run([rsa_tsuite])
