@@ -4802,7 +4802,7 @@ qjs_webcrypto_error(JSContext *cx, const char *fmt, ...)
         }
     }
 
-    JS_ThrowTypeError(cx, "%*s", (int) (p - errstr), errstr);
+    JS_ThrowTypeError(cx, "%.*s", (int) (p - errstr), errstr);
 }
 
 

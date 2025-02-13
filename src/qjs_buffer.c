@@ -2099,7 +2099,7 @@ qjs_buffer_encoding(JSContext *ctx, JSValueConst value, JS_BOOL thrw)
     JS_FreeCString(ctx, (char *) name.start);
 
     if (thrw) {
-        JS_ThrowTypeError(ctx, "\"%*s\" encoding is not supported",
+        JS_ThrowTypeError(ctx, "\"%.*s\" encoding is not supported",
                           (int) name.length, name.start);
     }
 

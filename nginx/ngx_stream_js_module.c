@@ -2126,7 +2126,7 @@ ngx_stream_qjs_event(ngx_stream_session_t *s, JSContext *cx, ngx_str_t *event)
     }
 
     if (i == n) {
-        (void) JS_ThrowInternalError(cx, "unknown event \"%*s\"",
+        (void) JS_ThrowInternalError(cx, "unknown event \"%.*s\"",
                                      (int) event->len, event->data);
         return NULL;
     }
