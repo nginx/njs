@@ -4167,20 +4167,7 @@ qjs_webcrypto_key_algorithm(JSContext *cx, JSValueConst this_val)
             return JS_EXCEPTION;
         }
 
-        ret = JS_NewObject(cx);
-        if (JS_IsException(ret)) {
-            JS_FreeValue(cx, obj);
-            return JS_EXCEPTION;
-        }
-
-        if (JS_DefinePropertyValueStr(cx, ret, "name", hash, JS_PROP_C_W_E)
-            < 0)
-        {
-            JS_FreeValue(cx, obj);
-            return JS_EXCEPTION;
-        }
-
-        if (JS_DefinePropertyValueStr(cx, obj, "hash", ret, JS_PROP_C_W_E)
+        if (JS_DefinePropertyValueStr(cx, obj, "hash", hash, JS_PROP_C_W_E)
             < 0)
         {
             JS_FreeValue(cx, obj);
@@ -4377,7 +4364,7 @@ qjs_jwk_kty(JSContext *cx, JSValueConst value)
         }
     }
 
-    JS_ThrowTypeError(cx, "invalid JWK key type: %s", kty.start);
+    JS_ThrowTypeError(cx, "invalid JWK key type: \"%s\"", kty.start);
     JS_FreeCString(cx, (char *) kty.start);
 
     return QJS_KEY_JWK_KTY_UNKNOWN;

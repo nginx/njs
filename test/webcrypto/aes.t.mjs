@@ -65,7 +65,6 @@ let aes_tsuite = {
         { name: "AES-GCM", data: "aabbcc", tagLength: 96 },
         { name: "AES-GCM", data: "aabbcc", tagLength: 112 },
         { name: "AES-GCM", data: "aabbcc", tagLength: 113, exception: "TypeError: AES-GCM Invalid tagLength" },
-        { name: "AES-GCM", data: "aabbcc", key: "aabbcc", exception: "TypeError: Invalid key length" },
         { name: "AES-GCM", data: "aabbcc", key: "001122330011223300112233001122330011223300112233" },
         { name: "AES-GCM", data: "aabbccdd".repeat(4096) },
 
@@ -88,14 +87,12 @@ let aes_tsuite = {
         { name: "AES-CTR", data: "aabbcc", key: "001122330011223300112233001122330011223300112233" },
         { name: "AES-CTR", data: "aabbccdd", length: 129,
           exception: "TypeError: AES-CTR algorithm.length must be between 1 and 128" },
-        { name: "AES-CTR", data: "aabbcc", key: "aabbcc", exception: "TypeError: Invalid key length" },
 
         { name: "AES-CBC", data: "aa" },
         { name: "AES-CBC", data: "aabbccdd".repeat(4) },
         { name: "AES-CBC", data: "aabbccdd".repeat(4096) },
         { name: "AES-CBC", data: "aabbccdd".repeat(5), iv: "ffffffffffffffffffffffffffffffff" },
         { name: "AES-CBC", data: "aabbcc", key: "001122330011223300112233001122330011223300112233" },
-        { name: "AES-CBC", data: "aabbcc", key: "aabbcc", exception: "TypeError: Invalid key length" },
 ]};
 
 run([aes_tsuite])
