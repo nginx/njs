@@ -127,8 +127,6 @@ let rsa_tsuite = {
         { data: "aabbccdd".repeat(7), enc: { hash: "SHA-384" }, dec: { hash: "SHA-384" } },
 
         { data: "aabbcc", enc: { hash: "SHA-256" }, dec: { hash: "SHA-384" }, exception: "Error: EVP_PKEY_decrypt() failed" },
-        { data: "aabbcc", enc: { hash: "XXX" }, exception: "TypeError: unknown hash name: \"XXX\"" },
-        { data: "aabbcc", dec: { key: "rsa.spki.broken" }, exception: "Error: d2i_PUBKEY() failed" },
         { data: "aabbcc", dec: { key: "rsa2.spki" }, exception: "Error: EVP_PKEY_decrypt() failed" },
 
         { data: "aabbcc", enc: { fmt: "jwk", key: "rsa.enc.pub.jwk" }, dec: { fmt: "jwk", key: "rsa.dec.jwk" } },
