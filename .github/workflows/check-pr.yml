@@ -61,7 +61,7 @@ jobs:
       - name: Configure and build nginx and njs modules with quickjs-ng, asan, dynamic modules
         run: |
           cd nginx-source
-          $NGINX_CONFIGURE_CMD --with-debug --with-cc-opt="$CC_OPT -I${{ github.workspace }}/quickjs-ng -fsanitize=address" --with-ld-opt="$LD_OPT -L${{ github.workspace }}/quickjs-ng/build -fsanitize=address" --add-dynamic-module=../nginx || cat objs/autoconf.err
+          $NGINX_CONFIGURE_CMD --with-debug --with-cc-opt="$CC_OPT -I${{ github.workspace }}/quickjs-ng" --with-ld-opt="$LD_OPT -L${{ github.workspace }}/quickjs-ng/build" --add-dynamic-module=../nginx || cat objs/autoconf.err
           $MAKE_UTILITY -j$(nproc) modules
           $MAKE_UTILITY -j$(nproc)
 
