@@ -9,7 +9,8 @@
 #define _NGX_JS_SHARED_DICT_H_INCLUDED_
 
 njs_int_t njs_js_ext_global_shared_prop(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+    uint32_t atom_id, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
 njs_int_t njs_js_ext_global_shared_keys(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *keys);
 

@@ -3105,12 +3105,14 @@ qjs_import_jwk_oct(JSContext *cx, JSValue jwk, qjs_webcrypto_key_t *key)
                           alg.start);
         JS_FreeCString(cx, (char *) alg.start);
         return JS_EXCEPTION;
+    } else {
+        alg.start = NULL;
+        JS_FreeValue(cx, val);
     }
-
-    JS_FreeValue(cx, val);
 
 done:
 
+if (alg.start != NULL) { 
     if (key->alg->type != QJS_ALGORITHM_HMAC) {
         if (key->u.s.raw.length != size) {
             JS_ThrowTypeError(cx, "key size and \"alg\" value \"%s\" mismatch",
@@ -3121,6 +3123,7 @@ done:
     }
 
     JS_FreeCString(cx, (char *) alg.start);
+}
 
     val = JS_GetPropertyStr(cx, jwk, "key_ops");
     if (!JS_IsException(val) && !JS_IsUndefined(val)) {
