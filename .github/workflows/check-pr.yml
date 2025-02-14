@@ -70,10 +70,7 @@ jobs:
           ulimit -c unlimited
           prove -v -j$(nproc) -Inginx-tests/lib --state=save nginx/t/js_fetch*.t . || prove -v -Inginx-tests/lib --state=failed
         env:
-          TMPDIR: "${{ github.workspace }}/out"
           TEST_NGINX_CATLOG: 1
           TEST_NGINX_BINARY: "${{ github.workspace }}/nginx-source/objs/nginx"
-          TEST_NGINX_GLOBALS: "load_module ${{ github.workspace }}/nginx-source/objs/ngx_stream_js_module.so; load_module ${{ github.workspace }}/nginx-source/objs/ngx_http_js_module.so;"
+          TEST_NGINX_GLOBALS: "load_module ${{ github.workspace }}/nginx-source/objs/ngx_http_js_module.so;"
           TEST_NGINX_VERBOSE: 1
-          ASAN_OPTIONS: "detect_odr_violation=0:report_globals=0:fast_unwind_on_malloc=0"
-          LSAN_OPTIONS: "suppressions=${{ github.workspace }}/lsan_suppressions.txt"
