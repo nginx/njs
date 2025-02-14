@@ -126,6 +126,7 @@ $t->write_file('test.js', <<EOF);
             r.return(200, body);
 
         } catch (e) {
+		    console.log(`fetch error: \${e.message}`);
             r.return(501, e.message);
         }
     }
