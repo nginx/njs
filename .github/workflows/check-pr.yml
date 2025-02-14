@@ -48,7 +48,7 @@ jobs:
           git clone https://github.com/quickjs-ng/quickjs quickjs-ng
           cd quickjs-ng
           git checkout v0.8.0
-          CFLAGS="$CC_OPT -fPIC" LDFLAGS=$LD_OPT cmake -B build
+          CFLAGS="$CC_OPT" LDFLAGS=$LD_OPT cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -B build
           cmake --build build --target qjs -j $(nproc)
 
       - name: Create LSAN suppression file
