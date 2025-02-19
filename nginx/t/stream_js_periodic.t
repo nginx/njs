@@ -58,13 +58,9 @@ stream {
         js_periodic test.tick interval=30ms jitter=1ms;
         js_periodic test.timer interval=1s worker_affinity=all;
         js_periodic test.overrun interval=30ms;
-        js_periodic test.file interval=1s;
-        js_periodic test.fetch interval=40ms;
-        js_periodic test.multiple_fetches interval=1s;
         js_periodic test.affinity interval=50ms worker_affinity=0101;
         js_periodic test.vars interval=10s;
 
-        js_periodic test.fetch_exception interval=1s;
         js_periodic test.tick_exception interval=1s;
         js_periodic test.timer_exception interval=1s;
         js_periodic test.timeout_exception interval=30ms;
@@ -75,74 +71,15 @@ stream {
     }
 }
 
-http {
-    %%TEST_GLOBALS_HTTP%%
-
-    js_import test.js;
-
-    server {
-        listen       127.0.0.1:8080;
-        server_name  localhost;
-
-        location /engine {
-            js_content test.engine;
-        }
-
-        location /fetch_ok {
-            return 200 'ok';
-        }
-
-        location /fetch_foo {
-            return 200 'foo';
-        }
-    }
-}
-
 EOF
 
-my $p1 = port(8080);
-
 $t->write_file('test.js', <<EOF);
-    import fs from 'fs';
-
-    function engine(r) {
-        r.return(200, njs.engine);
-    }
-
     function affinity() {
         ngx.shared.workers.set(ngx.worker_id, 1);
     }
 
-    async function fetch() {
-        let reply = await ngx.fetch('http://127.0.0.1:$p1/fetch_ok');
-        let body = await reply.text();
-
-        let v = ngx.shared.strings.get('fetch') || '';
-        ngx.shared.strings.set('fetch', v + body);
-    }
-
-    async function fetch_exception() {
-        let reply = await ngx.fetch('garbage');
-     }
-
     function js_set() {
         return 'JS-SET';
-    }
-
-    async function multiple_fetches() {
-        let reply = await ngx.fetch('http://127.0.0.1:$p1/fetch_ok');
-        let reply2 = await ngx.fetch('http://127.0.0.1:$p1/fetch_foo');
-        let body = await reply.text();
-        let body2 = await reply2.text();
-
-        ngx.shared.strings.set('multiple_fetches', body + '\@' + body2);
-    }
-
-    async function file() {
-        let fh = await fs.promises.open(ngx.conf_prefix + 'file', 'a+');
-
-        await fh.write('abc');
-        await fh.close();
     }
 
     async function overrun() {
@@ -203,34 +140,6 @@ $t->write_file('test.js', <<EOF);
                     }
 
                     break;
-                case 'fetch':
-                    if (ngx.shared.strings.get('fetch').startsWith('okok')) {
-                        s.done();
-                        return;
-                    }
-
-                    break;
-
-                case 'multiple_fetches':
-                    if (ngx.shared.strings.get('multiple_fetches')
-                        .startsWith('ok\@foo'))
-                    {
-                        s.done();
-                        return;
-                    }
-
-                    break;
-
-                case 'file':
-                    let file_data = fs.readFileSync(ngx.conf_prefix + 'file')
-                                                                    .toString();
-
-                    if (file_data == 'abc') {
-                        s.done();
-                        return;
-                    }
-
-                    break;
 
                 case 'tick':
                     if (ngx.shared.nums.get('tick') >= 3) {
@@ -274,15 +183,13 @@ $t->write_file('test.js', <<EOF);
         });
     }
 
-    export default { affinity, fetch, fetch_exception, js_set, multiple_fetches,
-                     file, overrun, test, tick, tick_exception, timer,
-                     timer_exception, timeout_exception, vars, engine };
+    export default { affinity, js_set,  overrun, test, tick, tick_exception,
+                     timer, timer_exception, timeout_exception, vars };
 EOF
 
 $t->run_daemon(\&stream_daemon, port(8090));
 $t->try_run('no js_periodic');
-plan(skip_all => 'not yet') if http_get('/engine') =~ /QuickJS$/m;
-$t->plan(9);
+$t->plan(6);
 $t->waitforsocket('127.0.0.1:' . port(8090));
 
 ###############################################################################
@@ -293,10 +200,6 @@ is(stream('127.0.0.1:' . port(8081))->io('affinity'), 'affinity',
 	'affinity test');
 is(stream('127.0.0.1:' . port(8081))->io('tick'), 'tick', '3x tick test');
 is(stream('127.0.0.1:' . port(8081))->io('timer'), 'timer', 'timer test');
-is(stream('127.0.0.1:' . port(8081))->io('file'), 'file', 'file test');
-is(stream('127.0.0.1:' . port(8081))->io('fetch'), 'fetch', 'fetch test');
-is(stream('127.0.0.1:' . port(8081))->io('multiple_fetches'),
-	'multiple_fetches', 'muliple fetches test');
 is(stream('127.0.0.1:' . port(8081))->io('timeout_exception'),
 	'timeout_exception', 'timeout exception test');
 is(stream('127.0.0.1:' . port(8081))->io('vars'), 'vars', 'vars test');
