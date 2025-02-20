@@ -34,6 +34,7 @@ typedef struct njs_function_s         njs_function_t;
 typedef struct njs_vm_shared_s        njs_vm_shared_t;
 typedef struct njs_object_init_s      njs_object_init_t;
 typedef struct njs_object_prop_s      njs_object_prop_t;
+typedef struct njs_object_propi_s     njs_object_propi_t;
 typedef struct njs_object_type_init_s njs_object_type_init_t;
 typedef struct njs_external_s         njs_external_t;
 
@@ -104,14 +105,15 @@ extern const njs_value_t            njs_value_undefined;
  *   the exception value.
  */
 typedef njs_int_t (*njs_prop_handler_t) (njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+    uint32_t atom_id, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
 typedef njs_int_t (*njs_exotic_keys_t)(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *retval);
 typedef njs_int_t (*njs_function_native_t) (njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t magic8, njs_value_t *retval);
 
 
-typedef enum {
+enum {
     NJS_SYMBOL_INVALID,
     NJS_SYMBOL_ASYNC_ITERATOR,
     NJS_SYMBOL_HAS_INSTANCE,
@@ -126,8 +128,7 @@ typedef enum {
     NJS_SYMBOL_TO_PRIMITIVE,
     NJS_SYMBOL_TO_STRING_TAG,
     NJS_SYMBOL_UNSCOPABLES,
-    NJS_SYMBOL_KNOWN_MAX,
-} njs_wellknown_symbol_t;
+};
 
 
 typedef enum {
@@ -354,8 +355,8 @@ NJS_EXPORT njs_int_t njs_vm_external_create(njs_vm_t *vm, njs_value_t *value,
 NJS_EXPORT njs_external_ptr_t njs_vm_external(njs_vm_t *vm,
     njs_int_t proto_id, const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_external_property(njs_vm_t *vm,
-    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
-    njs_value_t *retval);
+    njs_object_prop_t *prop, uint32_t unused, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval);
 NJS_EXPORT njs_int_t njs_value_property(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *key, njs_value_t *retval);
 NJS_EXPORT njs_int_t njs_value_property_set(njs_vm_t *vm, njs_value_t *value,
@@ -366,11 +367,11 @@ NJS_EXPORT njs_vm_opt_t *njs_vm_options(njs_vm_t *vm);
 NJS_EXPORT njs_int_t njs_error_constructor(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t type, njs_value_t *retval);
 NJS_EXPORT njs_int_t njs_object_prototype_create_constructor(njs_vm_t *vm,
-    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
-    njs_value_t *retval);
+    njs_object_prop_t *prop, uint32_t unused, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval);
 NJS_EXPORT njs_int_t njs_object_prototype_create(njs_vm_t *vm,
-    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
-    njs_value_t *retval);
+    njs_object_prop_t *prop, uint32_t unused, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval);
 
 NJS_EXPORT njs_function_t *njs_vm_function_alloc(njs_vm_t *vm,
     njs_function_native_t native, njs_bool_t shared, njs_bool_t ctor);
@@ -477,7 +478,7 @@ NJS_EXPORT njs_int_t njs_value_external_tag(const njs_value_t *value);
 
 NJS_EXPORT uint16_t njs_vm_prop_magic16(njs_object_prop_t *prop);
 NJS_EXPORT uint32_t njs_vm_prop_magic32(njs_object_prop_t *prop);
-NJS_EXPORT njs_int_t njs_vm_prop_name(njs_vm_t *vm, njs_object_prop_t *prop,
+NJS_EXPORT njs_int_t njs_vm_prop_name(njs_vm_t *vm, uint32_t atom_id,
     njs_str_t *dst);
 
 NJS_EXPORT njs_int_t njs_value_is_null(const njs_value_t *value);
