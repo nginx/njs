@@ -355,6 +355,7 @@ static ngx_http_request_t *ngx_http_qjs_request(JSValueConst val);
 static JSValue ngx_http_qjs_request_make(JSContext *cx, ngx_int_t proto_id,
     ngx_http_request_t *r);
 static void ngx_http_qjs_request_finalizer(JSRuntime *rt, JSValue val);
+static void ngx_http_qjs_periodic_finalizer(JSRuntime *rt, JSValue val);
 #endif
 
 static ngx_pool_t *ngx_http_js_pool(ngx_http_request_t *r);
@@ -1097,7 +1098,7 @@ static JSClassDef ngx_http_qjs_request_class = {
 
 static JSClassDef ngx_http_qjs_periodic_class = {
     "PeriodicSession",
-    .finalizer = NULL,
+    .finalizer = ngx_http_qjs_periodic_finalizer,
 };
 
 
@@ -7548,6 +7549,20 @@ ngx_http_qjs_request_finalizer(JSRuntime *rt, JSValue val)
     JS_FreeValueRT(rt, req->args);
     JS_FreeValueRT(rt, req->request_body);
     JS_FreeValueRT(rt, req->response_body);
+
+    js_free_rt(rt, req);
+}
+
+
+static void
+ngx_http_qjs_periodic_finalizer(JSRuntime *rt, JSValue val)
+{
+    ngx_http_qjs_request_t  *req;
+
+    req = JS_GetOpaque(val, NGX_QJS_CLASS_ID_HTTP_PERIODIC);
+    if (req == NULL) {
+        return;
+    }
 
     js_free_rt(rt, req);
 }

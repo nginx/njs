@@ -191,6 +191,7 @@ static ngx_stream_session_t *ngx_stream_qjs_session(JSValueConst val);
 static JSValue ngx_stream_qjs_session_make(JSContext *cx, ngx_int_t proto_id,
     ngx_stream_session_t *s);
 static void ngx_stream_qjs_session_finalizer(JSRuntime *rt, JSValue val);
+static void ngx_stream_qjs_periodic_finalizer(JSRuntime *rt, JSValue val);
 
 #endif
 
@@ -813,7 +814,7 @@ static JSClassDef ngx_stream_qjs_session_class = {
 
 static JSClassDef ngx_stream_qjs_periodic_class = {
     "Periodic",
-    .finalizer = NULL,
+    .finalizer = ngx_stream_qjs_periodic_finalizer,
 };
 
 
@@ -2806,6 +2807,20 @@ ngx_stream_qjs_session_finalizer(JSRuntime *rt, JSValue val)
 
     for (i = 0; i < NGX_JS_EVENT_MAX; i++) {
         JS_FreeValueRT(rt, ses->callbacks[i]);
+    }
+
+    js_free_rt(rt, ses);
+}
+
+
+static void
+ngx_stream_qjs_periodic_finalizer(JSRuntime *rt, JSValue val)
+{
+    ngx_stream_qjs_session_t  *ses;
+
+    ses = JS_GetOpaque(val, NGX_QJS_CLASS_ID_STREAM_PERIODIC);
+    if (ses == NULL) {
+        return;
     }
 
     js_free_rt(rt, ses);
