@@ -2219,7 +2219,10 @@ ngx_qjs_ext_shared_dict_incr(JSContext *cx, JSValueConst this_val,
         return JS_EXCEPTION;
     }
 
-    if (JS_ToFloat64(cx, &init, argv[2]) < 0) {
+    if (JS_IsUndefined(argv[2])) {
+        init = 0;
+
+    } else if (JS_ToFloat64(cx, &init, argv[2]) < 0) {
         return JS_EXCEPTION;
     }
 
