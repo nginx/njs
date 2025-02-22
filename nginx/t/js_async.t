@@ -84,6 +84,10 @@ http {
         location /set_rv_var {
             return 200 $test_set_rv_var;
         }
+
+        location /await_reject {
+            js_content test.await_reject;
+        }
     }
 }
 
@@ -194,13 +198,26 @@ $t->write_file('test.js', <<EOF);
         r.setReturnValue(`retval: \${a1 + a2}`);
     }
 
+    async function timeout(ms) {
+        return new Promise((resolve, reject) => {
+            setTimeout(() => {
+                reject(new Error('timeout'));
+            }, ms);
+        });
+    }
+
+    async function await_reject(r) {
+        let v = await timeout(1);
+        r.return(200);
+    }
+
     export default {njs:test_njs, set_timeout, set_timeout_data,
                     set_timeout_many, context_var, shared_ctx, limit_rate,
-                    async_content, set_rv_var};
+                    async_content, set_rv_var, await_reject};
 
 EOF
 
-$t->try_run('no njs available')->plan(9);
+$t->try_run('no njs available')->plan(10);
 
 ###############################################################################
 
@@ -214,6 +231,7 @@ like(http_get('/async_content'), qr/retval: AB/, 'async content');
 like(http_get('/set_rv_var'), qr/retval: 30/, 'set return value variable');
 
 http_get('/async_var');
+http_get('/await_reject');
 
 $t->stop();
 
@@ -221,5 +239,7 @@ ok(index($t->read_file('error.log'), 'pending events') > 0,
    'pending js events');
 ok(index($t->read_file('error.log'), 'async operation inside') > 0,
    'async op in var handler');
+ok(index($t->read_file('error.log'), 'js unhandled rejection') > 0,
+   'unhandled rejection');
 
 ###############################################################################
