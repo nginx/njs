@@ -413,7 +413,7 @@ $t->try_run('no njs.fetch');
 
 plan(skip_all => 'not yet') if http_get('/engine') =~ /QuickJS$/m;
 
-$t->plan(36);
+$t->plan(37);
 
 $t->run_daemon(\&http_daemon, port(8082));
 $t->waitforsocket('127.0.0.1:' . port(8082));
@@ -479,6 +479,8 @@ like(http_get('/chain'), qr/200 OK.*SUCCESS$/s, 'fetch chain');
 like(http_get('/header_iter?loc=duplicate_header_large'),
 	qr/\["A:a","B:a","C:a","D:a","E:a","F:a","G:a","H:a","Moo:a, ?b"]$/s,
 	'fetch header duplicate large');
+like(http_get('/header_iter?loc=underscore_header'),
+	qr/\["F_O_O:b","Foo:a"]$/s, 'fetch header underscore');
 
 TODO: {
 local $TODO = 'not yet' unless has_version('0.7.7');
@@ -618,6 +620,14 @@ sub http_daemon {
 				"H: a" . CRLF .
 				"Moo: a" . CRLF .
 				"Moo: b" . CRLF .
+				"Connection: close" . CRLF .
+				CRLF;
+
+		} elsif ($uri eq '/underscore_header') {
+			print $client
+				"HTTP/1.1 200 OK" . CRLF .
+				"Foo: a" . CRLF .
+				"F_O_O: b" . CRLF .
 				"Connection: close" . CRLF .
 				CRLF;
 
