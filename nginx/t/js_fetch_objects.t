@@ -186,8 +186,8 @@ $t->write_file('test.js', <<EOF);
              }, 'A, B, C, D, E, F'],
             ['getAll', () => {
                 var h = new Headers({a: 'X', A: 'Z'});
-                return njs.dump(h.getAll('a'));
-             }, "['X','Z']"],
+                return JSON.stringify(h.getAll('a'));
+             }, '["X","Z"]'],
             ['inherit', () => {
                 var h = new Headers({a: 'X', b: 'Y'});
                 var h2 = new Headers(h);
