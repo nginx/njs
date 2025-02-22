@@ -731,13 +731,6 @@ ngx_engine_njs_call(ngx_js_ctx_t *ctx, ngx_str_t *fname,
         }
     }
 
-    if (ngx_js_unhandled_rejection(ctx)) {
-        ngx_js_exception(vm, &exception);
-
-        ngx_log_error(NGX_LOG_ERR, ctx->log, 0, "js exception: %V", &exception);
-        return NGX_ERROR;
-    }
-
     return njs_rbtree_is_empty(&ctx->waiting_events) ? NGX_OK : NGX_AGAIN;
 }
 
@@ -775,6 +768,7 @@ static void
 ngx_engine_njs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
     ngx_js_loc_conf_t *conf)
 {
+    ngx_str_t           exception;
     ngx_js_event_t     *event;
     njs_rbtree_node_t  *node;
 
@@ -790,6 +784,12 @@ ngx_engine_njs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
             }
 
             node = njs_rbtree_node_successor(&ctx->waiting_events, node);
+        }
+
+        if (ngx_js_unhandled_rejection(ctx)) {
+            ngx_js_exception(e->u.njs.vm, &exception);
+            ngx_log_error(NGX_LOG_ERR, ctx->log, 0,
+                          "js unhandled rejection: %V", &exception);
         }
     }
 
@@ -1071,13 +1071,6 @@ ngx_engine_qjs_call(ngx_js_ctx_t *ctx, ngx_str_t *fname,
         }
     }
 
-    if (ngx_qjs_unhandled_rejection(ctx)) {
-        ngx_qjs_exception(ctx->engine, &exception);
-
-        ngx_log_error(NGX_LOG_ERR, ctx->log, 0, "js exception: %V", &exception);
-        return NGX_ERROR;
-    }
-
     return njs_rbtree_is_empty(&ctx->waiting_events) ? NGX_OK : NGX_AGAIN;
 }
 
@@ -1129,16 +1122,16 @@ void
 ngx_engine_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
     ngx_js_loc_conf_t *conf)
 {
-    uint32_t                    i, length;
-    JSRuntime                  *rt;
-    JSContext                  *cx;
-    JSClassID                   class_id;
-    ngx_qjs_event_t            *event;
-    ngx_js_opaque_t            *opaque;
-    njs_rbtree_node_t          *node;
-    ngx_pool_cleanup_t         *cln;
-    ngx_js_code_entry_t        *pc;
-    ngx_js_rejected_promise_t  *rejected_promise;
+    uint32_t              i, length;
+    ngx_str_t             exception;
+    JSRuntime            *rt;
+    JSContext            *cx;
+    JSClassID             class_id;
+    ngx_qjs_event_t      *event;
+    ngx_js_opaque_t      *opaque;
+    njs_rbtree_node_t    *node;
+    ngx_pool_cleanup_t   *cln;
+    ngx_js_code_entry_t  *pc;
 
     cx = e->u.qjs.ctx;
 
@@ -1156,13 +1149,10 @@ ngx_engine_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
             node = njs_rbtree_node_successor(&ctx->waiting_events, node);
         }
 
-        if (ctx->rejected_promises != NULL) {
-            rejected_promise = ctx->rejected_promises->start;
-
-            for (i = 0; i < ctx->rejected_promises->items; i++) {
-                JS_FreeValue(cx, ngx_qjs_arg(rejected_promise[i].promise));
-                JS_FreeValue(cx, ngx_qjs_arg(rejected_promise[i].message));
-            }
+        if (ngx_qjs_unhandled_rejection(ctx)) {
+            ngx_qjs_exception(ctx->engine, &exception);
+            ngx_log_error(NGX_LOG_ERR, ctx->log, 0,
+                          "js unhandled rejection: %V", &exception);
         }
 
         class_id = JS_GetClassID(ngx_qjs_arg(ctx->args[0]));
@@ -2037,10 +2027,8 @@ ngx_qjs_module_loader(JSContext *cx, const char *module_name, void *opaque)
 static int
 ngx_qjs_unhandled_rejection(ngx_js_ctx_t *ctx)
 {
-    size_t                      len;
     uint32_t                    i;
     JSContext                  *cx;
-    const char                 *str;
     ngx_js_rejected_promise_t  *rejected_promise;
 
     if (ctx->rejected_promises == NULL
@@ -2052,13 +2040,7 @@ ngx_qjs_unhandled_rejection(ngx_js_ctx_t *ctx)
     cx = ctx->engine->u.qjs.ctx;
     rejected_promise = ctx->rejected_promises->start;
 
-    str = JS_ToCStringLen(cx, &len, ngx_qjs_arg(rejected_promise->message));
-    if (njs_slow_path(str == NULL)) {
-        return -1;
-    }
-
-    JS_ThrowTypeError(cx, "unhandled promise rejection: %.*s", (int) len, str);
-    JS_FreeCString(cx, str);
+    JS_Throw(cx, JS_DupValue(cx, ngx_qjs_arg(rejected_promise->message)));
 
     for (i = 0; i < ctx->rejected_promises->items; i++) {
         JS_FreeValue(cx, ngx_qjs_arg(rejected_promise[i].promise));
@@ -3890,8 +3872,6 @@ static njs_int_t
 ngx_js_unhandled_rejection(ngx_js_ctx_t *ctx)
 {
     njs_vm_t                   *vm;
-    njs_int_t                   ret;
-    njs_str_t                   message;
     ngx_js_rejected_promise_t  *rejected_promise;
 
     if (ctx->rejected_promises == NULL
@@ -3903,13 +3883,7 @@ ngx_js_unhandled_rejection(ngx_js_ctx_t *ctx)
     vm = ctx->engine->u.njs.vm;
     rejected_promise = ctx->rejected_promises->start;
 
-    ret = njs_vm_value_to_string(vm, &message,
-                                 njs_value_arg(&rejected_promise->message));
-    if (njs_slow_path(ret != NJS_OK)) {
-        return -1;
-    }
-
-    njs_vm_error(vm, "unhandled promise rejection: %V", &message);
+    njs_vm_throw(vm, njs_value_arg(&rejected_promise->message));
 
     njs_arr_destroy(ctx->rejected_promises);
     ctx->rejected_promises = NULL;
