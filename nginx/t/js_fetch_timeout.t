@@ -95,9 +95,9 @@ $t->write_file('test.js', <<EOF);
         ].map(v => ngx.fetch(v)));
 
         let bs = rs.map(v => ({s: v.status, v: v.value ? v.value.headers.X
-                                                       : v.reason}));
+                                                       : v.reason.message}));
 
-        r.return(200, njs.dump(bs));
+        r.return(200, JSON.stringify(bs));
     }
 
     function normal_reply(r) {
@@ -123,10 +123,10 @@ $t->plan(2);
 ###############################################################################
 
 like(http_get('/normal_timeout'),
-	qr/\[\{s:'fulfilled',v:'N'},\{s:'fulfilled',v:'D'}]$/s,
+	qr/\[\{"s":"fulfilled","v":"N"},\{"s":"fulfilled","v":"D"}]$/s,
 	'normal timeout');
 like(http_get('/short_timeout'),
-	qr/\[\{s:'fulfilled',v:'N'},\{s:'rejected',v:Error: read timed out}]$/s,
+	qr/\[\{"s":"fulfilled","v":"N"},\{"s":"rejected","v":"read timed out"}]$/s,
 	'short timeout');
 
 ###############################################################################
