@@ -303,7 +303,7 @@ $t->write_file('test.js', <<EOF);
 
         p.then(reply => {
             var h = reply.headers[method](r.args.h);
-            r.return(200, njs.dump(h));
+            r.return(200, JSON.stringify(h));
         })
         .catch(e => r.return(501, e.message))
     }
@@ -342,7 +342,7 @@ $t->write_file('test.js', <<EOF);
             }
         }
 
-        r.return(200, njs.dump(out));
+        r.return(200, JSON.stringify(out));
     }
 
     function multi(r) {
@@ -413,7 +413,7 @@ $t->try_run('no njs.fetch');
 
 plan(skip_all => 'not yet') if http_get('/engine') =~ /QuickJS$/m;
 
-$t->plan(36);
+$t->plan(37);
 
 $t->run_daemon(\&http_daemon, port(8082));
 $t->waitforsocket('127.0.0.1:' . port(8082));
@@ -446,23 +446,23 @@ like(http_get('/property?pr=statusText&code=403'), qr/200 OK.*Forbidden$/s,
 	'fetch statusText Forbidden');
 like(http_get('/property?pr=type'), qr/200 OK.*basic$/s,
 	'fetch type');
-like(http_get('/header?loc=duplicate_header&h=BAR'), qr/200 OK.*c$/s,
+like(http_get('/header?loc=duplicate_header&h=BAR'), qr/200 OK.*"c"$/s,
 	'fetch header');
 like(http_get('/header?loc=duplicate_header&h=BARR'), qr/200 OK.*null$/s,
 	'fetch no header');
-like(http_get('/header?loc=duplicate_header&h=foo'), qr/200 OK.*a, ?b$/s,
+like(http_get('/header?loc=duplicate_header&h=foo'), qr/200 OK.*"a, ?b"$/s,
 	'fetch header duplicate');
 like(http_get('/header?loc=duplicate_header&h=BAR&method=getAll'),
-	qr/200 OK.*\['c']$/s, 'fetch getAll header');
+	qr/200 OK.*\["c"]$/s, 'fetch getAll header');
 like(http_get('/header?loc=duplicate_header&h=BARR&method=getAll'),
 	qr/200 OK.*\[]$/s, 'fetch getAll no header');
 like(http_get('/header?loc=duplicate_header&h=FOO&method=getAll'),
-	qr/200 OK.*\['a','b']$/s, 'fetch getAll duplicate');
+	qr/200 OK.*\["a","b"]$/s, 'fetch getAll duplicate');
 like(http_get('/header?loc=duplicate_header&h=bar&method=has'),
 	qr/200 OK.*true$/s, 'fetch header has');
 like(http_get('/header?loc=duplicate_header&h=buz&method=has'),
 	qr/200 OK.*false$/s, 'fetch header does not have');
-like(http_get('/header?loc=chunked/big&h=BAR&readBody=1'), qr/200 OK.*xxx$/s,
+like(http_get('/header?loc=chunked/big&h=BAR&readBody=1'), qr/200 OK.*"xxx"$/s,
 	'fetch chunked header');
 is(get_json('/multi'),
 	'[{"b":"GET::","c":201,"u":"http://127.0.0.1:'.$p0.'/loc"},' .
@@ -477,8 +477,10 @@ like(http_get('/chunked_fail'), qr/200/s, 'fetch chunked fail');
 like(http_get('/chain'), qr/200 OK.*SUCCESS$/s, 'fetch chain');
 
 like(http_get('/header_iter?loc=duplicate_header_large'),
-	qr/\['A:a','B:a','C:a','D:a','E:a','F:a','G:a','H:a','Moo:a, ?b']$/s,
+	qr/\["A:a","B:a","C:a","D:a","E:a","F:a","G:a","H:a","Moo:a, ?b"]$/s,
 	'fetch header duplicate large');
+like(http_get('/header_iter?loc=underscore_header'),
+	qr/\["F_O_O:b","Foo:a"]$/s, 'fetch header underscore');
 
 TODO: {
 local $TODO = 'not yet' unless has_version('0.7.7');
@@ -618,6 +620,14 @@ sub http_daemon {
 				"H: a" . CRLF .
 				"Moo: a" . CRLF .
 				"Moo: b" . CRLF .
+				"Connection: close" . CRLF .
+				CRLF;
+
+		} elsif ($uri eq '/underscore_header') {
+			print $client
+				"HTTP/1.1 200 OK" . CRLF .
+				"Foo: a" . CRLF .
+				"F_O_O: b" . CRLF .
 				"Connection: close" . CRLF .
 				CRLF;
 
