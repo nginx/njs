@@ -29,7 +29,6 @@ let rsa_tsuite = {
     name: "RSA-OAEP decoding",
     T: test,
     prepare_args: (v) => v,
-    opts: { },
 
     tests: [
         { pem: "rsa.pkcs8", src: "text.base64.rsa-oaep.enc", expected: "WAKAWAKA" },

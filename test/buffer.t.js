@@ -86,7 +86,6 @@ let concat_tsuite = {
         return 'SUCCESS';
     },
 
-    opts: {},
     tests: [
         { buffers: [ Buffer.from('abc'),
                      Buffer.from(new Uint8Array([0x64, 0x65, 0x66]).buffer, 1) ],
@@ -111,8 +110,6 @@ let compare_tsuite = {
 
         return 'SUCCESS';
     },
-
-    opts: {},
 
     tests: [
         { buf1: Buffer.from('abc'), buf2: Buffer.from('abc'), expected: 0 },
@@ -149,8 +146,6 @@ let comparePrototype_tsuite = {
 
         return 'SUCCESS';
     },
-
-    opts: {},
 
     tests: [
         { buf: Buffer.from('abc'), target: Buffer.from('abc'), expected: 0 },
@@ -200,8 +195,6 @@ let copy_tsuite = {
         return 'SUCCESS';
     },
 
-    opts: {},
-
     tests: [
         { buf: Buffer.from('abcdef'), target: Buffer.from('123456'),
           expected: 6, expected_buf: 'abcdef' },
@@ -236,7 +229,6 @@ let equals_tsuite = {
         return 'SUCCESS';
     },
 
-    opts: {},
     tests: [
 
         { buf1: Buffer.from('abc'), buf2: Buffer.from('abc'), expected: true },
@@ -271,7 +263,6 @@ let fill_tsuite = {
         return 'SUCCESS';
     },
 
-    opts: {},
     tests: [
         { buf: Buffer.from('abc'), value: 0x61, expected: 'aaa' },
         { buf: Buffer.from('abc'), value: 0x61, expected: 'aaa', offset: 0, end: 3 },
@@ -430,8 +421,6 @@ let includes_tsuite = {
         return 'SUCCESS';
     },
 
-    opts: {},
-
     tests: [
         { buf: Buffer.from('abcdef'), value: 'abc', expected: true },
         { buf: Buffer.from('abcdef'), value: 'def', expected: true },
@@ -454,8 +443,6 @@ let indexOf_tsuite = {
 
         return 'SUCCESS';
     },
-
-    opts: {},
 
     tests: [
         { buf: Buffer.from('abcdef'), value: 'abc', expected: 0 },
@@ -503,8 +490,6 @@ let isBuffer_tsuite = {
         return 'SUCCESS';
     },
 
-    opts: {},
-
     tests: [
         { value: Buffer.from('α'), expected: true },
         { value: new Uint8Array(10), expected: false },
@@ -525,8 +510,6 @@ let isEncoding_tsuite = {
 
         return 'SUCCESS';
     },
-
-    opts: {},
 
     tests: [
         { value: 'utf-8', expected: true },
@@ -575,8 +558,6 @@ let lastIndexOf_tsuite = {
 
         return 'SUCCESS';
     },
-
-    opts: {},
 
     tests: [
         { buf: Buffer.from('abcdef'), value: 'abc', expected: 0 },
@@ -640,8 +621,6 @@ let readXIntXX_tsuite = {
         return 'SUCCESS';
     },
 
-    opts: {},
-
     tests: [
         { buf: Buffer.from([0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff]), offset: 0,
           expected: [ -86,170,-17494,-21829,48042,43707,-573785174,-1430532899,3721182122,2864434397 ] },
@@ -699,8 +678,6 @@ let readFloat_tsuite = {
         return 'SUCCESS';
     },
 
-    opts: {},
-
     tests: [
         {}
     ],
@@ -726,8 +703,6 @@ let readGeneric_tsuite = {
 
         return 'SUCCESS';
     },
-
-    opts: {},
 
     tests: [
         { buf: Buffer.from([0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff]), offset: 0, length: 1,
@@ -767,8 +742,6 @@ let slice_tsuite = {
         return 'SUCCESS';
     },
 
-    opts: {},
-
     tests: [
         { buf: Buffer.from('abcdef'), start: 1, expected: 'bcdef' },
         { buf: Buffer.from('abcdef'), start: 1, end: 3, expected: 'bc' },
@@ -794,8 +767,6 @@ let subarray_tsuite = {
 
         return 'SUCCESS';
     },
-
-    opts: {},
 
     tests: [
         { buf: Buffer.from('abcdef'), start: 0, end: 3, expected: 'Zbc' },
@@ -841,8 +812,6 @@ let toJSON_tsuite = {
 
         return 'SUCCESS';
     },
-
-    opts: {},
 
     tests: [
         { value: '', expected: { type: 'Buffer', data: [] } },
@@ -912,8 +881,6 @@ let write_tsuite = {
         return 'SUCCESS';
     },
 
-    opts: {},
-
     tests: [
         { value: 'abc', expected: 3, expected_buf: 'abcZZZZZZZ' },
         { value: 'abc', offset: 1, expected: 3, expected_buf: 'ZabcZZZZZZ' },
@@ -955,8 +922,6 @@ let writeXIntXX_tsuite = {
         return 'SUCCESS';
     },
 
-    opts: {},
-
     tests: [
         { write: 'writeInt8', value: 0xaa, exception: 'RangeError: Index out of range' },
         { write: 'writeInt8', value: 0x00, offset: 3, expected: 4, expected_buf: '5a5a5a005a5a5a5a5a5a' },
@@ -994,8 +959,6 @@ let writeGeneric_tsuite = {
 
         return 'SUCCESS';
     },
-
-    opts: {},
 
     tests: [
         { write: 'writeUIntLE', value: 0xaa, length: 1,

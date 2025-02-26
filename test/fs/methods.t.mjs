@@ -1008,7 +1008,6 @@ let readSync_tsuite = {
     skip: () => (!has_buffer()),
     T: read_test,
     prepare_args: p,
-    opts: {},
     get tests() { return read_tests() },
 };
 
@@ -1017,7 +1016,6 @@ let readFh_tsuite = {
     skip: () => (!has_buffer()),
     T: readFh_test,
     prepare_args: p,
-    opts: {},
     get tests() { return read_tests() },
 };
 
@@ -1213,7 +1211,6 @@ let writeSync_tsuite = {
     skip: () => (!has_buffer()),
     T: write_test,
     prepare_args: p,
-    opts: {},
     get tests() { return write_tests() },
 };
 
@@ -1222,7 +1219,6 @@ let writeFh_tsuite = {
     skip: () => (!has_buffer()),
     T: writeFh_test,
     prepare_args: p,
-    opts: {},
     get tests() { return write_tests() },
 };
 
