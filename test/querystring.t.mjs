@@ -17,8 +17,6 @@ let escape_tsuite = {
         return 'SUCCESS';
     },
 
-    opts: { },
-
     tests: [
         { value: '', expected: '' },
         { value: 'baz=fuz', expected: 'baz%3Dfuz' },
@@ -61,8 +59,6 @@ let parse_tsuite = {
 
         return 'SUCCESS';
     },
-
-    opts: { },
 
     tests: [
         { value: '', expected: {} },
@@ -165,8 +161,6 @@ let stringify_tsuite = {
         return 'SUCCESS';
     },
 
-    opts: { },
-
     tests: [
         { obj: {}, expected: '' },
         { obj: { baz:'fuz', muz:'tax' }, expected: 'baz=fuz&muz=tax' },
@@ -215,8 +209,6 @@ let unescape_tsuite = {
 
         return 'SUCCESS';
     },
-
-    opts: { },
 
     tests: [
         { value: '', expected: '' },

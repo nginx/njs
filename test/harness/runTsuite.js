@@ -29,7 +29,7 @@ async function run(tlist) {
                 let prepare_args = ts.prepare_args ? ts.prepare_args
                                                    : default_prepare_args;
 
-                return ts.T(prepare_args(t, ts.opts));
+                return ts.T(prepare_args(t, ts.opts ? ts.opts : {}));
 
             } catch (e) {
                 return Promise.reject(e);

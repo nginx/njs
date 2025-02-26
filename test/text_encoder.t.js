@@ -26,8 +26,6 @@ let encode_tsuite = {
         return 'SUCCESS';
     },
 
-    opts: {},
-
     tests: [
         { value: "", expected: [] },
         { value: "abc", expected: [97, 98, 99] },
@@ -57,8 +55,6 @@ let encodeinto_tsuite = {
 
         return 'SUCCESS';
     },
-
-    opts: {},
 
     tests: [
         { value: "", dest: new Uint8Array(4), expected: [], read: 0 },
