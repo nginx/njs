@@ -40,7 +40,6 @@ let stream_tsuite = {
         return 'SUCCESS';
     },
 
-    prepare_args: p,
     opts: {},
 
     tests: [
@@ -96,7 +95,6 @@ let fatal_tsuite = {
         return 'SUCCESS';
     },
 
-    prepare_args: p,
     opts: {},
 
     tests: [
@@ -126,7 +124,6 @@ let ignoreBOM_tsuite = {
         return 'SUCCESS';
     },
 
-    prepare_args: p,
     opts: {},
 
     tests: [
