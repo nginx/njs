@@ -5,13 +5,6 @@ flags: [async]
 
 import zlib from 'zlib';
 
-function p(args, default_opts) {
-    let params = merge({}, default_opts);
-    params = merge(params, args);
-
-    return params;
-}
-
 let deflateSync_tsuite = {
     name: "deflateSync()/deflateRawSync() tests",
     skip: () => !zlib.deflateRawSync,
@@ -29,7 +22,7 @@ let deflateSync_tsuite = {
 
         return 'SUCCESS';
     },
-    prepare_args: p,
+
     opts: { raw: true },
 
     tests: [
@@ -72,7 +65,7 @@ let inflateSync_tsuite = {
 
         return 'SUCCESS';
     },
-    prepare_args: p,
+
     opts: { raw: true },
 
     tests: [

@@ -271,18 +271,10 @@ async function signatureSAML(signature, key_data, produce) {
                                       signedInfoC14n);
 }
 
-function p(args, default_opts) {
-    let params = merge({}, default_opts);
-    params = merge(params, args);
-
-    return params;
-}
-
 let saml_verify_tsuite = {
     name: "SAML verify",
     skip: () => (!has_njs() || !has_webcrypto() || !has_xml()),
     T: verify,
-    prepare_args: p,
     opts: {
         key: { fmt: "spki", file: "rsa.spki" },
     },

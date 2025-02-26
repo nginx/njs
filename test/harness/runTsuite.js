@@ -26,7 +26,10 @@ async function run(tlist) {
                     return Promise.resolve("SKIPPED");
                 }
 
-                return ts.T(ts.prepare_args(t, ts.opts));
+                let prepare_args = ts.prepare_args ? ts.prepare_args
+                                                   : default_prepare_args;
+
+                return ts.T(prepare_args(t, ts.opts));
 
             } catch (e) {
                 return Promise.reject(e);
@@ -55,6 +58,13 @@ async function run(tlist) {
             console.log(`${ts.name} FAILED: [${passed}/${ts.tests.length}]`);
         }
     }
+}
+
+function default_prepare_args(args, default_opts) {
+    let params = merge({}, default_opts);
+    params = merge(params, args);
+
+    return params;
 }
 
 function merge(to, from) {

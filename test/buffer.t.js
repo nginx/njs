@@ -3,13 +3,6 @@ includes: [compatBuffer.js, runTsuite.js, compareArray.js]
 flags: [async]
 ---*/
 
-function p(args, default_opts) {
-    let params = merge({}, default_opts);
-    params = merge(params, args);
-
-    return params;
-}
-
 let alloc_tsuite = {
     name: "Buffer.alloc() tests",
     skip: () => (!has_buffer()),
@@ -23,7 +16,6 @@ let alloc_tsuite = {
         return 'SUCCESS';
     },
 
-    prepare_args: p,
     opts: { encoding: 'utf-8' },
 
     tests: [
@@ -56,7 +48,6 @@ let byteLength_tsuite = {
         return 'SUCCESS';
     },
 
-    prepare_args: p,
     opts: { encoding: 'utf-8' },
 
     tests: [
@@ -95,7 +86,6 @@ let concat_tsuite = {
         return 'SUCCESS';
     },
 
-    prepare_args: p,
     opts: {},
     tests: [
         { buffers: [ Buffer.from('abc'),
@@ -122,7 +112,6 @@ let compare_tsuite = {
         return 'SUCCESS';
     },
 
-    prepare_args: p,
     opts: {},
 
     tests: [
@@ -161,7 +150,6 @@ let comparePrototype_tsuite = {
         return 'SUCCESS';
     },
 
-    prepare_args: p,
     opts: {},
 
     tests: [
@@ -212,7 +200,6 @@ let copy_tsuite = {
         return 'SUCCESS';
     },
 
-    prepare_args: p,
     opts: {},
 
     tests: [
@@ -249,7 +236,6 @@ let equals_tsuite = {
         return 'SUCCESS';
     },
 
-    prepare_args: p,
     opts: {},
     tests: [
 
@@ -285,7 +271,6 @@ let fill_tsuite = {
         return 'SUCCESS';
     },
 
-    prepare_args: p,
     opts: {},
     tests: [
         { buf: Buffer.from('abc'), value: 0x61, expected: 'aaa' },
@@ -336,7 +321,7 @@ let from_tsuite = {
 
         return 'SUCCESS';
     },
-    prepare_args: p,
+
     opts: { fmt: 'utf-8' },
 
     tests: [
@@ -445,7 +430,6 @@ let includes_tsuite = {
         return 'SUCCESS';
     },
 
-    prepare_args: p,
     opts: {},
 
     tests: [
@@ -471,7 +455,6 @@ let indexOf_tsuite = {
         return 'SUCCESS';
     },
 
-    prepare_args: p,
     opts: {},
 
     tests: [
@@ -519,7 +502,7 @@ let isBuffer_tsuite = {
 
         return 'SUCCESS';
     },
-    prepare_args: p,
+
     opts: {},
 
     tests: [
@@ -543,7 +526,6 @@ let isEncoding_tsuite = {
         return 'SUCCESS';
     },
 
-    prepare_args: p,
     opts: {},
 
     tests: [
@@ -594,7 +576,6 @@ let lastIndexOf_tsuite = {
         return 'SUCCESS';
     },
 
-    prepare_args: p,
     opts: {},
 
     tests: [
@@ -659,7 +640,6 @@ let readXIntXX_tsuite = {
         return 'SUCCESS';
     },
 
-    prepare_args: p,
     opts: {},
 
     tests: [
@@ -719,7 +699,6 @@ let readFloat_tsuite = {
         return 'SUCCESS';
     },
 
-    prepare_args: p,
     opts: {},
 
     tests: [
@@ -748,7 +727,6 @@ let readGeneric_tsuite = {
         return 'SUCCESS';
     },
 
-    prepare_args: p,
     opts: {},
 
     tests: [
@@ -789,7 +767,6 @@ let slice_tsuite = {
         return 'SUCCESS';
     },
 
-    prepare_args: p,
     opts: {},
 
     tests: [
@@ -818,7 +795,6 @@ let subarray_tsuite = {
         return 'SUCCESS';
     },
 
-    prepare_args: p,
     opts: {},
 
     tests: [
@@ -841,7 +817,6 @@ let swap_tsuite = {
         return 'SUCCESS';
     },
 
-    prepare_args: p,
     opts: { swap: 'swap16' },
 
     tests: [
@@ -867,8 +842,8 @@ let toJSON_tsuite = {
         return 'SUCCESS';
     },
 
-    prepare_args: p,
     opts: {},
+
     tests: [
         { value: '', expected: { type: 'Buffer', data: [] } },
         { value: 'αβγ', expected: { type: 'Buffer', data: [0xCE, 0xB1, 0xCE, 0xB2, 0xCE, 0xB3] } },
@@ -893,7 +868,7 @@ let toString_tsuite = {
 
         return 'SUCCESS';
     },
-    prepare_args: p,
+
     opts: { fmt: 'utf-8' },
 
     tests: [
@@ -937,7 +912,6 @@ let write_tsuite = {
         return 'SUCCESS';
     },
 
-    prepare_args: p,
     opts: {},
 
     tests: [
@@ -981,7 +955,6 @@ let writeXIntXX_tsuite = {
         return 'SUCCESS';
     },
 
-    prepare_args: p,
     opts: {},
 
     tests: [
@@ -1022,7 +995,6 @@ let writeGeneric_tsuite = {
         return 'SUCCESS';
     },
 
-    prepare_args: p,
     opts: {},
 
     tests: [

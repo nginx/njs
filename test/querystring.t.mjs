@@ -16,12 +16,7 @@ let escape_tsuite = {
 
         return 'SUCCESS';
     },
-    prepare_args: (args, default_opts) => {
-        let params = merge({}, default_opts);
-        params = merge(params, args);
 
-        return params;
-    },
     opts: { },
 
     tests: [
@@ -66,12 +61,7 @@ let parse_tsuite = {
 
         return 'SUCCESS';
     },
-    prepare_args: (args, default_opts) => {
-        let params = merge({}, default_opts);
-        params = merge(params, args);
 
-        return params;
-    },
     opts: { },
 
     tests: [
@@ -174,12 +164,7 @@ let stringify_tsuite = {
 
         return 'SUCCESS';
     },
-    prepare_args: (args, default_opts) => {
-        let params = merge({}, default_opts);
-        params = merge(params, args);
 
-        return params;
-    },
     opts: { },
 
     tests: [
@@ -230,12 +215,7 @@ let unescape_tsuite = {
 
         return 'SUCCESS';
     },
-    prepare_args: (args, default_opts) => {
-        let params = merge({}, default_opts);
-        params = merge(params, args);
 
-        return params;
-    },
     opts: { },
 
     tests: [
