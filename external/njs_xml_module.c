@@ -181,7 +181,7 @@ static njs_external_t  njs_ext_xml[] = {
         .enumerable = 1,
         .u.method = {
             .native = njs_xml_ext_canonicalization,
-            .magic8 = 3,
+            .magic8 = 2,
         }
     },
 
