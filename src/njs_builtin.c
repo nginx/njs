@@ -107,7 +107,7 @@ static const njs_object_type_init_t *const
 
 
 /* P1990 signals from `man 7 signal` are supported */
-static njs_signal_entry_t njs_signals_table[] = {
+static const njs_signal_entry_t njs_signals_table[] = {
     { njs_str("ABRT"), SIGABRT },
     { njs_str("ALRM"), SIGALRM },
     { njs_str("CHLD"), SIGCHLD },
@@ -1475,11 +1475,11 @@ static njs_int_t
 njs_ext_process_kill(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t magic, njs_value_t *retval)
 {
-    int                 signal;
-    njs_str_t           str;
-    njs_uint_t          pid;
-    njs_value_t         *arg;
-    njs_signal_entry_t  *s;
+    int                       signal;
+    njs_str_t                 str;
+    njs_uint_t                pid;
+    njs_value_t               *arg;
+    const njs_signal_entry_t  *s;
 
     arg = njs_arg(args, nargs, 1);
     if (!njs_value_is_number(arg)) {

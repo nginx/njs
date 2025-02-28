@@ -23,7 +23,7 @@
     ((size << 2) | (sign << 1) | little)
 
 
-static njs_buffer_encoding_t  njs_buffer_encodings[] =
+static const njs_buffer_encoding_t  njs_buffer_encodings[] =
 {
     {
         njs_str("utf-8"),
@@ -98,7 +98,7 @@ static njs_int_t njs_buffer_constant(njs_vm_t *vm,
 static njs_int_t njs_buffer_init(njs_vm_t *vm);
 
 
-static njs_external_t  njs_ext_buffer[] = {
+static const njs_external_t  njs_ext_buffer[] = {
 
     {
         .flags = NJS_EXTERN_PROPERTY,
@@ -2409,8 +2409,8 @@ njs_buffer_prototype_to_json(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 const njs_buffer_encoding_t *
 njs_buffer_encoding(njs_vm_t *vm, const njs_value_t *value, njs_bool_t throw)
 {
-    njs_str_t              name;
-    njs_buffer_encoding_t  *encoding;
+    njs_str_t                    name;
+    const njs_buffer_encoding_t  *encoding;
 
     if (njs_slow_path(!njs_is_string(value))) {
         if (njs_is_defined(value)) {
