@@ -8,18 +8,6 @@
 #include <njs_main.h>
 
 
-typedef struct {
-    uint32_t          cells[NJS_ATOM_HASH_MASK + 1];
-    struct {
-        uint32_t     hash_mask;
-        uint32_t     elts_size;
-        uint32_t     elts_count;
-        uint32_t     elts_deleted_count;
-    } descr;
-    njs_flathsh_elt_t elts[NJS_ATOM_SIZE];
-} njs_atom_hash_chunk_t;
-
-
 #ifdef NJS_DEF_VW
     #undef NJS_DEF_VW
     #undef NJS_DEF_VS
@@ -33,21 +21,6 @@ typedef struct {
 
 const njs_atom_values_t njs_atom = {
     #include <njs_atom_defs.h>
-};
-
-
-static njs_atom_hash_chunk_t njs_atom_hash_chunk = {
-    .descr = {
-        .hash_mask = NJS_ATOM_HASH_MASK,
-        .elts_size = NJS_ATOM_SIZE,
-        .elts_count = 0,
-        .elts_deleted_count = 0,
-    }
-};
-
-
-njs_flathsh_t njs_atom_hash = {
-    .slot = &njs_atom_hash_chunk.descr,
 };
 
 
@@ -99,29 +72,28 @@ const njs_flathsh_proto_t  njs_atom_hash_proto
 {
     0,
     njs_atom_hash_test,
-    NULL,
-    NULL,
+    njs_lvlhsh_alloc,
+    njs_lvlhsh_free,
 };
 
 
-void
-njs_atom_hash_init()
+njs_int_t
+njs_atom_hash_init(njs_vm_t *vm)
 {
     u_char               *start;
     size_t               len;
+    njs_int_t            ret;
     njs_uint_t           n;
     const njs_value_t    *value, *values;
     njs_flathsh_query_t  lhq;
-//?? bad
-    if (njs_atom_hash_chunk.descr.elts_count != 0) {
-        return;
-    }
 
     values = &njs_atom.vw_invalid;
 
+    njs_lvlhsh_init(vm->atom_hash);
+
     lhq.replace = 0;
     lhq.proto = &njs_atom_hash_proto;
-    lhq.pool = NULL; /* Not used. */
+    lhq.pool = vm->mem_pool;
 
     for (n = 0; n < NJS_ATOM_SIZE; n++) {
         value = &values[n];
@@ -131,8 +103,11 @@ njs_atom_hash_init()
 
             lhq.value = (void *) value;
 
-            /* never failed. */
-            njs_flathsh_insert(&njs_atom_hash, &lhq);
+            ret = njs_flathsh_insert(vm->atom_hash, &lhq);
+            if (njs_slow_path(ret != NJS_OK)) {
+                njs_internal_error(vm, "flathsh insert/replace failed");
+                return NJS_ERROR;
+            }
         }
 
 
@@ -146,12 +121,15 @@ njs_atom_hash_init()
 
             lhq.value = (void *) value;
 
-            /* never failed. */
-            njs_flathsh_insert(&njs_atom_hash, &lhq);
+            ret = njs_flathsh_insert(vm->atom_hash, &lhq);
+            if (njs_slow_path(ret != NJS_OK)) {
+                njs_internal_error(vm, "flathsh insert/replace failed");
+                return NJS_ERROR;
+            }
         }
     }
 
-    return;
+    return NJS_OK;
 };
 
 

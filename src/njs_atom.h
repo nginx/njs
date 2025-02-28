@@ -8,8 +8,6 @@
 #ifndef _NJS_ATOM_H_INCLUDED_
 #define _NJS_ATOM_H_INCLUDED_
 
-#define NJS_ATOM_HASH_MASK         0x3FF
-
 
 #ifdef NJS_DEF_VW
     #undef NJS_DEF_VW
@@ -46,13 +44,11 @@ enum {
 
 #include <njs_atom_map.h>
 
-void njs_atom_hash_init(void);
+njs_int_t njs_atom_hash_init(njs_vm_t *vm);
 njs_int_t njs_atom_atomize_key(njs_vm_t *vm, njs_value_t *value);
 njs_int_t njs_atom_atomize_key_s(njs_vm_t *vm, njs_value_t *value);
 
-
 extern const njs_atom_values_t    njs_atom;
-extern njs_flathsh_t              njs_atom_hash;
 extern const njs_flathsh_proto_t  njs_atom_hash_proto;
 
 njs_inline njs_int_t

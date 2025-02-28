@@ -160,22 +160,21 @@ njs_builtin_objects_create(njs_vm_t *vm)
 
     njs_lvlhsh_init(&shared->values_hash);
 
-    njs_atom_hash_init();
+    vm->atom_hash = &vm->atom_hash_cell;
 
-    /* njs_lvlhsh_init(&vm->atom_hash_shared_cell); done by zalign. */
-    /* vm->atom_hash_atom_id_shared_cell = 0; done by zalign */
-
-    ret = njs_flathsh_alloc_copy(vm->mem_pool, &vm->atom_hash_cell,
-                                 &njs_atom_hash);
+    ret = njs_atom_hash_init(vm);
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
-    vm->atom_hash = &vm->atom_hash_cell;
+
+    /* njs_lvlhsh_init(&vm->atom_hash_shared_cell); done by zalign. */
+    /* vm->atom_hash_atom_id_shared_cell = 0; done by zalign */
 
     vm->atom_hash_mem_pool = vm->mem_pool;
 
     vm->atom_hash_atom_id_cell = NJS_ATOM_SIZE;
     vm->atom_hash_atom_id = &vm->atom_hash_atom_id_cell;
+
 
     pattern = njs_regexp_pattern_create(vm, (u_char *) "(?:)",
                                         njs_length("(?:)"), 0);
