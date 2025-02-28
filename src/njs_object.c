@@ -154,7 +154,7 @@ njs_object_value_alloc(njs_vm_t *vm, njs_uint_t prototype_index, size_t extra,
 
 njs_int_t
 njs_object_hash_create(njs_vm_t *vm, njs_flathsh_obj_t *hash,
-    njs_object_propi_t *prop, njs_uint_t n)
+    const njs_object_propi_t *prop, njs_uint_t n)
 {
     njs_int_t                ret;
     njs_flathsh_obj_query_t  lhq;
@@ -164,14 +164,6 @@ njs_object_hash_create(njs_vm_t *vm, njs_flathsh_obj_t *hash,
     lhq.pool = vm->mem_pool;
 
     while (n != 0) {
-        if ((prop->type & NJS_PROPERTY_NOT_INIT) != 0) {
-            prop->type = prop->type & ~NJS_PROPERTY_NOT_INIT;
-
-            if (prop->type != NJS_ACCESSOR) {
-                prop->u.value = *prop->u.pvalue;
-            }
-        }
-
         lhq.key_hash  = prop->atom_id;
 
         lhq.value = (void *) prop;
@@ -2229,11 +2221,11 @@ njs_property_prototype_create(njs_vm_t *vm, njs_flathsh_obj_t *hash,
 }
 
 
-static njs_object_propi_t  njs_object_constructor_properties[] =
+static const njs_object_propi_t  njs_object_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(1),
 
-    NJS_DECLARE_PROP_NAME(vs_Object),
+    NJS_DECLARE_PROP_NAME(Object),
 
     NJS_DECLARE_PROP_HANDLER(vs_prototype, njs_object_prototype_create,
                              0, 0),
@@ -2296,7 +2288,7 @@ static njs_object_propi_t  njs_object_constructor_properties[] =
 };
 
 
-njs_object_init_t  njs_object_constructor_init = {
+static const njs_object_init_t  njs_object_constructor_init = {
     njs_object_constructor_properties,
     njs_nitems(njs_object_constructor_properties),
 };
@@ -2746,7 +2738,7 @@ njs_object_prototype_is_prototype_of(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_object_propi_t  njs_object_prototype_properties[] =
+static const njs_object_propi_t  njs_object_prototype_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(vs___proto__, njs_object_prototype_proto,
                              0, NJS_OBJECT_PROP_VALUE_CW),
@@ -2772,7 +2764,7 @@ static njs_object_propi_t  njs_object_prototype_properties[] =
 };
 
 
-const njs_object_init_t  njs_object_prototype_init = {
+static const njs_object_init_t  njs_object_prototype_init = {
     njs_object_prototype_properties,
     njs_nitems(njs_object_prototype_properties),
 };

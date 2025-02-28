@@ -427,11 +427,11 @@ njs_number_is_finite(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_object_propi_t  njs_number_constructor_properties[] =
+static const njs_object_propi_t  njs_number_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(1),
 
-    NJS_DECLARE_PROP_NAME(vs_Number),
+    NJS_DECLARE_PROP_NAME(Number),
 
     NJS_DECLARE_PROP_HANDLER(vs_prototype, njs_object_prototype_create,
                              0, 0),
@@ -878,7 +878,7 @@ njs_number_to_string_radix(njs_vm_t *vm, njs_value_t *string,
 }
 
 
-static njs_object_propi_t  njs_number_prototype_properties[] =
+static const njs_object_propi_t  njs_number_prototype_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(vs___proto__,
                              njs_primitive_prototype_get_proto, 0,
@@ -905,7 +905,7 @@ static njs_object_propi_t  njs_number_prototype_properties[] =
 };
 
 
-const njs_object_init_t  njs_number_prototype_init = {
+static const njs_object_init_t  njs_number_prototype_init = {
     njs_number_prototype_properties,
     njs_nitems(njs_number_prototype_properties),
 };

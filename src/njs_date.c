@@ -1124,11 +1124,11 @@ njs_date_number_parse(int64_t *value, const u_char *p, const u_char *end,
 }
 
 
-static njs_object_propi_t  njs_date_constructor_properties[] =
+static const njs_object_propi_t  njs_date_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(7),
 
-    NJS_DECLARE_PROP_NAME(vs_Date),
+    NJS_DECLARE_PROP_NAME(Date),
 
     NJS_DECLARE_PROP_HANDLER(vs_prototype, njs_object_prototype_create,
                              0, 0),
@@ -1468,7 +1468,7 @@ njs_date_prototype_to_json(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_object_propi_t  njs_date_prototype_properties[] =
+static const njs_object_propi_t  njs_date_prototype_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(vs___proto__,
                              njs_primitive_prototype_get_proto, 0,

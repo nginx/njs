@@ -606,11 +606,11 @@ njs_array_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_object_propi_t  njs_array_constructor_properties[] =
+static const njs_object_propi_t  njs_array_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(1),
 
-    NJS_DECLARE_PROP_NAME(vs_Array),
+    NJS_DECLARE_PROP_NAME(Array),
 
     NJS_DECLARE_PROP_HANDLER(vs_prototype, njs_object_prototype_create,
                              0, 0),
@@ -3188,7 +3188,7 @@ njs_array_prototype_iterator_obj(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_object_propi_t  njs_array_prototype_properties[] =
+static const njs_object_propi_t  njs_array_prototype_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(vs_length, njs_array_length, 0,
                              NJS_OBJECT_PROP_VALUE_W),

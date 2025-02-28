@@ -328,10 +328,10 @@ njs_function_prototype_thrower(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-njs_object_propi_t  njs_arguments_object_instance_properties[] =
+static const njs_object_propi_t  njs_arguments_object_instance_properties[] =
 {
     {
-        .type = NJS_ACCESSOR | NJS_PROPERTY_NOT_INIT,
+        .type = NJS_ACCESSOR,
         .atom_id = njs_atom_vs_callee,
         .u.accessor = njs_accessor(njs_function_prototype_thrower, 0,
                                    njs_function_prototype_thrower, 0),
@@ -1156,11 +1156,11 @@ fail:
 }
 
 
-static njs_object_propi_t  njs_function_constructor_properties[] =
+static const njs_object_propi_t  njs_function_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(1),
 
-    NJS_DECLARE_PROP_NAME(vs_Function),
+    NJS_DECLARE_PROP_NAME(Function),
 
     NJS_DECLARE_PROP_HANDLER(vs_prototype, njs_object_prototype_create,
                              0, 0),
@@ -1431,11 +1431,11 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_object_propi_t  njs_function_prototype_properties[] =
+static const njs_object_propi_t  njs_function_prototype_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(0),
 
-    NJS_DECLARE_PROP_NAME(vs_),
+    NJS_DECLARE_PROP_NAME(),
 
     NJS_DECLARE_PROP_HANDLER(vs_constructor,
                              njs_object_prototype_create_constructor, 0,
@@ -1449,7 +1449,7 @@ static njs_object_propi_t  njs_function_prototype_properties[] =
     NJS_DECLARE_PROP_NATIVE(vs_bind, njs_function_prototype_bind, 1, 0),
 
     {
-        .type = NJS_ACCESSOR | NJS_PROPERTY_NOT_INIT,
+        .type = NJS_ACCESSOR,
         .atom_id = njs_atom_vs_caller,
         .u.accessor = njs_accessor(njs_function_prototype_thrower, 0,
                                    njs_function_prototype_thrower, 0),
@@ -1458,7 +1458,7 @@ static njs_object_propi_t  njs_function_prototype_properties[] =
     },
 
     {
-        .type = NJS_ACCESSOR | NJS_PROPERTY_NOT_INIT,
+        .type = NJS_ACCESSOR,
         .atom_id = njs_atom_vs_arguments,
         .u.accessor = njs_accessor(njs_function_prototype_thrower, 0,
                                    njs_function_prototype_thrower, 0),
@@ -1474,7 +1474,7 @@ static const njs_object_init_t  njs_function_prototype_init = {
 };
 
 
-njs_object_propi_t  njs_function_instance_properties[] =
+static const njs_object_propi_t  njs_function_instance_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(vs_length, njs_function_instance_length,
                              0, NJS_OBJECT_PROP_VALUE_C),
@@ -1494,7 +1494,7 @@ const njs_object_init_t  njs_function_instance_init = {
 };
 
 
-njs_object_propi_t  njs_arrow_instance_properties[] =
+static const njs_object_propi_t  njs_arrow_instance_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(vs_length, njs_function_instance_length,
                              0, NJS_OBJECT_PROP_VALUE_C),

@@ -1855,11 +1855,11 @@ done:
 }
 
 
-static njs_object_propi_t  njs_regexp_constructor_properties[] =
+static const njs_object_propi_t  njs_regexp_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(2),
 
-    NJS_DECLARE_PROP_NAME(vs_RegExp),
+    NJS_DECLARE_PROP_NAME(RegExp),
 
     NJS_DECLARE_PROP_HANDLER(vs_prototype, njs_object_prototype_create,
                              0, 0),
@@ -1872,7 +1872,7 @@ static const njs_object_init_t  njs_regexp_constructor_init = {
 };
 
 
-static njs_object_propi_t  njs_regexp_prototype_properties[] =
+static const njs_object_propi_t  njs_regexp_prototype_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(vs_constructor,
                              njs_object_prototype_create_constructor, 0,
@@ -1909,7 +1909,7 @@ static njs_object_propi_t  njs_regexp_prototype_properties[] =
 };
 
 
-njs_object_propi_t  njs_regexp_instance_properties[] =
+static const njs_object_propi_t  njs_regexp_instance_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(vs_lastIndex,
                              njs_regexp_prototype_last_index, 0,

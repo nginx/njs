@@ -1732,11 +1732,11 @@ njs_promise_species(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_object_propi_t  njs_promise_constructor_properties[] =
+static const njs_object_propi_t  njs_promise_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(1),
 
-    NJS_DECLARE_PROP_NAME(vs_Promise),
+    NJS_DECLARE_PROP_NAME(Promise),
 
     NJS_DECLARE_PROP_HANDLER(vs_prototype, njs_object_prototype_create,
                              0, 0),
@@ -1767,13 +1767,13 @@ static const njs_object_init_t  njs_promise_constructor_init = {
 };
 
 
-static njs_object_propi_t  njs_promise_prototype_properties[] =
+static const njs_object_propi_t  njs_promise_prototype_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(vs_constructor,
                              njs_object_prototype_create_constructor, 0,
                              NJS_OBJECT_PROP_VALUE_CW),
 
-    NJS_DECLARE_PROP_VALUE(vw_toStringTag, njs_atom.vs_Promise,
+    NJS_DECLARE_PROP_VALUE(vw_toStringTag, njs_strval(Promise),
                            NJS_OBJECT_PROP_VALUE_C),
 
     NJS_DECLARE_PROP_NATIVE(vs_then, njs_promise_prototype_then, 2, 0),

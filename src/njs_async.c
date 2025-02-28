@@ -161,11 +161,11 @@ njs_async_context_free(njs_vm_t *vm, njs_async_ctx_t *ctx)
 }
 
 
-static njs_object_propi_t  njs_async_constructor_properties[] =
+static const njs_object_propi_t  njs_async_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(1),
 
-    NJS_DECLARE_PROP_NAME(vs_AsyncFunction),
+    NJS_DECLARE_PROP_NAME(AsyncFunction),
 
     NJS_DECLARE_PROP_HANDLER(vs_prototype, njs_object_prototype_create,
                              0, 0),
@@ -178,9 +178,9 @@ static const njs_object_init_t  njs_async_constructor_init = {
 };
 
 
-static njs_object_propi_t  njs_async_prototype_properties[] =
+static const njs_object_propi_t  njs_async_prototype_properties[] =
 {
-    NJS_DECLARE_PROP_VALUE(vw_toStringTag, njs_atom.vs_AsyncFunction,
+    NJS_DECLARE_PROP_VALUE(vw_toStringTag, njs_strval(AsyncFunction),
                            NJS_OBJECT_PROP_VALUE_C),
 
     NJS_DECLARE_PROP_HANDLER(vs_constructor,
@@ -203,7 +203,7 @@ const njs_object_type_init_t  njs_async_function_type_init = {
 };
 
 
-static njs_object_propi_t  njs_async_function_instance_properties[] =
+static const njs_object_propi_t  njs_async_function_instance_properties[] =
 {
     NJS_DECLARE_PROP_HANDLER(vs_length, njs_function_instance_length, 0,
                              NJS_OBJECT_PROP_VALUE_C),

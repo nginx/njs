@@ -168,11 +168,11 @@ njs_symbol_key_for(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_object_propi_t  njs_symbol_constructor_properties[] =
+static const njs_object_propi_t  njs_symbol_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(0),
 
-    NJS_DECLARE_PROP_NAME(vs_Symbol),
+    NJS_DECLARE_PROP_NAME(Symbol),
 
     NJS_DECLARE_PROP_HANDLER(vs_prototype, njs_object_prototype_create,
                              0, 0),
@@ -182,32 +182,32 @@ static njs_object_propi_t  njs_symbol_constructor_properties[] =
     NJS_DECLARE_PROP_NATIVE(vs_keyFor, njs_symbol_key_for, 1, 0),
 
     NJS_DECLARE_PROP_VALUE(vs_asyncIterator,
-                           njs_atom.vw_asyncIterator, 0),
+                           njs_symval(asyncIterator), 0),
 
-    NJS_DECLARE_PROP_VALUE(vs_hasInstance, njs_atom.vw_hasInstance, 0),
+    NJS_DECLARE_PROP_VALUE(vs_hasInstance, njs_symval(hasInstance), 0),
 
     NJS_DECLARE_PROP_VALUE(vs_isConcatSpreadable,
-                           njs_atom.vw_isConcatSpreadable, 0),
+                           njs_symval(isConcatSpreadable), 0),
 
-    NJS_DECLARE_PROP_VALUE(vs_iterator, njs_atom.vw_iterator, 0),
+    NJS_DECLARE_PROP_VALUE(vs_iterator, njs_symval(iterator), 0),
 
-    NJS_DECLARE_PROP_VALUE(vs_match, njs_atom.vw_match, 0),
+    NJS_DECLARE_PROP_VALUE(vs_match, njs_symval(match), 0),
 
-    NJS_DECLARE_PROP_VALUE(vs_matchAll, njs_atom.vw_matchAll, 0),
+    NJS_DECLARE_PROP_VALUE(vs_matchAll, njs_symval(matchAll), 0),
 
-    NJS_DECLARE_PROP_VALUE(vs_replace, njs_atom.vw_replace, 0),
+    NJS_DECLARE_PROP_VALUE(vs_replace, njs_symval(replace), 0),
 
-    NJS_DECLARE_PROP_VALUE(vs_search, njs_atom.vw_search, 0),
+    NJS_DECLARE_PROP_VALUE(vs_search, njs_symval(search), 0),
 
-    NJS_DECLARE_PROP_VALUE(vs_species, njs_atom.vw_species, 0),
+    NJS_DECLARE_PROP_VALUE(vs_species, njs_symval(species), 0),
 
-    NJS_DECLARE_PROP_VALUE(vs_split, njs_atom.vw_split, 0),
+    NJS_DECLARE_PROP_VALUE(vs_split, njs_symval(split), 0),
 
-    NJS_DECLARE_PROP_VALUE(vs_toPrimitive, njs_atom.vw_toPrimitive, 0),
+    NJS_DECLARE_PROP_VALUE(vs_toPrimitive, njs_symval(toPrimitive), 0),
 
-    NJS_DECLARE_PROP_VALUE(vs_toStringTag, njs_atom.vw_toStringTag, 0),
+    NJS_DECLARE_PROP_VALUE(vs_toStringTag, njs_symval(toStringTag), 0),
 
-    NJS_DECLARE_PROP_VALUE(vs_unscopables, njs_atom.vw_unscopables, 0),
+    NJS_DECLARE_PROP_VALUE(vs_unscopables, njs_symval(unscopables), 0),
 };
 
 
@@ -276,9 +276,9 @@ njs_symbol_prototype_description(njs_vm_t *vm, njs_value_t *args,
 }
 
 
-static njs_object_propi_t  njs_symbol_prototype_properties[] =
+static const njs_object_propi_t  njs_symbol_prototype_properties[] =
 {
-    NJS_DECLARE_PROP_VALUE(vw_toStringTag, njs_atom.vs_Symbol,
+    NJS_DECLARE_PROP_VALUE(vw_toStringTag, njs_strval(Symbol),
                            NJS_OBJECT_PROP_VALUE_C),
 
     NJS_DECLARE_PROP_HANDLER(vs___proto__,

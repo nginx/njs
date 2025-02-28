@@ -174,7 +174,7 @@ njs_builtin_objects_create(njs_vm_t *vm)
 
     vm->atom_hash_mem_pool = vm->mem_pool;
 
-    vm->atom_hash_atom_id_cell = njs_atom_hash_atom_id;
+    vm->atom_hash_atom_id_cell = NJS_ATOM_SIZE;
     vm->atom_hash_atom_id = &vm->atom_hash_atom_id_cell;
 
     pattern = njs_regexp_pattern_create(vm, (u_char *) "(?:)",
@@ -1032,9 +1032,9 @@ njs_top_level_constructor(njs_vm_t *vm, njs_object_prop_t *self,
 }
 
 
-static njs_object_propi_t  njs_global_this_object_properties[] =
+static const njs_object_propi_t  njs_global_this_object_properties[] =
 {
-    NJS_DECLARE_PROP_VALUE(vw_toStringTag, njs_atom.vs_global,
+    NJS_DECLARE_PROP_VALUE(vw_toStringTag, njs_strval(global),
                            NJS_OBJECT_PROP_VALUE_C),
 
     /* Global aliases. */
@@ -1241,15 +1241,15 @@ static const njs_object_init_t  njs_global_this_init = {
 };
 
 
-static njs_object_propi_t  njs_njs_object_properties[] =
+static const njs_object_propi_t  njs_njs_object_properties[] =
 {
-    NJS_DECLARE_PROP_VALUE(vw_toStringTag, njs_atom.vs_njs,
+    NJS_DECLARE_PROP_VALUE(vw_toStringTag, njs_strval(njs),
                            NJS_OBJECT_PROP_VALUE_C),
 
-    NJS_DECLARE_PROP_VALUE(vs_engine, njs_atom.vs_njs,
+    NJS_DECLARE_PROP_VALUE(vs_engine, njs_strval(njs),
                            NJS_OBJECT_PROP_VALUE_EC),
 
-    NJS_DECLARE_PROP_VALUE(vs_version, njs_atom.vs_spec_NJS_VERSION,
+    NJS_DECLARE_PROP_VALUE(vs_version, njs_strval(spec_NJS_VERSION),
                            NJS_OBJECT_PROP_VALUE_EC),
 
     NJS_DECLARE_PROP_VALUE(vs_version_number,
@@ -1533,9 +1533,9 @@ njs_ext_process_kill(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_object_propi_t  njs_process_object_properties[] =
+static const njs_object_propi_t  njs_process_object_properties[] =
 {
-    NJS_DECLARE_PROP_VALUE(vw_toStringTag, njs_atom.vs_process,
+    NJS_DECLARE_PROP_VALUE(vw_toStringTag, njs_strval(process),
                            NJS_OBJECT_PROP_VALUE_C),
 
     NJS_DECLARE_PROP_HANDLER(vs_argv, njs_process_object_argv, 0, 0),

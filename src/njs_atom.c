@@ -16,7 +16,7 @@ typedef struct {
         uint32_t     elts_count;
         uint32_t     elts_deleted_count;
     } descr;
-    njs_flathsh_elt_t elts[NJS_ATOM_SIZE+NJS_ATOM_SYMBOL_KNOWN_MAX];
+    njs_flathsh_elt_t elts[NJS_ATOM_SIZE];
 } njs_atom_hash_chunk_t;
 
 
@@ -26,12 +26,12 @@ typedef struct {
 #endif
 
 #define NJS_DEF_VW(name) \
-    .vw_ ## name = njs_symbol(&njs_atom.vs_Symbol_ ## name),
+    .vw_ ## name = njs_symval(name),
 
-#define NJS_DEF_VS(name, str, flags, token) \
-    .vs_ ## name = njs_string(str, flags, token),
+#define NJS_DEF_VS(name) \
+    .vs_ ## name = njs_strval(name),
 
-njs_atom_values_t njs_atom = {
+const njs_atom_values_t njs_atom = {
     #include <njs_atom_defs.h>
 };
 
@@ -39,7 +39,7 @@ njs_atom_values_t njs_atom = {
 static njs_atom_hash_chunk_t njs_atom_hash_chunk = {
     .descr = {
         .hash_mask = NJS_ATOM_HASH_MASK,
-        .elts_size = NJS_ATOM_SIZE+NJS_ATOM_SYMBOL_KNOWN_MAX,
+        .elts_size = NJS_ATOM_SIZE,
         .elts_count = 0,
         .elts_deleted_count = 0,
     }
@@ -49,9 +49,6 @@ static njs_atom_hash_chunk_t njs_atom_hash_chunk = {
 njs_flathsh_t njs_atom_hash = {
     .slot = &njs_atom_hash_chunk.descr,
 };
-
-
-uint32_t  njs_atom_hash_atom_id = 0;
 
 
 static njs_int_t
@@ -113,9 +110,9 @@ njs_atom_hash_init()
     u_char               *start;
     size_t               len;
     njs_uint_t           n;
-    njs_value_t          *value, *values;
+    const njs_value_t    *value, *values;
     njs_flathsh_query_t  lhq;
-
+//?? bad
     if (njs_atom_hash_chunk.descr.elts_count != 0) {
         return;
     }
@@ -126,10 +123,8 @@ njs_atom_hash_init()
     lhq.proto = &njs_atom_hash_proto;
     lhq.pool = NULL; /* Not used. */
 
-    for (n = 0; n < NJS_ATOM_SYMBOL_KNOWN_MAX + NJS_ATOM_SIZE; n++) {
+    for (n = 0; n < NJS_ATOM_SIZE; n++) {
         value = &values[n];
-
-        value->string.atom_id = njs_atom_hash_atom_id++;
 
         if (value->type == NJS_SYMBOL) {
             lhq.key_hash = value->string.atom_id;

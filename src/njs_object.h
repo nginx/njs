@@ -39,7 +39,7 @@ typedef enum {
 
 
 struct njs_object_init_s {
-    njs_object_propi_t          *properties;
+    const njs_object_propi_t    *properties;
     njs_uint_t                  items;
 };
 
@@ -75,7 +75,7 @@ njs_int_t njs_object_traverse(njs_vm_t *vm, njs_object_t *object, void *ctx,
     njs_object_traverse_cb_t cb);
 njs_int_t njs_object_make_shared(njs_vm_t *vm, njs_object_t *object);
 njs_int_t njs_object_hash_create(njs_vm_t *vm, njs_flathsh_obj_t *hash,
-    njs_object_propi_t *prop, njs_uint_t n);
+    const njs_object_propi_t *prop, njs_uint_t n);
 njs_int_t njs_primitive_prototype_get_proto(njs_vm_t *vm,
     njs_object_prop_t *prop, uint32_t unused, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval);

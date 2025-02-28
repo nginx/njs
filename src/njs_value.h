@@ -296,7 +296,6 @@ typedef enum {
     NJS_PROPERTY_HANDLER,
 
     NJS_PROPERTY_REF,
-#define NJS_PROPERTY_NOT_INIT (NJS_PROPERTY_PLACE_REF)
     NJS_PROPERTY_PLACE_REF,
     NJS_PROPERTY_TYPED_ARRAY_REF,
     NJS_WHITEOUT,
@@ -326,10 +325,7 @@ typedef enum {
 
 #define NJS_COMMON_OBJECT_PROP                                                 \
     union {                                                                    \
-        union {                                                                \
-            njs_value_t         *pvalue;                                       \
-            njs_value_t         value;                                         \
-        };                                                                     \
+        njs_value_t             value;                                         \
         struct {                                                               \
             njs_function_t      *getter;                                       \
             njs_function_t      *setter;                                       \
@@ -393,28 +389,28 @@ typedef struct {
 }
 
 
-#define njs_symbol(name) {                                                    \
+#define njs_symval(name) {                                                    \
     .data = {                                                                 \
         .type = NJS_SYMBOL,                                                   \
         .truth = 1,                                                           \
-        .magic32 = 0,                                                         \
-        .u = { .value = name }                                                \
+        .magic32 = njs_atom_vw_ ## name,                                      \
+        .u = { .value = (njs_value_t *)&njs_strval(Symbol_ ## name) }         \
     }                                                                         \
 }
 
 
 /* Declares an ASCII string value for which size == length. */
-#define njs_string(s, _token_type, _token_id) {                               \
+#define njs_strval(s) (njs_value_t) {                                         \
     .string = {                                                               \
         .type = NJS_STRING,                                                   \
-        .truth = njs_length(s) ? 1 : 0,                                       \
-        .atom_id = 0,                                                         \
-        .token_type = _token_type,                                            \
-        .token_id = _token_id,                                                \
+        .truth = njs_length(njs_tbl_str_vs_ ## s) ? 1 : 0,                    \
+        .atom_id = njs_atom_vs_ ## s,                                         \
+        .token_type = njs_tbl_typ_vs_ ## s,                                   \
+        .token_id = njs_tbl_tok_vs_ ## s,                                     \
         .data = &(njs_string_t) {                                             \
-            .start = (u_char *) s,                                            \
-            .length = njs_length(s),                                          \
-            .size = njs_length(s),                                            \
+            .start = (u_char *) njs_tbl_str_vs_ ## s,                         \
+            .length = njs_length(njs_tbl_str_vs_ ## s),                       \
+            .size = njs_length(njs_tbl_str_vs_ ## s),                         \
         },                                                                    \
     }                                                                         \
 }
