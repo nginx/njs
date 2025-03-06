@@ -7,6 +7,12 @@ njs_module_srcs=src/qjs_buffer.c
 
 . auto/qjs_module
 
+njs_module_name=qjs_crypto_module
+njs_module_incs=
+njs_module_srcs=external/qjs_crypto_module.c
+
+. auto/qjs_module
+
 njs_module_name=qjs_fs_module
 njs_module_incs=
 njs_module_srcs=external/qjs_fs_module.c
