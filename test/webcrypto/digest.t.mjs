@@ -25,7 +25,6 @@ let digest_tsuite = {
     skip: () => (!has_buffer() || !has_webcrypto()),
     T: test,
     prepare_args: p,
-    opts: { },
 
     tests: [
         { name: "XXX", data: "",

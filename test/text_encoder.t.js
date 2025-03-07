@@ -4,13 +4,6 @@ includes: [runTsuite.js, compareArray.js]
 flags: [async]
 ---*/
 
-function p(args, default_opts) {
-    let params = merge({}, default_opts);
-    params = merge(params, args);
-
-    return params;
-}
-
 let encode_tsuite = {
     name: "TextEncoder() encode tests",
     T: async (params) => {
@@ -32,9 +25,6 @@ let encode_tsuite = {
 
         return 'SUCCESS';
     },
-
-    prepare_args: p,
-    opts: {},
 
     tests: [
         { value: "", expected: [] },
@@ -65,9 +55,6 @@ let encodeinto_tsuite = {
 
         return 'SUCCESS';
     },
-
-    prepare_args: p,
-    opts: {},
 
     tests: [
         { value: "", dest: new Uint8Array(4), expected: [], read: 0 },

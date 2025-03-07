@@ -40,9 +40,6 @@ let stream_tsuite = {
         return 'SUCCESS';
     },
 
-    prepare_args: p,
-    opts: {},
-
     tests: [
         { chunks: [new Uint8Array([0xF0, 0x9F, 0x8C, 0x9F])],
           expected: ['🌟'] },
@@ -96,9 +93,6 @@ let fatal_tsuite = {
         return 'SUCCESS';
     },
 
-    prepare_args: p,
-    opts: {},
-
     tests: [
         { chunks: [new Uint8Array([0xF0, 0xA0, 0xAE, 0xB7])],
           expected: ['𠮷'] },
@@ -125,9 +119,6 @@ let ignoreBOM_tsuite = {
 
         return 'SUCCESS';
     },
-
-    prepare_args: p,
-    opts: {},
 
     tests: [
         { value: new Uint8Array([239, 187, 191, 50]),

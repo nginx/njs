@@ -85,7 +85,6 @@ let aes_tsuite = {
     skip: () => (!has_webcrypto()),
     T: test,
     prepare_args: p,
-    opts: {},
 
     tests: [
       { key: { fmt: "jwk",
@@ -186,7 +185,6 @@ let ec_tsuite = {
     skip: () => (!has_webcrypto()),
     T: test,
     prepare_args: p,
-    opts: {},
 
     tests: [
       { key: { fmt: "jwk",
@@ -350,7 +348,6 @@ let hmac_tsuite = {
     skip: () => (!has_webcrypto()),
     T: test,
     prepare_args: p,
-    opts: {},
 
     tests: [
       { key: { fmt: "raw",
@@ -465,7 +462,6 @@ let rsa_tsuite = {
     skip: () => (!has_webcrypto()),
     T: test,
     prepare_args: p,
-    opts: {},
 
     tests: [
       { key: { fmt: "jwk",
