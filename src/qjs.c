@@ -1025,3 +1025,106 @@ qjs_string_create_chb(JSContext *cx, njs_chb_t *chain)
 
     return val;
 }
+
+
+JSValue
+qjs_string_hex(JSContext *cx, const njs_str_t *src)
+{
+    JSValue    ret;
+    njs_str_t  dst;
+    u_char     buf[QJS_ENCODE_BUF_LEN];
+
+    if (src->length == 0) {
+        return JS_NewStringLen(cx, "", 0);
+    }
+
+    dst.start = buf;
+    dst.length = qjs_hex_encode_length(cx, src);
+
+    if (njs_fast_path(dst.length <= QJS_ENCODE_BUF_LEN)) {
+        qjs_hex_encode(cx, src, &dst);
+        ret = JS_NewStringLen(cx, (const char *) dst.start, dst.length);
+
+    } else {
+        dst.start = js_malloc(cx, dst.length);
+        if (njs_slow_path(dst.start == NULL)) {
+            return JS_ThrowOutOfMemory(cx);
+        }
+
+        qjs_hex_encode(cx, src, &dst);
+        ret = JS_NewStringLen(cx, (const char *) dst.start, dst.length);
+        js_free(cx, dst.start);
+    }
+
+    return ret;
+}
+
+
+JSValue
+qjs_string_base64(JSContext *cx, const njs_str_t *src)
+{
+    JSValue    ret;
+    njs_str_t  dst;
+    u_char     buf[QJS_ENCODE_BUF_LEN];
+
+    if (src->length == 0) {
+        return JS_NewStringLen(cx, "", 0);
+    }
+
+    dst.start = buf;
+    dst.length = qjs_base64_encode_length(cx, src);
+
+    if (njs_fast_path(dst.length <= QJS_ENCODE_BUF_LEN)) {
+        qjs_base64_encode(cx, src, &dst);
+        ret = JS_NewStringLen(cx, (const char *) dst.start, dst.length);
+
+    } else {
+        dst.start = js_malloc(cx, dst.length);
+        if (njs_slow_path(dst.start == NULL)) {
+            return JS_ThrowOutOfMemory(cx);
+        }
+
+        qjs_base64_encode(cx, src, &dst);
+        ret = JS_NewStringLen(cx, (const char *) dst.start, dst.length);
+        js_free(cx, dst.start);
+    }
+
+    return ret;
+}
+
+
+JSValue
+qjs_string_base64url(JSContext *cx, const njs_str_t *src)
+{
+    size_t     padding;
+    JSValue    ret;
+    njs_str_t  dst;
+    u_char     buf[QJS_ENCODE_BUF_LEN];
+
+    if (src->length == 0) {
+        return JS_NewStringLen(cx, "", 0);
+    }
+
+    padding = src->length % 3;
+    padding = (4 >> padding) & 0x03;
+
+    dst.start = buf;
+    dst.length = qjs_base64_encode_length(cx, src) - padding;
+
+    if (njs_fast_path(dst.length <= QJS_ENCODE_BUF_LEN)) {
+        qjs_base64url_encode(cx, src, &dst);
+        ret = JS_NewStringLen(cx, (const char *) dst.start, dst.length);
+
+    } else {
+        dst.start = js_malloc(cx, dst.length);
+        if (njs_slow_path(dst.start == NULL)) {
+            return JS_ThrowOutOfMemory(cx);
+        }
+
+        qjs_base64url_encode(cx, src, &dst);
+        ret = JS_NewStringLen(cx, (const char *) dst.start, dst.length);
+        js_free(cx, dst.start);
+    }
+
+    return ret;
+}

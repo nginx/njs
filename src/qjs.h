@@ -42,7 +42,9 @@
 #define QJS_CORE_CLASS_ID_FS_DIRENT (QJS_CORE_CLASS_ID_OFFSET + 5)
 #define QJS_CORE_CLASS_ID_FS_FILEHANDLE (QJS_CORE_CLASS_ID_OFFSET + 6)
 #define QJS_CORE_CLASS_ID_WEBCRYPTO_KEY (QJS_CORE_CLASS_ID_OFFSET + 7)
-#define QJS_CORE_CLASS_ID_LAST      (QJS_CORE_CLASS_ID_OFFSET + 8)
+#define QJS_CORE_CLASS_CRYPTO_HASH (QJS_CORE_CLASS_ID_OFFSET + 8)
+#define QJS_CORE_CLASS_CRYPTO_HMAC (QJS_CORE_CLASS_ID_OFFSET + 9)
+#define QJS_CORE_CLASS_ID_LAST      (QJS_CORE_CLASS_ID_OFFSET + 10)
 
 
 typedef JSModuleDef *(*qjs_addon_init_pt)(JSContext *ctx, const char *name);
@@ -111,6 +113,11 @@ JSValue qjs_typed_array_data(JSContext *ctx, JSValueConst value,
     JS_NewStringLen(ctx, (const char *) (data), len)
 JSValue qjs_string_create_chb(JSContext *cx, njs_chb_t *chain);
 
+/* qjs_base64_encoded_length(512) */
+#define QJS_ENCODE_BUF_LEN 686
+JSValue qjs_string_hex(JSContext *cx, const njs_str_t *src);
+JSValue qjs_string_base64(JSContext *cx, const njs_str_t *src);
+JSValue qjs_string_base64url(JSContext *cx, const njs_str_t *src);
 
 static inline JS_BOOL JS_IsNullOrUndefined(JSValueConst v)
 {

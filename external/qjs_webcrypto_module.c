@@ -1239,29 +1239,6 @@ fail:
 
 
 static JSValue
-qjs_string_base64url(JSContext *cx, const njs_str_t *src)
-{
-    size_t     padding;
-    njs_str_t  dst;
-    u_char     buf[/* qjs_base64_encoded_length(512) */ 686];
-
-    if (src->length == 0) {
-        return JS_NewStringLen(cx, "", 0);
-    }
-
-    padding = src->length % 3;
-    padding = (4 >> padding) & 0x03;
-
-    dst.start = buf;
-    dst.length = qjs_base64_encode_length(cx, src) - padding;
-
-    qjs_base64url_encode(cx, src, &dst);
-
-    return JS_NewStringLen(cx, (const char *) dst.start, dst.length);
-}
-
-
-static JSValue
 qjs_export_base64url_bignum(JSContext *cx, const BIGNUM *v, size_t size)
 {
     njs_str_t  src;
