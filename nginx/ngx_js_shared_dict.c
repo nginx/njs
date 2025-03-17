@@ -2078,7 +2078,6 @@ ngx_qjs_ext_shared_dict_delete(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv)
 {
     ngx_str_t        key;
-    ngx_js_ctx_t    *ctx;
     ngx_shm_zone_t  *shm_zone;
 
     shm_zone = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_SHARED_DICT);
@@ -2086,9 +2085,7 @@ ngx_qjs_ext_shared_dict_delete(JSContext *cx, JSValueConst this_val,
         return JS_ThrowTypeError(cx, "\"this\" is not a shared dict");
     }
 
-    ctx = ngx_qjs_external_ctx(cx, JS_GetContextOpaque(cx));
-
-    if (ngx_qjs_string(ctx->engine, argv[0], &key) != NGX_OK) {
+    if (ngx_qjs_string(cx, argv[0], &key) != NGX_OK) {
         return JS_EXCEPTION;
     }
 
@@ -2124,7 +2121,6 @@ ngx_qjs_ext_shared_dict_get(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv)
 {
     ngx_str_t        key;
-    ngx_js_ctx_t    *ctx;
     ngx_shm_zone_t  *shm_zone;
 
     shm_zone = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_SHARED_DICT);
@@ -2132,9 +2128,7 @@ ngx_qjs_ext_shared_dict_get(JSContext *cx, JSValueConst this_val,
         return JS_ThrowTypeError(cx, "\"this\" is not a shared dict");
     }
 
-    ctx = ngx_qjs_external_ctx(cx, JS_GetContextOpaque(cx));
-
-    if (ngx_qjs_string(ctx->engine, argv[0], &key) != NGX_OK) {
+    if (ngx_qjs_string(cx, argv[0], &key) != NGX_OK) {
         return JS_EXCEPTION;
     }
 
@@ -2149,7 +2143,6 @@ ngx_qjs_ext_shared_dict_has(JSContext *cx, JSValueConst this_val,
     ngx_str_t            key;
     ngx_msec_t           now;
     ngx_time_t          *tp;
-    ngx_js_ctx_t        *ctx;
     ngx_js_dict_t       *dict;
     ngx_shm_zone_t      *shm_zone;
     ngx_js_dict_node_t  *node;
@@ -2159,9 +2152,7 @@ ngx_qjs_ext_shared_dict_has(JSContext *cx, JSValueConst this_val,
         return JS_ThrowTypeError(cx, "\"this\" is not a shared dict");
     }
 
-    ctx = ngx_qjs_external_ctx(cx, JS_GetContextOpaque(cx));
-
-    if (ngx_qjs_string(ctx->engine, argv[0], &key) != NGX_OK) {
+    if (ngx_qjs_string(cx, argv[0], &key) != NGX_OK) {
         return JS_EXCEPTION;
     }
 
@@ -2193,7 +2184,6 @@ ngx_qjs_ext_shared_dict_incr(JSContext *cx, JSValueConst this_val,
     double           delta, init;
     uint32_t         timeout;
     ngx_str_t        key;
-    ngx_js_ctx_t    *ctx;
     ngx_js_dict_t   *dict;
     ngx_shm_zone_t  *shm_zone;
 
@@ -2208,9 +2198,7 @@ ngx_qjs_ext_shared_dict_incr(JSContext *cx, JSValueConst this_val,
         return JS_ThrowTypeError(cx, "shared dict is not a number dict");
     }
 
-    ctx = ngx_qjs_external_ctx(cx, JS_GetContextOpaque(cx));
-
-    if (ngx_qjs_string(ctx->engine, argv[0], &key) != NGX_OK) {
+    if (ngx_qjs_string(cx, argv[0], &key) != NGX_OK) {
         return JS_EXCEPTION;
     }
 
@@ -2464,7 +2452,6 @@ ngx_qjs_ext_shared_dict_pop(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv)
 {
     ngx_str_t        key;
-    ngx_js_ctx_t    *ctx;
     ngx_shm_zone_t  *shm_zone;
 
     shm_zone = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_SHARED_DICT);
@@ -2472,9 +2459,7 @@ ngx_qjs_ext_shared_dict_pop(JSContext *cx, JSValueConst this_val,
         return JS_ThrowTypeError(cx, "\"this\" is not a shared dict");
     }
 
-    ctx = ngx_qjs_external_ctx(cx, JS_GetContextOpaque(cx));
-
-    if (ngx_qjs_string(ctx->engine, argv[0], &key) != NGX_OK) {
+    if (ngx_qjs_string(cx, argv[0], &key) != NGX_OK) {
         return JS_EXCEPTION;
     }
 
@@ -2489,7 +2474,6 @@ ngx_qjs_ext_shared_dict_set(JSContext *cx, JSValueConst this_val,
     JSValue          ret;
     uint32_t         timeout;
     ngx_str_t        key;
-    ngx_js_ctx_t    *ctx;
     ngx_js_dict_t   *dict;
     ngx_shm_zone_t  *shm_zone;
 
@@ -2498,9 +2482,7 @@ ngx_qjs_ext_shared_dict_set(JSContext *cx, JSValueConst this_val,
         return JS_ThrowTypeError(cx, "\"this\" is not a shared dict");
     }
 
-    ctx = ngx_qjs_external_ctx(cx, JS_GetContextOpaque(cx));
-
-    if (ngx_qjs_string(ctx->engine, argv[0], &key) != NGX_OK) {
+    if (ngx_qjs_string(cx, argv[0], &key) != NGX_OK) {
         return JS_EXCEPTION;
     }
 

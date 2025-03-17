@@ -5133,7 +5133,7 @@ ngx_http_qjs_ext_internal_redirect(JSContext *cx, JSValueConst this_val,
                          "internalRedirect cannot be called while filtering");
     }
 
-    if (ngx_qjs_string(ctx->engine, argv[0], &ctx->redirect_uri) != NGX_OK) {
+    if (ngx_qjs_string(cx, argv[0], &ctx->redirect_uri) != NGX_OK) {
         return JS_EXCEPTION;
     }
 
@@ -5412,7 +5412,7 @@ ngx_http_qjs_ext_return(JSContext *cx, JSValueConst this_val,
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
     if (status < NGX_HTTP_BAD_REQUEST || !JS_IsNullOrUndefined(argv[1])) {
-        if (ngx_qjs_string(ctx->engine, argv[1], &body) != NGX_OK) {
+        if (ngx_qjs_string(cx, argv[1], &body) != NGX_OK) {
             return JS_ThrowOutOfMemory(cx);
         }
 
@@ -5515,7 +5515,7 @@ ngx_http_qjs_ext_send(JSContext *cx, JSValueConst this_val,
     ll = &out;
 
     for (n = 0; n < (ngx_uint_t) argc; n++) {
-        if (ngx_qjs_string(ctx->engine, argv[n], &s) != NGX_OK) {
+        if (ngx_qjs_string(cx, argv[n], &s) != NGX_OK) {
             return JS_ThrowTypeError(cx, "failed to convert arg");
         }
 
@@ -5578,7 +5578,7 @@ ngx_http_qjs_ext_send_buffer(JSContext *cx, JSValueConst this_val,
         return JS_ThrowTypeError(cx, "cannot send buffer while not filtering");
     }
 
-    if (ngx_qjs_string(ctx->engine, argv[0], &buffer) != NGX_OK) {
+    if (ngx_qjs_string(cx, argv[0], &buffer) != NGX_OK) {
         return JS_ThrowTypeError(cx, "failed get buffer arg");
     }
 
@@ -5735,7 +5735,7 @@ ngx_http_qjs_subrequest_done(ngx_http_request_t *r, void *data, ngx_int_t rc)
         reply = JS_DupValue(cx, ngx_qjs_arg(sctx->args[0]));
     }
 
-    rc = ngx_qjs_call((ngx_js_ctx_t *) ctx, event->function, &reply, 1);
+    rc = ngx_qjs_call(cx, event->function, &reply, 1);
 
     JS_FreeValue(cx, reply);
     ngx_js_del_event(ctx, event);
@@ -5786,7 +5786,7 @@ ngx_http_qjs_ext_subrequest(JSContext *cx, JSValueConst this_val,
                                      "the primary request");
     }
 
-    if (ngx_qjs_string(ctx->engine, argv[0], &uri) != NGX_OK) {
+    if (ngx_qjs_string(cx, argv[0], &uri) != NGX_OK) {
         return JS_ThrowTypeError(cx, "failed to convert uri arg");
     }
 
@@ -5812,7 +5812,7 @@ ngx_http_qjs_ext_subrequest(JSContext *cx, JSValueConst this_val,
     arg = argv[1];
 
     if (JS_IsString(arg)) {
-        if (ngx_qjs_string(ctx->engine, arg, &args) != NGX_OK) {
+        if (ngx_qjs_string(cx, arg, &args) != NGX_OK) {
             return JS_ThrowTypeError(cx, "failed to convert args");
         }
 
@@ -5833,7 +5833,7 @@ ngx_http_qjs_ext_subrequest(JSContext *cx, JSValueConst this_val,
         }
 
         if (!JS_IsUndefined(value)) {
-            rc = ngx_qjs_string(ctx->engine, value, &args);
+            rc = ngx_qjs_string(cx, value, &args);
             JS_FreeValue(cx, value);
 
             if (rc != NGX_OK) {
@@ -5857,7 +5857,7 @@ ngx_http_qjs_ext_subrequest(JSContext *cx, JSValueConst this_val,
         }
 
         if (!JS_IsUndefined(value)) {
-            rc = ngx_qjs_string(ctx->engine, value, &method_name);
+            rc = ngx_qjs_string(cx, value, &method_name);
             JS_FreeValue(cx, value);
 
             if (rc != NGX_OK) {
@@ -5884,7 +5884,7 @@ ngx_http_qjs_ext_subrequest(JSContext *cx, JSValueConst this_val,
         }
 
         if (!JS_IsUndefined(value)) {
-            rc = ngx_qjs_string(ctx->engine, value, &body_arg);
+            rc = ngx_qjs_string(cx, value, &body_arg);
             JS_FreeValue(cx, value);
 
             if (rc != NGX_OK) {
@@ -6233,7 +6233,6 @@ ngx_http_qjs_variables_set_property(JSContext *cx, JSValueConst obj,
     u_char                     *lowcase_key;
     ngx_str_t                   name, s;
     ngx_uint_t                  key;
-    ngx_http_js_ctx_t          *ctx;
     ngx_http_request_t         *r;
     ngx_http_variable_t        *v;
     ngx_http_variable_value_t  *vv;
@@ -6279,9 +6278,7 @@ ngx_http_qjs_variables_set_property(JSContext *cx, JSValueConst obj,
         return -1;
     }
 
-    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
-
-    if (ngx_qjs_string(ctx->engine, value, &s) != NGX_OK) {
+    if (ngx_qjs_string(cx, value, &s) != NGX_OK) {
         return -1;
     }
 
@@ -6692,15 +6689,14 @@ ngx_http_qjs_headers_out_handler(JSContext *cx, ngx_http_request_t *r,
     ngx_str_t *name, JSPropertyDescriptor *pdesc, JSValue *value,
     unsigned flags)
 {
-    u_char              *p;
-    int64_t              length;
-    uint32_t             i;
-    ngx_int_t            rc;
-    ngx_str_t            s;
-    JSValue              v;
-    ngx_list_part_t     *part;
-    ngx_table_elt_t     *header, *h, **ph;
-    ngx_http_js_ctx_t   *ctx;
+    u_char           *p;
+    int64_t           length;
+    uint32_t          i;
+    ngx_int_t         rc;
+    ngx_str_t         s;
+    JSValue           v;
+    ngx_list_part_t  *part;
+    ngx_table_elt_t  *header, *h, **ph;
 
     if (flags & NJS_HEADER_GET) {
         return ngx_http_qjs_header_generic(cx, r, &r->headers_out.headers, NULL,
@@ -6758,7 +6754,6 @@ ngx_http_qjs_headers_out_handler(JSContext *cx, ngx_http_request_t *r,
     }
 
     ph = &header;
-    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
     for (i = 0; i < (uint32_t) length; i++) {
         if (JS_IsArray(cx, *value)) {
@@ -6768,7 +6763,7 @@ ngx_http_qjs_headers_out_handler(JSContext *cx, ngx_http_request_t *r,
             }
         }
 
-        rc = ngx_qjs_string(ctx->engine, v, &s);
+        rc = ngx_qjs_string(cx, v, &s);
 
         if (JS_IsArray(cx, *value)) {
             JS_FreeValue(cx, v);
@@ -6828,15 +6823,14 @@ ngx_http_qjs_headers_out_special_handler(JSContext *cx, ngx_http_request_t *r,
     ngx_str_t *name, JSPropertyDescriptor *pdesc, JSValue *value,
     unsigned flags, ngx_table_elt_t **hh)
 {
-    u_char              *p;
-    uint32_t             length;
-    JSValue              len, setval;
-    ngx_str_t            s;
-    ngx_uint_t           i, rc;
-    ngx_list_t          *headers;
-    ngx_list_part_t     *part;
-    ngx_table_elt_t     *header, *h;
-    ngx_http_js_ctx_t   *ctx;
+    u_char           *p;
+    uint32_t          length;
+    JSValue           len, setval;
+    ngx_str_t         s;
+    ngx_uint_t        i, rc;
+    ngx_list_t       *headers;
+    ngx_list_part_t  *part;
+    ngx_table_elt_t  *header, *h;
 
     if (flags & NJS_HEADER_GET) {
         return ngx_http_qjs_headers_out_handler(cx, r, name, pdesc, NULL,
@@ -6870,9 +6864,7 @@ ngx_http_qjs_headers_out_special_handler(JSContext *cx, ngx_http_request_t *r,
         setval = JS_UNDEFINED;
     }
 
-    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
-
-    rc = ngx_qjs_string(ctx->engine, setval, &s);
+    rc = ngx_qjs_string(cx, setval, &s);
 
     if (value != NULL && JS_IsArray(cx, *value)) {
         JS_FreeValue(cx, setval);
@@ -7054,7 +7046,6 @@ ngx_http_qjs_headers_out_content_type(JSContext *cx, ngx_http_request_t *r,
     JSValue     len, setval;
     ngx_int_t   rc;
     ngx_str_t  *hdr, s;
-    ngx_http_js_ctx_t  *ctx;
 
     if (flags & NJS_HEADER_GET) {
         hdr = &r->headers_out.content_type;
@@ -7108,9 +7099,7 @@ ngx_http_qjs_headers_out_content_type(JSContext *cx, ngx_http_request_t *r,
         setval = *value;
     }
 
-    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
-
-    rc = ngx_qjs_string(ctx->engine, setval, &s);
+    rc = ngx_qjs_string(cx, setval, &s);
 
     if (JS_IsArray(cx, *value)) {
         JS_FreeValue(cx, setval);
