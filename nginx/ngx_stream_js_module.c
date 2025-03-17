@@ -2152,7 +2152,7 @@ ngx_stream_qjs_ext_on(JSContext *cx, JSValueConst this_val, int argc,
 
     ctx = ngx_stream_get_module_ctx(ses->session, ngx_stream_js_module);
 
-    if (ngx_qjs_string(ctx->engine, argv[0], &name) != NGX_OK) {
+    if (ngx_qjs_string(cx, argv[0], &name) != NGX_OK) {
         return JS_EXCEPTION;
     }
 
@@ -2195,7 +2195,7 @@ ngx_stream_qjs_ext_off(JSContext *cx, JSValueConst this_val, int argc,
 
     ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
 
-    if (ngx_qjs_string(ctx->engine, argv[0], &name) != NGX_OK) {
+    if (ngx_qjs_string(cx, argv[0], &name) != NGX_OK) {
         return JS_EXCEPTION;
     }
 
@@ -2278,7 +2278,7 @@ ngx_stream_qjs_ext_send(JSContext *cx, JSValueConst this_val, int argc,
         return JS_ThrowInternalError(cx, "cannot send buffer in this handler");
     }
 
-    if (ngx_qjs_string(ctx->engine, argv[0], &buffer) != NGX_OK) {
+    if (ngx_qjs_string(cx, argv[0], &buffer) != NGX_OK) {
         return JS_EXCEPTION;
     }
 
@@ -2510,7 +2510,6 @@ ngx_stream_qjs_variables_set_property(JSContext *cx, JSValueConst obj,
 {
     ngx_str_t                     name, name_lc, val;
     ngx_uint_t                    key;
-    ngx_js_ctx_t                 *ctx;
     ngx_stream_session_t         *s;
     ngx_stream_variable_t        *v;
     ngx_stream_variable_value_t  *vv;
@@ -2556,9 +2555,7 @@ ngx_stream_qjs_variables_set_property(JSContext *cx, JSValueConst obj,
         return -1;
     }
 
-    ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
-
-    if (ngx_qjs_string(ctx->engine, value, &val) != NGX_OK) {
+    if (ngx_qjs_string(cx, value, &val) != NGX_OK) {
         return -1;
     }
 
@@ -2669,14 +2666,13 @@ ngx_stream_qjs_run_event(ngx_stream_session_t *s, ngx_stream_js_ctx_t *ctx,
 
     JS_SetOpaque(argv[1], (void *) flags);
 
-    rc = ngx_qjs_call((ngx_js_ctx_t *) ctx, ngx_qjs_arg(event->function),
-                      &argv[0], 2);
+    rc = ngx_qjs_call(cx, ngx_qjs_arg(event->function), &argv[0], 2);
     JS_FreeValue(cx, argv[0]);
     JS_FreeValue(cx, argv[1]);
 
     if (rc == NGX_ERROR) {
 error:
-        ngx_qjs_exception(ctx->engine, &exception);
+        ngx_qjs_exception(cx, &exception);
 
         ngx_log_error(NGX_LOG_ERR, c->log, 0, "js exception: %V",
                       &exception);

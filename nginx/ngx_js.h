@@ -340,11 +340,11 @@ ngx_engine_t *ngx_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf,
     void *external);
 void ngx_engine_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
     ngx_js_loc_conf_t *conf);
-ngx_int_t ngx_qjs_call(ngx_js_ctx_t *ctx, JSValue function,
-    JSValue *argv, int argc);
-ngx_int_t ngx_qjs_exception(ngx_engine_t *e, ngx_str_t *s);
+ngx_int_t ngx_qjs_call(JSContext *cx, JSValue function, JSValue *argv,
+    int argc);
+ngx_int_t ngx_qjs_exception(JSContext *cx, ngx_str_t *s);
 ngx_int_t ngx_qjs_integer(JSContext *cx, JSValueConst val, ngx_int_t *n);
-ngx_int_t ngx_qjs_string(ngx_engine_t *e, JSValueConst val, ngx_str_t *str);
+ngx_int_t ngx_qjs_string(JSContext *cx, JSValueConst val, ngx_str_t *str);
 
 #define ngx_qjs_prop(cx, type, start, len)                                   \
     ((type == NGX_JS_STRING) ? qjs_string_create(cx, start, len)             \
