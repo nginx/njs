@@ -271,7 +271,9 @@ $t->write_file('test.js', <<EOF);
                     })
 
                 } catch (e) {
-                    if (!e.message.startsWith('Cannot assign to read-only p')) {
+                    if (!e.message.startsWith('Cannot assign to read-only p')
+                        && !e.message.startsWith('no setter for property'))
+                    {
                         throw e;
                     }
                 }
@@ -514,8 +516,6 @@ $t->write_file('test.js', <<EOF);
 EOF
 
 $t->try_run('no njs');
-
-plan(skip_all => 'not yet') if http_get('/engine') =~ /QuickJS$/m;
 
 $t->plan(5);
 
