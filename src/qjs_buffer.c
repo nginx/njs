@@ -2550,6 +2550,10 @@ qjs_buffer_module_init(JSContext *ctx, JSModuleDef *m)
     JSValue  proto;
 
     proto = JS_NewObject(ctx);
+    if (JS_IsException(proto)) {
+        return -1;
+    }
+
     JS_SetPropertyFunctionList(ctx, proto, qjs_buffer_export,
                                njs_nitems(qjs_buffer_export));
 
@@ -2576,7 +2580,10 @@ qjs_buffer_init(JSContext *ctx, const char *name)
         return NULL;
     }
 
-    JS_AddModuleExport(ctx, m, "default");
+    if (JS_AddModuleExport(ctx, m, "default") < 0) {
+        return NULL;
+    }
+
     rc = JS_AddModuleExportList(ctx, m, qjs_buffer_export,
                                 njs_nitems(qjs_buffer_export));
     if (rc != 0) {
