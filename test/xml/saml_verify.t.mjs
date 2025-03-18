@@ -1,7 +1,9 @@
 /*---
-includes: [compatFs.js, compatXml.js, compatWebcrypto.js, compatNjs.js, runTsuite.js]
+includes: [compatFs.js, compatWebcrypto.js, compatNjs.js, runTsuite.js]
 flags: [async]
 ---*/
+
+import xml from 'xml';
 
 async function verify(params) {
     let file_data = fs.readFileSync(`test/xml/${params.saml}`);
@@ -11,14 +13,13 @@ async function verify(params) {
         let sign_key_data = fs.readFileSync(`test/webcrypto/${params.key.sign_file}`);
         let signed = await signSAML(xml.parse(file_data), sign_key_data);
         file_data = xml.c14n(signed);
-        //console.log((new TextDecoder()).decode(file_data));
     }
 
     let saml = xml.parse(file_data);
 
     let r = await verifySAMLSignature(saml, key_data)
                 .catch (e => {
-                    if (e.toString().startsWith("Error: EVP_PKEY_CTX_set_signature_md() failed")) {
+                    if (e.message.startsWith("EVP_PKEY_CTX_set_signature_md() failed")) {
                         /* Red Hat Enterprise Linux: SHA-1 is disabled */
                         return "SKIPPED";
                     }
@@ -273,7 +274,7 @@ async function signatureSAML(signature, key_data, produce) {
 
 let saml_verify_tsuite = {
     name: "SAML verify",
-    skip: () => (!has_njs() || !has_webcrypto() || !has_xml()),
+    skip: () => (!has_njs() || !has_webcrypto()),
     T: verify,
     opts: {
         key: { fmt: "spki", file: "rsa.spki" },
