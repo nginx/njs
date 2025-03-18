@@ -998,7 +998,10 @@ qjs_querystring_init(JSContext *ctx, const char *name)
         return NULL;
     }
 
-    JS_AddModuleExport(ctx, m, "default");
+    if (JS_AddModuleExport(ctx, m, "default") < 0) {
+        return NULL;
+    }
+
     rc = JS_AddModuleExportList(ctx, m, qjs_querystring_export,
                                 njs_nitems(qjs_querystring_export));
     if (rc != 0) {
