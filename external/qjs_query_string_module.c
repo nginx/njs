@@ -171,7 +171,6 @@ static JSValue
 qjs_query_string_decode(JSContext *cx, const u_char *start, size_t size)
 {
     u_char                *dst;
-    JSValue               ret;
     uint32_t              cp;
     njs_chb_t             chain;
     const u_char          *p, *end;
@@ -250,11 +249,7 @@ qjs_query_string_decode(JSContext *cx, const u_char *start, size_t size)
     }
 
 
-    ret = qjs_string_create_chb(cx, &chain);
-
-    njs_chb_destroy(&chain);
-
-    return ret;
+    return qjs_string_create_chb(cx, &chain);
 }
 
 
@@ -280,8 +275,6 @@ qjs_query_string_escape(JSContext *cx, JSValueConst this_val, int argc,
     }
 
     ret = qjs_string_create_chb(cx, &chain);
-
-    njs_chb_destroy(&chain);
 
     JS_FreeCString(cx, (char *) str.start);
 
@@ -733,7 +726,7 @@ qjs_query_string_stringify_internal(JSContext *cx, JSValue obj, njs_str_t *sep,
 {
     int             rc;
     uint32_t        n, length;
-    JSValue         key, val, ret;
+    JSValue         key, val;
     njs_str_t       sep_val, eq_val;
     njs_chb_t       chain;
     JSPropertyEnum  *ptab;
@@ -809,11 +802,7 @@ qjs_query_string_stringify_internal(JSContext *cx, JSValue obj, njs_str_t *sep,
         qjs_free_prop_enum(cx, ptab, length);
     }
 
-    ret = qjs_string_create_chb(cx, &chain);
-
-    njs_chb_destroy(&chain);
-
-    return ret;
+    return qjs_string_create_chb(cx, &chain);
 
 fail:
 

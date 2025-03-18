@@ -6400,10 +6400,9 @@ ngx_http_qjs_header_generic(JSContext *cx, ngx_http_request_t *r,
     ngx_list_t *headers, ngx_table_elt_t **ph, ngx_str_t *name,
     JSPropertyDescriptor *pdesc, unsigned flags)
 {
-    int               ret;
     u_char            sep;
-    njs_chb_t         chain;
     JSValue           val;
+    njs_chb_t         chain;
     ngx_uint_t        i;
     ngx_list_part_t  *part;
     ngx_table_elt_t  *header, *h;
@@ -6493,6 +6492,10 @@ ngx_http_qjs_header_generic(JSContext *cx, ngx_http_request_t *r,
         return 1;
     }
 
+    if (pdesc == NULL) {
+        return 1;
+    }
+
     NJS_CHB_CTX_INIT(&chain, cx);
 
     sep = flags & NJS_HEADER_SEMICOLON ? ';' : ',';
@@ -6503,24 +6506,15 @@ ngx_http_qjs_header_generic(JSContext *cx, ngx_http_request_t *r,
         njs_chb_append_literal(&chain, " ");
     }
 
-    ret = 1;
-
-    if (pdesc != NULL) {
-        pdesc->flags = JS_PROP_ENUMERABLE;
-        pdesc->getter = JS_UNDEFINED;
-        pdesc->setter = JS_UNDEFINED;
-        pdesc->value = qjs_string_create_chb(cx, &chain);
-        if (JS_IsException(pdesc->value)) {
-            ret = -1;
-            goto done;
-        }
+    pdesc->flags = JS_PROP_ENUMERABLE;
+    pdesc->getter = JS_UNDEFINED;
+    pdesc->setter = JS_UNDEFINED;
+    pdesc->value = qjs_string_create_chb(cx, &chain);
+    if (JS_IsException(pdesc->value)) {
+        return -1;
     }
 
-done:
-
-    njs_chb_destroy(&chain);
-
-    return ret;
+    return 1;
 }
 
 
