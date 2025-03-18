@@ -32,7 +32,7 @@ jobs:
         run: |
           sudo dpkg --add-architecture i386
           sudo apt-get update
-          sudo apt-get install -y gcc-multilib libc6:i386 libpcre2-dev:i386 zlib1g-dev:i386
+          sudo apt-get install -y gcc-multilib libc6:i386 libssl-dev:i386 libpcre2-dev:i386 zlib1g-dev:i386 libxml2-dev:i386
 
       - name: Check out nginx
         run: |
