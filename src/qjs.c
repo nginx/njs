@@ -165,7 +165,9 @@ qjs_new_context(JSRuntime *rt, qjs_module_t **addons)
     JS_AddIntrinsicMapSet(ctx);
     JS_AddIntrinsicTypedArrays(ctx);
     JS_AddIntrinsicPromise(ctx);
+#ifdef NJS_HAVE_QUICKJS_ADD_INTRINSIC_BIG_INT
     JS_AddIntrinsicBigInt(ctx);
+#endif
     JS_AddIntrinsicEval(ctx);
 
     for (module = qjs_modules; *module != NULL; module++) {
