@@ -137,6 +137,29 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
 
         . auto/feature
 
+        njs_feature="QuickJS JS_AddIntrinsicBigInt()"
+        njs_feature_name=NJS_HAVE_QUICKJS_ADD_INTRINSIC_BIG_INT
+        njs_feature_test="#if defined(__GNUC__) && (__GNUC__ >= 8)
+                          #pragma GCC diagnostic push
+                          #pragma GCC diagnostic ignored \"-Wcast-function-type\"
+                          #endif
+
+                          #include <quickjs.h>
+
+                          int main() {
+                              JSRuntime *rt;
+                              JSContext *ctx;
+
+                              rt = JS_NewRuntime();
+                              ctx = JS_NewContextRaw(rt);
+                              JS_AddIntrinsicBigInt(ctx);
+                              JS_FreeContext(ctx);
+                              JS_FreeRuntime(rt);
+                              return 0;
+                         }"
+
+        . auto/feature
+
         njs_feature="QuickJS version"
         njs_feature_name=NJS_QUICKJS_VERSION
         njs_feature_run=value
