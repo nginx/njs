@@ -727,19 +727,6 @@ qjs_query_string_push_array(JSContext *cx, njs_chb_t *chain, JSValue key,
 }
 
 
-static void
-qjs_free_prop_enum(JSContext *cx, JSPropertyEnum *tab, uint32_t len)
-{
-    uint32_t  i;
-
-    for (i = 0; i < len; i++) {
-        JS_FreeAtom(cx, tab[i].atom);
-    }
-
-    js_free(cx, tab);
-}
-
-
 static JSValue
 qjs_query_string_stringify_internal(JSContext *cx, JSValue obj, njs_str_t *sep,
     njs_str_t *eq, JSValue encoder)

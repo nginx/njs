@@ -1027,6 +1027,19 @@ qjs_string_create_chb(JSContext *cx, njs_chb_t *chain)
 }
 
 
+void
+qjs_free_prop_enum(JSContext *ctx, JSPropertyEnum *tab, uint32_t len)
+{
+    uint32_t  i;
+
+    for(i = 0; i < len; i++) {
+        JS_FreeAtom(ctx, tab[i].atom);
+    }
+
+    js_free(ctx, tab);
+}
+
+
 JSValue
 qjs_string_hex(JSContext *cx, const njs_str_t *src)
 {
