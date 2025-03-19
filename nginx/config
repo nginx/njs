@@ -14,7 +14,7 @@ NJS_SRCS="$ngx_addon_dir/ngx_js.c \
     $ngx_addon_dir/ngx_js_shared_dict.c"
 
 QJS_DEPS=""
-QJS_SRCS=""
+QJS_SRCS="$ngx_addon_dir/ngx_qjs_fetch.c"
 
 NJS_OPENSSL_LIB=
 NJS_XSLT_LIB=
