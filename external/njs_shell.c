@@ -2950,7 +2950,6 @@ njs_qjs_object_completions(njs_engine_t *engine, JSContext *ctx,
 
         for (n = 0; n < length; n++) {
             key.start = (u_char *) JS_AtomToCString(ctx, ptab[n].atom);
-            JS_FreeAtom(ctx, ptab[n].atom);
             if (njs_slow_path(key.start == NULL)) {
                 goto fail;
             }
@@ -2993,7 +2992,7 @@ next:
             JS_FreeCString(ctx, (const char *) key.start);
         }
 
-        js_free_rt(JS_GetRuntime(ctx), ptab);
+        qjs_free_prop_enum(ctx, ptab, length);
 
         prototype = JS_GetPrototype(ctx, object);
         if (JS_IsException(prototype)) {
@@ -3017,7 +3016,7 @@ fail:
     }
 
     if (ptab != NULL) {
-        js_free_rt(JS_GetRuntime(ctx), ptab);
+        qjs_free_prop_enum(ctx, ptab, length);
     }
 
     JS_FreeValue(ctx, object);
