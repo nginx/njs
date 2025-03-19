@@ -1482,12 +1482,10 @@ ngx_qjs_string(JSContext *cx, JSValueConst val, ngx_str_t *dst)
 
 string:
 
-    str = JS_ToCString(cx, val);
+    str = JS_ToCStringLen(cx, &len, val);
     if (str == NULL) {
         return NGX_ERROR;
     }
-
-    len = strlen(str);
 
     start = njs_mp_alloc(e->pool, len);
     if (start == NULL) {
