@@ -1504,6 +1504,31 @@ string:
 }
 
 
+int
+ngx_qjs_array_length(JSContext *cx, uint32_t *plen, JSValueConst arr)
+{
+    int       ret;
+    JSValue   value;
+    uint32_t  len;
+
+    value = JS_GetPropertyStr(cx, arr, "length");
+    if (JS_IsException(value)) {
+        return -1;
+    }
+
+    ret = JS_ToUint32(cx, &len, value);
+    JS_FreeValue(cx, value);
+
+    if (ret) {
+        return -1;
+    }
+
+    *plen = len;
+
+    return 0;
+}
+
+
 static void
 ngx_qjs_timer_handler(ngx_event_t *ev)
 {
