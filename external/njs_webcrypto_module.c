@@ -129,13 +129,17 @@ static njs_int_t njs_ext_unwrap_key(njs_vm_t *vm, njs_value_t *args,
 static njs_int_t njs_ext_wrap_key(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t njs_key_ext_algorithm(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
 static njs_int_t njs_key_ext_extractable(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
 static njs_int_t njs_key_ext_type(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
 static njs_int_t njs_key_ext_usages(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
 static njs_int_t njs_ext_get_random_values(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 
@@ -4133,8 +4137,8 @@ njs_ext_wrap_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
-njs_key_ext_algorithm(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval)
+njs_key_ext_algorithm(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     u_char               *start;
     njs_int_t            ret;
@@ -4292,7 +4296,7 @@ njs_key_ext_algorithm(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
 
 
 static njs_int_t
-njs_key_ext_extractable(njs_vm_t *vm, njs_object_prop_t *prop,
+njs_key_ext_extractable(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     njs_webcrypto_key_t  *key;
@@ -4310,8 +4314,8 @@ njs_key_ext_extractable(njs_vm_t *vm, njs_object_prop_t *prop,
 
 
 static njs_int_t
-njs_key_ext_type(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval)
+njs_key_ext_type(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     const char           *type;
     njs_webcrypto_key_t  *key;
@@ -4336,8 +4340,8 @@ njs_key_ext_type(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
 
 
 static njs_int_t
-njs_key_ext_usages(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval)
+njs_key_ext_usages(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     njs_webcrypto_key_t  *key;
 

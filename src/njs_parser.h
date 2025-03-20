@@ -125,8 +125,7 @@ njs_int_t njs_parser_failed_state(njs_parser_t *parser,
 intptr_t njs_parser_scope_rbtree_compare(njs_rbtree_node_t *node1,
     njs_rbtree_node_t *node2);
 njs_int_t njs_parser_init(njs_vm_t *vm, njs_parser_t *parser,
-    njs_parser_scope_t *scope, njs_str_t *file, u_char *start, u_char *end,
-    njs_uint_t runtime);
+    njs_parser_scope_t *scope, njs_str_t *file, u_char *start, u_char *end);
 njs_int_t njs_parser(njs_vm_t *vm, njs_parser_t *parser);
 
 njs_bool_t njs_variable_closure_test(njs_parser_scope_t *root,

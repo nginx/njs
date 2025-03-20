@@ -10,6 +10,7 @@ NJS_LIB_SRCS=" \
    src/njs_utf16.c \
    src/njs_arr.c \
    src/njs_rbtree.c \
+   src/njs_flathsh_obj.c \
    src/njs_flathsh.c \
    src/njs_trace.c \
    src/njs_random.c \
@@ -19,10 +20,10 @@ NJS_LIB_SRCS=" \
    src/njs_utils.c \
    src/njs_chb.c \
    src/njs_value.c \
+   src/njs_atom.c \
    src/njs_vm.c \
    src/njs_vmcode.c \
    src/njs_lexer.c \
-   src/njs_lexer_keyword.c \
    src/njs_parser.c \
    src/njs_variable.c \
    src/njs_scope.c \
