@@ -181,7 +181,7 @@ static njs_external_t  njs_ext_xml[] = {
         .enumerable = 1,
         .u.method = {
             .native = njs_xml_ext_canonicalization,
-            .magic8 = 3,
+            .magic8 = 2,
         }
     },
 
@@ -370,6 +370,7 @@ static njs_external_t  njs_ext_xml_node[] = {
         .name.string = njs_str("$text"),
         .enumerable = 1,
         .writable = 1,
+        .configurable = 1,
         .u.property = {
             .handler = njs_xml_node_ext_text,
         }

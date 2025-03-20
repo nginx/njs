@@ -1,8 +1,10 @@
 /*---
-includes: [compatXml.js, compatNjs.js]
+includes: [compatNjs.js]
 flags: []
 paths: []
 ---*/
+
+import xml from 'xml';
 
 let data = `<?xml version="1.0"?>
 <!DOCTYPE foo [
@@ -11,7 +13,7 @@ let data = `<?xml version="1.0"?>
 <root>&c;</root>
 `;
 
-if (has_njs() && has_xml()) {
+if (has_njs()) {
     let doc = xml.parse(data);
     assert.sameValue(doc.$root.$text, "");
 }
