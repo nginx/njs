@@ -162,6 +162,14 @@ njs_leading_zeros64(uint64_t x)
 #endif
 
 
+#if (NJS_HAVE_GCC_ATTRIBUTE_NONSTRING)
+#define NJS_NONSTRING      __attribute__((nonstring))
+
+#else
+#define NJS_NONSTRING
+#endif
+
+
 #if (NJS_CLANG)
 /* Any __asm__ directive disables loop vectorization in GCC and Clang. */
 #define njs_pragma_loop_disable_vectorization  __asm__("")
