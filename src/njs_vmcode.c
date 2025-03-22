@@ -149,6 +149,7 @@ njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc, njs_value_t *rval,
         NJS_GOTO_ROW(NJS_VMCODE_PUT_ARG),
         NJS_GOTO_ROW(NJS_VMCODE_STOP),
         NJS_GOTO_ROW(NJS_VMCODE_JUMP),
+        NJS_GOTO_ROW(NJS_VMCODE_PROPERTY_ATOM_SET),
         NJS_GOTO_ROW(NJS_VMCODE_PROPERTY_SET),
         NJS_GOTO_ROW(NJS_VMCODE_PROPERTY_ACCESSOR),
         NJS_GOTO_ROW(NJS_VMCODE_IF_TRUE_JUMP),
@@ -1262,6 +1263,21 @@ NEXT_LBL;
         njs_vmcode_debug_opcode();
 
         ret = (njs_jump_off_t) vmcode->operand1;
+        BREAK;
+
+    CASE (NJS_VMCODE_PROPERTY_ATOM_SET):
+        njs_vmcode_debug_opcode();
+
+        njs_vmcode_operand(vm, vmcode->operand3, value2);
+        njs_vmcode_operand(vm, vmcode->operand2, value1);
+        njs_vmcode_operand(vm, vmcode->operand1, retval);
+
+        ret = njs_value_property_set(vm, value1, value2->atom_id, retval);
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            goto error;
+        }
+
+        ret = sizeof(njs_vmcode_prop_set_t);
         BREAK;
 
     CASE (NJS_VMCODE_PROPERTY_SET):

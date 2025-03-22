@@ -45,6 +45,8 @@ static njs_code_name_t  code_names[] = {
           njs_str("PROTO INIT      ") },
     { NJS_VMCODE_PROPERTY_SET, sizeof(njs_vmcode_prop_set_t),
           njs_str("PROP SET        ") },
+    { NJS_VMCODE_PROPERTY_ATOM_SET, sizeof(njs_vmcode_prop_set_t),
+          njs_str("PROP ATOM SET   ") },
     { NJS_VMCODE_PROPERTY_IN, sizeof(njs_vmcode_3addr_t),
           njs_str("PROP IN         ") },
     { NJS_VMCODE_PROPERTY_DELETE, sizeof(njs_vmcode_3addr_t),
