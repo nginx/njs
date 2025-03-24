@@ -465,6 +465,11 @@ static JSClassDef ngx_qjs_shared_class = {
     },
 };
 
+static JSClassDef ngx_qjs_shared_dict_error_class = {
+    "SharedDictError",
+    .finalizer = NULL,
+};
+
 qjs_module_t  ngx_qjs_ngx_shared_dict_module = {
     .name = "shared_dict",
     .init = ngx_qjs_ngx_shared_dict_init,
@@ -2997,6 +3002,12 @@ ngx_qjs_ngx_shared_dict_init(JSContext *cx, const char *name)
 
     if (JS_NewClass(JS_GetRuntime(cx), NGX_QJS_CLASS_ID_SHARED_DICT,
                     &ngx_qjs_shared_dict_class) < 0)
+    {
+        return NULL;
+    }
+
+    if (JS_NewClass(JS_GetRuntime(cx), NGX_QJS_CLASS_ID_SHARED_DICT_ERROR,
+                    &ngx_qjs_shared_dict_error_class) < 0)
     {
         return NULL;
     }
