@@ -156,7 +156,6 @@ static const char *qjs_algorithm_string(qjs_webcrypto_algorithm_t *algorithm);
 static const char *qjs_algorithm_hash_name(qjs_webcrypto_hash_t hash);
 static JSValue qjs_key_usage(JSContext *cx, JSValue value, unsigned *mask);
 static JSValue qjs_key_ops(JSContext *cx, unsigned mask);
-static JSValue qjs_webcrypto_result(JSContext *cx, JSValue result, int rc);
 static void qjs_webcrypto_error(JSContext *cx, const char *fmt, ...);
 
 static JSModuleDef *qjs_webcrypto_init(JSContext *cx, const char *name);
@@ -547,11 +546,11 @@ qjs_webcrypto_cipher(JSContext *cx, JSValueConst this_val,
         }
     }
 
-    return qjs_webcrypto_result(cx, ret, 0);
+    return qjs_promise_result(cx, ret);
 
 fail:
 
-    return qjs_webcrypto_result(cx, JS_UNDEFINED, -1);
+    return qjs_promise_result(cx, JS_EXCEPTION);
 }
 
 
@@ -1956,7 +1955,7 @@ free:
         ret = qjs_new_array_buffer(cx, k, length);
     }
 
-    return qjs_webcrypto_result(cx, ret, 0);
+    return qjs_promise_result(cx, ret);
 
 fail:
 
@@ -1964,7 +1963,7 @@ fail:
 
     js_free(cx, k);
 
-    return qjs_webcrypto_result(cx, JS_UNDEFINED, -1);
+    return qjs_promise_result(cx, JS_EXCEPTION);
 }
 
 
@@ -2170,11 +2169,11 @@ qjs_webcrypto_export_key(JSContext *cx, JSValueConst this_val, int argc,
 
     }
 
-    return qjs_webcrypto_result(cx, ret, 0);
+    return qjs_promise_result(cx, ret);
 
 fail:
 
-    return qjs_webcrypto_result(cx, JS_UNDEFINED, -1);
+    return qjs_promise_result(cx, JS_EXCEPTION);
 }
 
 
@@ -2437,7 +2436,7 @@ qjs_webcrypto_generate_key(JSContext *cx, JSValueConst this_val,
         goto fail;
     }
 
-    return qjs_webcrypto_result(cx, obj, 0);
+    return qjs_promise_result(cx, obj);
 
 fail:
 
@@ -2448,7 +2447,7 @@ fail:
     JS_FreeValue(cx, key);
     JS_FreeValue(cx, keypub);
 
-    return qjs_webcrypto_result(cx, JS_UNDEFINED, -1);
+    return qjs_promise_result(cx, JS_EXCEPTION);
 }
 
 
@@ -3489,7 +3488,7 @@ qjs_webcrypto_import_key(JSContext *cx, JSValueConst this_val, int argc,
         break;
     }
 
-    return qjs_webcrypto_result(cx, key, 0);
+    return qjs_promise_result(cx, key);
 
 fail:
 
@@ -3499,7 +3498,7 @@ fail:
 
     JS_FreeValue(cx, key);
 
-    return qjs_webcrypto_result(cx, JS_UNDEFINED, -1);
+    return qjs_promise_result(cx, JS_EXCEPTION);
 }
 
 
@@ -3955,7 +3954,7 @@ qjs_webcrypto_sign(JSContext *cx, JSValueConst this_val, int argc,
         ret = JS_NewBool(cx, rc != 0);
     }
 
-    return qjs_webcrypto_result(cx, ret, 0);
+    return qjs_promise_result(cx, ret);
 
 fail:
 
@@ -3971,7 +3970,7 @@ fail:
         js_free(cx, dst);
     }
 
-    return qjs_webcrypto_result(cx, JS_UNDEFINED, -1);
+    return qjs_promise_result(cx, JS_EXCEPTION);
 }
 
 
@@ -4666,45 +4665,6 @@ qjs_cpystrn(u_char *dst, u_char *src, size_t n)
     *dst = '\0';
 
     return dst;
-}
-
-
-static JSValue
-qjs_webcrypto_promise_trampoline(JSContext *cx, int argc, JSValueConst *argv)
-{
-    return JS_Call(cx, argv[0], JS_UNDEFINED, 1, &argv[1]);
-}
-
-
-static JSValue
-qjs_webcrypto_result(JSContext *cx, JSValue result, int rc)
-{
-    JS_BOOL  is_error;
-    JSValue  promise, callbacks[2], arguments[2];
-
-    promise = JS_NewPromiseCapability(cx, callbacks);
-    if (JS_IsException(promise)) {
-        JS_FreeValue(cx, result);
-        return JS_EXCEPTION;
-    }
-
-    is_error = !!(rc != 0);
-
-    JS_FreeValue(cx, callbacks[!is_error]);
-    arguments[0] = callbacks[is_error];
-    arguments[1] = is_error ? JS_GetException(cx) : result;
-
-    if (JS_EnqueueJob(cx, qjs_webcrypto_promise_trampoline, 2, arguments) < 0) {
-        JS_FreeValue(cx, promise);
-        JS_FreeValue(cx, callbacks[is_error]);
-        JS_FreeValue(cx, arguments[1]);
-        return JS_EXCEPTION;
-    }
-
-    JS_FreeValue(cx, arguments[0]);
-    JS_FreeValue(cx, arguments[1]);
-
-    return promise;
 }
 
 

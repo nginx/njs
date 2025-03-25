@@ -1145,3 +1145,42 @@ qjs_string_base64url(JSContext *cx, const njs_str_t *src)
 
     return ret;
 }
+
+
+static JSValue
+qjs_promise_fill_trampoline(JSContext *cx, int argc, JSValueConst *argv)
+{
+    return JS_Call(cx, argv[0], JS_UNDEFINED, 1, &argv[1]);
+}
+
+
+JSValue
+qjs_promise_result(JSContext *cx, JSValue result)
+{
+    JS_BOOL  is_error;
+    JSValue  promise, callbacks[2], arguments[2];
+
+    promise = JS_NewPromiseCapability(cx, callbacks);
+    if (JS_IsException(promise)) {
+        JS_FreeValue(cx, result);
+        return JS_EXCEPTION;
+    }
+
+    is_error = JS_IsException(result);
+
+    JS_FreeValue(cx, callbacks[!is_error]);
+    arguments[0] = callbacks[is_error];
+    arguments[1] = is_error ? JS_GetException(cx) : result;
+
+    if (JS_EnqueueJob(cx, qjs_promise_fill_trampoline, 2, arguments) < 0) {
+        JS_FreeValue(cx, promise);
+        JS_FreeValue(cx, callbacks[is_error]);
+        JS_FreeValue(cx, result);
+        return JS_EXCEPTION;
+    }
+
+    JS_FreeValue(cx, arguments[0]);
+    JS_FreeValue(cx, arguments[1]);
+
+    return promise;
+}
