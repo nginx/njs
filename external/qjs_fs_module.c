@@ -2690,17 +2690,9 @@ qjs_fs_filehandle_finalizer(JSRuntime *rt, JSValue val)
 
 
 static JSValue
-qjs_fs_promise_trampoline(JSContext *cx, int argc, JSValueConst *argv)
-{
-    return JS_Call(cx, argv[0], JS_UNDEFINED, 1, &argv[1]);
-}
-
-
-static JSValue
 qjs_fs_result(JSContext *cx, JSValue result, int calltype, JSValue callback)
 {
-    JS_BOOL  is_error;
-    JSValue  promise, callbacks[2], arguments[2];
+    JSValue  promise, arguments[2];
 
     switch (calltype) {
     case QJS_FS_DIRECT:
@@ -2712,29 +2704,12 @@ qjs_fs_result(JSContext *cx, JSValue result, int calltype, JSValue callback)
         return result;
 
     case QJS_FS_PROMISE:
-        promise = JS_NewPromiseCapability(cx, callbacks);
-        if (JS_IsException(promise)) {
-            JS_FreeValue(cx, result);
-            return JS_EXCEPTION;
+        if (JS_IsError(cx, result)) {
+            JS_Throw(cx, result);
+            return qjs_promise_result(cx, JS_EXCEPTION);
         }
 
-        is_error = !!JS_IsError(cx, result);
-
-        arguments[0] = callbacks[is_error];
-        arguments[1] = result;
-        JS_FreeValue(cx, callbacks[!is_error]);
-
-        if (JS_EnqueueJob(cx, qjs_fs_promise_trampoline, 2, arguments) < 0) {
-            JS_FreeValue(cx, promise);
-            JS_FreeValue(cx, callbacks[is_error]);
-            JS_FreeValue(cx, result);
-            return JS_EXCEPTION;
-        }
-
-        JS_FreeValue(cx, arguments[0]);
-        JS_FreeValue(cx, arguments[1]);
-
-        return promise;
+        return qjs_promise_result(cx, result);
 
     case QJS_FS_CALLBACK:
         if (JS_IsError(cx, result)) {
