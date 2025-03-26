@@ -707,8 +707,8 @@ qjs_buffer_is_buffer(JSContext *ctx, JSValueConst this_val,
     proto = JS_GetPrototype(ctx, argv[0]);
     buffer_proto = JS_GetClassProto(ctx, QJS_CORE_CLASS_ID_BUFFER);
 
-    ret = JS_NewBool(ctx, JS_VALUE_GET_TAG(argv[0]) == JS_TAG_OBJECT &&
-                     JS_VALUE_GET_OBJ(buffer_proto) == JS_VALUE_GET_OBJ(proto));
+    ret = JS_NewBool(ctx, JS_IsObject(argv[0])
+                          && qjs_is_same_value(ctx, proto, buffer_proto));
 
     JS_FreeValue(ctx, buffer_proto);
     JS_FreeValue(ctx, proto);
