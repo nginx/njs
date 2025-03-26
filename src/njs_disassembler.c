@@ -35,6 +35,8 @@ static njs_code_name_t  code_names[] = {
 
     { NJS_VMCODE_PROPERTY_GET, sizeof(njs_vmcode_prop_get_t),
           njs_str("PROP GET        ") },
+    { NJS_VMCODE_PROPERTY_ATOM_GET, sizeof(njs_vmcode_prop_get_t),
+          njs_str("PROP ATOM GET   ") },
     { NJS_VMCODE_GLOBAL_GET, sizeof(njs_vmcode_prop_get_t),
           njs_str("GLOBAL GET      ") },
     { NJS_VMCODE_PROPERTY_INIT, sizeof(njs_vmcode_prop_set_t),

@@ -2295,7 +2295,7 @@ njs_parser_property(njs_parser_t *parser, njs_lexer_token_t *token,
                 return NJS_ERROR;
             }
 
-            node->u.operation = NJS_VMCODE_PROPERTY_GET;
+            node->u.operation = NJS_VMCODE_PROPERTY_ATOM_GET;
             node->token_line = token->line;
 
             prop_node = njs_parser_node_string(parser->vm, token, parser);
