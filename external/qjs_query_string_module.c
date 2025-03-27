@@ -403,7 +403,7 @@ qjs_query_string_append(JSContext *cx, JSValue object, const u_char *key,
             goto exception;
         }
 
-    } else if (JS_IsArray(cx, prev)) {
+    } else if (qjs_is_array(cx, prev)) {
         length = JS_GetPropertyStr(cx, prev, "length");
 
         if (JS_ToUint32(cx, &len, length) < 0) {
@@ -762,7 +762,7 @@ qjs_query_string_stringify_internal(JSContext *cx, JSValue obj, njs_str_t *sep,
             goto fail;
         }
 
-        if (JS_IsArray(cx, val)) {
+        if (qjs_is_array(cx, val)) {
             key = JS_AtomToString(cx, ptab[n].atom);
             if (JS_IsException(key)) {
                 JS_FreeValue(cx, val);

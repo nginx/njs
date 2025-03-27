@@ -52,7 +52,7 @@ jobs:
         run: |
           git clone https://github.com/quickjs-ng/quickjs quickjs-ng
           cd quickjs-ng
-          git checkout v0.8.0
+          git checkout v0.9.0
           CFLAGS="$CC_OPT -fPIC" LDFLAGS=$LD_OPT cmake -B build
           cmake --build build --target qjs -j $(nproc)
 

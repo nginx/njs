@@ -27,6 +27,10 @@
 
 #include <quickjs.h>
 
+#ifndef JS_BOOL
+#define JS_BOOL bool
+#endif
+
 #if defined(__GNUC__) && (__GNUC__ >= 8)
 #pragma GCC diagnostic pop
 #endif
@@ -144,13 +148,17 @@ static inline JS_BOOL JS_IsNullOrUndefined(JSValueConst v)
            || JS_VALUE_GET_TAG(v) == JS_TAG_UNDEFINED;
 }
 
-
 #ifdef NJS_HAVE_QUICKJS_IS_SAME_VALUE
 #define qjs_is_same_value(cx, a, b) JS_IsSameValue(cx, a, b)
 #else
 #define qjs_is_same_value(cx, a, b) JS_SameValue(cx, a, b)
 #endif
 
+#ifdef NJS_HAVE_QUICKJS_IS_ARRAY_SINGLE_ARG
+#define qjs_is_array(cx, a) JS_IsArray(a)
+#else
+#define qjs_is_array(cx, a) JS_IsArray(cx, a)
+#endif
 
 extern qjs_module_t              *qjs_modules[];
 

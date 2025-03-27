@@ -795,7 +795,7 @@ qjs_xml_node_tags_modify(JSContext *cx, JSValue obj, njs_str_t *name,
         return -1;
     }
 
-    if (!JS_IsArray(cx, setval)) {
+    if (!qjs_is_array(cx, setval)) {
         JS_ThrowTypeError(cx, "setval is not an array");
         return -1;
     }
