@@ -4556,7 +4556,7 @@ qjs_key_usage(JSContext *cx, JSValue value, unsigned *mask)
     njs_str_t              s;
     qjs_webcrypto_entry_t  *e;
 
-    if (!JS_IsArray(cx, value)) {
+    if (!qjs_is_array(cx, value)) {
         JS_ThrowTypeError(cx, "\"keyUsages\" argument must be an Array");
         return JS_EXCEPTION;
     }

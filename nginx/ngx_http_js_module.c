@@ -4910,7 +4910,7 @@ ngx_http_qjs_ext_args(JSContext *cx, JSValueConst this_val)
                 goto exception;
             }
 
-        } else if (JS_IsArray(cx, prev)) {
+        } else if (qjs_is_array(cx, prev)) {
             length = JS_GetPropertyStr(cx, prev, "length");
 
             if (JS_ToUint32(cx, &len, length)) {
@@ -6729,7 +6729,7 @@ ngx_http_qjs_headers_out_handler(JSContext *cx, ngx_http_request_t *r,
         return 1;
     }
 
-    if (JS_IsArray(cx, *value)) {
+    if (qjs_is_array(cx, *value)) {
         v = JS_GetPropertyStr(cx, *value, "length");
         if (JS_IsException(v)) {
             return -1;
@@ -6750,7 +6750,7 @@ ngx_http_qjs_headers_out_handler(JSContext *cx, ngx_http_request_t *r,
     ph = &header;
 
     for (i = 0; i < (uint32_t) length; i++) {
-        if (JS_IsArray(cx, *value)) {
+        if (qjs_is_array(cx, *value)) {
             v = JS_GetPropertyUint32(cx, *value, i);
             if (JS_IsException(v)) {
                 return -1;
@@ -6759,7 +6759,7 @@ ngx_http_qjs_headers_out_handler(JSContext *cx, ngx_http_request_t *r,
 
         rc = ngx_qjs_string(cx, v, &s);
 
-        if (JS_IsArray(cx, *value)) {
+        if (qjs_is_array(cx, *value)) {
             JS_FreeValue(cx, v);
         }
 
@@ -6832,7 +6832,7 @@ ngx_http_qjs_headers_out_special_handler(JSContext *cx, ngx_http_request_t *r,
     }
 
     if (value != NULL) {
-        if (JS_IsArray(cx, *value)) {
+        if (qjs_is_array(cx, *value)) {
             len = JS_GetPropertyStr(cx, *value, "length");
             if (JS_IsException(len)) {
                 return -1;
@@ -6860,7 +6860,7 @@ ngx_http_qjs_headers_out_special_handler(JSContext *cx, ngx_http_request_t *r,
 
     rc = ngx_qjs_string(cx, setval, &s);
 
-    if (value != NULL && JS_IsArray(cx, *value)) {
+    if (value != NULL && qjs_is_array(cx, *value)) {
         JS_FreeValue(cx, setval);
     }
 
@@ -7071,7 +7071,7 @@ ngx_http_qjs_headers_out_content_type(JSContext *cx, ngx_http_request_t *r,
         return 1;
     }
 
-    if (JS_IsArray(cx, *value)) {
+    if (qjs_is_array(cx, *value)) {
         len = JS_GetPropertyStr(cx, *value, "length");
         if (JS_IsException(len)) {
             return -1;
@@ -7095,7 +7095,7 @@ ngx_http_qjs_headers_out_content_type(JSContext *cx, ngx_http_request_t *r,
 
     rc = ngx_qjs_string(cx, setval, &s);
 
-    if (JS_IsArray(cx, *value)) {
+    if (qjs_is_array(cx, *value)) {
         JS_FreeValue(cx, setval);
     }
 

@@ -440,7 +440,7 @@ qjs_buffer_concat(JSContext *ctx, JSValueConst this_val, int argc,
 
     list = argv[0];
 
-    if (!JS_IsArray(ctx, list)) {
+    if (!qjs_is_array(ctx, list)) {
         return JS_ThrowTypeError(ctx,
                             "\"list\" argument must be an instance of Array");
     }
