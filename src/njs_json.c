@@ -88,7 +88,7 @@ static njs_object_t *njs_json_wrap_value(njs_vm_t *vm, njs_value_t *wrapper,
     const njs_value_t *value);
 
 
-static const njs_object_prop_t  njs_json_object_properties[];
+static const njs_object_propi_t  njs_json_object_properties[];
 
 
 static njs_int_t
@@ -150,8 +150,8 @@ njs_json_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
         return njs_json_internalize_property(vm, njs_function(reviver),
                                              &wrapper,
-                                             njs_value_arg(&njs_string_empty),
-                                             0, retval);
+                                             njs_value_arg(&njs_atom.vs_), 0,
+                                             retval);
     }
 
     njs_value_assign(retval, &value);
@@ -336,11 +336,11 @@ static const u_char *
 njs_json_parse_object(njs_json_parse_ctx_t *ctx, njs_value_t *value,
     const u_char *p)
 {
-    njs_int_t           ret;
-    njs_object_t        *object;
-    njs_value_t         prop_name, prop_value;
-    njs_object_prop_t   *prop;
-    njs_lvlhsh_query_t  lhq;
+    njs_int_t                ret;
+    njs_object_t             *object;
+    njs_value_t              prop_name, prop_value;
+    njs_object_prop_t        *prop;
+    njs_flathsh_obj_query_t  lhq;
 
     if (njs_slow_path(--ctx->depth == 0)) {
         njs_json_parse_exception(ctx, "Nested too deep", p);
@@ -395,19 +395,25 @@ njs_json_parse_object(njs_json_parse_ctx_t *ctx, njs_value_t *value,
             return NULL;
         }
 
-        prop = njs_object_prop_alloc(ctx->vm, &prop_name, &prop_value, 1);
+        ret = njs_atom_atomize_key(ctx->vm, &prop_name);
+        if (ret != NJS_OK) {
+            return NULL;
+        }
+
+        prop = njs_object_prop_alloc(ctx->vm, &prop_value, 1);
         if (njs_slow_path(prop == NULL)) {
             goto memory_error;
         }
 
-        njs_string_get(&prop_name, &lhq.key);
-        lhq.key_hash = njs_djb_hash(lhq.key.start, lhq.key.length);
         lhq.value = prop;
+
+        lhq.key_hash = prop_name.atom_id;
+
         lhq.replace = 1;
         lhq.pool = ctx->pool;
         lhq.proto = &njs_object_hash_proto;
 
-        ret = njs_lvlhsh_insert(&object->hash, &lhq);
+        ret = njs_flathsh_obj_insert(&object->hash, &lhq);
         if (njs_slow_path(ret != NJS_OK)) {
             njs_internal_error(ctx->vm, "lvlhsh insert/replace failed");
             return NULL;
@@ -1232,14 +1238,13 @@ memory_error:
 static njs_function_t *
 njs_object_to_json_function(njs_vm_t *vm, njs_value_t *value)
 {
-    njs_int_t           ret;
-    njs_value_t         retval;
-    njs_lvlhsh_query_t  lhq;
-
-    static const njs_value_t  to_json_string = njs_string("toJSON");
+    njs_int_t                ret;
+    njs_value_t              retval;
+    njs_flathsh_obj_query_t  lhq;
 
     if (njs_is_object(value)) {
-        njs_object_property_init(&lhq, &to_json_string, NJS_TO_JSON_HASH);
+        lhq.proto = &njs_object_hash_proto;
+        lhq.key_hash = njs_atom.vs_toJSON.atom_id;
 
         ret = njs_object_property(vm, njs_object(value), &lhq, &retval);
 
@@ -1258,6 +1263,7 @@ static njs_int_t
 njs_json_stringify_to_json(njs_json_stringify_t* stringify,
     njs_json_state_t *state, njs_value_t *key, njs_value_t *value)
 {
+    njs_int_t       ret;
     njs_value_t     arguments[2];
     njs_function_t  *to_json;
 
@@ -1276,7 +1282,10 @@ njs_json_stringify_to_json(njs_json_stringify_t* stringify,
         arguments[1] = *key;
 
     } else {
-        njs_uint32_to_string(&arguments[1], state->index);
+        ret = njs_uint32_to_string(stringify->vm, &arguments[1], state->index);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
     }
 
     return njs_function_apply(stringify->vm, to_json, arguments, 2,
@@ -1288,6 +1297,7 @@ static njs_int_t
 njs_json_stringify_replacer(njs_json_stringify_t* stringify,
     njs_json_state_t *state, njs_value_t *key, njs_value_t *value)
 {
+    njs_int_t    ret;
     njs_value_t  arguments[3];
 
     if (!njs_is_function(&stringify->replacer)) {
@@ -1301,7 +1311,10 @@ njs_json_stringify_replacer(njs_json_stringify_t* stringify,
         arguments[1] = *key;
 
     } else {
-        njs_uint32_to_string(&arguments[1], state->index);
+        ret = njs_uint32_to_string(stringify->vm, &arguments[1], state->index);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
     }
 
     return njs_function_apply(stringify->vm, njs_function(&stringify->replacer),
@@ -1328,7 +1341,7 @@ njs_json_stringify_array(njs_json_stringify_t *stringify)
     }
 
     item = njs_array_push(stringify->vm, properties);
-    njs_value_assign(item, &njs_string_empty);
+    njs_value_assign(item, &njs_atom.vs_);
 
     for (i = 0; i < length; i++) {
         ret = njs_value_property_i64(stringify->vm, &stringify->replacer, i,
@@ -1588,9 +1601,9 @@ static njs_object_t *
 njs_json_wrap_value(njs_vm_t *vm, njs_value_t *wrapper,
     const njs_value_t *value)
 {
-    njs_int_t           ret;
-    njs_object_prop_t   *prop;
-    njs_lvlhsh_query_t  lhq;
+    njs_int_t                ret;
+    njs_object_prop_t        *prop;
+    njs_flathsh_obj_query_t  lhq;
 
     wrapper->data.u.object = njs_object_alloc(vm);
     if (njs_slow_path(njs_object(wrapper) == NULL)) {
@@ -1600,20 +1613,20 @@ njs_json_wrap_value(njs_vm_t *vm, njs_value_t *wrapper,
     wrapper->type = NJS_OBJECT;
     wrapper->data.truth = 1;
 
-    lhq.replace = 0;
-    lhq.proto = &njs_object_hash_proto;
-    lhq.pool = vm->mem_pool;
-    lhq.key = njs_str_value("");
-    lhq.key_hash = NJS_DJB_HASH_INIT;
-
-    prop = njs_object_prop_alloc(vm, &njs_string_empty, value, 1);
+    prop = njs_object_prop_alloc(vm, value, 1);
     if (njs_slow_path(prop == NULL)) {
         return NULL;
     }
 
     lhq.value = prop;
 
-    ret = njs_lvlhsh_insert(njs_object_hash(wrapper), &lhq);
+    lhq.key_hash = njs_atom.vs_.atom_id;
+
+    lhq.replace = 0;
+    lhq.pool = vm->mem_pool;
+    lhq.proto = &njs_object_hash_proto;
+
+    ret = njs_flathsh_obj_insert(njs_object_hash(wrapper), &lhq);
     if (njs_slow_path(ret != NJS_OK)) {
         return NULL;
     }
@@ -1622,18 +1635,14 @@ njs_json_wrap_value(njs_vm_t *vm, njs_value_t *wrapper,
 }
 
 
-static const njs_object_prop_t  njs_json_object_properties[] =
+static const njs_object_propi_t  njs_json_object_properties[] =
 {
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG),
-        .u.value = njs_string("JSON"),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_VALUE(vw_toStringTag, njs_strval(JSON),
+                           NJS_OBJECT_PROP_VALUE_C),
 
-    NJS_DECLARE_PROP_NATIVE("parse", njs_json_parse, 2, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_parse, njs_json_parse, 2, 0),
 
-    NJS_DECLARE_PROP_NATIVE("stringify", njs_json_stringify, 3, 0),
+    NJS_DECLARE_PROP_NATIVE(vs_stringify, njs_json_stringify, 3, 0),
 };
 
 
@@ -1652,8 +1661,6 @@ njs_dump_terminal(njs_json_stringify_t *stringify, njs_chb_t *chain,
     njs_value_t        str_val, tag;
     njs_typed_array_t  *array;
     njs_string_prop_t  string;
-
-    static const njs_value_t  name_string = njs_string("name");
 
     njs_int_t   (*to_string)(njs_vm_t *, njs_value_t *, const njs_value_t *);
 
@@ -1765,7 +1772,7 @@ njs_dump_terminal(njs_json_stringify_t *stringify, njs_chb_t *chain,
         }
 
         ret = njs_value_property(stringify->vm, value,
-                                 njs_value_arg(&name_string), &tag);
+                                 njs_value_arg(&njs_atom.vs_name), &tag);
         if (njs_slow_path(ret == NJS_ERROR)) {
             return ret;
         }
@@ -1943,11 +1950,6 @@ njs_dump_empty(njs_json_stringify_t *stringify, njs_json_state_t *state,
 }
 
 
-static const njs_value_t  string_get = njs_string("[Getter]");
-static const njs_value_t  string_set = njs_string("[Setter]");
-static const njs_value_t  string_get_set = njs_long_string("[Getter/Setter]");
-
-
 njs_int_t
 njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, njs_value_t *value,
     njs_uint_t console, njs_uint_t indent)
@@ -2087,7 +2089,8 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, njs_value_t *value,
         if (prop->type == NJS_PROPERTY_HANDLER) {
             pq.scratch = *prop;
             prop = &pq.scratch;
-            ret = njs_prop_handler(prop)(vm, prop, &state->value, NULL,
+            ret = njs_prop_handler(prop)(vm, prop, pq.lhq.key_hash,
+                                         &state->value, NULL,
                                          njs_prop_value(prop));
 
             if (njs_slow_path(ret == NJS_ERROR)) {
@@ -2100,14 +2103,14 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, njs_value_t *value,
         if (njs_is_accessor_descriptor(prop)) {
             if (njs_prop_getter(prop) != NULL) {
                 if (njs_prop_setter(prop) != NULL) {
-                    val = njs_value_arg(&string_get_set);
+                    val = njs_value_arg(&njs_atom.vs__Getter_Setter_);
 
                 } else {
-                    val = njs_value_arg(&string_get);
+                    val = njs_value_arg(&njs_atom.vs__Getter_);
                 }
 
             } else {
-                val = njs_value_arg(&string_set);
+                val = njs_value_arg(&njs_atom.vs__Setter_);
             }
         }
 
