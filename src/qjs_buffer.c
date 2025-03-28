@@ -238,6 +238,7 @@ static const JSCFunctionListEntry qjs_buffer_proto[] = {
                        qjs_buffer_magic(8, 1, 0)),
 };
 
+static JSClassID qjs_u8_ta_class_id;
 
 static JSClassDef qjs_buffer_class = {
     "Buffer",
@@ -707,7 +708,7 @@ qjs_buffer_is_buffer(JSContext *ctx, JSValueConst this_val,
     proto = JS_GetPrototype(ctx, argv[0]);
     buffer_proto = JS_GetClassProto(ctx, QJS_CORE_CLASS_ID_BUFFER);
 
-    ret = JS_NewBool(ctx, JS_IsObject(argv[0])
+    ret = JS_NewBool(ctx, (JS_GetClassID(argv[0]) == qjs_u8_ta_class_id)
                           && qjs_is_same_value(ctx, proto, buffer_proto));
 
     JS_FreeValue(ctx, buffer_proto);
@@ -2473,7 +2474,6 @@ qjs_buffer_builtin_init(JSContext *ctx)
     int        rc;
     JSAtom     species_atom;
     JSValue    global_obj, buffer, proto, ctor, ta, ta_proto, symbol, species;
-    JSClassID  u8_ta_class_id;
 
     JS_NewClass(JS_GetRuntime(ctx), QJS_CORE_CLASS_ID_BUFFER,
                 &qjs_buffer_class);
@@ -2499,11 +2499,11 @@ qjs_buffer_builtin_init(JSContext *ctx)
 #endif
 
     ta = JS_CallConstructor(ctx, ctor, 0, NULL);
-    u8_ta_class_id = JS_GetClassID(ta);
+    qjs_u8_ta_class_id = JS_GetClassID(ta);
     JS_FreeValue(ctx, ta);
     JS_FreeValue(ctx, ctor);
 
-    ta_proto = JS_GetClassProto(ctx, u8_ta_class_id);
+    ta_proto = JS_GetClassProto(ctx, qjs_u8_ta_class_id);
     JS_SetPrototype(ctx, proto, ta_proto);
     JS_FreeValue(ctx, ta_proto);
 

@@ -490,11 +490,14 @@ let isBuffer_tsuite = {
         return 'SUCCESS';
     },
 
+    prepare_args: args => args,
+
     tests: [
         { value: Buffer.from('α'), expected: true },
         { value: new Uint8Array(10), expected: false },
         { value: {}, expected: false },
         { value: 1, expected: false },
+        { value: Object.setPrototypeOf({}, Buffer.prototype), expected: false },
 ]};
 
 
