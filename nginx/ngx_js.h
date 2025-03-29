@@ -357,7 +357,7 @@ ngx_int_t ngx_qjs_string(JSContext *cx, JSValueConst val, ngx_str_t *str);
 #define ngx_qjs_external_pool(cx, e)                                         \
     ((ngx_external_pool_pt) ngx_qjs_meta(cx, 1))(e)
 #define ngx_qjs_external_resolver(cx, e)                                     \
-    ((ngx_external_resolver_pt) ngx_qjs_meta(vm, 2))(e)
+    ((ngx_external_resolver_pt) ngx_qjs_meta(cx, 2))(e)
 #define ngx_qjs_external_resolver_timeout(cx, e)                             \
     ((ngx_external_timeout_pt) ngx_qjs_meta(cx, 3))(e)
 #define ngx_qjs_external_event_finalize(cx)                                  \
