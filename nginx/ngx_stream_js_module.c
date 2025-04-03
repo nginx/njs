@@ -2672,7 +2672,7 @@ ngx_stream_qjs_run_event(ngx_stream_session_t *s, ngx_stream_js_ctx_t *ctx,
 
     if (rc == NGX_ERROR) {
 error:
-        ngx_qjs_exception(cx, &exception);
+        ngx_qjs_exception(ctx->engine, &exception);
 
         ngx_log_error(NGX_LOG_ERR, c->log, 0, "js exception: %V",
                       &exception);
