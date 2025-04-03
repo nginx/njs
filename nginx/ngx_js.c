@@ -101,7 +101,7 @@ static void ngx_qjs_rejection_tracker(JSContext *ctx, JSValueConst promise,
     JSValueConst reason, JS_BOOL is_handled, void *opaque);
 
 static JSValue ngx_qjs_value(JSContext *cx, const ngx_str_t *path);
-static ngx_int_t ngx_qjs_dump_obj(JSContext *cx, JSValueConst val,
+static ngx_int_t ngx_qjs_dump_obj(ngx_engine_t *e, JSValueConst val,
     ngx_str_t *dst);
 
 static JSModuleDef *ngx_qjs_core_init(JSContext *cx, const char *name);
@@ -849,7 +849,7 @@ ngx_engine_qjs_compile(ngx_js_loc_conf_t *conf, ngx_log_t *log, u_char *start,
                    JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
 
     if (JS_IsException(code)) {
-        ngx_qjs_exception(cx, &text);
+        ngx_qjs_exception(engine, &text);
         ngx_log_error(NGX_LOG_EMERG, log, 0, "js compile %V", &text);
         return NGX_ERROR;
     }
@@ -972,7 +972,7 @@ ngx_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
         rv = JS_ReadObject(cx, pc[i].code, pc[i].code_size,
                            JS_READ_OBJ_BYTECODE);
         if (JS_IsException(rv)) {
-            ngx_qjs_exception(cx, &exception);
+            ngx_qjs_exception(engine, &exception);
 
             ngx_log_error(NGX_LOG_ERR, ctx->log, 0,
                           "js load module exception: %V", &exception);
@@ -988,7 +988,7 @@ ngx_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
     rv = JS_EvalFunction(cx, rv);
 
     if (JS_IsException(rv)) {
-        ngx_qjs_exception(cx, &exception);
+        ngx_qjs_exception(engine, &exception);
 
         ngx_log_error(NGX_LOG_ERR, ctx->log, 0, "js eval exception: %V",
                       &exception);
@@ -997,7 +997,7 @@ ngx_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
 
     rv = js_std_await(cx, rv);
     if (JS_IsException(rv)) {
-        ngx_qjs_exception(cx, &exception);
+        ngx_qjs_exception(engine, &exception);
 
         ngx_log_error(NGX_LOG_ERR, ctx->log, 0, "js eval exception: %V",
                       &exception);
@@ -1042,7 +1042,7 @@ ngx_engine_qjs_call(ngx_js_ctx_t *ctx, ngx_str_t *fname,
     val = JS_Call(cx, fn, JS_UNDEFINED, nargs, &ngx_qjs_arg(args[0]));
     JS_FreeValue(cx, fn);
     if (JS_IsException(val)) {
-        ngx_qjs_exception(cx, &exception);
+        ngx_qjs_exception(ctx->engine, &exception);
 
         ngx_log_error(NGX_LOG_ERR, ctx->log, 0,
                       "js call exception: %V", &exception);
@@ -1059,7 +1059,7 @@ ngx_engine_qjs_call(ngx_js_ctx_t *ctx, ngx_str_t *fname,
         rc = JS_ExecutePendingJob(rt, &cx1);
         if (rc <= 0) {
             if (rc == -1) {
-                ngx_qjs_exception(cx, &exception);
+                ngx_qjs_exception(ctx->engine, &exception);
 
                 ngx_log_error(NGX_LOG_ERR, ctx->log, 0,
                               "js job exception: %V", &exception);
@@ -1093,7 +1093,7 @@ static ngx_int_t
 ngx_engine_qjs_string(ngx_engine_t *e, njs_opaque_value_t *value,
     ngx_str_t *str)
 {
-    return ngx_qjs_dump_obj(e->u.qjs.ctx, ngx_qjs_arg(*value), str);
+    return ngx_qjs_dump_obj(e, ngx_qjs_arg(*value), str);
 }
 
 
@@ -1150,7 +1150,7 @@ ngx_engine_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
         }
 
         if (ngx_qjs_unhandled_rejection(ctx)) {
-            ngx_qjs_exception(cx, &exception);
+            ngx_qjs_exception(e, &exception);
             ngx_log_error(NGX_LOG_ERR, ctx->log, 0,
                           "js unhandled rejection: %V", &exception);
         }
@@ -1255,17 +1255,13 @@ ngx_qjs_value(JSContext *cx, const ngx_str_t *path)
 
 
 static ngx_int_t
-ngx_qjs_dump_obj(JSContext *cx, JSValueConst val, ngx_str_t *dst)
+ngx_qjs_dump_obj(ngx_engine_t *e, JSValueConst val, ngx_str_t *dst)
 {
-    size_t         len, byte_offset, byte_length;
-    u_char        *start, *p;
-    JSValue        buffer, stack;
-    ngx_str_t      str, stack_str;
-    ngx_js_ctx_t  *ctx;
-    ngx_engine_t  *e;
-
-    ctx = ngx_qjs_external_ctx(cx, JS_GetContextOpaque(cx));
-    e = ctx->engine;
+    size_t      len, byte_offset, byte_length;
+    u_char     *start, *p;
+    JSValue     buffer, stack;
+    ngx_str_t   str, stack_str;
+    JSContext  *cx;
 
     if (JS_IsNullOrUndefined(val)) {
         dst->data = NULL;
@@ -1367,7 +1363,7 @@ ngx_qjs_call(JSContext *cx, JSValue fn, JSValue *argv, int argc)
 
     ret = JS_Call(cx, fn, JS_UNDEFINED, argc, argv);
     if (JS_IsException(ret)) {
-        ngx_qjs_exception(cx, &exception);
+        ngx_qjs_exception(ctx->engine, &exception);
 
         ngx_log_error(NGX_LOG_ERR, ctx->log, 0,
                       "js call exception: %V", &exception);
@@ -1383,7 +1379,7 @@ ngx_qjs_call(JSContext *cx, JSValue fn, JSValue *argv, int argc)
         rc = JS_ExecutePendingJob(rt, &cx1);
         if (rc <= 0) {
             if (rc == -1) {
-                ngx_qjs_exception(cx, &exception);
+                ngx_qjs_exception(ctx->engine, &exception);
 
                 ngx_log_error(NGX_LOG_ERR, ctx->log, 0,
                               "js job exception: %V", &exception);
@@ -1400,16 +1396,16 @@ ngx_qjs_call(JSContext *cx, JSValue fn, JSValue *argv, int argc)
 
 
 ngx_int_t
-ngx_qjs_exception(JSContext *cx, ngx_str_t *s)
+ngx_qjs_exception(ngx_engine_t *e, ngx_str_t *s)
 {
     JSValue  exception;
 
-    exception = JS_GetException(cx);
-    if (ngx_qjs_dump_obj(cx, exception, s) != NGX_OK) {
+    exception = JS_GetException(e->u.qjs.ctx);
+    if (ngx_qjs_dump_obj(e, exception, s) != NGX_OK) {
         return NGX_ERROR;
     }
 
-    JS_FreeValue(cx, exception);
+    JS_FreeValue(e->u.qjs.ctx, exception);
 
     return NGX_OK;
 }
@@ -1746,6 +1742,7 @@ ngx_qjs_ext_log(JSContext *cx, JSValueConst this_val, int argc,
     char              *p;
     uint32_t           level;
     ngx_str_t          msg;
+    ngx_js_ctx_t      *ctx;
     ngx_connection_t  *c;
 
     p = JS_GetContextOpaque(cx);
@@ -1764,10 +1761,11 @@ ngx_qjs_ext_log(JSContext *cx, JSValueConst this_val, int argc,
         argv++;
     }
 
+    ctx = ngx_qjs_external_ctx(cx, p);
     c = ngx_qjs_external_connection(cx, p);
 
     for ( ; argc > 0; argc--, argv++) {
-        if (ngx_qjs_dump_obj(cx, argv[0], &msg) != NGX_OK) {
+        if (ngx_qjs_dump_obj(ctx->engine, argv[0], &msg) != NGX_OK) {
             return JS_EXCEPTION;
         }
 
