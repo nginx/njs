@@ -129,6 +129,10 @@ if [ $NJS_LIBXSLT != NO ]; then
     have=NJS_HAVE_XML . auto/have
     NJS_SRCS="$NJS_SRCS $ngx_addon_dir/../external/njs_xml_module.c"
 
+    if [ "$NJS_HAVE_QUICKJS" = "YES" ];  then
+        NJS_SRCS="$NJS_SRCS $ngx_addon_dir/../external/qjs_xml_module.c"
+    fi
+
     echo " enabled xml module"
 fi
 
