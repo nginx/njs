@@ -47,8 +47,8 @@ struct ngx_js_dict_s {
 
 
 static njs_int_t njs_js_ext_shared_dict_capacity(njs_vm_t *vm,
-    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
-    njs_value_t *retval);
+    njs_object_prop_t *prop, uint32_t unused, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval);
 static njs_int_t njs_js_ext_shared_dict_clear(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t flags, njs_value_t *retval);
 static njs_int_t njs_js_ext_shared_dict_delete(njs_vm_t *vm, njs_value_t *args,
@@ -67,8 +67,8 @@ static njs_int_t njs_js_ext_shared_dict_incr(njs_vm_t *vm, njs_value_t *args,
 static njs_int_t njs_js_ext_shared_dict_items(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t njs_js_ext_shared_dict_name(njs_vm_t *vm,
-    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
-    njs_value_t *retval);
+    njs_object_prop_t *prop, uint32_t unused, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval);
 static njs_int_t njs_js_ext_shared_dict_pop(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t njs_js_ext_shared_dict_set(njs_vm_t *vm, njs_value_t *args,
@@ -76,8 +76,8 @@ static njs_int_t njs_js_ext_shared_dict_set(njs_vm_t *vm, njs_value_t *args,
 static njs_int_t njs_js_ext_shared_dict_size(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t njs_js_ext_shared_dict_type(njs_vm_t *vm,
-    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
-    njs_value_t *retval);
+    njs_object_prop_t *prop, uint32_t unused, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval);
 static ngx_js_dict_node_t *ngx_js_dict_lookup(ngx_js_dict_t *dict,
     njs_str_t *key);
 
@@ -104,8 +104,8 @@ static void ngx_js_dict_expire(ngx_js_dict_t *dict, ngx_msec_t now);
 static void ngx_js_dict_evict(ngx_js_dict_t *dict, ngx_int_t count);
 
 static njs_int_t ngx_js_dict_shared_error_name(njs_vm_t *vm,
-    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
-    njs_value_t *retval);
+    njs_object_prop_t *prop, uint32_t unused, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval);
 
 static ngx_int_t ngx_js_dict_init_zone(ngx_shm_zone_t *shm_zone, void *data);
 static njs_int_t ngx_js_shared_dict_preinit(njs_vm_t *vm);
@@ -480,7 +480,8 @@ qjs_module_t  ngx_qjs_ngx_shared_dict_module = {
 
 njs_int_t
 njs_js_ext_global_shared_prop(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+    uint32_t atom_id, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval)
 {
     njs_int_t            ret;
     njs_str_t            name;
@@ -488,7 +489,7 @@ njs_js_ext_global_shared_prop(njs_vm_t *vm, njs_object_prop_t *prop,
     ngx_shm_zone_t      *shm_zone;
     ngx_js_main_conf_t  *conf;
 
-    ret = njs_vm_prop_name(vm, prop, &name);
+    ret = njs_vm_prop_name(vm, atom_id, &name);
     if (ret != NJS_OK) {
         return NJS_ERROR;
     }
@@ -559,7 +560,8 @@ njs_js_ext_global_shared_keys(njs_vm_t *vm, njs_value_t *unused,
 
 static njs_int_t
 njs_js_ext_shared_dict_capacity(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval)
 {
     ngx_shm_zone_t  *shm_zone;
 
@@ -1033,7 +1035,8 @@ fail:
 
 static njs_int_t
 njs_js_ext_shared_dict_name(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval)
 {
     ngx_shm_zone_t  *shm_zone;
 
@@ -1210,7 +1213,8 @@ njs_js_ext_shared_dict_size(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 static njs_int_t
 njs_js_ext_shared_dict_type(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval)
 {
     njs_str_t        type;
     ngx_js_dict_t   *dict;
@@ -1653,7 +1657,8 @@ ngx_js_dict_evict(ngx_js_dict_t *dict, ngx_int_t count)
 
 static njs_int_t
 ngx_js_dict_shared_error_name(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval)
 {
     return njs_vm_value_string_create(vm, retval,
                                       (u_char *) "SharedMemoryError", 17);

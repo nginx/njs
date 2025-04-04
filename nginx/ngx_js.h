@@ -405,13 +405,13 @@ char * ngx_js_merge_conf(ngx_conf_t *cf, void *parent, void *child,
 char *ngx_js_shared_dict_zone(ngx_conf_t *cf, ngx_command_t *cmd, void *conf,
     void *tag);
 
-njs_int_t ngx_js_ext_string(njs_vm_t *vm, njs_object_prop_t *prop,
+njs_int_t ngx_js_ext_string(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
-njs_int_t ngx_js_ext_uint(njs_vm_t *vm, njs_object_prop_t *prop,
+njs_int_t ngx_js_ext_uint(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
-njs_int_t ngx_js_ext_constant(njs_vm_t *vm, njs_object_prop_t *prop,
+njs_int_t ngx_js_ext_constant(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
-njs_int_t ngx_js_ext_flags(njs_vm_t *vm, njs_object_prop_t *prop,
+njs_int_t ngx_js_ext_flags(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 
 ngx_int_t ngx_js_string(njs_vm_t *vm, njs_value_t *value, njs_str_t *str);
