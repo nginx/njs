@@ -158,9 +158,9 @@ struct ngx_js_http_s {
 
 
 
-#define ngx_js_http_error(http, fmt, ...)                                     \
+#define ngx_js_http_error(http, err)                                          \
     do {                                                                      \
-        njs_vm_error((http)->vm, fmt, ##__VA_ARGS__);                         \
+        njs_vm_error((http)->vm, err);                                        \
         njs_vm_exception_get((http)->vm,                                      \
                              njs_value_arg(&(http)->response_value));         \
         ngx_js_http_fetch_done(http, &(http)->response_value, NJS_ERROR);     \
@@ -1343,9 +1343,15 @@ ngx_js_resolve_handler(ngx_resolver_ctx_t *ctx)
     http = ctx->data;
 
     if (ctx->state) {
-        ngx_js_http_error(http, "\"%V\" could not be resolved (%i: %s)",
-                          &ctx->name, ctx->state,
-                          ngx_resolver_strerror(ctx->state));
+        u_char  *p, msg[1024];
+
+        p = ngx_snprintf(msg, 1024 - 1,
+                         "\"%V\" could not be resolved (%i: %s)",
+                         &ctx->name, ctx->state,
+                         ngx_resolver_strerror(ctx->state));
+        *p = '\0';
+
+        ngx_js_http_error(http, (const char *) msg);
         return;
     }
 
