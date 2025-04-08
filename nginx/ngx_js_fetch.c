@@ -158,7 +158,7 @@ struct ngx_js_http_s {
 
 
 
-#define ngx_js_http_error(http, err, fmt, ...)                                \
+#define ngx_js_http_error(http, fmt, ...)                                     \
     do {                                                                      \
         njs_vm_error((http)->vm, fmt, ##__VA_ARGS__);                         \
         njs_vm_exception_get((http)->vm,                                      \
@@ -1343,7 +1343,7 @@ ngx_js_resolve_handler(ngx_resolver_ctx_t *ctx)
     http = ctx->data;
 
     if (ctx->state) {
-        ngx_js_http_error(http, 0, "\"%V\" could not be resolved (%i: %s)",
+        ngx_js_http_error(http, "\"%V\" could not be resolved (%i: %s)",
                           &ctx->name, ctx->state,
                           ngx_resolver_strerror(ctx->state));
         return;
@@ -1410,7 +1410,7 @@ ngx_js_resolve_handler(ngx_resolver_ctx_t *ctx)
 
 failed:
 
-    ngx_js_http_error(http, 0, "memory error");
+    ngx_js_http_error(http, "memory error");
 }
 
 
@@ -1577,7 +1577,7 @@ ngx_js_http_connect(ngx_js_http_t *http)
     rc = ngx_event_connect_peer(&http->peer);
 
     if (rc == NGX_ERROR) {
-        ngx_js_http_error(http, 0, "connect failed");
+        ngx_js_http_error(http, "connect failed");
         return;
     }
 
@@ -1627,14 +1627,14 @@ ngx_js_http_ssl_init_connection(ngx_js_http_t *http)
     if (ngx_ssl_create_connection(http->ssl, c, NGX_SSL_BUFFER|NGX_SSL_CLIENT)
         != NGX_OK)
     {
-        ngx_js_http_error(http, 0, "failed to create ssl connection");
+        ngx_js_http_error(http, "failed to create ssl connection");
         return;
     }
 
     c->sendfile = 0;
 
     if (ngx_js_http_ssl_name(http) != NGX_OK) {
-        ngx_js_http_error(http, 0, "failed to create ssl connection");
+        ngx_js_http_error(http, "failed to create ssl connection");
         return;
     }
 
@@ -1770,7 +1770,7 @@ ngx_js_http_next(ngx_js_http_t *http)
     ngx_log_debug0(NGX_LOG_DEBUG_EVENT, http->log, 0, "js fetch next addr");
 
     if (++http->naddr >= http->naddrs) {
-        ngx_js_http_error(http, 0, "connect failed");
+        ngx_js_http_error(http, "connect failed");
         return;
     }
 
@@ -1799,7 +1799,7 @@ ngx_js_http_write_handler(ngx_event_t *wev)
     ngx_log_debug0(NGX_LOG_DEBUG_EVENT, wev->log, 0, "js fetch write handler");
 
     if (wev->timedout) {
-        ngx_js_http_error(http, NGX_ETIMEDOUT, "write timed out");
+        ngx_js_http_error(http, "write timed out");
         return;
     }
 
@@ -1815,13 +1815,13 @@ ngx_js_http_write_handler(ngx_event_t *wev)
     if (b == NULL) {
         size = njs_chb_size(&http->chain);
         if (size < 0) {
-            ngx_js_http_error(http, 0, "memory error");
+            ngx_js_http_error(http, "memory error");
             return;
         }
 
         b = ngx_create_temp_buf(http->pool, size);
         if (b == NULL) {
-            ngx_js_http_error(http, 0, "memory error");
+            ngx_js_http_error(http, "memory error");
             return;
         }
 
@@ -1853,7 +1853,7 @@ ngx_js_http_write_handler(ngx_event_t *wev)
             }
 
             if (ngx_handle_write_event(wev, 0) != NGX_OK) {
-                ngx_js_http_error(http, 0, "write failed");
+                ngx_js_http_error(http, "write failed");
             }
 
             return;
@@ -1881,14 +1881,14 @@ ngx_js_http_read_handler(ngx_event_t *rev)
     ngx_log_debug0(NGX_LOG_DEBUG_EVENT, rev->log, 0, "js fetch read handler");
 
     if (rev->timedout) {
-        ngx_js_http_error(http, NGX_ETIMEDOUT, "read timed out");
+        ngx_js_http_error(http, "read timed out");
         return;
     }
 
     if (http->buffer == NULL) {
         b = ngx_create_temp_buf(http->pool, http->buffer_size);
         if (b == NULL) {
-            ngx_js_http_error(http, 0, "memory error");
+            ngx_js_http_error(http, "memory error");
             return;
         }
 
@@ -1915,7 +1915,7 @@ ngx_js_http_read_handler(ngx_event_t *rev)
 
         if (n == NGX_AGAIN) {
             if (ngx_handle_read_event(rev, 0) != NGX_OK) {
-                ngx_js_http_error(http, 0, "read failed");
+                ngx_js_http_error(http, "read failed");
             }
 
             return;
@@ -1939,7 +1939,7 @@ ngx_js_http_read_handler(ngx_event_t *rev)
     }
 
     if (rc == NGX_AGAIN) {
-        ngx_js_http_error(http, 0, "prematurely closed connection");
+        ngx_js_http_error(http, "prematurely closed connection");
     }
 }
 
@@ -2374,7 +2374,7 @@ ngx_js_http_process_status_line(ngx_js_http_t *http)
 
     /* rc == NGX_ERROR */
 
-    ngx_js_http_error(http, 0, "invalid fetch status line");
+    ngx_js_http_error(http, "invalid fetch status line");
 
     return NGX_ERROR;
 }
@@ -2397,7 +2397,7 @@ ngx_js_http_process_headers(ngx_js_http_t *http)
         rc = ngx_list_init(&http->response.headers.header_list, http->pool, 4,
                            sizeof(ngx_js_tb_elt_t));
         if (rc != NGX_OK) {
-            ngx_js_http_error(http, 0, "alloc failed");
+            ngx_js_http_error(http, "alloc failed");
             return NGX_ERROR;
         }
     }
@@ -2414,7 +2414,7 @@ ngx_js_http_process_headers(ngx_js_http_t *http)
                                         hp->header_start, vlen);
 
             if (ret == NJS_ERROR) {
-                ngx_js_http_error(http, 0, "cannot add respose header");
+                ngx_js_http_error(http, "cannot add respose header");
                 return NGX_ERROR;
             }
 
@@ -2438,7 +2438,7 @@ ngx_js_http_process_headers(ngx_js_http_t *http)
             {
                 hp->content_length_n = ngx_atoof(hp->header_start, vlen);
                 if (hp->content_length_n == NGX_ERROR) {
-                    ngx_js_http_error(http, 0, "invalid fetch content length");
+                    ngx_js_http_error(http, "invalid fetch content length");
                     return NGX_ERROR;
                 }
 
@@ -2446,7 +2446,7 @@ ngx_js_http_process_headers(ngx_js_http_t *http)
                     && hp->content_length_n
                        > (off_t) http->max_response_body_size)
                 {
-                    ngx_js_http_error(http, 0,
+                    ngx_js_http_error(http,
                                       "fetch content length is too large");
                     return NGX_ERROR;
                 }
@@ -2466,7 +2466,7 @@ ngx_js_http_process_headers(ngx_js_http_t *http)
 
         /* rc == NGX_ERROR */
 
-        ngx_js_http_error(http, 0, "invalid fetch header");
+        ngx_js_http_error(http, "invalid fetch header");
 
         return NGX_ERROR;
     }
@@ -2495,7 +2495,7 @@ ngx_js_http_process_body(ngx_js_http_t *http)
     if (http->done) {
         size = njs_chb_size(&http->response.chain);
         if (size < 0) {
-            ngx_js_http_error(http, 0, "memory error");
+            ngx_js_http_error(http, "memory error");
             return NGX_ERROR;
         }
 
@@ -2503,7 +2503,7 @@ ngx_js_http_process_body(ngx_js_http_t *http)
             && http->http_parse.chunked
             && http->http_parse.content_length_n == -1)
         {
-            ngx_js_http_error(http, 0, "invalid fetch chunked response");
+            ngx_js_http_error(http, "invalid fetch chunked response");
             return NGX_ERROR;
         }
 
@@ -2516,7 +2516,7 @@ ngx_js_http_process_body(ngx_js_http_t *http)
                                          ngx_http_js_fetch_response_proto_id,
                                          &http->response, 0);
             if (ret != NJS_OK) {
-                ngx_js_http_error(http, 0, "fetch response creation failed");
+                ngx_js_http_error(http, "fetch response creation failed");
                 return NGX_ERROR;
             }
 
@@ -2528,7 +2528,7 @@ ngx_js_http_process_body(ngx_js_http_t *http)
             return NGX_AGAIN;
         }
 
-        ngx_js_http_error(http, 0, "fetch trailing data");
+        ngx_js_http_error(http, "fetch trailing data");
         return NGX_ERROR;
     }
 
@@ -2538,7 +2538,7 @@ ngx_js_http_process_body(ngx_js_http_t *http)
         rc = ngx_js_http_parse_chunked(&http->http_chunk_parse, b,
                                        &http->response.chain);
         if (rc == NGX_ERROR) {
-            ngx_js_http_error(http, 0, "invalid fetch chunked response");
+            ngx_js_http_error(http, "invalid fetch chunked response");
             return NGX_ERROR;
         }
 
@@ -2549,7 +2549,7 @@ ngx_js_http_process_body(ngx_js_http_t *http)
         }
 
         if (size > http->max_response_body_size * 10) {
-            ngx_js_http_error(http, 0, "very large fetch chunked response");
+            ngx_js_http_error(http, "very large fetch chunked response");
             return NGX_ERROR;
         }
 
@@ -2571,7 +2571,7 @@ ngx_js_http_process_body(ngx_js_http_t *http)
         chsize = ngx_min(need, b->last - b->pos);
 
         if (size + chsize > http->max_response_body_size) {
-            ngx_js_http_error(http, 0, "fetch response body is too large");
+            ngx_js_http_error(http, "fetch response body is too large");
             return NGX_ERROR;
         }
 
@@ -2587,7 +2587,7 @@ ngx_js_http_process_body(ngx_js_http_t *http)
         if (http->chunk == NULL) {
             b = ngx_create_temp_buf(http->pool, http->buffer_size);
             if (b == NULL) {
-                ngx_js_http_error(http, 0, "memory error");
+                ngx_js_http_error(http, "memory error");
                 return NGX_ERROR;
             }
 
