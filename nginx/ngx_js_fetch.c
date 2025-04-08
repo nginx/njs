@@ -115,9 +115,6 @@ struct ngx_js_http_s {
     ngx_log_t                     *log;
     ngx_pool_t                    *pool;
 
-    njs_vm_t                      *vm;
-    ngx_js_event_t                *event;
-
     ngx_resolver_ctx_t            *ctx;
     ngx_addr_t                     addr;
     ngx_addr_t                    *addrs;
@@ -144,27 +141,31 @@ struct ngx_js_http_s {
     njs_chb_t                      chain;
 
     ngx_js_response_t              response;
-    njs_opaque_value_t             response_value;
-
-    njs_opaque_value_t             promise;
-    njs_opaque_value_t             promise_callbacks[2];
 
     uint8_t                        done;
     ngx_js_http_parse_t            http_parse;
     ngx_js_http_chunk_parse_t      http_chunk_parse;
     ngx_int_t                    (*process)(ngx_js_http_t *http);
+    ngx_int_t                    (*append_headers)(ngx_js_http_t *http,
+                                                   ngx_js_headers_t *headers,
+                                                   u_char *name, size_t len,
+                                                   u_char *value, size_t vlen);
+    void                         (*ready_handler)(ngx_js_http_t *http);
+    void                         (*error_handler)(ngx_js_http_t *http,
+                                                  const char *err);
 };
 
 
+typedef struct {
+    ngx_js_http_t                 http;
+    njs_vm_t                      *vm;
+    ngx_js_event_t                *event;
 
+    njs_opaque_value_t             response_value;
 
-#define ngx_js_http_error(http, err)                                          \
-    do {                                                                      \
-        njs_vm_error((http)->vm, err);                                        \
-        njs_vm_exception_get((http)->vm,                                      \
-                             njs_value_arg(&(http)->response_value));         \
-        ngx_js_http_fetch_done(http, &(http)->response_value, NJS_ERROR);     \
-    } while (0)
+    njs_opaque_value_t             promise;
+    njs_opaque_value_t             promise_callbacks[2];
+} ngx_js_fetch_t;
 
 
 static njs_int_t ngx_js_method_process(njs_vm_t *vm, ngx_js_request_t *r);
@@ -172,15 +173,15 @@ static njs_int_t ngx_js_headers_inherit(njs_vm_t *vm, ngx_js_headers_t *headers,
     ngx_js_headers_t *orig);
 static njs_int_t ngx_js_headers_fill(njs_vm_t *vm, ngx_js_headers_t *headers,
     njs_value_t *init);
-static ngx_js_http_t *ngx_js_http_alloc(njs_vm_t *vm, ngx_pool_t *pool,
+static ngx_js_fetch_t *ngx_js_fetch_alloc(njs_vm_t *vm, ngx_pool_t *pool,
     ngx_log_t *log);
 static void njs_js_http_destructor(ngx_js_event_t *event);
-static void ngx_js_resolve_handler(ngx_resolver_ctx_t *ctx);
+static void ngx_js_http_resolve_handler(ngx_resolver_ctx_t *ctx);
 static njs_int_t ngx_js_fetch_promissified_result(njs_vm_t *vm,
     njs_value_t *result, njs_int_t rc, njs_value_t *retval);
-static void ngx_js_http_fetch_done(ngx_js_http_t *http,
-    njs_opaque_value_t *retval, njs_int_t rc);
-static njs_int_t ngx_js_http_promise_trampoline(njs_vm_t *vm,
+static void ngx_js_fetch_done(ngx_js_fetch_t *fetch, njs_opaque_value_t *retval,
+    njs_int_t rc);
+static njs_int_t ngx_js_fetch_promise_trampoline(njs_vm_t *vm,
     njs_value_t *args, njs_uint_t nargs, njs_index_t unused,
     njs_value_t *retval);
 static void ngx_js_http_connect(ngx_js_http_t *http);
@@ -192,6 +193,10 @@ static njs_int_t ngx_js_request_constructor(njs_vm_t *vm,
     ngx_js_request_t *request, ngx_url_t *u, njs_external_ptr_t external,
     njs_value_t *args, njs_uint_t nargs);
 
+static ngx_int_t ngx_js_fetch_append_headers(ngx_js_http_t *http,
+    ngx_js_headers_t *headers, u_char *name, size_t len, u_char *value,
+    size_t vlen);
+static void ngx_js_fetch_process_done(ngx_js_http_t *http);
 static njs_int_t ngx_js_headers_append(njs_vm_t *vm, ngx_js_headers_t *headers,
     u_char *name, size_t len, u_char *value, size_t vlen);
 
@@ -275,6 +280,28 @@ static njs_int_t ngx_fetch_flag_set(njs_vm_t *vm, const ngx_js_entry_t *entries,
      njs_value_t *value, const char *type);
 
 static njs_int_t ngx_js_fetch_init(njs_vm_t *vm);
+
+
+static inline void
+ngx_js_fetch_error(ngx_js_http_t *http, const char *err)
+{
+    ngx_js_fetch_t  *fetch;
+
+    fetch = (ngx_js_fetch_t *) http;
+
+    njs_vm_error(fetch->vm, err);
+
+    njs_vm_exception_get(fetch->vm, njs_value_arg(&fetch->response_value));
+
+    ngx_js_fetch_done(fetch, &fetch->response_value, NJS_ERROR);
+}
+
+
+static inline void
+ngx_js_http_error(ngx_js_http_t *http, const char *err)
+{
+    http->error_handler(http, err);
+}
 
 
 static const ngx_js_entry_t ngx_js_fetch_credentials[] = {
@@ -669,6 +696,7 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     ngx_pool_t          *pool;
     njs_value_t         *init, *value;
     ngx_js_http_t       *http;
+    ngx_js_fetch_t      *fetch;
     ngx_list_part_t     *part;
     ngx_js_tb_elt_t     *h;
     ngx_js_request_t     request;
@@ -687,8 +715,8 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     c = ngx_external_connection(vm, external);
     pool = ngx_external_pool(vm, external);
 
-    http = ngx_js_http_alloc(vm, pool, c->log);
-    if (http == NULL) {
+    fetch = ngx_js_fetch_alloc(vm, pool, c->log);
+    if (fetch == NULL) {
         return NJS_ERROR;
     }
 
@@ -696,6 +724,8 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     if (ret != NJS_OK) {
         goto fail;
     }
+
+    http = &fetch->http;
 
     http->response.url = request.url;
     http->timeout = ngx_external_fetch_timeout(vm, external);
@@ -740,6 +770,7 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     http->header_only = njs_strstr_eq(&request.method, &njs_str_value("HEAD"));
 
     NJS_CHB_MP_INIT(&http->chain, vm);
+    NJS_CHB_MP_INIT(&http->response.chain, fetch->vm);
 
     njs_chb_append(&http->chain, request.method.start, request.method.length);
     njs_chb_append_literal(&http->chain, " ");
@@ -856,7 +887,7 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         http->port = u.port;
 
         ctx->name = u.host;
-        ctx->handler = ngx_js_resolve_handler;
+        ctx->handler = ngx_js_http_resolve_handler;
         ctx->data = http;
         ctx->timeout = ngx_external_resolver_timeout(vm, external);
 
@@ -867,7 +898,7 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             return NJS_ERROR;
         }
 
-        njs_value_assign(retval, njs_value_arg(&http->promise));
+        njs_value_assign(retval, njs_value_arg(&fetch->promise));
 
         return NJS_OK;
     }
@@ -878,7 +909,7 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     ngx_js_http_connect(http);
 
-    njs_value_assign(retval, njs_value_arg(&http->promise));
+    njs_value_assign(retval, njs_value_arg(&fetch->promise));
 
     return NJS_OK;
 
@@ -887,9 +918,9 @@ fail:
 
     njs_vm_exception_get(vm, njs_value_arg(&lvalue));
 
-    ngx_js_http_fetch_done(http, &lvalue, NJS_ERROR);
+    ngx_js_fetch_done(fetch, &lvalue, NJS_ERROR);
 
-    njs_value_assign(retval, njs_value_arg(&http->promise));
+    njs_value_assign(retval, njs_value_arg(&fetch->promise));
 
     return NJS_OK;
 }
@@ -1268,35 +1299,40 @@ ngx_js_headers_fill(njs_vm_t *vm, ngx_js_headers_t *headers, njs_value_t *init)
 }
 
 
-static ngx_js_http_t *
-ngx_js_http_alloc(njs_vm_t *vm, ngx_pool_t *pool, ngx_log_t *log)
+static ngx_js_fetch_t *
+ngx_js_fetch_alloc(njs_vm_t *vm, ngx_pool_t *pool, ngx_log_t *log)
 {
     njs_int_t        ret;
     ngx_js_ctx_t    *ctx;
     ngx_js_http_t   *http;
+    ngx_js_fetch_t  *fetch;
     ngx_js_event_t  *event;
     njs_function_t  *callback;
 
-    http = ngx_pcalloc(pool, sizeof(ngx_js_http_t));
-    if (http == NULL) {
+    fetch = ngx_pcalloc(pool, sizeof(ngx_js_fetch_t));
+    if (fetch == NULL) {
         goto failed;
     }
 
+    http = &fetch->http;
+
     http->pool = pool;
     http->log = log;
-    http->vm = vm;
-
     http->timeout = 10000;
-
     http->http_parse.content_length_n = -1;
+    http->append_headers = ngx_js_fetch_append_headers;
+    http->ready_handler = ngx_js_fetch_process_done;
+    http->error_handler = ngx_js_fetch_error;
 
-    ret = njs_vm_promise_create(vm, njs_value_arg(&http->promise),
-                                njs_value_arg(&http->promise_callbacks));
+    fetch->vm = vm;
+
+    ret = njs_vm_promise_create(vm, njs_value_arg(&fetch->promise),
+                                njs_value_arg(&fetch->promise_callbacks));
     if (ret != NJS_OK) {
         goto failed;
     }
 
-    callback = njs_vm_function_alloc(vm, ngx_js_http_promise_trampoline, 0, 0);
+    callback = njs_vm_function_alloc(vm, ngx_js_fetch_promise_trampoline, 0, 0);
     if (callback == NULL) {
         goto failed;
     }
@@ -1312,15 +1348,15 @@ ngx_js_http_alloc(njs_vm_t *vm, ngx_pool_t *pool, ngx_log_t *log)
     njs_value_function_set(njs_value_arg(&event->function), callback);
     event->destructor = njs_js_http_destructor;
     event->fd = ctx->event_id++;
-    event->data = http;
+    event->data = fetch;
 
     ngx_js_add_event(ctx, event);
 
-    http->event = event;
+    fetch->event = event;
 
-    ngx_log_debug1(NGX_LOG_DEBUG_EVENT, log, 0, "js fetch alloc:%p", http);
+    ngx_log_debug1(NGX_LOG_DEBUG_EVENT, log, 0, "js fetch alloc:%p", fetch);
 
-    return http;
+    return fetch;
 
 failed:
 
@@ -1331,7 +1367,7 @@ failed:
 
 
 static void
-ngx_js_resolve_handler(ngx_resolver_ctx_t *ctx)
+ngx_js_http_resolve_handler(ngx_resolver_ctx_t *ctx)
 {
     u_char           *p;
     size_t            len;
@@ -1356,7 +1392,7 @@ ngx_js_resolve_handler(ngx_resolver_ctx_t *ctx)
     }
 
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, http->log, 0,
-                   "http fetch resolved: \"%V\"", &ctx->name);
+                   "http resolved: \"%V\"", &ctx->name);
 
 #if (NGX_DEBUG)
     {
@@ -1479,7 +1515,7 @@ ngx_js_fetch_promissified_result(njs_vm_t *vm, njs_value_t *result,
         goto error;
     }
 
-    callback = njs_vm_function_alloc(vm, ngx_js_http_promise_trampoline, 0, 0);
+    callback = njs_vm_function_alloc(vm, ngx_js_fetch_promise_trampoline, 0, 0);
     if (callback == NULL) {
         goto error;
     }
@@ -1511,29 +1547,32 @@ error:
 
 
 static void
-ngx_js_http_fetch_done(ngx_js_http_t *http, njs_opaque_value_t *retval,
+ngx_js_fetch_done(ngx_js_fetch_t *fetch, njs_opaque_value_t *retval,
     njs_int_t rc)
 {
     njs_vm_t            *vm;
     ngx_js_ctx_t        *ctx;
+    ngx_js_http_t       *http;
     ngx_js_event_t      *event;
     njs_opaque_value_t   arguments[2], *action;
 
+    http = &fetch->http;
+
     ngx_log_debug2(NGX_LOG_DEBUG_EVENT, http->log, 0,
-                   "js fetch done http:%p rc:%i", http, (ngx_int_t) rc);
+                   "js fetch done fetch:%p rc:%i", fetch, (ngx_int_t) rc);
 
     if (http->peer.connection != NULL) {
         ngx_js_http_close_connection(http->peer.connection);
         http->peer.connection = NULL;
     }
 
-    if (http->event != NULL) {
-        action = &http->promise_callbacks[(rc != NJS_OK)];
+    if (fetch->event != NULL) {
+        action = &fetch->promise_callbacks[(rc != NJS_OK)];
         njs_value_assign(&arguments[0], action);
         njs_value_assign(&arguments[1], retval);
 
-        vm = http->vm;
-        event = http->event;
+        vm = fetch->vm;
+        event = fetch->event;
 
         rc = ngx_js_call(vm, njs_value_function(njs_value_arg(&event->function)),
                          &arguments[0], 2);
@@ -1547,7 +1586,7 @@ ngx_js_http_fetch_done(ngx_js_http_t *http, njs_opaque_value_t *retval,
 
 
 static njs_int_t
-ngx_js_http_promise_trampoline(njs_vm_t *vm, njs_value_t *args,
+ngx_js_fetch_promise_trampoline(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
 {
     njs_function_t  *callback;
@@ -2387,6 +2426,39 @@ ngx_js_http_process_status_line(ngx_js_http_t *http)
 
 
 static ngx_int_t
+ngx_js_fetch_append_headers(ngx_js_http_t *http, ngx_js_headers_t *headers,
+    u_char *name, size_t len, u_char *value, size_t vlen)
+{
+    ngx_js_fetch_t  *fetch;
+
+    fetch = (ngx_js_fetch_t *) http;
+
+    return ngx_js_headers_append(fetch->vm, headers, name, len, value, vlen);
+}
+
+
+static void
+ngx_js_fetch_process_done(ngx_js_http_t *http)
+{
+    njs_int_t       ret;
+    ngx_js_fetch_t  *fetch;
+
+    fetch = (ngx_js_fetch_t *) http;
+
+    ret = njs_vm_external_create(fetch->vm,
+                                 njs_value_arg(&fetch->response_value),
+                                 ngx_http_js_fetch_response_proto_id,
+                                 &fetch->http.response, 0);
+    if (ret != NJS_OK) {
+        ngx_js_fetch_error(http, "fetch response creation failed");
+        return;
+    }
+
+    ngx_js_fetch_done(fetch, &fetch->response_value, NJS_OK);
+}
+
+
+static ngx_int_t
 ngx_js_http_process_headers(ngx_js_http_t *http)
 {
     size_t                len, vlen;
@@ -2415,9 +2487,9 @@ ngx_js_http_process_headers(ngx_js_http_t *http)
             len = hp->header_name_end - hp->header_name_start;
             vlen = hp->header_end - hp->header_start;
 
-            ret = ngx_js_headers_append(http->vm, &http->response.headers,
-                                        hp->header_name_start, len,
-                                        hp->header_start, vlen);
+            ret = http->append_headers(http, &http->response.headers,
+                                       hp->header_name_start, len,
+                                       hp->header_start, vlen);
 
             if (ret == NJS_ERROR) {
                 ngx_js_http_error(http, "cannot add respose header");
@@ -2479,8 +2551,6 @@ ngx_js_http_process_headers(ngx_js_http_t *http)
 
     njs_chb_destroy(&http->chain);
 
-    NJS_CHB_MP_INIT(&http->response.chain, http->vm);
-
     http->process = ngx_js_http_process_body;
 
     return http->process(http);
@@ -2492,11 +2562,10 @@ ngx_js_http_process_body(ngx_js_http_t *http)
 {
     ssize_t     size, chsize, need;
     ngx_int_t   rc;
-    njs_int_t   ret;
     ngx_buf_t  *b;
 
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, http->log, 0,
-                   "js fetch process body done:%ui", (ngx_uint_t) http->done);
+                   "js http process body done:%ui", (ngx_uint_t) http->done);
 
     if (http->done) {
         size = njs_chb_size(&http->response.chain);
@@ -2509,7 +2578,7 @@ ngx_js_http_process_body(ngx_js_http_t *http)
             && http->http_parse.chunked
             && http->http_parse.content_length_n == -1)
         {
-            ngx_js_http_error(http, "invalid fetch chunked response");
+            ngx_js_http_error(http, "invalid http chunked response");
             return NGX_ERROR;
         }
 
@@ -2517,16 +2586,7 @@ ngx_js_http_process_body(ngx_js_http_t *http)
             || http->http_parse.content_length_n == -1
             || size == http->http_parse.content_length_n)
         {
-            ret = njs_vm_external_create(http->vm,
-                                         njs_value_arg(&http->response_value),
-                                         ngx_http_js_fetch_response_proto_id,
-                                         &http->response, 0);
-            if (ret != NJS_OK) {
-                ngx_js_http_error(http, "fetch response creation failed");
-                return NGX_ERROR;
-            }
-
-            ngx_js_http_fetch_done(http, &http->response_value, NJS_OK);
+            http->ready_handler(http);
             return NGX_DONE;
         }
 
@@ -2534,7 +2594,7 @@ ngx_js_http_process_body(ngx_js_http_t *http)
             return NGX_AGAIN;
         }
 
-        ngx_js_http_error(http, "fetch trailing data");
+        ngx_js_http_error(http, "http trailing data");
         return NGX_ERROR;
     }
 
@@ -2544,7 +2604,7 @@ ngx_js_http_process_body(ngx_js_http_t *http)
         rc = ngx_js_http_parse_chunked(&http->http_chunk_parse, b,
                                        &http->response.chain);
         if (rc == NGX_ERROR) {
-            ngx_js_http_error(http, "invalid fetch chunked response");
+            ngx_js_http_error(http, "invalid http chunked response");
             return NGX_ERROR;
         }
 
@@ -2555,7 +2615,7 @@ ngx_js_http_process_body(ngx_js_http_t *http)
         }
 
         if (size > http->max_response_body_size * 10) {
-            ngx_js_http_error(http, "very large fetch chunked response");
+            ngx_js_http_error(http, "very large http chunked response");
             return NGX_ERROR;
         }
 
@@ -2577,7 +2637,7 @@ ngx_js_http_process_body(ngx_js_http_t *http)
         chsize = ngx_min(need, b->last - b->pos);
 
         if (size + chsize > http->max_response_body_size) {
-            ngx_js_http_error(http, "fetch response body is too large");
+            ngx_js_http_error(http, "http response body is too large");
             return NGX_ERROR;
         }
 
