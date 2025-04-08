@@ -150,6 +150,7 @@ struct ngx_js_http_s {
 ngx_resolver_ctx_t *ngx_js_http_resolve(ngx_js_http_t *http, ngx_resolver_t *r,
     ngx_str_t *host, in_port_t port, ngx_msec_t timeout);
 void ngx_js_http_connect(ngx_js_http_t *http);
+void ngx_js_http_close(ngx_js_http_t *http);
 
 
 #endif /* _NGX_JS_HTTP_H_INCLUDED_ */

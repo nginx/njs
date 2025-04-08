@@ -40,7 +40,7 @@ static njs_int_t ngx_js_headers_fill(njs_vm_t *vm, ngx_js_headers_t *headers,
     njs_value_t *init);
 static ngx_js_fetch_t *ngx_js_fetch_alloc(njs_vm_t *vm, ngx_pool_t *pool,
     ngx_log_t *log);
-static void njs_js_fetch_destructor(ngx_js_event_t *event);
+static void ngx_js_fetch_destructor(ngx_js_event_t *event);
 static njs_int_t ngx_js_fetch_promissified_result(njs_vm_t *vm,
     njs_value_t *result, njs_int_t rc, njs_value_t *retval);
 static void ngx_js_fetch_done(ngx_js_fetch_t *fetch, njs_opaque_value_t *retval,
@@ -1168,7 +1168,7 @@ ngx_js_fetch_alloc(njs_vm_t *vm, ngx_pool_t *pool, ngx_log_t *log)
 
     event->ctx = vm;
     njs_value_function_set(njs_value_arg(&event->function), callback);
-    event->destructor = njs_js_fetch_destructor;
+    event->destructor = ngx_js_fetch_destructor;
     event->fd = ctx->event_id++;
     event->data = fetch;
 
@@ -1189,30 +1189,7 @@ failed:
 
 
 static void
-ngx_js_http_close_connection(ngx_connection_t *c)
-{
-    ngx_log_debug1(NGX_LOG_DEBUG_EVENT, c->log, 0,
-                   "js fetch close connection: %d", c->fd);
-
-#if (NGX_SSL)
-    if (c->ssl) {
-        c->ssl->no_wait_shutdown = 1;
-
-        if (ngx_ssl_shutdown(c) == NGX_AGAIN) {
-            c->ssl->handler = ngx_js_http_close_connection;
-            return;
-        }
-    }
-#endif
-
-    c->destroyed = 1;
-
-    ngx_close_connection(c);
-}
-
-
-static void
-njs_js_fetch_destructor(ngx_js_event_t *event)
+ngx_js_fetch_destructor(ngx_js_event_t *event)
 {
     ngx_js_http_t  *http;
 
@@ -1221,15 +1198,7 @@ njs_js_fetch_destructor(ngx_js_event_t *event)
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, http->log, 0, "js fetch destructor:%p",
                    http);
 
-    if (http->ctx != NULL) {
-        ngx_resolve_name_done(http->ctx);
-        http->ctx = NULL;
-    }
-
-    if (http->peer.connection != NULL) {
-        ngx_js_http_close_connection(http->peer.connection);
-        http->peer.connection = NULL;
-    }
+    ngx_js_http_close(http);
 }
 
 
@@ -1293,10 +1262,7 @@ ngx_js_fetch_done(ngx_js_fetch_t *fetch, njs_opaque_value_t *retval,
     ngx_log_debug2(NGX_LOG_DEBUG_EVENT, http->log, 0,
                    "js fetch done fetch:%p rc:%i", fetch, (ngx_int_t) rc);
 
-    if (http->peer.connection != NULL) {
-        ngx_js_http_close_connection(http->peer.connection);
-        http->peer.connection = NULL;
-    }
+    ngx_js_http_close(http);
 
     if (fetch->event != NULL) {
         action = &fetch->promise_callbacks[(rc != NJS_OK)];

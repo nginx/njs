@@ -1417,3 +1417,18 @@ ngx_js_http_dummy_handler(ngx_event_t *ev)
 {
     ngx_log_debug0(NGX_LOG_DEBUG_EVENT, ev->log, 0, "js fetch dummy handler");
 }
+
+
+void
+ngx_js_http_close(ngx_js_http_t *http)
+{
+    if (http->ctx != NULL) {
+        ngx_resolve_name_done(http->ctx);
+        http->ctx = NULL;
+    }
+
+    if (http->peer.connection != NULL) {
+        ngx_js_http_close_connection(http->peer.connection);
+        http->peer.connection = NULL;
+    }
+}
