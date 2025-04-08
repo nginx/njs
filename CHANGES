@@ -1,3 +1,52 @@
+Changes with njs 0.8.10                                      08 Apr 2025
+
+    nginx modules:
+
+    *) Feature: reading r.requestText or r.requestBuffer from
+       a temp file.
+       Previously, an exception was thrown when accessing r.requestText
+       or r.requestBuffer if a client request body size exceeded
+       client_body_buffer_size.
+
+    *) Improvement: improved reporting of unhandled promise rejections.
+
+    *) Bugfix: fixed name corruption in variable and header processing.
+
+    *) Bugfix: fixed SharedDict.incr() with empty init argument
+       for QuickJS engine.
+
+    *) Bugfix: accepting response headers with underscore characters
+       in Fetch API.
+
+    Core:
+
+    *) Change: fixed serializeToString().
+       Previously, serializeToString() was exclusiveC14n() which returned
+       string instead of Buffer. According to the published documentation it
+       should be c14n().
+
+    *) Feature: added WebCrypto API for QuickJS engine.
+
+    *) Feature: added TextEncoder/TextDecoder for QuickJS engine.
+
+    *) Feature: added querystring module for QuickJS engine.
+
+    *) Feature: added crypto module for QuickJS engine.
+
+    *) Feature: added xml module for QuickJS engine.
+
+    *) Feature: added support for QuickJS-NG library.
+
+    *) Bugfix: fixed buffer.concat() with a single argument in quickjs.
+
+    *) Bugfix: added missed syntax error for await in template literal.
+
+    *) Bugfix: fixed non-NULL terminated strings formatting in
+       exceptions for QuickJS engine.
+
+    *) Bugfix: fixed compatibility with recent change in QuickJS
+       and QuickJS-NG.
+
 Changes with njs 0.8.9                                       14 Jan 2025
 
     nginx modules:
