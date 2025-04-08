@@ -1155,6 +1155,8 @@ ngx_engine_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
                           "js unhandled rejection: %V", &exception);
         }
 
+        JS_SetHostPromiseRejectionTracker(JS_GetRuntime(cx), NULL, NULL);
+
         class_id = JS_GetClassID(ngx_qjs_arg(ctx->args[0]));
         opaque = JS_GetOpaque(ngx_qjs_arg(ctx->args[0]), class_id);
         opaque->external = NULL;
