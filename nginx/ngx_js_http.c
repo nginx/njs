@@ -33,6 +33,7 @@ typedef struct {
 } ngx_js_fetch_t;
 
 
+static void ngx_js_http_resolve_handler(ngx_resolver_ctx_t *ctx);
 static void ngx_js_http_next(ngx_js_http_t *http);
 static void ngx_js_http_write_handler(ngx_event_t *wev);
 static void ngx_js_http_read_handler(ngx_event_t *rev);
@@ -63,7 +64,41 @@ ngx_js_http_error(ngx_js_http_t *http, const char *err)
 }
 
 
-void
+ngx_resolver_ctx_t *
+ngx_js_http_resolve(ngx_js_http_t *http, ngx_resolver_t *r, ngx_str_t *host,
+    in_port_t port, ngx_msec_t timeout)
+{
+    ngx_int_t           ret;
+    ngx_resolver_ctx_t  *ctx;
+
+    ctx = ngx_resolve_start(r, NULL);
+    if (ctx == NULL) {
+        return NULL;
+    }
+
+    if (ctx == NGX_NO_RESOLVER) {
+        return ctx;
+    }
+
+    http->ctx = ctx;
+    http->port = port;
+
+    ctx->name = *host;
+    ctx->handler = ngx_js_http_resolve_handler;
+    ctx->data = http;
+    ctx->timeout = timeout;
+
+    ret = ngx_resolve_name(ctx);
+    if (ret != NGX_OK) {
+        http->ctx = NULL;
+        return NULL;
+    }
+
+    return ctx;
+}
+
+
+static void
 ngx_js_http_resolve_handler(ngx_resolver_ctx_t *ctx)
 {
     u_char           *p;

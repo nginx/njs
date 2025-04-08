@@ -707,7 +707,9 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (u.addrs == NULL) {
-        ctx = ngx_resolve_start(ngx_external_resolver(vm, external), NULL);
+        ctx = ngx_js_http_resolve(http, ngx_external_resolver(vm, external),
+                                  &u.host, u.port,
+                                  ngx_external_resolver_timeout(vm, external));
         if (ctx == NULL) {
             njs_vm_memory_error(vm);
             return NJS_ERROR;
@@ -716,21 +718,6 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         if (ctx == NGX_NO_RESOLVER) {
             njs_vm_error(vm, "no resolver defined");
             goto fail;
-        }
-
-        http->ctx = ctx;
-        http->port = u.port;
-
-        ctx->name = u.host;
-        ctx->handler = ngx_js_http_resolve_handler;
-        ctx->data = http;
-        ctx->timeout = ngx_external_resolver_timeout(vm, external);
-
-        ret = ngx_resolve_name(http->ctx);
-        if (ret != NGX_OK) {
-            http->ctx = NULL;
-            njs_vm_memory_error(vm);
-            return NJS_ERROR;
         }
 
         njs_value_assign(retval, njs_value_arg(&fetch->promise));
