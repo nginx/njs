@@ -156,17 +156,6 @@ struct ngx_js_http_s {
 };
 
 
-
-
-#define ngx_js_http_error(http, fmt, ...)                                     \
-    do {                                                                      \
-        njs_vm_error((http)->vm, fmt, ##__VA_ARGS__);                         \
-        njs_vm_exception_get((http)->vm,                                      \
-                             njs_value_arg(&(http)->response_value));         \
-        ngx_js_http_fetch_done(http, &(http)->response_value, NJS_ERROR);     \
-    } while (0)
-
-
 static njs_int_t ngx_js_method_process(njs_vm_t *vm, ngx_js_request_t *r);
 static njs_int_t ngx_js_headers_inherit(njs_vm_t *vm, ngx_js_headers_t *headers,
     ngx_js_headers_t *orig);
@@ -275,6 +264,26 @@ static njs_int_t ngx_fetch_flag_set(njs_vm_t *vm, const ngx_js_entry_t *entries,
      njs_value_t *value, const char *type);
 
 static njs_int_t ngx_js_fetch_init(njs_vm_t *vm);
+
+
+static void
+ngx_js_http_error(ngx_js_http_t *http, const char *fmt, ...)
+{
+    u_char   *p, *end;
+    va_list   args;
+    u_char    err[NGX_MAX_ERROR_STR];
+
+    end = err + NGX_MAX_ERROR_STR - 1;
+
+    va_start(args, fmt);
+    p = njs_vsprintf(err, end, fmt, args);
+    *p = '\0';
+    va_end(args);
+
+    njs_vm_error(http->vm, (const char *) err);
+    njs_vm_exception_get(http->vm, njs_value_arg(&http->response_value));
+    ngx_js_http_fetch_done(http, &http->response_value, NJS_ERROR);
+}
 
 
 static const ngx_js_entry_t ngx_js_fetch_credentials[] = {
