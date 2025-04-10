@@ -63,6 +63,9 @@
 #define NGX_QJS_CLASS_ID_SHARED (NGX_QJS_CLASS_ID_OFFSET + 11)
 #define NGX_QJS_CLASS_ID_SHARED_DICT (NGX_QJS_CLASS_ID_OFFSET + 12)
 #define NGX_QJS_CLASS_ID_SHARED_DICT_ERROR (NGX_QJS_CLASS_ID_OFFSET + 13)
+#define NGX_QJS_CLASS_ID_FETCH_HEADERS (NGX_QJS_CLASS_ID_OFFSET + 14)
+#define NGX_QJS_CLASS_ID_FETCH_REQUEST (NGX_QJS_CLASS_ID_OFFSET + 15)
+#define NGX_QJS_CLASS_ID_FETCH_RESPONSE (NGX_QJS_CLASS_ID_OFFSET + 16)
 
 
 typedef struct ngx_js_loc_conf_s ngx_js_loc_conf_t;
@@ -345,6 +348,10 @@ ngx_int_t ngx_qjs_call(JSContext *cx, JSValue function, JSValue *argv,
 ngx_int_t ngx_qjs_exception(ngx_engine_t *e, ngx_str_t *s);
 ngx_int_t ngx_qjs_integer(JSContext *cx, JSValueConst val, ngx_int_t *n);
 ngx_int_t ngx_qjs_string(JSContext *cx, JSValueConst val, ngx_str_t *str);
+int ngx_qjs_array_length(JSContext *cx, uint32_t *plen, JSValueConst arr);
+
+JSValue ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
+    JSValueConst *argv);
 
 #define ngx_qjs_prop(cx, type, start, len)                                   \
     ((type == NGX_JS_STRING) ? qjs_string_create(cx, start, len)             \
@@ -382,6 +389,7 @@ extern qjs_module_t  qjs_xml_module;
 extern qjs_module_t  qjs_zlib_module;
 extern qjs_module_t  ngx_qjs_ngx_module;
 extern qjs_module_t  ngx_qjs_ngx_shared_dict_module;
+extern qjs_module_t  ngx_qjs_ngx_fetch_module;
 
 #endif
 
