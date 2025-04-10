@@ -174,7 +174,7 @@ static njs_int_t ngx_js_headers_fill(njs_vm_t *vm, ngx_js_headers_t *headers,
     njs_value_t *init);
 static ngx_js_http_t *ngx_js_http_alloc(njs_vm_t *vm, ngx_pool_t *pool,
     ngx_log_t *log);
-static void njs_js_http_destructor(ngx_js_event_t *event);
+static void ngx_js_http_destructor(ngx_js_event_t *event);
 static void ngx_js_resolve_handler(ngx_resolver_ctx_t *ctx);
 static njs_int_t ngx_js_fetch_promissified_result(njs_vm_t *vm,
     njs_value_t *result, njs_int_t rc, njs_value_t *retval);
@@ -1310,7 +1310,7 @@ ngx_js_http_alloc(njs_vm_t *vm, ngx_pool_t *pool, ngx_log_t *log)
 
     event->ctx = vm;
     njs_value_function_set(njs_value_arg(&event->function), callback);
-    event->destructor = njs_js_http_destructor;
+    event->destructor = ngx_js_http_destructor;
     event->fd = ctx->event_id++;
     event->data = http;
 
@@ -1438,7 +1438,7 @@ ngx_js_http_close_connection(ngx_connection_t *c)
 
 
 static void
-njs_js_http_destructor(ngx_js_event_t *event)
+ngx_js_http_destructor(ngx_js_event_t *event)
 {
     ngx_js_http_t  *http;
 
