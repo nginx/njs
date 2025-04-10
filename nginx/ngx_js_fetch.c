@@ -187,6 +187,7 @@ static void ngx_js_http_connect(ngx_js_http_t *http);
 static void ngx_js_http_next(ngx_js_http_t *http);
 static void ngx_js_http_write_handler(ngx_event_t *wev);
 static void ngx_js_http_read_handler(ngx_event_t *rev);
+static void ngx_js_http_close_connection(ngx_connection_t *c);
 
 static njs_int_t ngx_js_request_constructor(njs_vm_t *vm,
     ngx_js_request_t *request, ngx_url_t *u, njs_external_ptr_t external,
@@ -283,6 +284,16 @@ ngx_js_http_resolve_done(ngx_js_http_t *http)
     if (http->ctx != NULL) {
         ngx_resolve_name_done(http->ctx);
         http->ctx = NULL;
+    }
+}
+
+
+njs_inline void
+ngx_js_http_close_peer(ngx_js_http_t *http)
+{
+    if (http->peer.connection != NULL) {
+        ngx_js_http_close_connection(http->peer.connection);
+        http->peer.connection = NULL;
     }
 }
 
@@ -1457,11 +1468,7 @@ ngx_js_http_destructor(ngx_js_event_t *event)
                    http);
 
     ngx_js_http_resolve_done(http);
-
-    if (http->peer.connection != NULL) {
-        ngx_js_http_close_connection(http->peer.connection);
-        http->peer.connection = NULL;
-    }
+    ngx_js_http_close_peer(http);
 }
 
 
@@ -1522,10 +1529,7 @@ ngx_js_http_fetch_done(ngx_js_http_t *http, njs_opaque_value_t *retval,
     ngx_log_debug2(NGX_LOG_DEBUG_EVENT, http->log, 0,
                    "js fetch done http:%p rc:%i", http, (ngx_int_t) rc);
 
-    if (http->peer.connection != NULL) {
-        ngx_js_http_close_connection(http->peer.connection);
-        http->peer.connection = NULL;
-    }
+    ngx_js_http_close_peer(http);
 
     if (http->event != NULL) {
         action = &http->promise_callbacks[(rc != NJS_OK)];
@@ -1780,10 +1784,7 @@ ngx_js_http_next(ngx_js_http_t *http)
         return;
     }
 
-    if (http->peer.connection != NULL) {
-        ngx_js_http_close_connection(http->peer.connection);
-        http->peer.connection = NULL;
-    }
+    ngx_js_http_close_peer(http);
 
     http->buffer = NULL;
 
