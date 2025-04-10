@@ -1914,7 +1914,7 @@ static void
 ngx_stream_js_event_finalize(ngx_stream_session_t *s, ngx_int_t rc)
 {
     ngx_log_debug1(NGX_LOG_DEBUG_STREAM, s->connection->log, 0,
-                   "http js event finalize rc: %i", rc);
+                   "stream js event finalize rc: %i", rc);
 
     if (rc == NGX_ERROR) {
         if (s->health_check) {
