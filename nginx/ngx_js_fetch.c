@@ -277,6 +277,16 @@ static njs_int_t ngx_fetch_flag_set(njs_vm_t *vm, const ngx_js_entry_t *entries,
 static njs_int_t ngx_js_fetch_init(njs_vm_t *vm);
 
 
+njs_inline void
+ngx_js_http_resolve_done(ngx_js_http_t *http)
+{
+    if (http->ctx != NULL) {
+        ngx_resolve_name_done(http->ctx);
+        http->ctx = NULL;
+    }
+}
+
+
 static const ngx_js_entry_t ngx_js_fetch_credentials[] = {
     { njs_str("same-origin"), CREDENTIALS_SAME_ORIGIN },
     { njs_str("omit"), CREDENTIALS_OMIT },
@@ -1401,8 +1411,7 @@ ngx_js_resolve_handler(ngx_resolver_ctx_t *ctx)
         http->addrs[i].name.data = p;
     }
 
-    ngx_resolve_name_done(ctx);
-    http->ctx = NULL;
+    ngx_js_http_resolve_done(http);
 
     ngx_js_http_connect(http);
 
@@ -1447,10 +1456,7 @@ ngx_js_http_destructor(ngx_js_event_t *event)
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, http->log, 0, "js fetch destructor:%p",
                    http);
 
-    if (http->ctx != NULL) {
-        ngx_resolve_name_done(http->ctx);
-        http->ctx = NULL;
-    }
+    ngx_js_http_resolve_done(http);
 
     if (http->peer.connection != NULL) {
         ngx_js_http_close_connection(http->peer.connection);
