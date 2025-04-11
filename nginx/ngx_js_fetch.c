@@ -164,6 +164,7 @@ static njs_int_t ngx_js_headers_fill(njs_vm_t *vm, ngx_js_headers_t *headers,
 static ngx_js_http_t *ngx_js_http_alloc(njs_vm_t *vm, ngx_pool_t *pool,
     ngx_log_t *log);
 static void ngx_js_http_resolve_done(ngx_js_http_t *http);
+static void ngx_js_http_close_peer(ngx_js_http_t *http);
 static void ngx_js_http_destructor(ngx_js_event_t *event);
 static void ngx_js_resolve_handler(ngx_resolver_ctx_t *ctx);
 static njs_int_t ngx_js_fetch_promissified_result(njs_vm_t *vm,
@@ -1457,6 +1458,16 @@ ngx_js_http_resolve_done(ngx_js_http_t *http)
 
 
 static void
+ngx_js_http_close_peer(ngx_js_http_t *http)
+{
+    if (http->peer.connection != NULL) {
+        ngx_js_http_close_connection(http->peer.connection);
+        http->peer.connection = NULL;
+    }
+}
+
+
+static void
 ngx_js_http_destructor(ngx_js_event_t *event)
 {
     ngx_js_http_t  *http;
@@ -1467,11 +1478,7 @@ ngx_js_http_destructor(ngx_js_event_t *event)
                    http);
 
     ngx_js_http_resolve_done(http);
-
-    if (http->peer.connection != NULL) {
-        ngx_js_http_close_connection(http->peer.connection);
-        http->peer.connection = NULL;
-    }
+    ngx_js_http_close_peer(http);
 }
 
 
@@ -1532,10 +1539,7 @@ ngx_js_http_fetch_done(ngx_js_http_t *http, njs_opaque_value_t *retval,
     ngx_log_debug2(NGX_LOG_DEBUG_EVENT, http->log, 0,
                    "js fetch done http:%p rc:%i", http, (ngx_int_t) rc);
 
-    if (http->peer.connection != NULL) {
-        ngx_js_http_close_connection(http->peer.connection);
-        http->peer.connection = NULL;
-    }
+    ngx_js_http_close_peer(http);
 
     if (http->event != NULL) {
         action = &http->promise_callbacks[(rc != NJS_OK)];
