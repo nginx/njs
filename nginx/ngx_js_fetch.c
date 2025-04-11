@@ -166,7 +166,9 @@ static ngx_js_http_t *ngx_js_http_alloc(njs_vm_t *vm, ngx_pool_t *pool,
 static void ngx_js_http_resolve_done(ngx_js_http_t *http);
 static void ngx_js_http_close_peer(ngx_js_http_t *http);
 static void ngx_js_http_destructor(ngx_js_event_t *event);
-static void ngx_js_resolve_handler(ngx_resolver_ctx_t *ctx);
+static ngx_resolver_ctx_t *ngx_js_http_resolve(ngx_js_http_t *http,
+    ngx_resolver_t *r, ngx_str_t *host, in_port_t port, ngx_msec_t timeout);
+static void ngx_js_http_resolve_handler(ngx_resolver_ctx_t *ctx);
 static njs_int_t ngx_js_fetch_promissified_result(njs_vm_t *vm,
     njs_value_t *result, njs_int_t rc, njs_value_t *retval);
 static void ngx_js_http_fetch_done(ngx_js_http_t *http,
@@ -832,7 +834,9 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (u.addrs == NULL) {
-        ctx = ngx_resolve_start(ngx_external_resolver(vm, external), NULL);
+        ctx = ngx_js_http_resolve(http, ngx_external_resolver(vm, external),
+                                  &u.host, u.port,
+                                  ngx_external_resolver_timeout(vm, external));
         if (ctx == NULL) {
             njs_vm_memory_error(vm);
             return NJS_ERROR;
@@ -841,21 +845,6 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         if (ctx == NGX_NO_RESOLVER) {
             njs_vm_error(vm, "no resolver defined");
             goto fail;
-        }
-
-        http->ctx = ctx;
-        http->port = u.port;
-
-        ctx->name = u.host;
-        ctx->handler = ngx_js_resolve_handler;
-        ctx->data = http;
-        ctx->timeout = ngx_external_resolver_timeout(vm, external);
-
-        ret = ngx_resolve_name(http->ctx);
-        if (ret != NGX_OK) {
-            http->ctx = NULL;
-            njs_vm_memory_error(vm);
-            return NJS_ERROR;
         }
 
         njs_value_assign(retval, njs_value_arg(&http->promise));
@@ -1341,8 +1330,42 @@ ngx_js_http_error(ngx_js_http_t *http, const char *fmt, ...)
 }
 
 
+static ngx_resolver_ctx_t *
+ngx_js_http_resolve(ngx_js_http_t *http, ngx_resolver_t *r, ngx_str_t *host,
+    in_port_t port, ngx_msec_t timeout)
+{
+    ngx_int_t            ret;
+    ngx_resolver_ctx_t  *ctx;
+
+    ctx = ngx_resolve_start(r, NULL);
+    if (ctx == NULL) {
+        return NULL;
+    }
+
+    if (ctx == NGX_NO_RESOLVER) {
+        return ctx;
+    }
+
+    http->ctx = ctx;
+    http->port = port;
+
+    ctx->name = *host;
+    ctx->handler = ngx_js_http_resolve_handler;
+    ctx->data = http;
+    ctx->timeout = timeout;
+
+    ret = ngx_resolve_name(ctx);
+    if (ret != NGX_OK) {
+        http->ctx = NULL;
+        return NULL;
+    }
+
+    return ctx;
+}
+
+
 static void
-ngx_js_resolve_handler(ngx_resolver_ctx_t *ctx)
+ngx_js_http_resolve_handler(ngx_resolver_ctx_t *ctx)
 {
     u_char           *p;
     size_t            len;
