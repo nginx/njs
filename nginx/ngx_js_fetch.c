@@ -163,6 +163,7 @@ static njs_int_t ngx_js_headers_fill(njs_vm_t *vm, ngx_js_headers_t *headers,
     njs_value_t *init);
 static ngx_js_http_t *ngx_js_http_alloc(njs_vm_t *vm, ngx_pool_t *pool,
     ngx_log_t *log);
+static void ngx_js_http_resolve_done(ngx_js_http_t *http);
 static void ngx_js_http_destructor(ngx_js_event_t *event);
 static void ngx_js_resolve_handler(ngx_resolver_ctx_t *ctx);
 static njs_int_t ngx_js_fetch_promissified_result(njs_vm_t *vm,
@@ -1410,8 +1411,7 @@ ngx_js_resolve_handler(ngx_resolver_ctx_t *ctx)
         http->addrs[i].name.data = p;
     }
 
-    ngx_resolve_name_done(ctx);
-    http->ctx = NULL;
+    ngx_js_http_resolve_done(http);
 
     ngx_js_http_connect(http);
 
@@ -1447,6 +1447,16 @@ ngx_js_http_close_connection(ngx_connection_t *c)
 
 
 static void
+ngx_js_http_resolve_done(ngx_js_http_t *http)
+{
+    if (http->ctx != NULL) {
+        ngx_resolve_name_done(http->ctx);
+        http->ctx = NULL;
+    }
+}
+
+
+static void
 ngx_js_http_destructor(ngx_js_event_t *event)
 {
     ngx_js_http_t  *http;
@@ -1456,10 +1466,7 @@ ngx_js_http_destructor(ngx_js_event_t *event)
     ngx_log_debug1(NGX_LOG_DEBUG_EVENT, http->log, 0, "js fetch destructor:%p",
                    http);
 
-    if (http->ctx != NULL) {
-        ngx_resolve_name_done(http->ctx);
-        http->ctx = NULL;
-    }
+    ngx_js_http_resolve_done(http);
 
     if (http->peer.connection != NULL) {
         ngx_js_http_close_connection(http->peer.connection);
