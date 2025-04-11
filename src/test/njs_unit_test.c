@@ -14324,6 +14324,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Object.prototype.toString.call()"),
       njs_str("[object Undefined]") },
 
+    { njs_str("Object.prototype.toString.call().length"),
+      njs_str("18") },
+
     { njs_str("Object.prototype.toString.call(undefined)"),
       njs_str("[object Undefined]") },
 

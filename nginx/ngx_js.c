@@ -108,21 +108,26 @@ static JSModuleDef *ngx_qjs_core_init(JSContext *cx, const char *name);
 #endif
 
 static njs_int_t ngx_js_ext_build(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
 static njs_int_t ngx_js_ext_conf_file_path(njs_vm_t *vm,
-    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
-    njs_value_t *retval);
+    njs_object_prop_t *prop, uint32_t unused, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval);
 static njs_int_t ngx_js_ext_conf_prefix(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
-static njs_int_t ngx_js_ext_error_log_path(njs_vm_t *vm,
-    njs_object_prop_t *prop, njs_value_t *value, njs_value_t *setval,
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval);
+static njs_int_t ngx_js_ext_error_log_path(njs_vm_t *vm,
+    njs_object_prop_t *prop, uint32_t unused, njs_value_t *value,
+    njs_value_t *setval, njs_value_t *retval);
 static njs_int_t ngx_js_ext_prefix(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
 static njs_int_t ngx_js_ext_version(njs_vm_t *vm, njs_object_prop_t *prop,
+    uint32_t unused,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 static njs_int_t ngx_js_ext_worker_id(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
 static njs_int_t ngx_js_ext_console_time(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t ngx_js_ext_console_time_end(njs_vm_t *vm, njs_value_t *args,
@@ -2403,8 +2408,8 @@ ngx_js_core_init(njs_vm_t *vm)
 
 
 njs_int_t
-ngx_js_ext_string(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval)
+ngx_js_ext_string(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     char       *p;
     ngx_str_t  *field;
@@ -2422,8 +2427,8 @@ ngx_js_ext_string(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
 
 
 njs_int_t
-ngx_js_ext_uint(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval)
+ngx_js_ext_uint(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     char        *p;
     ngx_uint_t   field;
@@ -2443,7 +2448,7 @@ ngx_js_ext_uint(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
 
 
 njs_int_t
-ngx_js_ext_constant(njs_vm_t *vm, njs_object_prop_t *prop,
+ngx_js_ext_constant(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     uint32_t  magic32;
@@ -2466,7 +2471,7 @@ ngx_js_ext_constant(njs_vm_t *vm, njs_object_prop_t *prop,
 
 
 njs_int_t
-ngx_js_ext_flags(njs_vm_t *vm, njs_object_prop_t *prop,
+ngx_js_ext_flags(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     uintptr_t  data;
@@ -2491,8 +2496,8 @@ ngx_js_ext_flags(njs_vm_t *vm, njs_object_prop_t *prop,
 
 
 njs_int_t
-ngx_js_ext_build(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval)
+ngx_js_ext_build(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     return njs_vm_value_string_create(vm, retval,
 #ifdef NGX_BUILD
@@ -2508,6 +2513,7 @@ ngx_js_ext_build(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
 
 njs_int_t
 ngx_js_ext_conf_file_path(njs_vm_t *vm, njs_object_prop_t *prop,
+    uint32_t unused,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     return njs_vm_value_string_create(vm, retval, ngx_cycle->conf_file.data,
@@ -2516,7 +2522,7 @@ ngx_js_ext_conf_file_path(njs_vm_t *vm, njs_object_prop_t *prop,
 
 
 njs_int_t
-ngx_js_ext_conf_prefix(njs_vm_t *vm, njs_object_prop_t *prop,
+ngx_js_ext_conf_prefix(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     return njs_vm_value_string_create(vm, retval, ngx_cycle->conf_prefix.data,
@@ -2525,7 +2531,7 @@ ngx_js_ext_conf_prefix(njs_vm_t *vm, njs_object_prop_t *prop,
 
 
 njs_int_t
-ngx_js_ext_error_log_path(njs_vm_t *vm, njs_object_prop_t *prop,
+ngx_js_ext_error_log_path(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     return njs_vm_value_string_create(vm, retval, ngx_cycle->error_log.data,
@@ -2534,7 +2540,7 @@ ngx_js_ext_error_log_path(njs_vm_t *vm, njs_object_prop_t *prop,
 
 
 njs_int_t
-ngx_js_ext_prefix(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
+ngx_js_ext_prefix(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval)
 {
     return njs_vm_value_string_create(vm, retval, ngx_cycle->prefix.data,
@@ -2543,8 +2549,8 @@ ngx_js_ext_prefix(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
 
 
 njs_int_t
-ngx_js_ext_version(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval)
+ngx_js_ext_version(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     return njs_vm_value_string_create(vm, retval, (u_char *) NGINX_VERSION,
                                       njs_strlen(NGINX_VERSION));
@@ -2552,8 +2558,8 @@ ngx_js_ext_version(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
 
 
 njs_int_t
-ngx_js_ext_worker_id(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval)
+ngx_js_ext_worker_id(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     njs_value_number_set(retval, ngx_worker);
     return NJS_OK;
@@ -2640,11 +2646,11 @@ ngx_js_ext_console_time(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                 return ret;
             }
 
-            njs_value_string_get(value, &name);
+            njs_value_string_get(vm, value, &name);
         }
 
     } else {
-        njs_value_string_get(value, &name);
+        njs_value_string_get(vm, value, &name);
     }
 
     console = njs_value_external(this);
@@ -2733,11 +2739,11 @@ ngx_js_ext_console_time_end(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                 return ret;
             }
 
-            njs_value_string_get(value, &name);
+            njs_value_string_get(vm, value, &name);
         }
 
     } else {
-        njs_value_string_get(value, &name);
+        njs_value_string_get(vm, value, &name);
     }
 
     console = njs_value_external(this);
