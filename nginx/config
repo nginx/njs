@@ -154,6 +154,7 @@ NJS_ENGINE_LIB="$ngx_addon_dir/../build/libnjs.a"
 if [ "$NJS_HAVE_QUICKJS" = "YES" ];  then
     NJS_ENGINE_DEP="$ngx_addon_dir/../build/libqjs.a"
     NJS_ENGINE_LIB="$ngx_addon_dir/../build/libnjs.a $ngx_addon_dir/../build/libqjs.a"
+    QJS_SRCS="$QJS_SRCS $ngx_addon_dir/ngx_qjs_fetch.c"
 fi
 
 if [ $HTTP != NO ]; then
