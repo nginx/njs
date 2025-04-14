@@ -161,38 +161,36 @@ njs_async_context_free(njs_vm_t *vm, njs_async_ctx_t *ctx)
 }
 
 
-static const njs_object_prop_t  njs_async_constructor_properties[] =
+static const njs_object_prop_init_t  njs_async_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(1),
 
     NJS_DECLARE_PROP_NAME("AsyncFunction"),
 
-    NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
+    NJS_DECLARE_PROP_HANDLER(STRING_prototype, njs_object_prototype_create,
+                             0, 0),
 };
 
 
-const njs_object_init_t  njs_async_constructor_init = {
+static const njs_object_init_t  njs_async_constructor_init = {
     njs_async_constructor_properties,
     njs_nitems(njs_async_constructor_properties),
 };
 
 
-static const njs_object_prop_t  njs_async_prototype_properties[] =
+static const njs_object_prop_init_t  njs_async_prototype_properties[] =
 {
-    {
-        .type = NJS_PROPERTY,
-        .name = njs_wellknown_symbol(NJS_SYMBOL_TO_STRING_TAG),
-        .u.value = njs_string("AsyncFunction"),
-        .configurable = 1,
-    },
+    NJS_DECLARE_PROP_VALUE(SYMBOL_toStringTag,
+                           njs_ascii_strval("AsyncFunction"),
+                           NJS_OBJECT_PROP_VALUE_C),
 
-    NJS_DECLARE_PROP_HANDLER("constructor",
-                             njs_object_prototype_create_constructor,
-                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
+    NJS_DECLARE_PROP_HANDLER(STRING_constructor,
+                             njs_object_prototype_create_constructor, 0,
+                             NJS_OBJECT_PROP_VALUE_CW),
 };
 
 
-const njs_object_init_t  njs_async_prototype_init = {
+static const njs_object_init_t  njs_async_prototype_init = {
     njs_async_prototype_properties,
     njs_nitems(njs_async_prototype_properties),
 };
@@ -206,12 +204,12 @@ const njs_object_type_init_t  njs_async_function_type_init = {
 };
 
 
-const njs_object_prop_t  njs_async_function_instance_properties[] =
+static const njs_object_prop_init_t  njs_async_function_instance_properties[] =
 {
-    NJS_DECLARE_PROP_HANDLER("length", njs_function_instance_length, 0, 0,
+    NJS_DECLARE_PROP_HANDLER(STRING_length, njs_function_instance_length, 0,
                              NJS_OBJECT_PROP_VALUE_C),
 
-    NJS_DECLARE_PROP_HANDLER("name", njs_function_instance_name, 0, 0,
+    NJS_DECLARE_PROP_HANDLER(STRING_name, njs_function_instance_name, 0,
                              NJS_OBJECT_PROP_VALUE_C),
 };
 

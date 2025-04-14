@@ -37,6 +37,14 @@ struct njs_flathsh_proto_s {
 };
 
 
+struct njs_flathsh_descr_s {
+    uint32_t     hash_mask;
+    uint32_t     elts_size;          /* allocated properties */
+    uint32_t     elts_count;         /* include deleted properties */
+    uint32_t     elts_deleted_count;
+};
+
+
 struct njs_flathsh_query_s {
     uint32_t                   key_hash;
     njs_str_t                  key;
@@ -64,6 +72,13 @@ struct njs_flathsh_query_s {
     ((fhl)->slot == (fhr)->slot)
 
 
+njs_inline njs_flathsh_elt_t *
+njs_hash_elts(njs_flathsh_descr_t *h)
+{
+    return (njs_flathsh_elt_t *) ((char *) h + sizeof(njs_flathsh_descr_t));
+}
+
+
 /*
  * njs_flathsh_find() finds a hash element.  If the element has been
  * found then it is stored in the fhq->value and njs_flathsh_find()
@@ -72,6 +87,11 @@ struct njs_flathsh_query_s {
  * The required njs_flathsh_query_t fields: key_hash, key, proto.
  */
 NJS_EXPORT njs_int_t njs_flathsh_find(const njs_flathsh_t *fh,
+    njs_flathsh_query_t *fhq);
+/*
+ * The same as njs_flathsh_find(), but for hashes with unique keys.
+ */
+NJS_EXPORT njs_int_t njs_flathsh_unique_find(const njs_flathsh_t *fh,
     njs_flathsh_query_t *fhq);
 
 /*
@@ -91,6 +111,11 @@ NJS_EXPORT njs_int_t njs_flathsh_find(const njs_flathsh_t *fh,
  */
 NJS_EXPORT njs_int_t njs_flathsh_insert(njs_flathsh_t *fh,
     njs_flathsh_query_t *fhq);
+/*
+ * The same as njs_flathsh_insert(), but for hashes with unique keys.
+ */
+NJS_EXPORT njs_int_t njs_flathsh_unique_insert(njs_flathsh_t *fh,
+    njs_flathsh_query_t *fhq);
 
 /*
  * njs_flathsh_delete() deletes a hash element.  If the element has been
@@ -102,11 +127,14 @@ NJS_EXPORT njs_int_t njs_flathsh_insert(njs_flathsh_t *fh,
  */
 NJS_EXPORT njs_int_t njs_flathsh_delete(njs_flathsh_t *fh,
     njs_flathsh_query_t *fhq);
+/*
+ * The same as njs_flathsh_delete(), but for hashes with unique keys.
+ */
+NJS_EXPORT njs_int_t njs_flathsh_unique_delete(njs_flathsh_t *fh,
+    njs_flathsh_query_t *fhq);
 
 
 typedef struct {
-    const njs_flathsh_proto_t  *proto;
-    uint32_t                   key_hash;
     uint32_t                   cp;
 } njs_flathsh_each_t;
 
@@ -114,11 +142,10 @@ typedef struct {
 #define njs_flathsh_each_init(lhe, _proto)                                     \
     do {                                                                       \
         njs_memzero(lhe, sizeof(njs_flathsh_each_t));                          \
-        (lhe)->proto = _proto;                                                 \
     } while (0)
 
 
-NJS_EXPORT void *njs_flathsh_each(const njs_flathsh_t *fh,
+NJS_EXPORT njs_flathsh_elt_t *njs_flathsh_each(const njs_flathsh_t *fh,
     njs_flathsh_each_t *fhe);
 
 /*
@@ -131,6 +158,9 @@ NJS_EXPORT njs_flathsh_elt_t *njs_flathsh_add_elt(njs_flathsh_t *fh,
 
 NJS_EXPORT njs_flathsh_descr_t *njs_flathsh_new(njs_flathsh_query_t *fhq);
 NJS_EXPORT void njs_flathsh_destroy(njs_flathsh_t *fh, njs_flathsh_query_t *fhq);
+
+NJS_EXPORT njs_int_t njs_flathsh_alloc_copy(njs_mp_t *mp, njs_flathsh_t *to,
+    njs_flathsh_t *from);
 
 
 /* Temporary backward compatibility .*/
@@ -151,7 +181,19 @@ typedef struct njs_flathsh_proto_s  njs_lvlhsh_proto_t;
 #define njs_lvlhsh_insert(lh, lhq) njs_flathsh_insert(lh, lhq)
 #define njs_lvlhsh_delete(lh, lhq) njs_flathsh_delete(lh, lhq)
 #define njs_lvlhsh_each_init(lhe, _proto)  njs_flathsh_each_init(lhe, _proto)
-#define njs_lvlhsh_each(lh, lhe) njs_flathsh_each(lh, lhe)
+
+njs_inline void *
+njs_lvlhsh_each(const njs_flathsh_t *lh, njs_flathsh_each_t *lhe)
+{
+    njs_flathsh_elt_t  *e;
+
+    e = njs_flathsh_each(lh, lhe);
+    if (e == NULL) {
+        return NULL;
+    }
+
+    return e->value;
+}
 
 
 #endif /* _NJS_FLATHSH_H_INCLUDED_ */

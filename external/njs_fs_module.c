@@ -180,7 +180,8 @@ static njs_int_t njs_fs_write_file(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t calltype, njs_value_t *retval);
 
 static njs_int_t njs_fs_constant(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
 
 static njs_int_t njs_fs_dirent_constructor(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
@@ -190,7 +191,8 @@ static njs_int_t njs_fs_dirent_test(njs_vm_t *vm, njs_value_t *args,
 static njs_int_t njs_fs_stats_test(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t testtype, njs_value_t *retval);
 static njs_int_t njs_fs_stats_prop(njs_vm_t *vm, njs_object_prop_t *prop,
-    njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
 static njs_int_t njs_fs_stats_create(njs_vm_t *vm, struct stat *st,
     njs_value_t *retval);
 
@@ -1966,7 +1968,7 @@ njs_fs_readdir(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
     if (njs_value_is_string(njs_value_arg(&encode))) {
-        njs_value_string_get(njs_value_arg(&encode), &s);
+        njs_value_string_get(vm, njs_value_arg(&encode), &s);
 
     } else {
         s.length = 0;
@@ -2111,7 +2113,7 @@ njs_fs_readlink(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     encoding = NULL;
 
     if (njs_value_is_string(njs_value_arg(&encode))) {
-        njs_value_string_get(njs_value_arg(&encode), &s);
+        njs_value_string_get(vm, njs_value_arg(&encode), &s);
 
     } else {
         s.length = 0;
@@ -2203,7 +2205,7 @@ njs_fs_realpath(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     encoding = NULL;
 
     if (njs_value_is_string(njs_value_arg(&encode))) {
-        njs_value_string_get(njs_value_arg(&encode), &s);
+        njs_value_string_get(vm, njs_value_arg(&encode), &s);
 
     } else {
         s.length = 0;
@@ -2610,7 +2612,7 @@ njs_fs_write(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             return NJS_ERROR;
         }
 
-        njs_value_string_get(njs_value_arg(&result), &data);
+        njs_value_string_get(vm, njs_value_arg(&result), &data);
 
         goto process;
     }
@@ -2790,7 +2792,7 @@ njs_fs_write_file(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             return NJS_ERROR;
         }
 
-        njs_value_string_get(njs_value_arg(&result), &content);
+        njs_value_string_get(vm, njs_value_arg(&result), &content);
     }
 
     flags = njs_fs_flags(vm, njs_value_arg(&flag), O_CREAT | O_WRONLY);
@@ -3213,7 +3215,7 @@ njs_fs_path(njs_vm_t *vm, char storage[NJS_MAX_PATH + 1], njs_value_t *src,
     njs_int_t  ret;
 
     if (njs_value_is_string(src)) {
-        njs_value_string_get(src, &str);
+        njs_value_string_get(vm, src, &str);
 
     } else if (njs_value_is_buffer(src)) {
         ret = njs_value_buffer_get(vm, src, &str);
@@ -3261,7 +3263,7 @@ njs_fs_flags(njs_vm_t *vm, njs_value_t *value, int default_flags)
         return -1;
     }
 
-    njs_value_string_get(value, &flags);
+    njs_value_string_get(vm, value, &flags);
 
     for (fl = &njs_flags_table[0]; fl->name.length != 0; fl++) {
         if (njs_strstr_eq(&flags, &fl->name)) {
@@ -3651,8 +3653,8 @@ njs_fs_stats_test(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
-njs_fs_stats_prop(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval)
+njs_fs_stats_prop(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     double      v;
     njs_int_t   ret;
@@ -3870,8 +3872,8 @@ njs_fs_bytes_written_create(njs_vm_t *vm, int bytes, njs_value_t *buffer,
 
 
 njs_int_t
-njs_fs_constant(njs_vm_t *vm, njs_object_prop_t *prop, njs_value_t *value,
-    njs_value_t *setval, njs_value_t *retval)
+njs_fs_constant(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     njs_value_number_set(retval,  njs_vm_prop_magic32(prop));
 

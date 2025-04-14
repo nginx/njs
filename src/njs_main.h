@@ -25,11 +25,11 @@
 #include <njs_murmur_hash.h>
 #include <njs_trace.h>
 #include <njs_queue.h>
-#include <njs_flathsh.h>
 #include <njs_random.h>
 #include <njs_malloc.h>
 #include <njs_rbtree.h>
 #include <njs_mp.h>
+#include <njs_flathsh.h>
 #include <njs_arr.h>
 #include <njs_chb.h>
 #include <njs_utils.h>
@@ -41,10 +41,11 @@
 
 #include <njs.h>
 #include <njs_value.h>
-
 #include <njs_vm.h>
 #include <njs_object_prop_declare.h>
 #include <njs_error.h>
+#include <njs_string.h>
+#include <njs_atom.h>
 #include <njs_number.h>
 #include <njs_value_conversion.h>
 #include <njs_vmcode.h>
@@ -56,9 +57,7 @@
 
 #include <njs_boolean.h>
 #include <njs_symbol.h>
-#include <njs_string.h>
 #include <njs_object.h>
-#include <njs_object_hash.h>
 #include <njs_array.h>
 #include <njs_array_buffer.h>
 #include <njs_typed_array.h>

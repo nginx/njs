@@ -128,7 +128,12 @@ struct njs_vm_s {
     njs_native_frame_t       *top_frame;
     njs_frame_t              *active_frame;
 
-    njs_lvlhsh_t             keywords_hash;
+    njs_lvlhsh_t             atom_hash_shared;
+    njs_lvlhsh_t             atom_hash;
+    njs_lvlhsh_t             *atom_hash_current;
+    uint32_t                 shared_atom_count;
+    uint32_t                 atom_id_generator;
+
     njs_lvlhsh_t             values_hash;
 
     njs_arr_t                *modules;
@@ -178,7 +183,6 @@ struct njs_vm_s {
     njs_random_t             random;
 
     njs_rbtree_t             global_symbols;
-    uint64_t                 symbol_generator;
 
     njs_module_loader_t      module_loader;
     void                     *module_loader_opaque;
@@ -203,21 +207,20 @@ typedef struct {
 
 
 struct njs_vm_shared_s {
-    njs_lvlhsh_t             keywords_hash;
     njs_lvlhsh_t             values_hash;
 
-    njs_lvlhsh_t             array_instance_hash;
-    njs_lvlhsh_t             string_instance_hash;
-    njs_lvlhsh_t             function_instance_hash;
-    njs_lvlhsh_t             async_function_instance_hash;
-    njs_lvlhsh_t             arrow_instance_hash;
-    njs_lvlhsh_t             arguments_object_instance_hash;
-    njs_lvlhsh_t             regexp_instance_hash;
+    njs_flathsh_t            array_instance_hash;
+    njs_flathsh_t            string_instance_hash;
+    njs_flathsh_t            function_instance_hash;
+    njs_flathsh_t            async_function_instance_hash;
+    njs_flathsh_t            arrow_instance_hash;
+    njs_flathsh_t            arguments_object_instance_hash;
+    njs_flathsh_t            regexp_instance_hash;
 
     size_t                   module_items;
     njs_lvlhsh_t             modules_hash;
 
-    njs_lvlhsh_t             env_hash;
+    njs_flathsh_t            env_hash;
 
     njs_object_t             string_object;
     njs_object_t             objects[NJS_OBJECT_MAX];
@@ -261,7 +264,7 @@ extern const njs_str_t    njs_entry_native;
 extern const njs_str_t    njs_entry_unknown;
 extern const njs_str_t    njs_entry_anonymous;
 
-extern const njs_lvlhsh_proto_t  njs_object_hash_proto;
+extern const njs_flathsh_proto_t  njs_object_hash_proto;
 
 
 #endif /* _NJS_VM_H_INCLUDED_ */

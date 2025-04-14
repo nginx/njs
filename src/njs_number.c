@@ -217,23 +217,22 @@ njs_int_t
 njs_number_to_string(njs_vm_t *vm, njs_value_t *string,
     const njs_value_t *number)
 {
-    double             num;
-    size_t             size;
-    const njs_value_t  *value;
-    u_char             buf[128];
+    double  num;
+    size_t  size;
+    u_char  buf[128];
 
     num = njs_number(number);
 
     if (isnan(num)) {
-        value = &njs_string_nan;
+        njs_atom_to_value(vm, string, NJS_ATOM_STRING_NaN);
 
     } else if (isinf(num)) {
 
         if (num < 0) {
-            value = &njs_string_minus_infinity;
+            njs_atom_to_value(vm, string, NJS_ATOM_STRING__Infinity);
 
         } else {
-            value = &njs_string_plus_infinity;
+            njs_atom_to_value(vm, string, NJS_ATOM_STRING_Infinity);
         }
 
     } else {
@@ -241,8 +240,6 @@ njs_number_to_string(njs_vm_t *vm, njs_value_t *string,
 
         return njs_string_new(vm, string, buf, size, size);
     }
-
-    *string = *value;
 
     return NJS_OK;
 }
@@ -252,19 +249,7 @@ njs_int_t
 njs_int64_to_string(njs_vm_t *vm, njs_value_t *value, int64_t i64)
 {
     size_t  size;
-    u_char  *dst, *p;
     u_char  buf[128];
-
-    if (njs_fast_path(i64 >= 0 && i64 < 0x3fffffffffffLL)) {
-        /* Fits to short_string. */
-        dst = njs_string_short_start(value);
-
-        p = njs_sprintf(dst, dst + NJS_STRING_SHORT, "%L", i64);
-
-        njs_string_short_set(value, p - dst, p - dst);
-
-        return NJS_OK;
-    }
 
     size = njs_dtoa(i64, (char *) buf);
 
@@ -439,49 +424,55 @@ njs_number_is_finite(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static const njs_object_prop_t  njs_number_constructor_properties[] =
+static const njs_object_prop_init_t  njs_number_constructor_properties[] =
 {
     NJS_DECLARE_PROP_LENGTH(1),
 
     NJS_DECLARE_PROP_NAME("Number"),
 
-    NJS_DECLARE_PROP_HANDLER("prototype", njs_object_prototype_create, 0, 0, 0),
+    NJS_DECLARE_PROP_HANDLER(STRING_prototype, njs_object_prototype_create,
+                             0, 0),
 
-    NJS_DECLARE_PROP_VALUE("EPSILON", njs_value(NJS_NUMBER, 1, DBL_EPSILON), 0),
+    NJS_DECLARE_PROP_VALUE(STRING_EPSILON,
+                           njs_value(NJS_NUMBER, 1, DBL_EPSILON), 0),
 
-    NJS_DECLARE_PROP_LVALUE("MAX_SAFE_INTEGER",
-                            njs_value(NJS_NUMBER, 1, NJS_MAX_SAFE_INTEGER), 0),
+    NJS_DECLARE_PROP_VALUE(STRING_MAX_SAFE_INTEGER,
+                           njs_value(NJS_NUMBER, 1, NJS_MAX_SAFE_INTEGER), 0),
 
-    NJS_DECLARE_PROP_LVALUE("MIN_SAFE_INTEGER",
-                            njs_value(NJS_NUMBER, 1, -NJS_MAX_SAFE_INTEGER), 0),
+    NJS_DECLARE_PROP_VALUE(STRING_MIN_SAFE_INTEGER,
+                           njs_value(NJS_NUMBER, 1, -NJS_MAX_SAFE_INTEGER), 0),
 
-    NJS_DECLARE_PROP_VALUE("MAX_VALUE", njs_value(NJS_NUMBER, 1, DBL_MAX), 0),
+    NJS_DECLARE_PROP_VALUE(STRING_MAX_VALUE,
+                           njs_value(NJS_NUMBER, 1, DBL_MAX), 0),
 
-    NJS_DECLARE_PROP_VALUE("MIN_VALUE", njs_value(NJS_NUMBER, 1, DBL_MIN), 0),
+    NJS_DECLARE_PROP_VALUE(STRING_MIN_VALUE,
+                           njs_value(NJS_NUMBER, 1, DBL_MIN), 0),
 
-    NJS_DECLARE_PROP_VALUE("NaN", njs_value(NJS_NUMBER, 0, NAN), 0),
+    NJS_DECLARE_PROP_VALUE(STRING_NaN, njs_value(NJS_NUMBER, 0, NAN), 0),
 
-    NJS_DECLARE_PROP_LVALUE("POSITIVE_INFINITY",
-                            njs_value(NJS_NUMBER, 1, INFINITY), 0),
+    NJS_DECLARE_PROP_VALUE(STRING_POSITIVE_INFINITY,
+                           njs_value(NJS_NUMBER, 1, INFINITY), 0),
 
-    NJS_DECLARE_PROP_LVALUE("NEGATIVE_INFINITY",
-                            njs_value(NJS_NUMBER, 1, -INFINITY), 0),
+    NJS_DECLARE_PROP_VALUE(STRING_NEGATIVE_INFINITY,
+                           njs_value(NJS_NUMBER, 1, -INFINITY), 0),
 
-    NJS_DECLARE_PROP_NATIVE("isFinite", njs_number_is_finite, 1, 0),
+    NJS_DECLARE_PROP_NATIVE(STRING_isFinite, njs_number_is_finite, 1, 0),
 
-    NJS_DECLARE_PROP_NATIVE("isInteger", njs_number_is_integer, 1, 0),
+    NJS_DECLARE_PROP_NATIVE(STRING_isInteger, njs_number_is_integer, 1, 0),
 
-    NJS_DECLARE_PROP_NATIVE("isSafeInteger", njs_number_is_safe_integer, 1, 0),
+    NJS_DECLARE_PROP_NATIVE(STRING_isSafeInteger,
+                            njs_number_is_safe_integer, 1, 0),
 
-    NJS_DECLARE_PROP_NATIVE("isNaN", njs_number_is_nan, 1, 0),
+    NJS_DECLARE_PROP_NATIVE(STRING_isNaN, njs_number_is_nan, 1, 0),
 
-    NJS_DECLARE_PROP_NATIVE("parseFloat", njs_number_parse_float, 1, 0),
+    NJS_DECLARE_PROP_NATIVE(STRING_parseFloat, njs_number_parse_float, 1,
+                            0),
 
-    NJS_DECLARE_PROP_NATIVE("parseInt", njs_number_parse_int, 2, 0),
+    NJS_DECLARE_PROP_NATIVE(STRING_parseInt, njs_number_parse_int, 2, 0),
 };
 
 
-const njs_object_init_t  njs_number_constructor_init = {
+static const njs_object_init_t  njs_number_constructor_init = {
     njs_number_constructor_properties,
     njs_nitems(njs_number_constructor_properties),
 };
@@ -884,30 +875,34 @@ njs_number_to_string_radix(njs_vm_t *vm, njs_value_t *string,
 }
 
 
-static const njs_object_prop_t  njs_number_prototype_properties[] =
+static const njs_object_prop_init_t  njs_number_prototype_properties[] =
 {
-    NJS_DECLARE_PROP_HANDLER("__proto__", njs_primitive_prototype_get_proto,
-                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
+    NJS_DECLARE_PROP_HANDLER(STRING___proto__,
+                             njs_primitive_prototype_get_proto, 0,
+                             NJS_OBJECT_PROP_VALUE_CW),
 
-    NJS_DECLARE_PROP_HANDLER("constructor",
-                             njs_object_prototype_create_constructor,
-                             0, 0, NJS_OBJECT_PROP_VALUE_CW),
+    NJS_DECLARE_PROP_HANDLER(STRING_constructor,
+                             njs_object_prototype_create_constructor, 0,
+                             NJS_OBJECT_PROP_VALUE_CW),
 
-    NJS_DECLARE_PROP_NATIVE("valueOf", njs_number_prototype_value_of, 0, 0),
+    NJS_DECLARE_PROP_NATIVE(STRING_valueOf, njs_number_prototype_value_of,
+                            0, 0),
 
-    NJS_DECLARE_PROP_NATIVE("toString", njs_number_prototype_to_string, 1, 0),
+    NJS_DECLARE_PROP_NATIVE(STRING_toString,
+                            njs_number_prototype_to_string, 1, 0),
 
-    NJS_DECLARE_PROP_NATIVE("toFixed", njs_number_prototype_to_fixed, 1, 0),
-
-    NJS_DECLARE_PROP_NATIVE("toPrecision", njs_number_prototype_to_precision,
+    NJS_DECLARE_PROP_NATIVE(STRING_toFixed, njs_number_prototype_to_fixed,
                             1, 0),
 
-    NJS_DECLARE_PROP_NATIVE("toExponential",
+    NJS_DECLARE_PROP_NATIVE(STRING_toPrecision,
+                            njs_number_prototype_to_precision, 1, 0),
+
+    NJS_DECLARE_PROP_NATIVE(STRING_toExponential,
                             njs_number_prototype_to_exponential, 1, 0),
 };
 
 
-const njs_object_init_t  njs_number_prototype_init = {
+static const njs_object_init_t  njs_number_prototype_init = {
     njs_number_prototype_properties,
     njs_nitems(njs_number_prototype_properties),
 };
@@ -970,7 +965,7 @@ njs_number_parse_int(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return ret;
     }
 
-    (void) njs_string_trim(value, &string, NJS_TRIM_START);
+    (void) njs_string_trim(vm, value, &string, NJS_TRIM_START);
 
     if (string.size == 0) {
         goto done;
@@ -1048,7 +1043,7 @@ njs_number_parse_float(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return ret;
     }
 
-    (void) njs_string_trim(value, &string, NJS_TRIM_START);
+    (void) njs_string_trim(vm, value, &string, NJS_TRIM_START);
 
     p = string.start;
     end = p + string.size;

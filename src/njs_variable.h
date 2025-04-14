@@ -18,7 +18,7 @@ typedef enum {
 
 
 typedef struct {
-    uintptr_t             unique_id;
+    uintptr_t             atom_id;
 
     njs_variable_type_t   type:8;    /* 3 bits */
     njs_bool_t            argument;
@@ -45,7 +45,7 @@ typedef enum {
 
 typedef struct {
     njs_reference_type_t  type;
-    uintptr_t             unique_id;
+    uintptr_t             atom_id;
     njs_variable_t        *variable;
     njs_parser_scope_t    *scope;
     njs_bool_t            not_defined;
@@ -60,19 +60,19 @@ typedef struct {
 
 
 njs_variable_t *njs_variable_add(njs_parser_t *parser,
-    njs_parser_scope_t *scope, uintptr_t unique_id, njs_variable_type_t type);
+    njs_parser_scope_t *scope, uintptr_t atom_id, njs_variable_type_t type);
 njs_variable_t *njs_variable_function_add(njs_parser_t *parser,
-    njs_parser_scope_t *scope, uintptr_t unique_id, njs_variable_type_t type);
+    njs_parser_scope_t *scope, uintptr_t atom_id, njs_variable_type_t type);
 njs_variable_t * njs_label_add(njs_vm_t *vm, njs_parser_scope_t *scope,
-    uintptr_t unique_id);
+    uintptr_t atom_id);
 njs_variable_t *njs_label_find(njs_vm_t *vm, njs_parser_scope_t *scope,
-    uintptr_t unique_id);
+    uintptr_t atom_id);
 njs_int_t njs_label_remove(njs_vm_t *vm, njs_parser_scope_t *scope,
-    uintptr_t unique_id);
+    uintptr_t atom_id);
 njs_variable_t *njs_variable_reference(njs_vm_t *vm, njs_parser_node_t *node);
 njs_variable_t *njs_variable_scope_add(njs_parser_t *parser,
     njs_parser_scope_t *scope, njs_parser_scope_t *original,
-    uintptr_t unique_id, njs_variable_type_t type, njs_index_t index);
+    uintptr_t atom_id, njs_variable_type_t type, njs_index_t index);
 njs_int_t njs_name_copy(njs_vm_t *vm, njs_str_t *dst, const njs_str_t *src);
 
 

@@ -504,6 +504,9 @@ static njs_str_t  code = njs_str(
     "}");
 
 
+static const njs_str_t  compare = njs_str("compare");
+
+
 int njs_cdecl
 main(int argc, char **argv)
 {
@@ -528,8 +531,6 @@ main(int argc, char **argv)
         "  -d                dump report as a JSON file.\n"
         "  -c <report file>  compare with previous report.\n"
         "  -h                this help.\n";
-
-    static const njs_str_t  compare = njs_str("compare");
 
     njs_memzero(&opts, sizeof(njs_opts_t));
     opts.prefix = "";
@@ -695,13 +696,14 @@ njs_benchmark_preinit(njs_vm_t *vm)
 }
 
 
+static const njs_str_t  benchmark = njs_str("benchmark");
+
+
 static njs_int_t
 njs_benchmark_init(njs_vm_t *vm)
 {
     njs_int_t           ret;
     njs_opaque_value_t  value;
-
-    static const njs_str_t  benchmark = njs_str("benchmark");
 
     ret = njs_vm_external_create(vm, njs_value_arg(&value),
                                  njs_benchmark_proto_id, NULL, 1);
@@ -728,9 +730,9 @@ njs_benchmark_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_str_t           s, mode;
     njs_opaque_value_t  value;
 
-    njs_value_string_get(njs_arg(args, nargs, 1), &mode);
+    njs_value_string_get(vm, njs_arg(args, nargs, 1), &mode);
 
-    njs_value_string_get(njs_arg(args, nargs, 2), &s);
+    njs_value_string_get(vm, njs_arg(args, nargs, 2), &s);
 
     if (njs_value_to_integer(vm, njs_arg(args, nargs, 3), &n) != NJS_OK) {
         return NJS_ERROR;
