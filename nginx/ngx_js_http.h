@@ -152,6 +152,34 @@ ngx_resolver_ctx_t *ngx_js_http_resolve(ngx_js_http_t *http, ngx_resolver_t *r,
 void ngx_js_http_connect(ngx_js_http_t *http);
 void ngx_js_http_resolve_done(ngx_js_http_t *http);
 void ngx_js_http_close_peer(ngx_js_http_t *http);
+void ngx_js_http_trim(u_char **value, size_t *len,
+    njs_bool_t trim_c0_control_or_space);
+
+
+static const uint32_t  token_map[] = {
+    0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+
+                 /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
+    0x03ff6cfa,  /* 0000 0011 1111 1111  0110 1100 1111 1010 */
+
+                 /* _^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
+    0xc7fffffe,  /* 1100 0111 1111 1111  1111 1111 1111 1110 */
+
+                 /*  ~}| {zyx wvut srqp  onml kjih gfed cba` */
+    0x57ffffff,  /* 0101 0111 1111 1111  1111 1111 1111 1111 */
+
+    0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+    0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+    0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+    0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+};
+
+
+njs_inline njs_bool_t
+njs_is_token(uint32_t byte)
+{
+    return ((token_map[byte >> 5] & ((uint32_t) 1 << (byte & 0x1f))) != 0);
+}
 
 
 #endif /* _NGX_JS_HTTP_H_INCLUDED_ */

@@ -1422,3 +1422,65 @@ ngx_js_http_parse_chunked(ngx_js_http_chunk_parse_t *hcp,
 
     return NGX_AGAIN;
 }
+
+
+njs_inline njs_int_t
+ngx_js_http_whitespace(u_char c)
+{
+    switch (c) {
+    case 0x09:  /* <TAB>  */
+    case 0x0A:  /* <LF>   */
+    case 0x0D:  /* <CR>   */
+    case 0x20:  /* <SP>   */
+        return 1;
+
+    default:
+        return 0;
+    }
+}
+
+
+void
+ngx_js_http_trim(u_char **value, size_t *len,
+    njs_bool_t trim_c0_control_or_space)
+{
+    u_char  *start, *end;
+
+    start = *value;
+    end = start + *len;
+
+    for ( ;; ) {
+        if (start == end) {
+            break;
+        }
+
+        if (ngx_js_http_whitespace(*start)
+            || (trim_c0_control_or_space && *start <= ' '))
+        {
+            start++;
+            continue;
+        }
+
+        break;
+    }
+
+    for ( ;; ) {
+        if (start == end) {
+            break;
+        }
+
+        end--;
+
+        if (ngx_js_http_whitespace(*end)
+            || (trim_c0_control_or_space && *end <= ' '))
+        {
+            continue;
+        }
+
+        end++;
+        break;
+    }
+
+    *value = start;
+    *len = end - start;
+}
