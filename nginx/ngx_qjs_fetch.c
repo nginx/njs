@@ -357,8 +357,14 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
 
     http->header_only = njs_strstr_eq(&str, &njs_str_value("HEAD"));
 
-    NJS_CHB_CTX_INIT(&http->chain, cx);
-    NJS_CHB_CTX_INIT(&http->response.chain, cx);
+    ngx_js_ctx_t  *js_ctx;
+    ngx_engine_t  *e;
+
+    js_ctx = ngx_qjs_external_ctx(cx, JS_GetContextOpaque(cx));
+    e = js_ctx->engine;
+
+    NJS_CHB_MP_INIT2(&http->chain, e->pool);
+    NJS_CHB_MP_INIT2(&http->response.chain, e->pool);
 
     njs_chb_append(&http->chain, request.method.data, request.method.len);
     njs_chb_append_literal(&http->chain, " ");
@@ -1310,11 +1316,11 @@ ngx_qjs_ext_fetch_response_body(JSContext *cx, JSValueConst this_val,
     default:
         result = qjs_string_create(cx, string.start, string.length);
         if (JS_IsException(result)) {
-            response->chain.free(cx, string.start);
+            //response->chain.free(cx, string.start);
             return JS_ThrowOutOfMemory(cx);
         }
 
-        response->chain.free(cx, string.start);
+        //response->chain.free(cx, string.start);
 
         if (magic == NGX_QJS_BODY_JSON) {
             string.start = (u_char *) JS_ToCStringLen(cx, &string.length,
