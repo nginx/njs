@@ -2264,8 +2264,8 @@ ngx_request_js_ext_headers(njs_vm_t *vm, njs_object_prop_t *prop,
         return NJS_DECLINED;
     }
 
-    if (njs_value_is_null(njs_value_arg(&request->header_value))) {
-        ret = njs_vm_external_create(vm, njs_value_arg(&request->header_value),
+    if (njs_value_is_null(njs_value_arg(&request->u.njs_headers))) {
+        ret = njs_vm_external_create(vm, njs_value_arg(&request->u.njs_headers),
                                      ngx_http_js_fetch_headers_proto_id,
                                      &request->headers, 0);
         if (ret != NJS_OK) {
@@ -2274,7 +2274,7 @@ ngx_request_js_ext_headers(njs_vm_t *vm, njs_object_prop_t *prop,
         }
     }
 
-    njs_value_assign(retval, &request->header_value);
+    njs_value_assign(retval, &request->u.njs_headers);
 
     return NJS_OK;
 }
@@ -2389,8 +2389,8 @@ ngx_response_js_ext_headers(njs_vm_t *vm, njs_object_prop_t *prop,
         return NJS_DECLINED;
     }
 
-    if (njs_value_is_null(njs_value_arg(&response->header_value))) {
-        ret = njs_vm_external_create(vm, njs_value_arg(&response->header_value),
+    if (njs_value_is_null(njs_value_arg(&response->u.njs_headers))) {
+        ret = njs_vm_external_create(vm, njs_value_arg(&response->u.njs_headers),
                                      ngx_http_js_fetch_headers_proto_id,
                                      &response->headers, 0);
         if (ret != NJS_OK) {
@@ -2399,7 +2399,7 @@ ngx_response_js_ext_headers(njs_vm_t *vm, njs_object_prop_t *prop,
         }
     }
 
-    njs_value_assign(retval, &response->header_value);
+    njs_value_assign(retval, &response->u.njs_headers);
 
     return NJS_OK;
 }

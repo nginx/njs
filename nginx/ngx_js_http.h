@@ -87,7 +87,12 @@ typedef struct {
     uint8_t                        body_used;
     ngx_str_t                      body;
     ngx_js_headers_t               headers;
-    njs_opaque_value_t             header_value;
+    union {
+        njs_opaque_value_t         njs_headers;
+#if (NJS_HAVE_QUICKJS)
+        JSValue                    qjs_headers;
+#endif
+    } u;
 } ngx_js_request_t;
 
 
@@ -98,7 +103,12 @@ typedef struct {
     uint8_t                        body_used;
     njs_chb_t                      chain;
     ngx_js_headers_t               headers;
-    njs_opaque_value_t             header_value;
+    union {
+        njs_opaque_value_t         njs_headers;
+#if (NJS_HAVE_QUICKJS)
+        JSValue                    qjs_headers;
+#endif
+    } u;
 } ngx_js_response_t;
 
 
