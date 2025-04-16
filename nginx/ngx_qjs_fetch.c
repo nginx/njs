@@ -120,7 +120,7 @@ ngx_qjs_fetch_error(ngx_js_http_t *http, const char *err)
 
     fetch = (ngx_qjs_fetch_t *) http;
 
-    JS_ThrowInternalError(fetch->cx, err);
+    JS_ThrowInternalError(fetch->cx, "%s", err);
 
     fetch->response_value = JS_GetException(fetch->cx);
 
