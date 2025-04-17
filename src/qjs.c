@@ -1010,6 +1010,13 @@ qjs_new_array_buffer(JSContext *cx, uint8_t *src, size_t len)
 
 
 JSValue
+qjs_new_array_buffer_copy(JSContext *cx, uint8_t *src, size_t len)
+{
+    return JS_NewArrayBufferCopy(cx, src, len);
+}
+
+
+JSValue
 qjs_string_create_chb(JSContext *cx, njs_chb_t *chain)
 {
     JSValue    val;

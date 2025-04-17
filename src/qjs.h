@@ -67,6 +67,7 @@ JSContext *qjs_new_context(JSRuntime *rt, qjs_module_t **addons);
 
 JSValue qjs_new_uint8_array(JSContext *ctx, int argc, JSValueConst *argv);
 JSValue qjs_new_array_buffer(JSContext *cx, uint8_t *src, size_t len);
+JSValue qjs_new_array_buffer_copy(JSContext *cx, uint8_t *src, size_t len);
 JSValue qjs_buffer_alloc(JSContext *ctx, size_t size);
 JSValue qjs_buffer_create(JSContext *ctx, u_char *start, size_t size);
 JSValue qjs_buffer_chb_alloc(JSContext *ctx, njs_chb_t *chain);

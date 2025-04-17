@@ -196,8 +196,6 @@ foreach my $name ('default.example.com', '1.example.com') {
 
 $t->try_run('no njs.fetch');
 
-plan(skip_all => 'not yet') if http_get('/engine') =~ /QuickJS$/m;
-
 $t->plan(7);
 
 $t->run_daemon(\&dns_daemon, port(8981), $t);

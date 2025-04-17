@@ -37,6 +37,9 @@ void njs_chb_init(njs_chb_t *chain, void *pool, njs_chb_alloc_t alloc,
 #define NJS_CHB_MP_INIT(chain, vm)                                           \
     njs_chb_init(chain, njs_vm_memory_pool(vm), (njs_chb_alloc_t) njs_mp_alloc,\
     (njs_chb_free_t) njs_mp_free)
+#define NJS_CHB_MP_INIT2(chain, mp)                                           \
+    njs_chb_init(chain, mp, (njs_chb_alloc_t) njs_mp_alloc,                   \
+    (njs_chb_free_t) njs_mp_free)
 #define NJS_CHB_CTX_INIT(chain, ctx)                                         \
     njs_chb_init(chain, ctx, (njs_chb_alloc_t) js_malloc,                    \
     (njs_chb_free_t) js_free)

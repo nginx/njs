@@ -436,6 +436,7 @@ static const JSCFunctionListEntry ngx_qjs_ext_ngx[] = {
     JS_CGETSET_MAGIC_DEF("ERR", ngx_qjs_ext_constant_integer, NULL,
                          NGX_LOG_ERR),
     JS_CGETSET_DEF("error_log_path", ngx_qjs_ext_error_log_path, NULL),
+    JS_CFUNC_DEF("fetch", 2, ngx_qjs_ext_fetch),
     JS_CGETSET_MAGIC_DEF("INFO", ngx_qjs_ext_constant_integer, NULL,
                          NGX_LOG_INFO),
     JS_CFUNC_MAGIC_DEF("log", 1, ngx_qjs_ext_log, 0),
@@ -1499,6 +1500,31 @@ string:
     dst->len = len;
 
     return NGX_OK;
+}
+
+
+int
+ngx_qjs_array_length(JSContext *cx, uint32_t *plen, JSValueConst arr)
+{
+    int       ret;
+    JSValue   value;
+    uint32_t  len;
+
+    value = JS_GetPropertyStr(cx, arr, "length");
+    if (JS_IsException(value)) {
+        return -1;
+    }
+
+    ret = JS_ToUint32(cx, &len, value);
+    JS_FreeValue(cx, value);
+
+    if (ret) {
+        return -1;
+    }
+
+    *plen = len;
+
+    return 0;
 }
 
 
@@ -4486,4 +4512,20 @@ ngx_js_queue_pop(ngx_js_queue_t *queue)
     queue->size--;
 
     return item;
+}
+
+
+ngx_int_t
+ngx_njs_string(njs_vm_t *vm, njs_value_t *value, ngx_str_t *str)
+{
+    njs_str_t  s;
+
+    if (ngx_js_string(vm, value, &s) != NGX_OK) {
+        return NGX_ERROR;
+    }
+
+    str->data = s.start;
+    str->len = s.length;
+
+    return NGX_OK;
 }
