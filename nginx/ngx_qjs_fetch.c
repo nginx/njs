@@ -1304,7 +1304,7 @@ ngx_qjs_ext_fetch_response_body(JSContext *cx, JSValueConst this_val,
 
     switch (magic) {
     case NGX_QJS_BODY_ARRAY_BUFFER:
-        result = qjs_new_array_buffer(cx, string.start, string.length);
+        result = qjs_new_array_buffer_copy(cx, string.start, string.length);
         if (JS_IsException(result)) {
             return JS_ThrowOutOfMemory(cx);
         }
