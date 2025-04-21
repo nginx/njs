@@ -588,12 +588,16 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 #endif
     }
 
-    http->header_only = njs_strstr_eq(&request.method, &njs_str_value("HEAD"));
+    if (request.method.len == 4
+        && ngx_strncasecmp(request.method.data, (u_char *) "HEAD", 4) == 0)
+    {
+        http->header_only = 1;
+    }
 
     NJS_CHB_MP_INIT(&http->chain, njs_vm_memory_pool(vm));
     NJS_CHB_MP_INIT(&http->response.chain, njs_vm_memory_pool(vm));
 
-    njs_chb_append(&http->chain, request.method.start, request.method.length);
+    njs_chb_append(&http->chain, request.method.data, request.method.len);
     njs_chb_append_literal(&http->chain, " ");
 
     if (u.uri.len == 0 || u.uri.data[0] != '/') {
@@ -683,10 +687,10 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     http->tls_name.len = u.host.len;
 #endif
 
-    if (request.body.length != 0) {
+    if (request.body.len != 0) {
         njs_chb_sprintf(&http->chain, 32, "Content-Length: %uz" CRLF CRLF,
-                        request.body.length);
-        njs_chb_append(&http->chain, request.body.start, request.body.length);
+                        request.body.len);
+        njs_chb_append(&http->chain, request.body.data, request.body.len);
 
     } else {
         njs_chb_append_literal(&http->chain, CRLF);
@@ -861,13 +865,13 @@ ngx_js_ext_response_constructor(njs_vm_t *vm, njs_value_t *args,
 
         value = njs_vm_object_prop(vm, init, &status_text, &lvalue);
         if (value != NULL) {
-            if (ngx_js_string(vm, value, &response->status_text) != NGX_OK) {
+            if (ngx_js_ngx_string(vm, value, &response->status_text) != NGX_OK) {
                 njs_vm_error(vm, "invalid Response statusText");
                 return NJS_ERROR;
             }
 
-            p = response->status_text.start;
-            end = p + response->status_text.length;
+            p = response->status_text.data;
+            end = p + response->status_text.len;
 
             while (p < end) {
                 if (*p != '\t' && *p < ' ') {
@@ -927,6 +931,7 @@ static njs_int_t
 ngx_js_method_process(njs_vm_t *vm, ngx_js_request_t *request)
 {
     u_char           *s, *p;
+    njs_str_t        str;
     const njs_str_t  *m;
 
     static const njs_str_t forbidden[] = {
@@ -946,15 +951,18 @@ ngx_js_method_process(njs_vm_t *vm, ngx_js_request_t *request)
         njs_null_str,
     };
 
+    str.start = request->method.data;
+    str.length = request->method.len;
+
     for (m = &forbidden[0]; m->length != 0; m++) {
-        if (njs_strstr_case_eq(&request->method, m)) {
+        if (njs_strstr_case_eq(&str, m)) {
             njs_vm_error(vm, "forbidden method: %V", m);
             return NJS_ERROR;
         }
     }
 
     for (m = &to_normalize[0]; m->length != 0; m++) {
-        if (njs_strstr_case_eq(&request->method, m)) {
+        if (njs_strstr_case_eq(&str, m)) {
             s = &request->m[0];
             p = m->start;
 
@@ -962,8 +970,8 @@ ngx_js_method_process(njs_vm_t *vm, ngx_js_request_t *request)
                 *s++ = njs_upper_case(*p++);
             }
 
-            request->method.start = &request->m[0];
-            request->method.length = m->length;
+            request->method.data = &request->m[0];
+            request->method.len = m->length;
             break;
         }
     }
@@ -1342,8 +1350,10 @@ ngx_js_request_constructor(njs_vm_t *vm, ngx_js_request_t *request,
 
     ngx_memzero(request, sizeof(ngx_js_request_t));
 
-    request->method = njs_str_value("GET");
-    request->body = njs_str_value("");
+    request->method.data = (u_char *) "GET";
+    request->method.len = 3;
+    request->body.data = (u_char *) "";
+    request->body.len = 0;
     request->headers.guard = GUARD_REQUEST;
 
     pool = ngx_external_pool(vm, external);
@@ -1356,7 +1366,7 @@ ngx_js_request_constructor(njs_vm_t *vm, ngx_js_request_t *request,
     }
 
     if (njs_value_is_string(input)) {
-        ret = ngx_js_string(vm, input, &request->url);
+        ret = ngx_js_ngx_string(vm, input, &request->url);
         if (ret != NJS_OK) {
             njs_vm_error(vm, "failed to convert url arg");
             return NJS_ERROR;
@@ -1383,12 +1393,12 @@ ngx_js_request_constructor(njs_vm_t *vm, ngx_js_request_t *request,
         }
     }
 
-    ngx_js_http_trim(&request->url.start, &request->url.length, 1);
+    ngx_js_http_trim(&request->url.data, &request->url.len, 1);
 
     ngx_memzero(u, sizeof(ngx_url_t));
 
-    u->url.len = request->url.length;
-    u->url.data = request->url.start;
+    u->url.len = request->url.len;
+    u->url.data = request->url.data;
     u->default_port = 80;
     u->uri_part = 1;
     u->no_resolve = 1;
@@ -1423,7 +1433,7 @@ ngx_js_request_constructor(njs_vm_t *vm, ngx_js_request_t *request,
 
     if (njs_value_is_object(init)) {
         value = njs_vm_object_prop(vm, init, &method_key, &lvalue);
-        if (value != NULL && ngx_js_string(vm, value, &request->method)
+        if (value != NULL && ngx_js_ngx_string(vm, value, &request->method)
             != NGX_OK)
         {
             njs_vm_error(vm, "invalid Request method");
@@ -1497,7 +1507,7 @@ ngx_js_request_constructor(njs_vm_t *vm, ngx_js_request_t *request,
 
         value = njs_vm_object_prop(vm, init, &body_key, &lvalue);
         if (value != NULL) {
-            if (ngx_js_string(vm, value, &request->body) != NGX_OK) {
+            if (ngx_js_ngx_string(vm, value, &request->body) != NGX_OK) {
                 njs_vm_error(vm, "invalid Request body");
                 return NJS_ERROR;
             }
@@ -2185,8 +2195,8 @@ ngx_request_js_ext_body(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     switch (type) {
     case NGX_JS_BODY_ARRAY_BUFFER:
         ret = njs_vm_value_array_buffer_set(vm, njs_value_arg(&result),
-                                            request->body.start,
-                                            request->body.length);
+                                            request->body.data,
+                                            request->body.len);
         if (ret != NJS_OK) {
             njs_vm_memory_error(vm);
             return NJS_ERROR;
@@ -2198,8 +2208,8 @@ ngx_request_js_ext_body(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     case NGX_JS_BODY_TEXT:
     default:
         ret = njs_vm_value_string_create(vm, njs_value_arg(&result),
-                                         request->body.start,
-                                         request->body.length);
+                                         request->body.data,
+                                         request->body.len);
         if (ret != NJS_OK) {
             njs_vm_memory_error(vm);
             return NJS_ERROR;
@@ -2480,8 +2490,8 @@ ngx_response_js_ext_status_text(njs_vm_t *vm, njs_object_prop_t *prop,
         return NJS_DECLINED;
     }
 
-    njs_vm_value_string_create(vm, retval, response->status_text.start,
-                               response->status_text.length);
+    njs_vm_value_string_create(vm, retval, response->status_text.data,
+                               response->status_text.len);
 
     return NJS_OK;
 }
