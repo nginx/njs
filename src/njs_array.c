@@ -1686,7 +1686,7 @@ njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     value = &entry;
 
-    NJS_CHB_MP_INIT(&chain, vm);
+    NJS_CHB_MP_INIT(&chain, njs_vm_memory_pool(vm));
 
     for (i = 0; i < len; i++) {
         ret = njs_value_property_i64(vm, this, i, value);

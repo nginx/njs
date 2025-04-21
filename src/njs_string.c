@@ -2955,7 +2955,7 @@ njs_string_get_substitution(njs_vm_t *vm, njs_value_t *matched,
     p = rep.start;
     end = rep.start + rep.length;
 
-    NJS_CHB_MP_INIT(&chain, vm);
+    NJS_CHB_MP_INIT(&chain, njs_vm_memory_pool(vm));
 
     while (p < end) {
         r = njs_strlchr(p, end, '$');
@@ -3244,7 +3244,7 @@ njs_string_prototype_replace(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_OK;
     }
 
-    NJS_CHB_MP_INIT(&chain, vm);
+    NJS_CHB_MP_INIT(&chain, njs_vm_memory_pool(vm));
 
     start = string.start;
 
@@ -3899,7 +3899,7 @@ njs_string_decode_uri(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     src = string.start;
     end = string.start + string.size;
 
-    NJS_CHB_MP_INIT(&chain, vm);
+    NJS_CHB_MP_INIT(&chain, njs_vm_memory_pool(vm));
 
     njs_utf8_decode_init(&ctx);
 
@@ -4173,7 +4173,7 @@ njs_string_atob(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     len = njs_base64_decoded_length(len, pad);
 
-    NJS_CHB_MP_INIT(&chain, vm);
+    NJS_CHB_MP_INIT(&chain, njs_vm_memory_pool(vm));
 
     dst = njs_chb_reserve(&chain, len * 2);
     if (njs_slow_path(dst == NULL)) {

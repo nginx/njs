@@ -732,7 +732,7 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     http->header_only = njs_strstr_eq(&request.method, &njs_str_value("HEAD"));
 
-    NJS_CHB_MP_INIT(&http->chain, vm);
+    NJS_CHB_MP_INIT(&http->chain, njs_vm_memory_pool(vm));
 
     njs_chb_append(&http->chain, request.method.start, request.method.length);
     njs_chb_append_literal(&http->chain, " ");
@@ -1035,7 +1035,7 @@ ngx_js_ext_response_constructor(njs_vm_t *vm, njs_value_t *args,
         }
     }
 
-    NJS_CHB_MP_INIT(&response->chain, vm);
+    NJS_CHB_MP_INIT(&response->chain, njs_vm_memory_pool(vm));
 
     body = njs_arg(args, nargs, 1);
 
@@ -2516,7 +2516,7 @@ ngx_js_http_process_headers(ngx_js_http_t *http)
 
     njs_chb_destroy(&http->chain);
 
-    NJS_CHB_MP_INIT(&http->response.chain, http->vm);
+    NJS_CHB_MP_INIT(&http->response.chain, njs_vm_memory_pool(http->vm));
 
     http->process = ngx_js_http_process_body;
 
@@ -3296,7 +3296,7 @@ ngx_headers_js_get(njs_vm_t *vm, njs_value_t *value, njs_str_t *name,
         return NJS_DECLINED;
     }
 
-    NJS_CHB_MP_INIT(&chain, vm);
+    NJS_CHB_MP_INIT(&chain, njs_vm_memory_pool(vm));
 
     h = ph;
 

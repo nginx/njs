@@ -1149,7 +1149,7 @@ njs_backtrace_to_string(njs_vm_t *vm, njs_arr_t *backtrace, njs_str_t *dst)
         return NJS_OK;
     }
 
-    NJS_CHB_MP_INIT(&chain, vm);
+    NJS_CHB_MP_INIT(&chain, njs_vm_memory_pool(vm));
 
     njs_chb_append_str(&chain, dst);
     njs_chb_append(&chain, "\n", 1);

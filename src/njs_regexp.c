@@ -1373,7 +1373,7 @@ njs_regexp_prototype_symbol_replace(njs_vm_t *vm, njs_value_t *args,
         }
     }
 
-    NJS_CHB_MP_INIT(&chain, vm);
+    NJS_CHB_MP_INIT(&chain, njs_vm_memory_pool(vm));
 
     results.separate = 0;
     results.pointer = 0;
