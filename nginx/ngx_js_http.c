@@ -627,9 +627,8 @@ ngx_js_http_process_status_line(ngx_js_http_t *http)
                        hp->code);
 
         http->response.code = hp->code;
-        http->response.status_text.start = hp->status_text;
-        http->response.status_text.length = hp->status_text_end
-                                                             - hp->status_text;
+        http->response.status_text.data = hp->status_text;
+        http->response.status_text.len = hp->status_text_end - hp->status_text;
         http->process = ngx_js_http_process_headers;
 
         return http->process(http);
