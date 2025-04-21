@@ -323,7 +323,7 @@ njs_unit_test_r_header(njs_vm_t *vm, njs_object_prop_t *prop,
 
     ret = njs_vm_prop_name(vm, prop, &h);
     if (ret == NJS_OK) {
-        NJS_CHB_MP_INIT(&chain, vm);
+        NJS_CHB_MP_INIT(&chain, njs_vm_memory_pool(vm));
 
         njs_chb_append(&chain, h.start, h.length);
         njs_chb_append(&chain, (u_char *) "|АБВ", njs_length("|АБВ"));

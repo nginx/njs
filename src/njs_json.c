@@ -1093,7 +1093,7 @@ njs_json_stringify_iterator(njs_json_stringify_t *stringify,
         goto memory_error;
     }
 
-    NJS_CHB_MP_INIT(&chain, stringify->vm);
+    NJS_CHB_MP_INIT(&chain, njs_vm_memory_pool(stringify->vm));
 
     for ( ;; ) {
         if (state->index == 0) {
@@ -1977,7 +1977,7 @@ njs_vm_value_dump(njs_vm_t *vm, njs_str_t *retval, njs_value_t *value,
         value = &exception;
     }
 
-    NJS_CHB_MP_INIT(&chain, vm);
+    NJS_CHB_MP_INIT(&chain, njs_vm_memory_pool(vm));
 
     if (!njs_dump_is_recursive(value)) {
         ret = njs_dump_terminal(stringify, &chain, value, console);

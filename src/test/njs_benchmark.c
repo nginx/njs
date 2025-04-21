@@ -745,7 +745,7 @@ njs_benchmark_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     } else if (memcmp(mode.start, "chb", 3) == 0) {
 
-        NJS_CHB_MP_INIT(&chain, vm);
+        NJS_CHB_MP_INIT(&chain, njs_vm_memory_pool(vm));
 
         njs_chb_append_literal(&chain, "abc");
         njs_chb_append(&chain, s.start, s.length);

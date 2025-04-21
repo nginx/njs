@@ -3121,7 +3121,7 @@ ngx_http_js_header_in_array(njs_vm_t *vm, ngx_http_request_t *r,
                                               (*hh)->value.len);
     }
 
-    NJS_CHB_MP_INIT(&chain, vm);
+    NJS_CHB_MP_INIT(&chain, njs_vm_memory_pool(vm));
 
     for (i = 0; i < n; i++) {
         njs_chb_append(&chain, hh[i]->value.data, hh[i]->value.len);
@@ -4166,7 +4166,7 @@ ngx_http_js_header_generic(njs_vm_t *vm, ngx_http_request_t *r,
                                           (*ph)->value.len);
     }
 
-    NJS_CHB_MP_INIT(&chain, vm);
+    NJS_CHB_MP_INIT(&chain, njs_vm_memory_pool(vm));
 
     sep = flags & NJS_HEADER_SEMICOLON ? ';' : ',';
 
