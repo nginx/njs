@@ -3,7 +3,7 @@
 # Copyright (C) Dmitry Volyntsev
 # Copyright (C) NGINX, Inc.
 
-NJS_TEST_DIR=`mktemp -d /tmp/njs_test.XXX`
+NJS_TEST_DIR=`mktemp -d /tmp/njs_test.XXXXXX`
 NJS_TEST_LOG_DEFAULT="$NJS_TEST_DIR/log.log"
 
 NJS_TEST_VERBOSE=${NJS_TEST_VERBOSE:-}
