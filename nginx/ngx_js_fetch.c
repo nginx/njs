@@ -117,8 +117,6 @@ static njs_int_t ngx_response_js_ext_type(njs_vm_t *vm,
 static njs_int_t ngx_response_js_ext_body(njs_vm_t *vm, njs_value_t *args,
      njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 
-static void ngx_js_http_trim(u_char **value, size_t *len,
-    njs_bool_t trim_c0_control_or_space);
 static njs_int_t ngx_fetch_flag(njs_vm_t *vm, const ngx_js_entry_t *entries,
     njs_int_t value, njs_value_t *retval);
 static njs_int_t ngx_fetch_flag_set(njs_vm_t *vm, const ngx_js_entry_t *entries,
@@ -1533,94 +1531,6 @@ ngx_js_request_constructor(njs_vm_t *vm, ngx_js_request_t *request,
 }
 
 
-njs_inline njs_int_t
-ngx_js_http_whitespace(u_char c)
-{
-    switch (c) {
-    case 0x09:  /* <TAB>  */
-    case 0x0A:  /* <LF>   */
-    case 0x0D:  /* <CR>   */
-    case 0x20:  /* <SP>   */
-        return 1;
-
-    default:
-        return 0;
-    }
-}
-
-
-static void
-ngx_js_http_trim(u_char **value, size_t *len,
-    njs_bool_t trim_c0_control_or_space)
-{
-    u_char  *start, *end;
-
-    start = *value;
-    end = start + *len;
-
-    for ( ;; ) {
-        if (start == end) {
-            break;
-        }
-
-        if (ngx_js_http_whitespace(*start)
-            || (trim_c0_control_or_space && *start <= ' '))
-        {
-            start++;
-            continue;
-        }
-
-        break;
-    }
-
-    for ( ;; ) {
-        if (start == end) {
-            break;
-        }
-
-        end--;
-
-        if (ngx_js_http_whitespace(*end)
-            || (trim_c0_control_or_space && *end <= ' '))
-        {
-            continue;
-        }
-
-        end++;
-        break;
-    }
-
-    *value = start;
-    *len = end - start;
-}
-
-
-static const uint32_t  token_map[] = {
-    0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
-
-                 /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
-    0x03ff6cfa,  /* 0000 0011 1111 1111  0110 1100 1111 1010 */
-
-                 /* _^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
-    0xc7fffffe,  /* 1100 0111 1111 1111  1111 1111 1111 1110 */
-
-                 /*  ~}| {zyx wvut srqp  onml kjih gfed cba` */
-    0x57ffffff,  /* 0101 0111 1111 1111  1111 1111 1111 1111 */
-
-    0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
-    0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
-    0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
-    0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
-};
-
-
-njs_inline njs_bool_t
-njs_is_token(uint32_t byte)
-{
-    return ((token_map[byte >> 5] & ((uint32_t) 1 << (byte & 0x1f))) != 0);
-}
-
-
 static ngx_int_t
 ngx_js_fetch_append_headers(ngx_js_http_t *http, ngx_js_headers_t *headers,
     u_char *name, size_t len, u_char *value, size_t vlen)
@@ -1659,22 +1569,17 @@ ngx_js_headers_append(njs_vm_t *vm, ngx_js_headers_t *headers,
     u_char *name, size_t len, u_char *value, size_t vlen)
 {
     u_char           *p, *end;
+    ngx_int_t         ret;
     ngx_uint_t        i;
     ngx_js_tb_elt_t  *h, **ph;
     ngx_list_part_t  *part;
 
     ngx_js_http_trim(&value, &vlen, 0);
 
-    p = name;
-    end = p + len;
-
-    while (p < end) {
-        if (!njs_is_token(*p)) {
-            njs_vm_error(vm, "invalid header name");
-            return NJS_ERROR;
-        }
-
-        p++;
+    ret = ngx_js_check_header_name(name, len);
+    if (ret != NGX_OK) {
+        njs_vm_error(vm, "invalid header name");
+        return NJS_ERROR;
     }
 
     p = value;

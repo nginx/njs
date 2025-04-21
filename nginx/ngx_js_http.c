@@ -1422,3 +1422,111 @@ ngx_js_http_parse_chunked(ngx_js_http_chunk_parse_t *hcp,
 
     return NGX_AGAIN;
 }
+
+
+njs_inline njs_int_t
+ngx_js_http_whitespace(u_char c)
+{
+    switch (c) {
+    case 0x09:  /* <TAB>  */
+    case 0x0A:  /* <LF>   */
+    case 0x0D:  /* <CR>   */
+    case 0x20:  /* <SP>   */
+        return 1;
+
+    default:
+        return 0;
+    }
+}
+
+
+void
+ngx_js_http_trim(u_char **value, size_t *len,
+    njs_bool_t trim_c0_control_or_space)
+{
+    u_char  *start, *end;
+
+    start = *value;
+    end = start + *len;
+
+    for ( ;; ) {
+        if (start == end) {
+            break;
+        }
+
+        if (ngx_js_http_whitespace(*start)
+            || (trim_c0_control_or_space && *start <= ' '))
+        {
+            start++;
+            continue;
+        }
+
+        break;
+    }
+
+    for ( ;; ) {
+        if (start == end) {
+            break;
+        }
+
+        end--;
+
+        if (ngx_js_http_whitespace(*end)
+            || (trim_c0_control_or_space && *end <= ' '))
+        {
+            continue;
+        }
+
+        end++;
+        break;
+    }
+
+    *value = start;
+    *len = end - start;
+}
+
+
+static const uint32_t  token_map[] = {
+    0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+
+                 /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */
+    0x03ff6cfa,  /* 0000 0011 1111 1111  0110 1100 1111 1010 */
+
+                 /* _^]\ [ZYX WVUT SRQP  ONML KJIH GFED CBA@ */
+    0xc7fffffe,  /* 1100 0111 1111 1111  1111 1111 1111 1110 */
+
+                 /*  ~}| {zyx wvut srqp  onml kjih gfed cba` */
+    0x57ffffff,  /* 0101 0111 1111 1111  1111 1111 1111 1111 */
+
+    0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+    0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+    0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+    0x00000000,  /* 0000 0000 0000 0000  0000 0000 0000 0000 */
+};
+
+
+njs_inline njs_bool_t
+njs_is_token(uint32_t byte)
+{
+    return ((token_map[byte >> 5] & ((uint32_t) 1 << (byte & 0x1f))) != 0);
+}
+
+
+ngx_int_t
+ngx_js_check_header_name(u_char *name, size_t len)
+{
+    u_char  *p, *end;
+
+    p = name;
+    end = p + len;
+
+    while (p < end) {
+        if (!njs_is_token(*p)) {
+            return NGX_ERROR;
+        }
+
+        p++;
+    }
+
+    return NGX_OK;
+}

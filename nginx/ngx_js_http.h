@@ -152,6 +152,9 @@ ngx_resolver_ctx_t *ngx_js_http_resolve(ngx_js_http_t *http, ngx_resolver_t *r,
 void ngx_js_http_connect(ngx_js_http_t *http);
 void ngx_js_http_resolve_done(ngx_js_http_t *http);
 void ngx_js_http_close_peer(ngx_js_http_t *http);
+void ngx_js_http_trim(u_char **value, size_t *len,
+    njs_bool_t trim_c0_control_or_space);
+ngx_int_t ngx_js_check_header_name(u_char *name, size_t len);
 
 
 #endif /* _NGX_JS_HTTP_H_INCLUDED_ */
