@@ -415,6 +415,7 @@ njs_int_t ngx_js_ext_flags(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unuse
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
 
 ngx_int_t ngx_js_string(njs_vm_t *vm, njs_value_t *value, njs_str_t *str);
+ngx_int_t ngx_js_ngx_string(njs_vm_t *vm, njs_value_t *value, ngx_str_t *str);
 ngx_int_t ngx_js_integer(njs_vm_t *vm, njs_value_t *value, ngx_int_t *n);
 const char *ngx_js_errno_string(int errnum);
 
