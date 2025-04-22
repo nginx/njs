@@ -1147,6 +1147,31 @@ qjs_string_base64url(JSContext *cx, const njs_str_t *src)
 }
 
 
+int
+qjs_array_length(JSContext *cx, JSValueConst arr, uint32_t *plen)
+{
+    int       ret;
+    JSValue   value;
+    uint32_t  len;
+
+    value = JS_GetPropertyStr(cx, arr, "length");
+    if (JS_IsException(value)) {
+        return -1;
+    }
+
+    ret = JS_ToUint32(cx, &len, value);
+    JS_FreeValue(cx, value);
+
+    if (ret) {
+        return -1;
+    }
+
+    *plen = len;
+
+    return 0;
+}
+
+
 static JSValue
 qjs_promise_fill_trampoline(JSContext *cx, int argc, JSValueConst *argv)
 {

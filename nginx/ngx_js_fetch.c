@@ -1171,7 +1171,7 @@ ngx_js_fetch_alloc(njs_vm_t *vm, ngx_pool_t *pool, ngx_log_t *log)
     fetch->vm = vm;
     fetch->event = event;
 
-    ngx_log_debug1(NGX_LOG_DEBUG_EVENT, log, 0, "js fetch alloc:%p", fetch);
+    ngx_log_debug1(NGX_LOG_DEBUG_EVENT, log, 0, "js http alloc:%p", fetch);
 
     return fetch;
 
@@ -1207,7 +1207,7 @@ ngx_js_fetch_destructor(ngx_js_event_t *event)
     fetch = event->data;
     http = &fetch->http;
 
-    ngx_log_debug1(NGX_LOG_DEBUG_EVENT, http->log, 0, "js fetch destructor:%p",
+    ngx_log_debug1(NGX_LOG_DEBUG_EVENT, http->log, 0, "js http destructor:%p",
                    fetch);
 
     ngx_js_http_resolve_done(http);
@@ -1273,7 +1273,7 @@ ngx_js_fetch_done(ngx_js_fetch_t *fetch, njs_opaque_value_t *retval,
     http = &fetch->http;
 
     ngx_log_debug2(NGX_LOG_DEBUG_EVENT, http->log, 0,
-                   "js fetch done fetch:%p rc:%i", fetch, (ngx_int_t) rc);
+                   "js http done fetch:%p rc:%i", fetch, (ngx_int_t) rc);
 
     ngx_js_http_close_peer(http);
 

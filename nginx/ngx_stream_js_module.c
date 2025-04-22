@@ -834,6 +834,7 @@ static JSClassDef ngx_stream_qjs_variables_class = {
 qjs_module_t *njs_stream_qjs_addon_modules[] = {
     &ngx_qjs_ngx_module,
     &ngx_qjs_ngx_shared_dict_module,
+    &ngx_qjs_ngx_fetch_module,
     /*
      * Shared addons should be in the same order and the same positions
      * in all nginx modules.

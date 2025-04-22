@@ -146,8 +146,6 @@ EOF
 
 $t->try_run('no njs.fetch');
 
-plan(skip_all => 'not yet') if http_get('/engine') =~ /QuickJS$/m;
-
 $t->plan(5);
 
 $t->run_daemon(\&dns_daemon, port(8981), $t);
