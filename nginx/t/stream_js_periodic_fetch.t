@@ -147,7 +147,6 @@ EOF
 
 $t->run_daemon(\&stream_daemon, port(8090));
 $t->try_run('no js_periodic with fetch');
-plan(skip_all => 'not yet') if http_get('/engine') =~ /QuickJS$/m;
 $t->plan(3);
 $t->waitforsocket('127.0.0.1:' . port(8090));
 

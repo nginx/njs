@@ -121,8 +121,6 @@ EOF
 
 $t->try_run('no js_periodic with fetch');
 
-plan(skip_all => 'not yet') if http_get('/engine') =~ /QuickJS$/m;
-
 $t->plan(3);
 
 ###############################################################################

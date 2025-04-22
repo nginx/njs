@@ -441,6 +441,7 @@ static const JSCFunctionListEntry ngx_qjs_ext_ngx[] = {
     JS_CGETSET_MAGIC_DEF("ERR", ngx_qjs_ext_constant_integer, NULL,
                          NGX_LOG_ERR),
     JS_CGETSET_DEF("error_log_path", ngx_qjs_ext_error_log_path, NULL),
+    JS_CFUNC_DEF("fetch", 2, ngx_qjs_ext_fetch),
     JS_CGETSET_MAGIC_DEF("INFO", ngx_qjs_ext_constant_integer, NULL,
                          NGX_LOG_INFO),
     JS_CFUNC_MAGIC_DEF("log", 1, ngx_qjs_ext_log, 0),

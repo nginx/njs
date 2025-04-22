@@ -136,6 +136,8 @@ JSValue qjs_string_create_chb(JSContext *cx, njs_chb_t *chain);
 
 void qjs_free_prop_enum(JSContext *ctx, JSPropertyEnum *tab, uint32_t len);
 
+int qjs_array_length(JSContext *cx, JSValueConst arr, uint32_t *plen);
+
 JSValue qjs_promise_result(JSContext *cx, JSValue result);
 
 JSValue qjs_string_hex(JSContext *cx, const njs_str_t *src);

@@ -271,7 +271,9 @@ $t->write_file('test.js', <<EOF);
                     })
 
                 } catch (e) {
-                    if (!e.message.startsWith('Cannot assign to read-only p')) {
+                    if (!e.message.startsWith('Cannot assign to read-only p')
+                         && !e.message.startsWith('no setter for property'))
+                    {
                         throw e;
                     }
                 }
@@ -386,6 +388,17 @@ $t->write_file('test.js', <<EOF);
                 var body = await r.text();
                 return `\${body}: \${r.headers.get('Content-Type')}`;
              }, 'ABC: text/plain;charset=UTF-8'],
+            ['arrayBuffer()', async () => {
+                var r = new Request("http://nginx.org", {body: 'ABC'});
+                var body = await r.arrayBuffer();
+                body = new Uint8Array(body);
+                return new TextDecoder().decode(body);
+             }, 'ABC'],
+            ['json()', async () => {
+                var r = new Request("http://nginx.org", {body: '{"a": 42}'});
+                var body = await r.json();
+                return body.a;
+             }, 42],
             ['user content type', async () => {
                 var r = new Request("http://nginx.org",
                                     {body: 'ABC',
@@ -443,6 +456,12 @@ $t->write_file('test.js', <<EOF);
                 var body = await r.text();
                 return `\${r.url}: \${body} \${r.headers.get('b')}`;
              }, ':  Y'],
+            ['arrayBuffer', async () => {
+                var r = new Response('foo');
+                var body = await r.arrayBuffer();
+                body = new Uint8Array(body);
+                return new TextDecoder().decode(body);
+             }, 'foo'],
             ['json', async () => {
                 var r = new Response('{"a": {"b": 42}}');
                 var json = await r.json();
@@ -514,8 +533,6 @@ $t->write_file('test.js', <<EOF);
 EOF
 
 $t->try_run('no njs');
-
-plan(skip_all => 'not yet') if http_get('/engine') =~ /QuickJS$/m;
 
 $t->plan(5);
 
