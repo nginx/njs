@@ -45,14 +45,23 @@ http {
             js_content test.njs;
         }
 
+        location /pass {
+            proxy_pass http://127.0.0.1:8081/len_source;
+        }
+
         location /append {
             js_body_filter test.append;
-            proxy_pass http://127.0.0.1:8081/source;
+            proxy_pass http://127.0.0.1:8081/chunked_source;
+        }
+
+        location /append_len {
+            js_body_filter test.append;
+            proxy_pass http://127.0.0.1:8081/len_source;
         }
 
         location /buffer_type {
             js_body_filter test.buffer_type buffer_type=buffer;
-            proxy_pass http://127.0.0.1:8081/source;
+            proxy_pass http://127.0.0.1:8081/chunked_source;
         }
 
         location /buffer_type_nonutf8 {
@@ -62,18 +71,18 @@ http {
 
         location /forward {
             js_body_filter test.forward buffer_type=string;
-            proxy_pass http://127.0.0.1:8081/source;
+            proxy_pass http://127.0.0.1:8081/chunked_source;
         }
 
         location /filter {
             proxy_buffering off;
             js_body_filter test.filter;
-            proxy_pass http://127.0.0.1:8081/source;
+            proxy_pass http://127.0.0.1:8081/chunked_source;
         }
 
         location /prepend {
             js_body_filter test.prepend;
-            proxy_pass http://127.0.0.1:8081/source;
+            proxy_pass http://127.0.0.1:8081/chunked_source;
         }
     }
 
@@ -81,9 +90,13 @@ http {
         listen       127.0.0.1:8081;
         server_name  localhost;
 
-        location /source {
+        location /len_source {
+            return 200 '0123456789';
+        }
+
+        location /chunked_source {
             postpone_output 1;
-            js_content test.source;
+            js_content test.chunked_source;
         }
 
         location /nonutf8_source {
@@ -127,7 +140,7 @@ $t->write_file('test.js', <<EOF);
         }
     }
 
-    function source(r) {
+    function chunked_source(r) {
         var chunks = ['AAA', 'BB', 'C', 'DDDD'];
         chunks.delay = 5;
         chunks.r = r;
@@ -170,15 +183,17 @@ $t->write_file('test.js', <<EOF);
     }
 
     export default {njs: test_njs, append, buffer_type, filter, forward,
-                    prepend, source, nonutf8_source};
+                    prepend, chunked_source, nonutf8_source};
 
 EOF
 
-$t->try_run('no njs body filter')->plan(7);
+$t->try_run('no njs body filter')->plan(9);
 
 ###############################################################################
 
 like(http_get('/append'), qr/AAABBCDDDDXXX/, 'append');
+like(http_get('/pass'), qr/Content-Length: 10/, 'pass');
+unlike(http_get('/append_len'), qr/Content-Length/, 'append len');
 like(http_get('/buffer_type'), qr/AAABBCDDDD/, 'buffer type');
 like(http_get('/buffer_type_nonutf8'), qr/\xaa\xaa\xbb\xcc\xdd\xdd/,
 	'buffer type nonutf8');
