@@ -46,6 +46,7 @@ http {
         }
 
         location /append {
+            js_header_filter test.clear_content_length;
             js_body_filter test.append;
             proxy_pass http://127.0.0.1:8081/source;
         }
@@ -67,11 +68,13 @@ http {
 
         location /filter {
             proxy_buffering off;
+            js_header_filter test.clear_content_length;
             js_body_filter test.filter;
             proxy_pass http://127.0.0.1:8081/source;
         }
 
         location /prepend {
+            js_header_filter test.clear_content_length;
             js_body_filter test.prepend;
             proxy_pass http://127.0.0.1:8081/source;
         }
@@ -108,6 +111,10 @@ $t->write_file('test.js', <<EOF);
         }
     }
 
+    function clear_content_length(r) {
+        delete r.headersOut['Content-Length'];
+    }
+
     var collect = Buffer.from([]);
     function buffer_type(r, data, flags) {
         collect = Buffer.concat([collect, data]);
@@ -134,6 +141,7 @@ $t->write_file('test.js', <<EOF);
         chunks.chain = chain;
 
         r.status = 200;
+        r.headersOut['Content-Length'] = chunks.reduce((a, b) => a + b.length, 0);
         r.sendHeader();
         chain(chunks, 0);
     }
@@ -170,15 +178,16 @@ $t->write_file('test.js', <<EOF);
     }
 
     export default {njs: test_njs, append, buffer_type, filter, forward,
-                    prepend, source, nonutf8_source};
+                    prepend, source, nonutf8_source, clear_content_length};
 
 EOF
 
-$t->try_run('no njs body filter')->plan(7);
+$t->try_run('no njs body filter')->plan(8);
 
 ###############################################################################
 
 like(http_get('/append'), qr/AAABBCDDDDXXX$/, 'append');
+unlike(http_get('/append'), qr/Content-Length/, 'append no content-length');
 like(http_get('/buffer_type'), qr/AAABBCDDDD$/, 'buffer type');
 like(http_get('/buffer_type_nonutf8'), qr/\xaa\xaa\xbb\xcc\xdd\xdd$/,
 	'buffer type nonutf8');
