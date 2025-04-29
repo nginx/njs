@@ -151,7 +151,7 @@ $t->write_file('test.js', <<EOF);
 
     function filter(r, data, flags) {
         if (flags.last || data.length >= Number(r.args.len)) {
-            r.sendBuffer(`\${data}|`, flags);
+            r.sendBuffer(`\${data}#`, flags);
 
             if (r.args.dup && !flags.last) {
                 r.sendBuffer(data, flags);
@@ -178,14 +178,14 @@ $t->try_run('no njs body filter')->plan(7);
 
 ###############################################################################
 
-like(http_get('/append'), qr/AAABBCDDDDXXX/, 'append');
-like(http_get('/buffer_type'), qr/AAABBCDDDD/, 'buffer type');
-like(http_get('/buffer_type_nonutf8'), qr/\xaa\xaa\xbb\xcc\xdd\xdd/,
+like(http_get('/append'), qr/AAABBCDDDDXXX$/, 'append');
+like(http_get('/buffer_type'), qr/AAABBCDDDD$/, 'buffer type');
+like(http_get('/buffer_type_nonutf8'), qr/\xaa\xaa\xbb\xcc\xdd\xdd$/,
 	'buffer type nonutf8');
-like(http_get('/forward'), qr/AAABBCDDDD/, 'forward');
-like(http_get('/filter?len=3'), qr/AAA|DDDD|/, 'filter 3');
-like(http_get('/filter?len=2&dup=1'), qr/AAA|AAABB|BBDDDD|DDDD/,
+like(http_get('/forward'), qr/AAABBCDDDD$/, 'forward');
+like(http_get('/filter?len=3'), qr/AAA#DDDD##$/, 'filter 3');
+like(http_get('/filter?len=2&dup=1'), qr/AAA#AAABB#BBDDDD#DDDD#$/,
 	'filter 2 dup');
-like(http_get('/prepend'), qr/XXXAAABBCDDDD/, 'prepend');
+like(http_get('/prepend'), qr/XXXAAABBCDDDD$/, 'prepend');
 
 ###############################################################################
