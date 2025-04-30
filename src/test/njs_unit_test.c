@@ -9791,6 +9791,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'myCamelCaseString'.split(/(?=[A-Z])/)"),
       njs_str("my,Camel,Case,String") },
 
+    { njs_str("var r = ' a'.split(/|()/); r+'|'+typeof r[0]+':'+typeof r[1]+':'+typeof r[2]"),
+      njs_str(" ,,a|string:undefined:string") },
+
     { njs_str("'мояВерблюжьяСтрока'.split(/(?=[А-Я])/)"),
       njs_str("моя,Верблюжья,Строка") },
 
