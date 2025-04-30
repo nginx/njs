@@ -1148,23 +1148,11 @@ done:
 static void
 njs_regexp_exec_result_free(njs_vm_t *vm, njs_array_t *result)
 {
-    njs_uint_t           n;
-    njs_value_t          *start;
     njs_flathsh_t        *hash;
     njs_object_prop_t    *prop;
     njs_flathsh_elt_t    *elt;
     njs_flathsh_each_t   lhe;
     njs_flathsh_query_t  lhq;
-
-    if (result->object.fast_array) {
-        start = result->start;
-
-        for (n = 0; n < result->length; n++) {
-            if (start[n].type == NJS_STRING) {
-                njs_mp_free(vm->mem_pool, start[n].string.data);
-            }
-        }
-    }
 
     njs_flathsh_each_init(&lhe, &njs_object_hash_proto);
 
@@ -1581,7 +1569,7 @@ njs_regexp_prototype_symbol_split(njs_vm_t *vm, njs_value_t *args,
     njs_value_t        r, z, this, s_lvalue, setval, constructor;
     njs_object_t       *object;
     const u_char       *start, *end;
-    njs_string_prop_t  s, sv;
+    njs_string_prop_t  s;
     njs_value_t        arguments[2];
 
     rx = njs_argument(args, 0);
@@ -1771,10 +1759,7 @@ njs_regexp_prototype_symbol_split(njs_vm_t *vm, njs_value_t *args,
                 return NJS_ERROR;
             }
 
-            (void) njs_string_prop(vm, &sv, retval);
-
-            ret = njs_array_string_add(vm, array, sv.start, sv.size,
-                                       sv.length);
+            ret = njs_array_add(vm, array, retval);
             if (njs_slow_path(ret != NJS_OK)) {
                 return ret;
             }
