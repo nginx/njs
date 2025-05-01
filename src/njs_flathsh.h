@@ -19,7 +19,14 @@ typedef struct {
 } njs_flathsh_elt_t;
 
 
-typedef struct njs_flathsh_descr_s  njs_flathsh_descr_t;
+typedef struct {
+    uint32_t     hash_mask;
+    uint32_t     elts_size;          /* allocated properties */
+    uint32_t     elts_count;         /* include deleted properties */
+    uint32_t     elts_deleted_count;
+} njs_flathsh_descr_t;
+
+
 typedef struct njs_flathsh_query_s  njs_flathsh_query_t;
 
 typedef njs_int_t (*njs_flathsh_test_t)(njs_flathsh_query_t *fhq, void *data);
