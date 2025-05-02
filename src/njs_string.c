@@ -252,7 +252,7 @@ njs_encode_hex(njs_str_t *dst, const njs_str_t *src)
     size_t        i, len;
     const u_char  *start;
 
-    static const u_char  hex[16] = "0123456789abcdef";
+    static const u_char  hex[] = "0123456789abcdef";
 
     len = src->length;
     start = src->start;
