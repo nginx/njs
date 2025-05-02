@@ -537,7 +537,7 @@ qjs_string_encode(const uint32_t *escape, size_t size, const u_char *src,
     u_char *dst)
 {
     uint8_t              byte;
-    static const u_char  hex[16] = "0123456789ABCDEF";
+    static const u_char  hex[] = "0123456789ABCDEF";
 
     do {
         byte = *src++;

@@ -95,8 +95,8 @@ njs_vsprintf(u_char *buf, u_char *end, const char *fmt, va_list args)
     njs_bool_t     sign;
     njs_sprintf_t  spf;
 
-    static const u_char  hexadecimal[16] = "0123456789abcdef";
-    static const u_char  HEXADECIMAL[16] = "0123456789ABCDEF";
+    static const u_char  hexadecimal[] = "0123456789abcdef";
+    static const u_char  HEXADECIMAL[] = "0123456789ABCDEF";
     static const u_char  nan[] = "[nan]";
     static const u_char  infinity[] = "[infinity]";
 

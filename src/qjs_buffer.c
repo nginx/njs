@@ -2354,7 +2354,7 @@ qjs_hex_encode(JSContext *ctx, const njs_str_t *src, njs_str_t *dst)
     size_t        i, len;
     const u_char  *start;
 
-    static const u_char  hex[16] = "0123456789abcdef";
+    static const u_char  hex[] = "0123456789abcdef";
 
     len = src->length;
     start = src->start;
