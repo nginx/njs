@@ -187,7 +187,7 @@ struct njs_external_s {
 
     union {
         struct {
-            const char              value[15]; /* NJS_STRING_SHORT + 1. */
+            const char              *value;
             njs_prop_handler_t      handler;
             uint16_t                magic16;
             uint32_t                magic32;
