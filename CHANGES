@@ -1,3 +1,20 @@
+Changes with njs 0.9.0                                       06 May 2025
+
+     Core:
+
+     *) Feature: refactored working with built-in strings, symbols
+        and small integers.
+        Performance improvements (arewefastyet/benchmarks/v8-v7 benchmark):
+        Richards: +57% (631 → 989)
+        Crypto: +7% (1445 → 1551)
+        RayTrace: +37% (562 → 772)
+        NavierStokes: +20% (2062 → 2465)
+        Overall score: +29% (1014 → 1307)
+
+    *) Bugfix: fixed regexp undefined value of captured group.
+
+    *) Bugfix: fixed GCC 15 build with -Wunterminated-string-initialization.
+
 Changes with njs 0.8.10                                      08 Apr 2025
 
     nginx modules:
