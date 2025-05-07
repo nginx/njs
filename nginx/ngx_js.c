@@ -2282,6 +2282,22 @@ ngx_js_string(njs_vm_t *vm, njs_value_t *value, njs_str_t *str)
 }
 
 
+ngx_int_t
+ngx_js_ngx_string(njs_vm_t *vm, njs_value_t *value, ngx_str_t *str)
+{
+    njs_str_t  s;
+
+    if (ngx_js_string(vm, value, &s) != NGX_OK) {
+        return NGX_ERROR;
+    }
+
+    str->data = s.start;
+    str->len = s.length;
+
+    return NGX_OK;
+}
+
+
 static njs_int_t
 njs_function_bind(njs_vm_t *vm, const njs_str_t *name,
     njs_function_native_t native, njs_bool_t ctor)
@@ -4493,20 +4509,4 @@ ngx_js_queue_pop(ngx_js_queue_t *queue)
     queue->size--;
 
     return item;
-}
-
-
-ngx_int_t
-ngx_njs_string(njs_vm_t *vm, njs_value_t *value, ngx_str_t *str)
-{
-    njs_str_t  s;
-
-    if (ngx_js_string(vm, value, &s) != NGX_OK) {
-        return NGX_ERROR;
-    }
-
-    str->data = s.start;
-    str->len = s.length;
-
-    return NGX_OK;
 }

@@ -865,7 +865,7 @@ ngx_js_ext_response_constructor(njs_vm_t *vm, njs_value_t *args,
 
         value = njs_vm_object_prop(vm, init, &status_text, &lvalue);
         if (value != NULL) {
-            if (ngx_njs_string(vm, value, &response->status_text) != NGX_OK) {
+            if (ngx_js_ngx_string(vm, value, &response->status_text) != NGX_OK) {
                 njs_vm_error(vm, "invalid Response statusText");
                 return NJS_ERROR;
             }
@@ -1366,7 +1366,7 @@ ngx_js_request_constructor(njs_vm_t *vm, ngx_js_request_t *request,
     }
 
     if (njs_value_is_string(input)) {
-        ret = ngx_njs_string(vm, input, &request->url);
+        ret = ngx_js_ngx_string(vm, input, &request->url);
         if (ret != NJS_OK) {
             njs_vm_error(vm, "failed to convert url arg");
             return NJS_ERROR;
@@ -1433,7 +1433,7 @@ ngx_js_request_constructor(njs_vm_t *vm, ngx_js_request_t *request,
 
     if (njs_value_is_object(init)) {
         value = njs_vm_object_prop(vm, init, &method_key, &lvalue);
-        if (value != NULL && ngx_njs_string(vm, value, &request->method)
+        if (value != NULL && ngx_js_ngx_string(vm, value, &request->method)
             != NGX_OK)
         {
             njs_vm_error(vm, "invalid Request method");
@@ -1507,7 +1507,7 @@ ngx_js_request_constructor(njs_vm_t *vm, ngx_js_request_t *request,
 
         value = njs_vm_object_prop(vm, init, &body_key, &lvalue);
         if (value != NULL) {
-            if (ngx_njs_string(vm, value, &request->body) != NGX_OK) {
+            if (ngx_js_ngx_string(vm, value, &request->body) != NGX_OK) {
                 njs_vm_error(vm, "invalid Request body");
                 return NJS_ERROR;
             }
