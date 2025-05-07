@@ -14,21 +14,21 @@
 
 
 typedef struct {
-    ngx_str_t       name;
-    ngx_int_t       value;
+    ngx_str_t        name;
+    ngx_int_t        value;
 } ngx_qjs_entry_t;
 
 
 typedef struct {
-    ngx_js_http_t      http;
+    ngx_js_http_t    http;
 
-    JSContext          *cx;
-    ngx_qjs_event_t    *event;
+    JSContext        *cx;
+    ngx_qjs_event_t  *event;
 
-    JSValue             response_value;
+    JSValue           response_value;
 
-    JSValue             promise;
-    JSValue             promise_callbacks[2];
+    JSValue           promise;
+    JSValue           promise_callbacks[2];
 } ngx_qjs_fetch_t;
 
 
@@ -79,7 +79,7 @@ static JSValue ngx_qjs_fetch_request_ctor(JSContext *cx,
     JSValueConst new_target, int argc, JSValueConst *argv);
 static JSValue ngx_qjs_ext_fetch_request_body(JSContext *cx,
     JSValueConst this_val, int argc, JSValueConst *argv, int magic);
-static JSValue ngx_qjs_ext_fetch_request_bodyused(JSContext *cx,
+static JSValue ngx_qjs_ext_fetch_request_body_used(JSContext *cx,
     JSValueConst this_val);
 static JSValue ngx_qjs_ext_fetch_request_cache(JSContext *cx,
     JSValueConst this_val);
@@ -101,7 +101,7 @@ static JSValue ngx_qjs_ext_fetch_response_status_text(JSContext *cx,
     JSValueConst this_val);
 static JSValue ngx_qjs_ext_fetch_response_ok(JSContext *cx,
     JSValueConst this_val);
-static JSValue ngx_qjs_ext_fetch_response_bodyused(JSContext *cx,
+static JSValue ngx_qjs_ext_fetch_response_body_used(JSContext *cx,
     JSValueConst this_val);
 static JSValue ngx_qjs_ext_fetch_response_headers(JSContext *cx,
     JSValueConst this_val);
@@ -140,7 +140,7 @@ static const JSCFunctionListEntry  ngx_qjs_ext_fetch_request_proto[] = {
 #define NGX_QJS_BODY_TEXT           2
     JS_CFUNC_MAGIC_DEF("arrayBuffer", 0, ngx_qjs_ext_fetch_request_body,
                        NGX_QJS_BODY_ARRAY_BUFFER),
-    JS_CGETSET_DEF("bodyUsed", ngx_qjs_ext_fetch_request_bodyused, NULL),
+    JS_CGETSET_DEF("bodyUsed", ngx_qjs_ext_fetch_request_body_used, NULL),
     JS_CGETSET_DEF("cache", ngx_qjs_ext_fetch_request_cache, NULL),
     JS_CGETSET_DEF("credentials", ngx_qjs_ext_fetch_request_credentials, NULL),
     JS_CFUNC_MAGIC_DEF("json", 0, ngx_qjs_ext_fetch_request_body,
@@ -159,7 +159,7 @@ static const JSCFunctionListEntry  ngx_qjs_ext_fetch_request_proto[] = {
 static const JSCFunctionListEntry  ngx_qjs_ext_fetch_response_proto[] = {
     JS_CFUNC_MAGIC_DEF("arrayBuffer", 0, ngx_qjs_ext_fetch_response_body,
                        NGX_QJS_BODY_ARRAY_BUFFER),
-    JS_CGETSET_DEF("bodyUsed", ngx_qjs_ext_fetch_response_bodyused, NULL),
+    JS_CGETSET_DEF("bodyUsed", ngx_qjs_ext_fetch_response_body_used, NULL),
     JS_CGETSET_DEF("headers", ngx_qjs_ext_fetch_response_headers, NULL ),
     JS_CFUNC_MAGIC_DEF("json", 0, ngx_qjs_ext_fetch_response_body,
                        NGX_QJS_BODY_JSON),
@@ -236,7 +236,7 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
 {
     int                  has_host;
     void                *external;
-    JSValue              init, value;
+    JSValue              init, value, promise;
     ngx_int_t            rc;
     ngx_url_t            u;
     ngx_uint_t           i;
@@ -259,13 +259,14 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
         return JS_ThrowOutOfMemory(cx);
     }
 
-    http = &fetch->http;
+    promise = JS_DupValue(cx, fetch->promise);
 
     rc = ngx_qjs_request_ctor(cx, &request, &u, argc, argv);
     if (rc != NGX_OK) {
         goto fail;
     }
 
+    http = &fetch->http;
     http->response.url = request.url;
     http->timeout = ngx_qjs_external_fetch_timeout(cx, external);
     http->buffer_size = ngx_qjs_external_buffer_size(cx, external);
@@ -442,7 +443,7 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
             goto fail;
         }
 
-        return JS_DupValue(cx, fetch->promise);
+        return promise;
     }
 
     http->naddrs = 1;
@@ -451,7 +452,7 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
 
     ngx_js_http_connect(http);
 
-    return JS_DupValue(cx, fetch->promise);
+    return promise;
 
 fail:
 
@@ -459,7 +460,7 @@ fail:
 
     ngx_qjs_fetch_done(fetch, fetch->response_value, NGX_ERROR);
 
-    return JS_DupValue(cx, fetch->promise);
+    return promise;
 }
 
 
@@ -1992,8 +1993,8 @@ static JSValue
 ngx_qjs_ext_fetch_request_body(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv, int magic)
 {
+    char *             string;
     JSValue            result;
-    ngx_str_t          string;
     ngx_js_request_t  *request;
 
     request = JS_GetOpaque2(cx, this_val, NGX_QJS_CLASS_ID_FETCH_REQUEST);
@@ -2031,19 +2032,21 @@ ngx_qjs_ext_fetch_request_body(JSContext *cx, JSValueConst this_val,
         }
 
         if (magic == NGX_QJS_BODY_JSON) {
-            string.data = (u_char *) JS_ToCStringLen(cx, &string.len, result);
+            string = js_malloc(cx, request->body.len + 1);
 
             JS_FreeValue(cx, result);
             result = JS_UNDEFINED;
 
-            if (string.data == NULL) {
-                JS_FreeCString(cx, (const char *) string.data);
-                break;
+            if (string == NULL) {
+                return JS_ThrowOutOfMemory(cx);
             }
 
-            result = JS_ParseJSON(cx, (const char *) string.data,
-                                  string.len, "<input>");
-            JS_FreeCString(cx, (const char *) string.data);
+            ngx_memcpy(string, request->body.data, request->body.len);
+            string[request->body.len] = '\0';
+
+            /* 'string' must be zero terminated. */
+            result = JS_ParseJSON(cx, string, request->body.len, "<input>");
+            js_free(cx, string);
             if (JS_IsException(result)) {
                 break;
             }
@@ -2055,7 +2058,7 @@ ngx_qjs_ext_fetch_request_body(JSContext *cx, JSValueConst this_val,
 
 
 static JSValue
-ngx_qjs_ext_fetch_request_bodyused(JSContext *cx, JSValueConst this_val)
+ngx_qjs_ext_fetch_request_body_used(JSContext *cx, JSValueConst this_val)
 {
     ngx_js_request_t  *request;
 
@@ -2212,7 +2215,7 @@ ngx_qjs_ext_fetch_response_ok(JSContext *cx, JSValueConst this_val)
 
 
 static JSValue
-ngx_qjs_ext_fetch_response_bodyused(JSContext *cx, JSValueConst this_val)
+ngx_qjs_ext_fetch_response_body_used(JSContext *cx, JSValueConst this_val)
 {
     ngx_js_response_t  *response;
 
@@ -2287,13 +2290,23 @@ ngx_qjs_ext_fetch_response_body(JSContext *cx, JSValueConst this_val,
 
     response->body_used = 1;
 
-    ret = njs_chb_join(&response->chain, &string);
-    if (ret != NJS_OK) {
-        return JS_ThrowOutOfMemory(cx);
-    }
-
     switch (magic) {
     case NGX_QJS_BODY_ARRAY_BUFFER:
+    case NGX_QJS_BODY_TEXT:
+        ret = njs_chb_join(&response->chain, &string);
+        if (ret != NJS_OK) {
+            return JS_ThrowOutOfMemory(cx);
+        }
+
+        if (magic == NGX_QJS_BODY_TEXT) {
+            result = qjs_string_create(cx, string.start, string.length);
+            if (JS_IsException(result)) {
+                return JS_ThrowOutOfMemory(cx);
+            }
+
+            break;
+        }
+
         /*
          * no free_func for JS_NewArrayBuffer()
          * because string.start is allocated from e->pool
@@ -2308,31 +2321,18 @@ ngx_qjs_ext_fetch_response_body(JSContext *cx, JSValueConst this_val,
         break;
 
     case NGX_QJS_BODY_JSON:
-    case NGX_QJS_BODY_TEXT:
     default:
-        result = qjs_string_create(cx, string.start, string.length);
-        if (JS_IsException(result)) {
+        /* 'string.start' must be zero terminated. */
+        njs_chb_append_literal(&response->chain, "\0");
+        ret = njs_chb_join(&response->chain, &string);
+        if (ret != NJS_OK) {
             return JS_ThrowOutOfMemory(cx);
         }
 
-        if (magic == NGX_QJS_BODY_JSON) {
-            string.start = (u_char *) JS_ToCStringLen(cx, &string.length,
-                                                      result);
-
-            JS_FreeValue(cx, result);
-            result = JS_UNDEFINED;
-
-            if (string.start == NULL) {
-                JS_FreeCString(cx, (const char *) string.start);
-                break;
-            }
-
-            result = JS_ParseJSON(cx, (const char *) string.start,
-                                  string.length, "<input>");
-            JS_FreeCString(cx, (const char *) string.start);
-            if (JS_IsException(result)) {
-                break;
-            }
+        result = JS_ParseJSON(cx, (char *) string.start, string.length - 1,
+                              "<input>");
+        if (JS_IsException(result)) {
+            break;
         }
     }
 

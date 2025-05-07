@@ -2422,8 +2422,7 @@ ngx_response_js_ext_headers(njs_vm_t *vm, njs_object_prop_t *prop,
     }
 
     if (njs_value_is_null(njs_value_arg(&response->header_value))) {
-        ret = njs_vm_external_create(vm,
-                                     njs_value_arg(&response->header_value),
+        ret = njs_vm_external_create(vm, njs_value_arg(&response->header_value),
                                      ngx_http_js_fetch_headers_proto_id,
                                      &response->headers, 0);
         if (ret != NJS_OK) {

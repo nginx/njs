@@ -391,8 +391,8 @@ $t->write_file('test.js', <<EOF);
             ['arrayBuffer()', async () => {
                 var r = new Request("http://nginx.org", {body: 'ABC'});
                 var body = await r.arrayBuffer();
-				body = new Uint8Array(body);
-				return new TextDecoder().decode(body);
+                body = new Uint8Array(body);
+                return new TextDecoder().decode(body);
              }, 'ABC'],
             ['json()', async () => {
                 var r = new Request("http://nginx.org", {body: '{"a": 42}'});
