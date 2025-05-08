@@ -1722,6 +1722,7 @@ free:
             }
         }
 
+        dkey->extractable = njs_value_bool(njs_arg(args, nargs, 4));
         dkey->u.s.raw.start = k;
         dkey->u.s.raw.length = length;
 

@@ -1948,6 +1948,7 @@ free:
             }
         }
 
+        dkey->extractable = JS_ToBool(cx, argv[3]);
         dkey->u.s.raw.start = k;
         dkey->u.s.raw.length = length;
 
