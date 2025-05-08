@@ -3,6 +3,16 @@ includes: [compatFs.js, compatBuffer.js, compatWebcrypto.js, runTsuite.js, webCr
 flags: [async]
 ---*/
 
+function has_usage(usage, x) {
+    for (let i = 0; i < usage.length; i++) {
+        if (x === usage[i]) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 async function test(params) {
     let r;
     let encoder = new TextEncoder();
@@ -12,10 +22,17 @@ async function test(params) {
     if (params.derive === "key") {
         let key = await crypto.subtle.deriveKey(params.algorithm, keyMaterial,
                                                 params.derivedAlgorithm,
-                                                true, [ "encrypt", "decrypt" ]);
+                                                true, params.usage);
 
-        r = await crypto.subtle.encrypt(params.derivedAlgorithm, key,
-                                        encoder.encode(params.text));
+        if (has_usage(params.usage, "encrypt")) {
+            r = await crypto.subtle.encrypt(params.derivedAlgorithm, key,
+                                            encoder.encode(params.text));
+
+        } else if (has_usage(params.usage, "sign")) {
+            r = await crypto.subtle.sign(params.derivedAlgorithm, key,
+                                         encoder.encode(params.text));
+        }
+
     } else {
 
         r = await crypto.subtle.deriveBits(params.algorithm, keyMaterial, params.length);
@@ -63,7 +80,8 @@ let derive_tsuite = {
           name: "AES-GCM",
           length: 256,
           iv: "55667788556677885566778855667788"
-        }
+        },
+        usage: [ "encrypt", "decrypt" ]
     },
 
     tests: [
@@ -92,6 +110,10 @@ let derive_tsuite = {
 
         { algorithm: { name: "HKDF" }, optional: true,
           expected: "18ea069ee3317d2db02e02f4a228f50dc80d9a2396e6" },
+        { algorithm: { name: "HKDF" },
+          derivedAlgorithm: { name: "HMAC", hash: "SHA-256", length: 256 },
+          usage: [ "sign", "verify" ], optional: true,
+          expected: "0b06bd37de54c08cedde2cbb649d6f26d066acfd51717d83b52091e2ae6829c2" },
         { derive: "bits", algorithm: { name: "HKDF" }, optional: true,
           expected: "e089c7491711306c69e077aa19fae6bfd2d4a6d240b0d37317d50472d7291a3e" },
 ]};
