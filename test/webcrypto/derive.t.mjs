@@ -22,7 +22,11 @@ async function test(params) {
     if (params.derive === "key") {
         let key = await crypto.subtle.deriveKey(params.algorithm, keyMaterial,
                                                 params.derivedAlgorithm,
-                                                true, params.usage);
+                                                params.extractable, params.usage);
+
+        if (key.extractable !== params.extractable) {
+            throw Error(`${params.algorithm.name} failed extractable ${params.extractable} vs ${key.extractable}`);
+        }
 
         if (has_usage(params.usage, "encrypt")) {
             r = await crypto.subtle.encrypt(params.derivedAlgorithm, key,
@@ -81,11 +85,13 @@ let derive_tsuite = {
           length: 256,
           iv: "55667788556677885566778855667788"
         },
+        extractable: true,
         usage: [ "encrypt", "decrypt" ]
     },
 
     tests: [
         { expected: "e7b55c9f9fda69b87648585f76c58109174aaa400cfa" },
+        { extractable: false, expected: "e7b55c9f9fda69b87648585f76c58109174aaa400cfa" },
         { pass: "pass2", expected: "e87d1787f2807ea0e1f7e1cb265b23004c575cf2ad7e" },
         { algorithm: { iterations: 10000 }, expected: "5add0059931ed1db1ca24c26dbe4de5719c43ed18a54" },
         { algorithm: { hash: "SHA-512" }, expected: "544d64e5e246fdd2ba290ea932b2d80ef411c76139f4" },
