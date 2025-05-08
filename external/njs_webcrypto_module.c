@@ -1532,6 +1532,9 @@ njs_ext_derive(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
             break;
 
+        case NJS_ALGORITHM_HMAC:
+            break;
+
         default:
             njs_vm_internal_error(vm, "not implemented deriveKey: \"%V\"",
                                   njs_algorithm_string(dalg));

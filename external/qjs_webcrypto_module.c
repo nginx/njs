@@ -1756,6 +1756,9 @@ qjs_webcrypto_derive(JSContext *cx, JSValueConst this_val, int argc,
 
             break;
 
+        case QJS_ALGORITHM_HMAC:
+            break;
+
         default:
             JS_ThrowTypeError(cx, "not implemented deriveKey: \"%s\"",
                               qjs_algorithm_string(dalg));
