@@ -4642,8 +4642,8 @@ njs_algorithm_hash(njs_vm_t *vm, njs_value_t *options,
 
     if (njs_value_is_object(options)) {
         val = njs_vm_object_prop(vm, options, &string_hash, &value);
-        if (njs_slow_path(val == NULL)) {
-            njs_value_undefined_set(njs_value_arg(&value));
+        if (val == NULL) {
+            return NJS_HASH_SHA256;
         }
 
     } else {
