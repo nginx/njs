@@ -19,3 +19,19 @@ function load_jwk(data) {
 
     return data;
 }
+
+function compareUsage(a, b) {
+    a.sort();
+    b.sort();
+
+    if (b.length !== a.length) {
+        return false;
+    }
+
+    for (var i = 0; i < a.length; i++) {
+        if (b[i] !== a[i]) {
+            return false;
+        }
+    }
+    return true;
+}

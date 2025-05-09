@@ -115,6 +115,8 @@ static JSValue qjs_cipher_aes_ctr(JSContext *cx, njs_str_t *data,
     qjs_webcrypto_key_t *key, JSValue options, int encrypt);
 static JSValue qjs_cipher_aes_cbc(JSContext *cx, njs_str_t *data,
     qjs_webcrypto_key_t *key, JSValue options, int encrypt);
+static JSValue qjs_derive_ecdh(JSContext *cx, JSValueConst *argv, int argc,
+    int derive_key, qjs_webcrypto_key_t *key);
 static JSValue qjs_webcrypto_derive(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv, int derive_key);
 static JSValue qjs_webcrypto_digest(JSContext *cx, JSValueConst this_val,
@@ -272,9 +274,11 @@ static qjs_webcrypto_entry_t qjs_webcrypto_alg[] = {
       qjs_webcrypto_algorithm(QJS_ALGORITHM_ECDH,
                               QJS_KEY_USAGE_DERIVE_KEY |
                               QJS_KEY_USAGE_DERIVE_BITS |
-                              QJS_KEY_USAGE_GENERATE_KEY |
-                              QJS_KEY_USAGE_UNSUPPORTED,
-                              QJS_KEY_FORMAT_UNKNOWN,
+                              QJS_KEY_USAGE_GENERATE_KEY,
+                              QJS_KEY_FORMAT_PKCS8 |
+                              QJS_KEY_FORMAT_SPKI |
+                              QJS_KEY_FORMAT_RAW |
+                              QJS_KEY_FORMAT_JWK,
                               0)
     },
 
@@ -430,7 +434,7 @@ static const JSCFunctionListEntry qjs_webcrypto_subtle[] = {
     JS_CFUNC_DEF("importKey", 5, qjs_webcrypto_import_key),
     JS_CFUNC_MAGIC_DEF("decrypt", 4, qjs_webcrypto_cipher, 0),
     JS_CFUNC_MAGIC_DEF("deriveBits", 4, qjs_webcrypto_derive, 0),
-    JS_CFUNC_MAGIC_DEF("deriveKey", 4, qjs_webcrypto_derive, 1),
+    JS_CFUNC_MAGIC_DEF("deriveKey", 5, qjs_webcrypto_derive, 1),
     JS_CFUNC_DEF("digest", 3, qjs_webcrypto_digest),
     JS_CFUNC_MAGIC_DEF("encrypt", 4, qjs_webcrypto_cipher, 1),
     JS_CFUNC_DEF("exportKey", 3, qjs_webcrypto_export_key),
@@ -1665,6 +1669,190 @@ qjs_export_raw_ec(JSContext *cx, qjs_webcrypto_key_t *key)
 
 
 static JSValue
+qjs_derive_ecdh(JSContext *cx, JSValueConst *argv, int argc, int derive_key,
+    qjs_webcrypto_key_t *key)
+{
+    u_char                     *k;
+    size_t                     olen;
+    int64_t                    length;
+    JSValue                    ret, result, value, dobject;
+    unsigned                   usage;
+    EVP_PKEY                   *priv_pkey, *pub_pkey;
+    EVP_PKEY_CTX               *pctx;
+    qjs_webcrypto_key_t        *dkey, *pkey;
+    qjs_webcrypto_algorithm_t  *dalg;
+
+    result = JS_UNDEFINED;
+    dobject = argv[2];
+
+    if (derive_key) {
+        dalg = qjs_key_algorithm(cx, dobject);
+        if (dalg == NULL) {
+            goto fail;
+        }
+
+        value = JS_GetPropertyStr(cx, dobject, "length");
+        if (JS_IsException(value)) {
+            goto fail;
+        }
+
+        if (JS_IsUndefined(value)) {
+            JS_ThrowTypeError(cx, "derivedKeyAlgorithm.length is not provided");
+            JS_FreeValue(cx, value);
+            goto fail;
+        }
+
+    } else {
+        dalg = NULL;
+        value = JS_DupValue(cx, dobject);
+    }
+
+    if (JS_ToInt64(cx, &length, value) < 0) {
+        JS_FreeValue(cx, value);
+        goto fail;
+    }
+
+    JS_FreeValue(cx, value);
+
+    dkey = NULL;
+    length /= 8;
+
+    if (derive_key) {
+        ret = qjs_key_usage(cx, argv[4], &usage);
+        if (JS_IsException(ret)) {
+            goto fail;
+        }
+
+        if (usage & ~dalg->usage) {
+            JS_ThrowTypeError(cx, "unsupported key usage for \"ECDH\" key");
+            goto fail;
+        }
+
+        result = qjs_webcrypto_key_make(cx, dalg, usage, 0);
+        if (JS_IsException(result)) {
+            JS_ThrowOutOfMemory(cx);
+            goto fail;
+        }
+
+        dkey = JS_GetOpaque(result, QJS_CORE_CLASS_ID_WEBCRYPTO_KEY);
+    }
+
+    value = JS_GetPropertyStr(cx, argv[0], "public");
+    if (JS_IsException(value)) {
+        goto fail;
+    }
+
+    if (JS_IsUndefined(value)) {
+        JS_ThrowTypeError(cx, "ECDH algorithm.public is not provided");
+        JS_FreeValue(cx, value);
+        goto fail;
+    }
+
+    pkey = JS_GetOpaque(value, QJS_CORE_CLASS_ID_WEBCRYPTO_KEY);
+    JS_FreeValue(cx, value);
+    if (pkey == NULL) {
+        JS_ThrowTypeError(cx, "algorithm.public is not a CryptoKey object");
+        goto fail;
+    }
+
+    if (pkey->alg->type != QJS_ALGORITHM_ECDH) {
+        JS_ThrowTypeError(cx, "algorithm.public is not an ECDH key");
+        goto fail;
+    }
+
+    if (key->u.a.curve != pkey->u.a.curve) {
+        JS_ThrowTypeError(cx, "ECDH keys must use the same curve");
+        goto fail;
+    }
+
+    if (!key->u.a.privat) {
+        JS_ThrowTypeError(cx, "baseKey must be a private key for ECDH");
+        goto fail;
+    }
+
+    if (pkey->u.a.privat) {
+        JS_ThrowTypeError(cx, "algorithm.public must be a public key");
+        goto fail;
+    }
+
+    priv_pkey = key->u.a.pkey;
+    pub_pkey = pkey->u.a.pkey;
+
+    pctx = EVP_PKEY_CTX_new(priv_pkey, NULL);
+    if (pctx == NULL) {
+        qjs_webcrypto_error(cx, "EVP_PKEY_CTX_new() failed");
+        goto fail;
+    }
+
+    if (EVP_PKEY_derive_init(pctx) != 1) {
+        qjs_webcrypto_error(cx, "EVP_PKEY_derive_init() failed");
+        EVP_PKEY_CTX_free(pctx);
+        goto fail;
+    }
+
+    if (EVP_PKEY_derive_set_peer(pctx, pub_pkey) != 1) {
+        qjs_webcrypto_error(cx, "EVP_PKEY_derive_set_peer() failed");
+        EVP_PKEY_CTX_free(pctx);
+        goto fail;
+    }
+
+    olen = (size_t) length;
+    if (EVP_PKEY_derive(pctx, NULL, &olen) != 1) {
+        qjs_webcrypto_error(cx, "EVP_PKEY_derive() failed (size query)");
+        EVP_PKEY_CTX_free(pctx);
+        goto fail;
+    }
+
+    if (olen < (size_t) length) {
+        JS_ThrowTypeError(cx, "derived bit length is too small");
+        EVP_PKEY_CTX_free(pctx);
+        goto fail;
+    }
+
+    k = js_malloc(cx, olen);
+    if (k == NULL) {
+        JS_ThrowOutOfMemory(cx);
+        EVP_PKEY_CTX_free(pctx);
+        goto fail;
+    }
+
+    if (EVP_PKEY_derive(pctx, k, &olen) != 1) {
+        qjs_webcrypto_error(cx, "EVP_PKEY_derive() failed");
+        EVP_PKEY_CTX_free(pctx);
+        js_free(cx, k);
+        goto fail;
+    }
+
+    EVP_PKEY_CTX_free(pctx);
+
+    if (derive_key) {
+        if (dalg->type == QJS_ALGORITHM_HMAC) {
+            ret = qjs_algorithm_hash(cx, dobject, &dkey->hash);
+            if (JS_IsException(ret)) {
+                js_free(cx, k);
+                goto fail;
+            }
+        }
+
+        dkey->extractable = JS_ToBool(cx, argv[3]);
+
+        dkey->u.s.raw.start = k;
+        dkey->u.s.raw.length = length;
+
+    } else {
+        result = qjs_new_array_buffer(cx, k, length);
+    }
+
+    return qjs_promise_result(cx, result);
+
+fail:
+    JS_FreeValue(cx, result);
+
+    return qjs_promise_result(cx, JS_EXCEPTION);
+}
+
+
+static JSValue
 qjs_webcrypto_derive(JSContext *cx, JSValueConst this_val, int argc,
     JSValueConst *argv, int derive_key)
 {
@@ -1707,6 +1895,10 @@ qjs_webcrypto_derive(JSContext *cx, JSValueConst this_val, int argc,
                           qjs_algorithm_string(key->alg),
                           qjs_algorithm_string(alg));
         return JS_EXCEPTION;
+    }
+
+    if (alg->type == QJS_ALGORITHM_ECDH) {
+        return qjs_derive_ecdh(cx, argv, argc, derive_key, key);
     }
 
     dobject = argv[2];
@@ -1933,7 +2125,6 @@ free:
         (void) &info;
 #endif
 
-    case QJS_ALGORITHM_ECDH:
     default:
         JS_ThrowTypeError(cx, "not implemented deriveKey algorithm: \"%s\"",
                           qjs_algorithm_string(alg));
@@ -2051,6 +2242,7 @@ qjs_webcrypto_export_key(JSContext *cx, JSValueConst this_val, int argc,
         case QJS_ALGORITHM_RSA_PSS:
         case QJS_ALGORITHM_RSA_OAEP:
         case QJS_ALGORITHM_ECDSA:
+        case QJS_ALGORITHM_ECDH:
             ret = qjs_export_jwk_asymmetric(cx, key);
             if (JS_IsException(ret)) {
                 goto fail;
@@ -2156,7 +2348,9 @@ qjs_webcrypto_export_key(JSContext *cx, JSValueConst this_val, int argc,
 
     case QJS_KEY_FORMAT_RAW:
     default:
-        if (key->alg->type == QJS_ALGORITHM_ECDSA) {
+        if (key->alg->type == QJS_ALGORITHM_ECDSA
+            || key->alg->type == QJS_ALGORITHM_ECDH)
+        {
             ret = qjs_export_raw_ec(cx, key);
             if (JS_IsException(ret)) {
                 goto fail;
@@ -2311,6 +2505,7 @@ qjs_webcrypto_generate_key(JSContext *cx, JSValueConst this_val,
         break;
 
     case QJS_ALGORITHM_ECDSA:
+    case QJS_ALGORITHM_ECDH:
         ret = qjs_algorithm_curve(cx, options, &wkey->u.a.curve);
         if (JS_IsException(ret)) {
             goto fail;
@@ -2342,7 +2537,14 @@ qjs_webcrypto_generate_key(JSContext *cx, JSValueConst this_val,
         ctx = NULL;
 
         wkey->u.a.privat = 1;
-        wkey->usage = QJS_KEY_USAGE_SIGN;
+
+        if (alg->type == QJS_ALGORITHM_ECDSA) {
+            wkey->usage = QJS_KEY_USAGE_SIGN;
+
+        } else {
+            /* ECDH */
+            wkey->usage = QJS_KEY_USAGE_DERIVE_KEY | QJS_KEY_USAGE_DERIVE_BITS;
+        }
 
         keypub = qjs_webcrypto_key_make(cx, alg, usage, extractable);
         if (JS_IsException(keypub)) {
@@ -2358,7 +2560,15 @@ qjs_webcrypto_generate_key(JSContext *cx, JSValueConst this_val,
 
         wkeypub->u.a.pkey = wkey->u.a.pkey;
         wkeypub->u.a.curve = wkey->u.a.curve;
-        wkeypub->usage = QJS_KEY_USAGE_VERIFY;
+
+        if (alg->type == QJS_ALGORITHM_ECDSA) {
+            wkeypub->usage = QJS_KEY_USAGE_VERIFY;
+
+        } else {
+            /* ECDH */
+            wkeypub->usage = QJS_KEY_USAGE_DERIVE_KEY
+                             | QJS_KEY_USAGE_DERIVE_BITS;
+        }
 
         obj = JS_NewObject(cx);
         if (JS_IsException(obj)) {
@@ -3408,7 +3618,17 @@ qjs_webcrypto_import_key(JSContext *cx, JSValueConst this_val, int argc,
             goto fail;
         }
 
-        mask = wkey->u.a.privat ? ~QJS_KEY_USAGE_SIGN : ~QJS_KEY_USAGE_VERIFY;
+        if (alg->type == QJS_ALGORITHM_ECDSA) {
+            mask = wkey->u.a.privat ? ~QJS_KEY_USAGE_SIGN
+                                    : ~QJS_KEY_USAGE_VERIFY;
+        } else {
+            if (wkey->u.a.privat) {
+                mask = ~(QJS_KEY_USAGE_DERIVE_KEY | QJS_KEY_USAGE_DERIVE_BITS);
+
+            } else {
+                mask = 0;
+            }
+        }
 
         if (wkey->usage & mask) {
             JS_ThrowTypeError(cx, "key usage mismatch for \"%s\" key",
@@ -4369,13 +4589,6 @@ qjs_key_algorithm(JSContext *cx, JSValue options)
     for (e = &qjs_webcrypto_alg[0]; e->name.length != 0; e++) {
         if (njs_strstr_case_eq(&a, &e->name)) {
             alg = (qjs_webcrypto_algorithm_t *) e->value;
-            if (alg->usage & QJS_KEY_USAGE_UNSUPPORTED) {
-                JS_ThrowTypeError(cx, "unsupported algorithm: \"%.*s\"",
-                                  (int) a.length, a.start);
-                JS_FreeCString(cx, (char *) a.start);
-                return NULL;
-            }
-
             JS_FreeCString(cx, (char *) a.start);
             return alg;
         }
