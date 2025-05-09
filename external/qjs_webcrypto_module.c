@@ -4437,6 +4437,11 @@ qjs_algorithm_hash(JSContext *cx, JSValue options, qjs_webcrypto_hash_t *hash)
 
     if (JS_IsObject(options)) {
         v = JS_GetPropertyStr(cx, options, "hash");
+        if (JS_IsUndefined(v)) {
+            *hash = QJS_HASH_SHA256;
+            return JS_UNDEFINED;
+        }
+
         if (JS_IsException(v)) {
             return JS_EXCEPTION;
         }
