@@ -2593,7 +2593,6 @@ static njs_int_t
 njs_ext_generate_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
 {
-    int                        nid;
     unsigned                   usage;
     njs_int_t                  ret;
     njs_bool_t                 extractable;
@@ -2730,8 +2729,7 @@ njs_ext_generate_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     case NJS_ALGORITHM_ECDSA:
     case NJS_ALGORITHM_ECDH:
-        nid = 0;
-        ret = njs_algorithm_curve(vm, aobject, &nid);
+        ret = njs_algorithm_curve(vm, aobject, &key->u.a.curve);
         if (njs_slow_path(ret == NJS_ERROR)) {
             goto fail;
         }
@@ -2747,7 +2745,7 @@ njs_ext_generate_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             goto fail;
         }
 
-        if (EVP_PKEY_CTX_set_ec_paramgen_curve_nid(ctx, nid) <= 0) {
+        if (EVP_PKEY_CTX_set_ec_paramgen_curve_nid(ctx, key->u.a.curve) <= 0) {
             njs_webcrypto_error(vm, "EVP_PKEY_CTX_set_ec_paramgen_curve_nid() "
                                 "failed");
             goto fail;
