@@ -3246,6 +3246,10 @@ ngx_stream_js_init_worker(ngx_cycle_t *cycle)
         return NGX_ERROR;
     }
 
+    if (ngx_js_dict_init_worker(jmcf) != NGX_OK) {
+        return NGX_ERROR;
+    }
+
     return NGX_OK;
 }
 
