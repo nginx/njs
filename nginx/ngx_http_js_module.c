@@ -7684,21 +7684,12 @@ ngx_http_js_init(ngx_conf_t *cf)
 
 
 static ngx_int_t
-ngx_http_js_init_worker(ngx_cycle_t *cycle)
+ngx_http_js_init_worker_periodics(ngx_js_main_conf_t *jmcf)
 {
     ngx_uint_t           i;
     ngx_js_periodic_t   *periodics;
-    ngx_js_main_conf_t  *jmcf;
 
-    if ((ngx_process != NGX_PROCESS_WORKER)
-        && ngx_process != NGX_PROCESS_SINGLE)
-    {
-        return NGX_OK;
-    }
-
-    jmcf = ngx_http_cycle_get_module_main_conf(cycle, ngx_http_js_module);
-
-    if (jmcf == NULL || jmcf->periodics == NULL) {
+    if (jmcf->periodics == NULL) {
         return NGX_OK;
     }
 
@@ -7720,6 +7711,31 @@ ngx_http_js_init_worker(ngx_cycle_t *cycle)
         if (ngx_http_js_periodic_init(&periodics[i]) != NGX_OK) {
             return NGX_ERROR;
         }
+    }
+
+    return NGX_OK;
+}
+
+
+static ngx_int_t
+ngx_http_js_init_worker(ngx_cycle_t *cycle)
+{
+    ngx_js_main_conf_t  *jmcf;
+
+    if ((ngx_process != NGX_PROCESS_WORKER)
+        && ngx_process != NGX_PROCESS_SINGLE)
+    {
+        return NGX_OK;
+    }
+
+    jmcf = ngx_http_cycle_get_module_main_conf(cycle, ngx_http_js_module);
+
+    if (jmcf == NULL) {
+        return NGX_OK;
+    }
+
+    if (ngx_http_js_init_worker_periodics(jmcf) != NGX_OK) {
+        return NGX_ERROR;
     }
 
     return NGX_OK;
