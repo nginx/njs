@@ -16,8 +16,6 @@
 #include <njs.h>
 #include <njs_rbtree.h>
 #include <njs_arr.h>
-#include "ngx_js_fetch.h"
-#include "ngx_js_shared_dict.h"
 
 #if (NJS_HAVE_QUICKJS)
 #include <qjs.h>
@@ -439,5 +437,8 @@ extern njs_module_t  njs_webcrypto_module;
 extern njs_module_t  njs_xml_module;
 extern njs_module_t  njs_zlib_module;
 
+
+#include "ngx_js_fetch.h"
+#include "ngx_js_shared_dict.h"
 
 #endif /* _NGX_JS_H_INCLUDED_ */
