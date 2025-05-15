@@ -317,6 +317,9 @@ ngx_int_t ngx_js_exception(njs_vm_t *vm, ngx_str_t *s);
 ngx_engine_t *ngx_njs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf,
     void *external);
 
+#define NGX_CHB_CTX_INIT(chain, pool)                                        \
+    njs_chb_init(chain, pool, (njs_chb_alloc_t) ngx_palloc, NULL)
+
 #if (NJS_HAVE_QUICKJS)
 
 typedef struct ngx_qjs_event_s ngx_qjs_event_t;

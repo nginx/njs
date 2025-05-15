@@ -251,7 +251,11 @@ njs_chb_destroy(njs_chb_t *chain)
 
     while (n != NULL) {
         next = n->next;
-        chain->free(chain->pool, n);
+
+        if (chain->free != NULL) {
+            chain->free(chain->pool, n);
+        }
+
         n = next;
     }
 }
