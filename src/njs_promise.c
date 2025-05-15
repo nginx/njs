@@ -457,6 +457,10 @@ njs_promise_trigger_reactions(njs_vm_t *vm, njs_value_t *value,
 
         function = njs_promise_create_function(vm,
                                                sizeof(njs_promise_context_t));
+        if (njs_slow_path(function == NULL)) {
+            return njs_value_arg(&njs_value_null);
+        }
+
         function->u.native = njs_promise_reaction_job;
 
         njs_set_data(&arguments[0], reaction, 0);
@@ -784,6 +788,11 @@ njs_promise_prototype_then(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     function = njs_promise_create_function(vm, sizeof(njs_promise_context_t));
+    if (njs_slow_path(function == NULL)) {
+        /* vm error is already set by njs_promise_create_function */
+        return NJS_ERROR;
+    }
+
     function->u.native = njs_promise_constructor;
 
     njs_set_function(&constructor, function);
