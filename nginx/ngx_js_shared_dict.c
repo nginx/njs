@@ -21,16 +21,6 @@ typedef struct {
 } ngx_js_dict_sh_t;
 
 
-typedef struct {
-    ngx_str_node_t         sn;
-    ngx_rbtree_node_t      expire;
-    union {
-        ngx_str_t          value;
-        double             number;
-    } u;
-} ngx_js_dict_node_t;
-
-
 struct ngx_js_dict_s {
     ngx_shm_zone_t        *shm_zone;
     ngx_js_dict_sh_t      *sh;
@@ -44,6 +34,19 @@ struct ngx_js_dict_s {
 
     ngx_js_dict_t         *next;
 };
+
+
+typedef union {
+    ngx_str_t              str; /* NGX_JS_DICT_TYPE_STRING */
+    double                 number; /* NGX_JS_DICT_TYPE_NUMBER */
+} ngx_js_dict_value_t;
+
+
+typedef struct {
+    ngx_str_node_t         sn;
+    ngx_rbtree_node_t      expire;
+    ngx_js_dict_value_t    value;
+} ngx_js_dict_node_t;
 
 
 static njs_int_t njs_js_ext_shared_dict_capacity(njs_vm_t *vm,
@@ -1281,7 +1284,7 @@ ngx_js_dict_node_free(ngx_js_dict_t *dict, ngx_js_dict_node_t *node)
     shpool = dict->shpool;
 
     if (dict->type == NGX_JS_DICT_TYPE_STRING) {
-        ngx_slab_free_locked(shpool, node->u.value.data);
+        ngx_slab_free_locked(shpool, node->value.str.data);
     }
 
     ngx_slab_free_locked(shpool, node);
@@ -1341,12 +1344,11 @@ memory_error:
 
 
 static ngx_int_t
-ngx_js_dict_add(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_str_t *key,
-    njs_value_t *value, ngx_msec_t timeout, ngx_msec_t now)
+ngx_js_dict_add_value(ngx_js_dict_t *dict, ngx_str_t *key,
+    ngx_js_dict_value_t *value, ngx_msec_t timeout, ngx_msec_t now)
 {
     size_t               n;
     uint32_t             hash;
-    njs_str_t            string;
     ngx_js_dict_node_t  *node;
 
     if (dict->timeout) {
@@ -1364,18 +1366,17 @@ ngx_js_dict_add(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_str_t *key,
     node->sn.str.data = (u_char *) node + sizeof(ngx_js_dict_node_t);
 
     if (dict->type == NGX_JS_DICT_TYPE_STRING) {
-        njs_value_string_get(vm, value, &string);
-        node->u.value.data = ngx_js_dict_alloc(dict, string.length);
-        if (node->u.value.data == NULL) {
+        node->value.str.data = ngx_js_dict_alloc(dict, value->str.len);
+        if (node->value.str.data == NULL) {
             ngx_slab_free_locked(dict->shpool, node);
             return NGX_ERROR;
         }
 
-        ngx_memcpy(node->u.value.data, string.start, string.length);
-        node->u.value.len = string.length;
+        ngx_memcpy(node->value.str.data, value->str.data, value->str.len);
+        node->value.str.len = value->str.len;
 
     } else {
-        node->u.number = njs_value_number(value);
+        node->value.number = value->number;
     }
 
     node->sn.node.key = hash;
@@ -1395,6 +1396,29 @@ ngx_js_dict_add(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_str_t *key,
 
 
 static ngx_int_t
+ngx_js_dict_add(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_str_t *key,
+    njs_value_t *value, ngx_msec_t timeout, ngx_msec_t now)
+{
+    njs_str_t            string;
+    ngx_js_dict_value_t  entry;
+
+    if (dict->type == NGX_JS_DICT_TYPE_STRING) {
+        njs_value_string_get(vm, value, &string);
+
+        entry.str.data = string.start;
+        entry.str.len = string.length;
+
+    } else {
+        /* GCC complains about uninitialized entry.str.data. */
+        entry.str.data = NULL;
+        entry.number = njs_value_number(value);
+    }
+
+    return ngx_js_dict_add_value(dict, key, &entry, timeout, now);
+}
+
+
+static ngx_int_t
 ngx_js_dict_update(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_js_dict_node_t *node,
     njs_value_t *value, ngx_msec_t timeout, ngx_msec_t now)
 {
@@ -1409,14 +1433,14 @@ ngx_js_dict_update(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_js_dict_node_t *node,
             return NGX_ERROR;
         }
 
-        ngx_slab_free_locked(dict->shpool, node->u.value.data);
+        ngx_slab_free_locked(dict->shpool, node->value.str.data);
         ngx_memcpy(p, string.start, string.length);
 
-        node->u.value.data = p;
-        node->u.value.len = string.length;
+        node->value.str.data = p;
+        node->value.str.len = string.length;
 
     } else {
-        node->u.number = njs_value_number(value);
+        node->value.number = njs_value_number(value);
     }
 
     if (dict->timeout) {
@@ -1502,8 +1526,8 @@ ngx_js_dict_incr(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_str_t *key,
         *value = njs_value_number(init);
 
     } else {
-        node->u.number += njs_value_number(delta);
-        *value = node->u.number;
+        node->value.number += njs_value_number(delta);
+        *value = node->value.number;
 
         if (dict->timeout) {
             ngx_rbtree_delete(&dict->sh->rbtree_expire, &node->expire);
@@ -1568,14 +1592,14 @@ ngx_js_dict_copy_value_locked(njs_vm_t *vm, ngx_js_dict_t *dict,
     type = dict->type;
 
     if (type == NGX_JS_DICT_TYPE_STRING) {
-        ret = njs_vm_value_string_create(vm, retval, node->u.value.data,
-                                         node->u.value.len);
+        ret = njs_vm_value_string_create(vm, retval, node->value.str.data,
+                                         node->value.str.len);
         if (ret != NJS_OK) {
             return NGX_ERROR;
         }
 
     } else {
-        njs_value_number_set(retval, node->u.number);
+        njs_value_number_set(retval, node->value.number);
     }
 
     return NGX_OK;
@@ -2625,13 +2649,13 @@ ngx_qjs_dict_copy_value_locked(JSContext *cx, ngx_js_dict_t *dict,
     ngx_js_dict_node_t *node)
 {
     if (dict->type == NGX_JS_DICT_TYPE_STRING) {
-        return JS_NewStringLen(cx, (const char *) node->u.value.data,
-                               node->u.value.len);
+        return JS_NewStringLen(cx, (const char *) node->value.str.data,
+                               node->value.str.len);
     }
 
     /* NGX_JS_DICT_TYPE_NUMBER */
 
-    return JS_NewFloat64(cx, node->u.number);
+    return JS_NewFloat64(cx, node->value.number);
 }
 
 
@@ -2653,64 +2677,31 @@ static ngx_int_t
 ngx_qjs_dict_add(JSContext *cx, ngx_js_dict_t *dict, ngx_str_t *key,
     JSValue value, ngx_msec_t timeout, ngx_msec_t now)
 {
-    size_t               n;
-    uint32_t             hash;
-    ngx_str_t            string;
-    ngx_js_dict_node_t  *node;
-
-    if (dict->timeout) {
-        ngx_js_dict_expire(dict, now);
-    }
-
-    n = sizeof(ngx_js_dict_node_t) + key->len;
-    hash = ngx_crc32_long(key->data, key->len);
-
-    node = ngx_js_dict_alloc(dict, n);
-    if (node == NULL) {
-        return NGX_ERROR;
-    }
-
-    node->sn.str.data = (u_char *) node + sizeof(ngx_js_dict_node_t);
+    ngx_int_t           rc;
+    ngx_js_dict_value_t  entry;
 
     if (dict->type == NGX_JS_DICT_TYPE_STRING) {
-        string.data = (u_char *) JS_ToCStringLen(cx, &string.len, value);
-        if (string.data == NULL) {
-            ngx_slab_free_locked(dict->shpool, node);
+        entry.str.data = (u_char *) JS_ToCStringLen(cx, &entry.str.len, value);
+        if (entry.str.data == NULL) {
             return NGX_ERROR;
         }
-
-        node->u.value.data = ngx_js_dict_alloc(dict, string.len);
-        if (node->u.value.data == NULL) {
-            ngx_slab_free_locked(dict->shpool, node);
-            JS_FreeCString(cx, (char *) string.data);
-            return NGX_ERROR;
-        }
-
-        ngx_memcpy(node->u.value.data, string.data, string.len);
-        node->u.value.len = string.len;
-
-        JS_FreeCString(cx, (char *) string.data);
 
     } else {
-        if (JS_ToFloat64(cx, &node->u.number, value) < 0) {
-            ngx_slab_free_locked(dict->shpool, node);
+        /* GCC complains about uninitialized entry.str.data. */
+        entry.str.data = NULL;
+
+        if (JS_ToFloat64(cx, &entry.number, value) < 0) {
             return NGX_ERROR;
         }
     }
 
-    node->sn.node.key = hash;
+    rc = ngx_js_dict_add_value(dict, key, &entry, timeout, now);
 
-    ngx_memcpy(node->sn.str.data, key->data, key->len);
-    node->sn.str.len = key->len;
-
-    ngx_rbtree_insert(&dict->sh->rbtree, &node->sn.node);
-
-    if (dict->timeout) {
-        node->expire.key = now + timeout;
-        ngx_rbtree_insert(&dict->sh->rbtree_expire, &node->expire);
+    if (dict->type == NGX_JS_DICT_TYPE_STRING) {
+        JS_FreeCString(cx, (char *) entry.str.data);
     }
 
-    return NGX_OK;
+    return rc;
 }
 
 
@@ -2824,8 +2815,8 @@ ngx_qjs_dict_incr(JSContext *cx, ngx_js_dict_t *dict, ngx_str_t *key,
         }
 
     } else {
-        node->u.number += delta;
-        value = JS_NewFloat64(cx, node->u.number);
+        node->value.number += delta;
+        value = JS_NewFloat64(cx, node->value.number);
 
         if (dict->timeout) {
             ngx_rbtree_delete(&dict->sh->rbtree_expire, &node->expire);
@@ -2912,16 +2903,16 @@ ngx_qjs_dict_update(JSContext *cx, ngx_js_dict_t *dict,
             return NGX_ERROR;
         }
 
-        ngx_slab_free_locked(dict->shpool, node->u.value.data);
+        ngx_slab_free_locked(dict->shpool, node->value.str.data);
         ngx_memcpy(p, string.data, string.len);
 
-        node->u.value.data = p;
-        node->u.value.len = string.len;
+        node->value.str.data = p;
+        node->value.str.len = string.len;
 
         JS_FreeCString(cx, (char *) string.data);
 
     } else {
-        if (JS_ToFloat64(cx, &node->u.number, value) < 0) {
+        if (JS_ToFloat64(cx, &node->value.number, value) < 0) {
             return NGX_ERROR;
         }
     }
