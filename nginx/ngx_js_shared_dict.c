@@ -79,25 +79,25 @@ static njs_int_t njs_js_ext_shared_dict_type(njs_vm_t *vm,
     njs_object_prop_t *prop, uint32_t unused, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval);
 static ngx_js_dict_node_t *ngx_js_dict_lookup(ngx_js_dict_t *dict,
-    njs_str_t *key);
+    ngx_str_t *key);
 
 #define NGX_JS_DICT_FLAG_MUST_EXIST       1
 #define NGX_JS_DICT_FLAG_MUST_NOT_EXIST   2
 
 static ngx_int_t ngx_js_dict_set(njs_vm_t *vm, ngx_js_dict_t *dict,
-    njs_str_t *key, njs_value_t *value, ngx_msec_t timeout, unsigned flags);
+    ngx_str_t *key, njs_value_t *value, ngx_msec_t timeout, unsigned flags);
 static ngx_int_t ngx_js_dict_add(njs_vm_t *vm, ngx_js_dict_t *dict,
-    njs_str_t *key, njs_value_t *value, ngx_msec_t timeout, ngx_msec_t now);
+    ngx_str_t *key, njs_value_t *value, ngx_msec_t timeout, ngx_msec_t now);
 static ngx_int_t ngx_js_dict_update(njs_vm_t *vm, ngx_js_dict_t *dict,
     ngx_js_dict_node_t *node, njs_value_t *value, ngx_msec_t timeout,
     ngx_msec_t now);
 static ngx_int_t ngx_js_dict_get(njs_vm_t *vm, ngx_js_dict_t *dict,
-    njs_str_t *key, njs_value_t *retval);
+    ngx_str_t *key, njs_value_t *retval);
 static ngx_int_t ngx_js_dict_incr(njs_vm_t *vm, ngx_js_dict_t *dict,
-    njs_str_t *key, njs_value_t *delta, njs_value_t *init, double *value,
+    ngx_str_t *key, njs_value_t *delta, njs_value_t *init, double *value,
     ngx_msec_t timeout);
 static ngx_int_t ngx_js_dict_delete(njs_vm_t *vm, ngx_js_dict_t *dict,
-    njs_str_t *key, njs_value_t *retval);
+    ngx_str_t *key, njs_value_t *retval);
 static ngx_int_t ngx_js_dict_copy_value_locked(njs_vm_t *vm,
     ngx_js_dict_t *dict, ngx_js_dict_node_t *node, njs_value_t *retval);
 
@@ -662,7 +662,7 @@ njs_js_ext_shared_dict_delete(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
 {
     ngx_int_t        rc;
-    njs_str_t        key;
+    ngx_str_t        key;
     ngx_shm_zone_t  *shm_zone;
 
     shm_zone = njs_vm_external(vm, ngx_js_shared_dict_proto_id,
@@ -672,7 +672,7 @@ njs_js_ext_shared_dict_delete(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    if (ngx_js_string(vm, njs_arg(args, nargs, 1), &key) != NGX_OK) {
+    if (ngx_js_ngx_string(vm, njs_arg(args, nargs, 1), &key) != NGX_OK) {
         return NJS_ERROR;
     }
 
@@ -689,7 +689,7 @@ njs_js_ext_shared_dict_get(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
 {
     ngx_int_t        rc;
-    njs_str_t        key;
+    ngx_str_t        key;
     ngx_shm_zone_t  *shm_zone;
 
     shm_zone = njs_vm_external(vm, ngx_js_shared_dict_proto_id,
@@ -699,7 +699,7 @@ njs_js_ext_shared_dict_get(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    if (ngx_js_string(vm, njs_arg(args, nargs, 1), &key) != NGX_OK) {
+    if (ngx_js_ngx_string(vm, njs_arg(args, nargs, 1), &key) != NGX_OK) {
         return NJS_ERROR;
     }
 
@@ -717,7 +717,7 @@ static njs_int_t
 njs_js_ext_shared_dict_has(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
 {
-    njs_str_t            key;
+    ngx_str_t            key;
     ngx_msec_t           now;
     ngx_time_t          *tp;
     ngx_js_dict_t       *dict;
@@ -731,7 +731,7 @@ njs_js_ext_shared_dict_has(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    if (ngx_js_string(vm, njs_arg(args, nargs, 1), &key) != NGX_OK) {
+    if (ngx_js_ngx_string(vm, njs_arg(args, nargs, 1), &key) != NGX_OK) {
         return NJS_ERROR;
     }
 
@@ -851,7 +851,7 @@ njs_js_ext_shared_dict_incr(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 {
     double               value;
     ngx_int_t            rc;
-    njs_str_t            key;
+    ngx_str_t            key;
     ngx_msec_t           timeout;
     njs_value_t         *delta, *init, *timeo;
     ngx_js_dict_t       *dict;
@@ -872,7 +872,7 @@ njs_js_ext_shared_dict_incr(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    if (ngx_js_string(vm, njs_arg(args, nargs, 1), &key) != NGX_OK) {
+    if (ngx_js_ngx_string(vm, njs_arg(args, nargs, 1), &key) != NGX_OK) {
         return NJS_ERROR;
     }
 
@@ -1058,7 +1058,7 @@ njs_js_ext_shared_dict_pop(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
 {
     ngx_int_t        rc;
-    njs_str_t        key;
+    ngx_str_t        key;
     ngx_shm_zone_t  *shm_zone;
 
     shm_zone = njs_vm_external(vm, ngx_js_shared_dict_proto_id,
@@ -1068,7 +1068,7 @@ njs_js_ext_shared_dict_pop(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    if (ngx_js_string(vm, njs_arg(args, nargs, 1), &key) != NGX_OK) {
+    if (ngx_js_ngx_string(vm, njs_arg(args, nargs, 1), &key) != NGX_OK) {
         return NJS_ERROR;
     }
 
@@ -1086,7 +1086,7 @@ static njs_int_t
 njs_js_ext_shared_dict_set(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t flags, njs_value_t *retval)
 {
-    njs_str_t        key;
+    ngx_str_t        key;
     ngx_int_t        rc;
     ngx_msec_t       timeout;
     njs_value_t     *value, *timeo;
@@ -1100,7 +1100,7 @@ njs_js_ext_shared_dict_set(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    if (ngx_js_string(vm, njs_arg(args, nargs, 1), &key) != NGX_OK) {
+    if (ngx_js_ngx_string(vm, njs_arg(args, nargs, 1), &key) != NGX_OK) {
         return NJS_ERROR;
     }
 
@@ -1218,7 +1218,7 @@ njs_js_ext_shared_dict_type(njs_vm_t *vm, njs_object_prop_t *prop,
     uint32_t unused, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval)
 {
-    njs_str_t        type;
+    ngx_str_t        type;
     ngx_js_dict_t   *dict;
     ngx_shm_zone_t  *shm_zone;
 
@@ -1229,36 +1229,31 @@ njs_js_ext_shared_dict_type(njs_vm_t *vm, njs_object_prop_t *prop,
     }
 
     dict = shm_zone->data;
-
     switch (dict->type) {
     case NGX_JS_DICT_TYPE_STRING:
-        type = njs_str_value("string");
+        ngx_str_set(&type, "string");
         break;
 
     default:
-        type = njs_str_value("number");
+        ngx_str_set(&type, "number");
         break;
     }
 
-    return njs_vm_value_string_create(vm, retval, type.start, type.length);
+    return njs_vm_value_string_create(vm, retval, type.data, type.len);
 }
 
 
 static ngx_js_dict_node_t *
-ngx_js_dict_lookup(ngx_js_dict_t *dict, njs_str_t *key)
+ngx_js_dict_lookup(ngx_js_dict_t *dict, ngx_str_t *key)
 {
     uint32_t       hash;
-    ngx_str_t      k;
     ngx_rbtree_t  *rbtree;
 
     rbtree = &dict->sh->rbtree;
 
-    hash = ngx_crc32_long(key->start, key->length);
+    hash = ngx_crc32_long(key->data, key->len);
 
-    k.data = key->start;
-    k.len = key->length;
-
-    return (ngx_js_dict_node_t *) ngx_str_rbtree_lookup(rbtree, &k, hash);
+    return (ngx_js_dict_node_t *) ngx_str_rbtree_lookup(rbtree, key, hash);
 }
 
 
@@ -1294,7 +1289,7 @@ ngx_js_dict_node_free(ngx_js_dict_t *dict, ngx_js_dict_node_t *node)
 
 
 static ngx_int_t
-ngx_js_dict_set(njs_vm_t *vm, ngx_js_dict_t *dict, njs_str_t *key,
+ngx_js_dict_set(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_str_t *key,
     njs_value_t *value, ngx_msec_t timeout, unsigned flags)
 {
     ngx_msec_t           now;
@@ -1346,7 +1341,7 @@ memory_error:
 
 
 static ngx_int_t
-ngx_js_dict_add(njs_vm_t *vm, ngx_js_dict_t *dict, njs_str_t *key,
+ngx_js_dict_add(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_str_t *key,
     njs_value_t *value, ngx_msec_t timeout, ngx_msec_t now)
 {
     size_t               n;
@@ -1358,8 +1353,8 @@ ngx_js_dict_add(njs_vm_t *vm, ngx_js_dict_t *dict, njs_str_t *key,
         ngx_js_dict_expire(dict, now);
     }
 
-    n = sizeof(ngx_js_dict_node_t) + key->length;
-    hash = ngx_crc32_long(key->start, key->length);
+    n = sizeof(ngx_js_dict_node_t) + key->len;
+    hash = ngx_crc32_long(key->data, key->len);
 
     node = ngx_js_dict_alloc(dict, n);
     if (node == NULL) {
@@ -1385,8 +1380,8 @@ ngx_js_dict_add(njs_vm_t *vm, ngx_js_dict_t *dict, njs_str_t *key,
 
     node->sn.node.key = hash;
 
-    ngx_memcpy(node->sn.str.data, key->start, key->length);
-    node->sn.str.len = key->length;
+    ngx_memcpy(node->sn.str.data, key->data, key->len);
+    node->sn.str.len = key->len;
 
     ngx_rbtree_insert(&dict->sh->rbtree, &node->sn.node);
 
@@ -1435,7 +1430,7 @@ ngx_js_dict_update(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_js_dict_node_t *node,
 
 
 static ngx_int_t
-ngx_js_dict_delete(njs_vm_t *vm, ngx_js_dict_t *dict, njs_str_t *key,
+ngx_js_dict_delete(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_str_t *key,
     njs_value_t *retval)
 {
     ngx_int_t            rc;
@@ -1482,7 +1477,7 @@ ngx_js_dict_delete(njs_vm_t *vm, ngx_js_dict_t *dict, njs_str_t *key,
 
 
 static ngx_int_t
-ngx_js_dict_incr(njs_vm_t *vm, ngx_js_dict_t *dict, njs_str_t *key,
+ngx_js_dict_incr(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_str_t *key,
     njs_value_t *delta, njs_value_t *init, double *value, ngx_msec_t timeout)
 {
     ngx_msec_t           now;
@@ -1524,7 +1519,7 @@ ngx_js_dict_incr(njs_vm_t *vm, ngx_js_dict_t *dict, njs_str_t *key,
 
 
 static ngx_int_t
-ngx_js_dict_get(njs_vm_t *vm, ngx_js_dict_t *dict, njs_str_t *key,
+ngx_js_dict_get(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_str_t *key,
     njs_value_t *retval)
 {
     ngx_int_t            rc;
