@@ -43,10 +43,6 @@ http {
         location / {
             return 200;
         }
-
-        location /engine {
-            js_content test.engine;
-        }
     }
 }
 
@@ -74,10 +70,6 @@ EOF
 
 $t->write_file('test.js', <<EOF);
     import qs from 'querystring';
-
-    function engine(r) {
-        r.return(200, 'engine');
-    }
 
     function preread_verify(s) {
         var collect = Buffer.from([]);
@@ -121,7 +113,7 @@ $t->write_file('test.js', <<EOF);
         });
     }
 
-    export default { engine, preread_verify, control_access };
+    export default { preread_verify, control_access };
 
 EOF
 

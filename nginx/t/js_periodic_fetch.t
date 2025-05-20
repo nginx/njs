@@ -54,10 +54,6 @@ http {
             js_periodic test.fetch_exception interval=1s;
         }
 
-        location /engine {
-            js_content test.engine;
-        }
-
         location /fetch_ok {
             return 200 'ok';
         }
@@ -81,10 +77,6 @@ EOF
 my $p0 = port(8080);
 
 $t->write_file('test.js', <<EOF);
-    function engine(r) {
-        r.return(200, njs.engine);
-    }
-
     async function fetch() {
         let reply = await ngx.fetch('http://127.0.0.1:$p0/fetch_ok');
         let body = await reply.text();
@@ -116,7 +108,7 @@ $t->write_file('test.js', <<EOF);
     }
 
     export default { fetch, fetch_exception, multiple_fetches, test_fetch,
-                     test_multiple_fetches, engine };
+                     test_multiple_fetches };
 EOF
 
 $t->try_run('no js_periodic with fetch');

@@ -48,10 +48,6 @@ http {
             js_content test.njs;
         }
 
-        location /engine {
-            js_content test.engine;
-        }
-
         location /https {
             js_content test.https;
         }
@@ -106,10 +102,6 @@ $t->write_file('test.js', <<EOF);
         r.return(200, njs.version);
     }
 
-    function engine(r) {
-        r.return(200, njs.engine);
-    }
-
     function https(r) {
         var url = `https://\${r.args.domain}:$p1/loc`;
         var opt = {};
@@ -124,7 +116,7 @@ $t->write_file('test.js', <<EOF);
         .catch(e => r.return(501, e.message))
     }
 
-    export default {njs: test_njs, https, engine};
+    export default {njs: test_njs, https};
 EOF
 
 my $d = $t->testdir();

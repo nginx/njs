@@ -46,10 +46,6 @@ http {
             js_content test.njs;
         }
 
-        location /engine {
-            js_content test.engine;
-        }
-
         location /validate {
             js_content test.validate;
         }
@@ -101,10 +97,6 @@ my $p = port(8080);
 $t->write_file('test.js', <<EOF);
     function test_njs(r) {
         r.return(200, njs.version);
-    }
-
-    function engine(r) {
-        r.return(200, njs.engine);
     }
 
     function validate(r) {
@@ -166,7 +158,7 @@ $t->write_file('test.js', <<EOF);
     }
 
     export default {njs: test_njs, validate, preread_verify, filter_verify,
-                    access_ok, access_nok, engine};
+                    access_ok, access_nok};
 EOF
 
 $t->try_run('no stream njs available');

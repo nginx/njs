@@ -52,10 +52,6 @@ http {
             js_content test.njs;
         }
 
-        location /engine {
-            js_content test.engine;
-        }
-
         location /broken {
             js_content test.broken;
         }
@@ -136,10 +132,6 @@ $t->write_file('json', '{"a":[1,2], "b":{"c":"FIELD"}}');
 $t->write_file('test.js', <<EOF);
     function test_njs(r) {
         r.return(200, njs.version);
-    }
-
-    function engine(r) {
-        r.return(200, njs.engine);
     }
 
     function body(r) {
@@ -408,7 +400,7 @@ $t->write_file('test.js', <<EOF);
 
      export default {njs: test_njs, body, broken, broken_response, body_special,
                      chain, chunked_ok, chunked_fail, header, header_iter,
-                     host_header, multi, loc, property, engine};
+                     host_header, multi, loc, property};
 EOF
 
 $t->try_run('no njs.fetch');
