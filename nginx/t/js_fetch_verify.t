@@ -48,10 +48,6 @@ http {
             js_content test.njs;
         }
 
-        location /engine {
-            js_content test.engine;
-        }
-
         location /https {
             js_content test.https;
         }
@@ -80,10 +76,6 @@ $t->write_file('test.js', <<EOF);
         r.return(200, njs.version);
     }
 
-    function engine(r) {
-        r.return(200, njs.engine);
-    }
-
     function https(r) {
         ngx.fetch(`https://example.com:$p1/loc`)
         .then(reply => reply.text())
@@ -91,7 +83,7 @@ $t->write_file('test.js', <<EOF);
         .catch(e => r.return(501, e.message));
     }
 
-    export default {njs: test_njs, engine, https};
+    export default {njs: test_njs, https};
 EOF
 
 $t->write_file('openssl.conf', <<EOF);

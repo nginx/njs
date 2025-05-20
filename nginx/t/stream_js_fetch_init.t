@@ -58,10 +58,6 @@ http {
             js_content test.njs;
         }
 
-        location /engine {
-            js_content test.engine;
-        }
-
         location /success {
             return 200;
         }
@@ -77,17 +73,13 @@ $t->write_file('test.js', <<EOF);
         r.return(200, njs.version);
     }
 
-    function engine(r) {
-        r.return(200, njs.engine);
-    }
-
     async function access_ok(s) {
         let reply = await ngx.fetch('http://127.0.0.1:$p/success');
 
         (reply.status == 200) ? s.allow(): s.deny();
     }
 
-    export default {njs: test_njs, engine, access_ok};
+    export default {njs: test_njs, access_ok};
 EOF
 
 $t->try_run('no stream njs available');

@@ -47,10 +47,6 @@ http {
             js_content test.njs;
         }
 
-        location /engine {
-            js_content test.engine;
-        }
-
         location /normal_timeout {
             js_content test.timeout_test;
         }
@@ -84,10 +80,6 @@ $t->write_file('test.js', <<EOF);
         r.return(200, njs.version);
     }
 
-    function engine(r) {
-        r.return(200, njs.engine);
-    }
-
     async function timeout_test(r) {
         let rs = await Promise.allSettled([
             'http://127.0.0.1:$p1/normal_reply',
@@ -110,7 +102,7 @@ $t->write_file('test.js', <<EOF);
         setTimeout((r) => { r.return(200); }, 250, r, 0);
     }
 
-     export default {njs: test_njs, engine, timeout_test, normal_reply,
+     export default {njs: test_njs, timeout_test, normal_reply,
                      delayed_reply};
 EOF
 

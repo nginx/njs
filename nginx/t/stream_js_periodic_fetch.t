@@ -67,10 +67,6 @@ http {
         listen       127.0.0.1:8080;
         server_name  localhost;
 
-        location /engine {
-            js_content test.engine;
-        }
-
         location /fetch_ok {
             return 200 'ok';
         }
@@ -86,10 +82,6 @@ EOF
 my $p1 = port(8080);
 
 $t->write_file('test.js', <<EOF);
-    function engine(r) {
-        r.return(200, njs.engine);
-    }
-
     async function fetch() {
         let reply = await ngx.fetch('http://127.0.0.1:$p1/fetch_ok');
         let body = await reply.text();
@@ -142,7 +134,7 @@ $t->write_file('test.js', <<EOF);
         });
     }
 
-    export default { engine, fetch, fetch_exception, test, multiple_fetches };
+    export default { fetch, fetch_exception, test, multiple_fetches };
 EOF
 
 $t->run_daemon(\&stream_daemon, port(8090));

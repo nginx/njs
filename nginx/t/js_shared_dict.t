@@ -52,10 +52,6 @@ http {
             js_content test.njs;
         }
 
-        location /engine {
-            js_content test.engine;
-        }
-
         location /add {
             js_content test.add;
         }
@@ -139,10 +135,6 @@ EOF
 $t->write_file('test.js', <<'EOF');
     function test_njs(r) {
         r.return(200, njs.version);
-    }
-
-    function engine(r) {
-        r.return(200, njs.engine);
     }
 
     function convertToValue(dict, v) {
@@ -337,7 +329,7 @@ $t->write_file('test.js', <<'EOF');
 
     export default { add, capacity, chain, clear, del, free_space, get, has,
                      incr, items, keys, name, njs: test_njs, pop, replace, set,
-                     set_clear, size, zones, engine, overflow };
+                     set_clear, size, zones, overflow };
 EOF
 
 $t->try_run('no js_shared_dict_zone');

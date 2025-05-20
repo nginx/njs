@@ -45,10 +45,6 @@ http {
             js_content test.njs;
         }
 
-        location /engine {
-            js_content test.engine;
-        }
-
         location /headers {
             js_content test.headers;
         }
@@ -90,10 +86,6 @@ my $p0 = port(8080);
 $t->write_file('test.js', <<EOF);
     function test_njs(r) {
         r.return(200, njs.version);
-    }
-
-    function engine(r) {
-        r.return(200, njs.engine);
     }
 
     function header(r) {
@@ -528,7 +520,7 @@ $t->write_file('test.js', <<EOF);
         run(r, tests);
     }
 
-     export default {njs: test_njs, engine, body, headers, request, response,
+     export default {njs: test_njs, body, headers, request, response,
                      fetch, fetch_multi_header};
 EOF
 

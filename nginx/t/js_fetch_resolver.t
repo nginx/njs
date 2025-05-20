@@ -50,10 +50,6 @@ http {
             js_content test.njs;
         }
 
-        location /engine {
-            js_content test.engine;
-        }
-
         location /dns {
             js_content test.dns;
 
@@ -108,10 +104,6 @@ $t->write_file('test.js', <<EOF);
         r.return(200, njs.version);
     }
 
-    function engine(r) {
-        r.return(200, njs.engine);
-    }
-
     const p0 = $p0;
     const p1 = $p1;
 
@@ -141,7 +133,7 @@ $t->write_file('test.js', <<EOF);
         r.return(c, `\${v.host}:\${v.request_method}:\${foo}:\${bar}:\${body}`);
     }
 
-     export default {njs: test_njs, dns, loc, engine};
+     export default {njs: test_njs, dns, loc};
 EOF
 
 $t->try_run('no njs.fetch');
