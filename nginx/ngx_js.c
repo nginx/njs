@@ -1133,6 +1133,7 @@ ngx_engine_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
     JSRuntime            *rt;
     JSContext            *cx;
     JSClassID             class_id;
+    JSMemoryUsage         stats;
     ngx_qjs_event_t      *event;
     ngx_js_opaque_t      *opaque;
     njs_rbtree_node_t    *node;
@@ -1196,6 +1197,28 @@ ngx_engine_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
 
             cln->handler = ngx_js_cleanup_reuse_ctx;
             cln->data = conf->reuse_queue;
+        }
+
+        /*
+         * After the request object is freed, the runtime's memory usage should
+         * be low. It can only remain high if the global scope was
+         * modified.
+         *
+         * To prevent unlimited memory consumption growth, check whether memory
+         * usage exceeds the configured limit. The check is performed rarely to
+         * avoid performance impact of JS_ComputeMemoryUsage() which is slow.
+         */
+
+        if ((ngx_random() & 0xff) == 1) {
+            JS_ComputeMemoryUsage(JS_GetRuntime(cx), &stats);
+
+            if ((size_t) stats.malloc_size > conf->reuse_max_size) {
+                ngx_log_error(NGX_LOG_WARN, ctx->log, 0,
+                              "js remaining memory usage of the context "
+                              "exceeds \"js_context_reuse_max_size\" limit: %L"
+                              ", not reusing it", stats.malloc_size);
+                goto free_ctx;
+            }
         }
 
         if (ngx_js_queue_push(conf->reuse_queue, cx) != NGX_OK) {
@@ -3950,6 +3973,7 @@ ngx_js_create_conf(ngx_conf_t *cf, size_t size)
     conf->preload_objects = NGX_CONF_UNSET_PTR;
 
     conf->reuse = NGX_CONF_UNSET_SIZE;
+    conf->reuse_max_size = NGX_CONF_UNSET_SIZE;
     conf->buffer_size = NGX_CONF_UNSET_SIZE;
     conf->max_response_body_size = NGX_CONF_UNSET_SIZE;
     conf->timeout = NGX_CONF_UNSET_MSEC;
@@ -4059,6 +4083,8 @@ ngx_js_merge_conf(ngx_conf_t *cf, void *parent, void *child,
 
     ngx_conf_merge_msec_value(conf->timeout, prev->timeout, 60000);
     ngx_conf_merge_size_value(conf->reuse, prev->reuse, 128);
+    ngx_conf_merge_size_value(conf->reuse_max_size, prev->reuse_max_size,
+                              4 * 1024 * 1024);
     ngx_conf_merge_size_value(conf->buffer_size, prev->buffer_size, 16384);
     ngx_conf_merge_size_value(conf->max_response_body_size,
                               prev->max_response_body_size, 1048576);
