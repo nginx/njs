@@ -317,7 +317,7 @@ auto/configure --add-dynamic-module=<NJS_SRC_ROOT_DIR>/nginx
 To build with [QuickJS](https://nginx.org/en/docs/njs/engine.html) support, provide include and library path using `--with-cc-opt=` and `--with-ld-opt=` options:
 ```bash
 auto/configure --add-dynamic-module=<NJS_SRC_ROOT_DIR>/nginx \
-    --with-cc-opt="-I<QUICKJS_SRC_ROOT_DIR>" --with-ld-opt="-L<QUICKJS_SRC_ROOT_DIR>"
+    --with-cc-opt="-I <QUICKJS_SRC_ROOT_DIR>" --with-ld-opt="-L <QUICKJS_SRC_ROOT_DIR>"
 ```
 
 > [!WARNING]
