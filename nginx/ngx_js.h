@@ -122,6 +122,7 @@ typedef struct {
     ngx_uint_t             type;                                              \
     ngx_engine_t          *engine;                                            \
     ngx_uint_t             reuse;                                             \
+    size_t                 reuse_max_size;                                    \
     ngx_js_queue_t        *reuse_queue;                                       \
     ngx_str_t              cwd;                                               \
     ngx_array_t           *imports;                                           \
