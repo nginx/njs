@@ -3923,6 +3923,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("delete this !== true"),
       njs_str("false") },
 
+    { njs_str("undefined[Symbol()]"),
+      njs_str("TypeError: cannot get property \"Symbol()\" of undefined") },
+
     /* Object shorthand methods. */
 
     { njs_str("var o = {m(){}}; new o.m();"),

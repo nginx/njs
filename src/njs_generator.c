@@ -5491,7 +5491,7 @@ njs_generate_reference_error(njs_vm_t *vm, njs_generator_t *generator,
 
     ref_err->type = NJS_OBJ_TYPE_REF_ERROR;
 
-    njs_lexer_entry(vm, node->u.reference.atom_id, &entry);
+    njs_atom_string_get(vm, node->u.reference.atom_id, &entry);
 
     return njs_name_copy(vm, &ref_err->u.name, &entry);
 }
