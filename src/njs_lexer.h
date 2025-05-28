@@ -288,16 +288,6 @@ const njs_lexer_keyword_entry_t *njs_lexer_keyword(const u_char *key,
 njs_int_t njs_lexer_keywords(njs_arr_t *array);
 
 
-njs_inline void
-njs_lexer_entry(njs_vm_t *vm, uintptr_t atom_id, njs_str_t *entry)
-{
-    njs_value_t  value;
-
-    njs_atom_to_value(vm, &value, atom_id);
-    njs_string_get(vm, &value, entry);
-}
-
-
 njs_inline njs_bool_t
 njs_lexer_token_is_keyword(njs_lexer_token_t *token)
 {

@@ -241,18 +241,17 @@ njs_key_string_get(njs_vm_t *vm, njs_value_t *key, njs_str_t *str)
 }
 
 
-njs_inline njs_int_t
+njs_inline void
 njs_atom_string_get(njs_vm_t *vm, uint32_t atom_id, njs_str_t *str)
 {
     njs_value_t  value;
 
     if (njs_atom_to_value(vm, &value, atom_id) != NJS_OK) {
-        return NJS_ERROR;
+        str->start = (u_char *) "unknown";
+        str->length = njs_length("unknown");
     }
 
     njs_key_string_get(vm, &value, str);
-
-    return NJS_OK;
 }
 
 

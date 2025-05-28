@@ -6702,7 +6702,6 @@ njs_parser_labelled_statement_after(njs_parser_t *parser,
     njs_int_t          ret;
     njs_str_t          str;
     uintptr_t          atom_id;
-    njs_value_t        entry;
     njs_parser_node_t  *node;
 
     node = parser->node;
@@ -6719,8 +6718,7 @@ njs_parser_labelled_statement_after(njs_parser_t *parser,
 
     atom_id = (uint32_t) (uintptr_t) parser->target;
 
-    njs_atom_to_value(parser->vm, &entry, atom_id);
-    njs_string_get(parser->vm, &entry, &str);
+    njs_atom_string_get(parser->vm, atom_id, &str);
 
     ret = njs_name_copy(parser->vm, &parser->node->name, &str);
     if (ret != NJS_OK) {

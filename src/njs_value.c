@@ -560,7 +560,6 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *value,
 {
     uint32_t        index;
     njs_int_t       ret;
-    njs_value_t     key;
     njs_object_t    *obj;
     njs_function_t  *function;
 
@@ -607,19 +606,9 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *value,
     case NJS_UNDEFINED:
     case NJS_NULL:
     default:
-        ret = njs_atom_to_value(vm, &key, atom_id);
-
-        if (njs_fast_path(ret == NJS_OK)) {
-            njs_string_get(vm, &key, &pq->lhq.key);
-            njs_type_error(vm, "cannot get property \"%V\" of %s",
-                           &pq->lhq.key, njs_is_null(value) ? "null"
-                                                            : "undefined");
-            return NJS_ERROR;
-        }
-
-        njs_type_error(vm, "cannot get property \"unknown\" of %s",
-                       njs_is_null(value) ? "null" : "undefined");
-
+        njs_atom_string_get(vm, atom_id, &pq->lhq.key);
+        njs_type_error(vm, "cannot get property \"%V\" of %s", &pq->lhq.key,
+                       njs_type_string(value->type));
         return NJS_ERROR;
     }
 
