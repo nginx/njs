@@ -609,7 +609,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *value,
     default:
         ret = njs_atom_to_value(vm, &key, atom_id);
 
-        if (njs_fast_path(ret == NJS_OK)) {
+        if (njs_fast_path(ret == NJS_OK) && !njs_is_symbol(&key)) {
             njs_string_get(vm, &key, &pq->lhq.key);
             njs_type_error(vm, "cannot get property \"%V\" of %s",
                            &pq->lhq.key, njs_is_null(value) ? "null"
