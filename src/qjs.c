@@ -911,6 +911,11 @@ qjs_to_bytes(JSContext *ctx, qjs_bytes_t *bytes, JSValueConst value)
         goto string;
     }
 
+    /* GCC complains about uninitialized variables. */
+
+    byte_offset = 0;
+    byte_length = 0;
+
     val = JS_GetTypedArrayBuffer(ctx, value, &byte_offset, &byte_length, NULL);
     if (!JS_IsException(val)) {
         bytes->start = JS_GetArrayBuffer(ctx, &bytes->length, val);
@@ -966,6 +971,11 @@ qjs_typed_array_data(JSContext *ctx, JSValueConst value, njs_str_t *data)
 {
     size_t   byte_offset, byte_length;
     JSValue  ab;
+
+    /* GCC complains about uninitialized variables. */
+
+    byte_offset = 0;
+    byte_length = 0;
 
     /* TODO: DataView. */
 
