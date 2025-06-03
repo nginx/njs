@@ -111,7 +111,7 @@ njs_leading_zeros64(uint64_t x)
 
     n = 0;
 
-    while ((x & 0x8000000000000000) == 0) {
+    while ((x & 0x8000000000000000ULL) == 0) {
         n++;
         x <<= 1;
     }
