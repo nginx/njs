@@ -1049,7 +1049,7 @@ njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    njs_chb_append_literal(&chain, "){");
+    njs_chb_append_literal(&chain, "\n){\n");
 
     if (nargs > 1) {
         ret = njs_value_to_chain(vm, &chain, njs_argument(args, nargs - 1));
@@ -1058,7 +1058,7 @@ njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    njs_chb_append_literal(&chain, "})");
+    njs_chb_append_literal(&chain, "\n})");
 
     ret = njs_chb_join(&chain, &str);
     if (njs_slow_path(ret != NJS_OK)) {
@@ -1125,7 +1125,15 @@ njs_function_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     njs_chb_destroy(&chain);
 
-    lambda = ((njs_vmcode_function_t *) generator.code_start)->lambda;
+    if ((code->end - code->start)
+        != (sizeof(njs_vmcode_function_t) + sizeof(njs_vmcode_return_t))
+        || ((njs_vmcode_generic_t *) code->start)->code != NJS_VMCODE_FUNCTION)
+    {
+        njs_syntax_error(vm, "single function literal required");
+        return NJS_ERROR;
+    }
+
+    lambda = ((njs_vmcode_function_t *) code->start)->lambda;
 
     function = njs_function_alloc(vm, lambda, (njs_bool_t) async);
     if (njs_slow_path(function == NULL)) {

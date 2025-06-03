@@ -14189,22 +14189,22 @@ static njs_unit_test_t  njs_test[] =
       njs_str("true") },
 
     { njs_str("new Function('('.repeat(2**13));"),
-      njs_str("SyntaxError: Unexpected token \"}\" in runtime:1") },
+      njs_str("SyntaxError: Unexpected token \"}\" in runtime") },
 
     { njs_str("new Function('{'.repeat(2**13));"),
-      njs_str("SyntaxError: Unexpected token \")\" in runtime:1") },
+      njs_str("SyntaxError: Unexpected token \")\" in runtime") },
 
     { njs_str("new Function('['.repeat(2**13));"),
-      njs_str("SyntaxError: Unexpected token \"}\" in runtime:1") },
+      njs_str("SyntaxError: Unexpected token \"}\" in runtime") },
 
     { njs_str("new Function('`'.repeat(2**13));"),
       njs_str("[object Function]") },
 
     { njs_str("new Function('{['.repeat(2**13));"),
-      njs_str("SyntaxError: Unexpected token \"}\" in runtime:1") },
+      njs_str("SyntaxError: Unexpected token \"}\" in runtime") },
 
     { njs_str("new Function('{;'.repeat(2**13));"),
-      njs_str("SyntaxError: Unexpected token \")\" in runtime:1") },
+      njs_str("SyntaxError: Unexpected token \")\" in runtime") },
 
     { njs_str("(new Function('1;'.repeat(2**13) + 'return 2'))()"),
       njs_str("2") },
@@ -14216,7 +14216,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("-4") },
 
     { njs_str("new Function('new '.repeat(2**13));"),
-      njs_str("SyntaxError: Unexpected token \"}\" in runtime:1") },
+      njs_str("SyntaxError: Unexpected token \"}\" in runtime") },
 
     { njs_str("(new Function('return ' + 'typeof '.repeat(2**13) + 'x'))()"),
       njs_str("string") },
@@ -14282,7 +14282,13 @@ static njs_unit_test_t  njs_test[] =
       njs_str("ReferenceError: \"foo\" is not defined") },
 
     { njs_str("this.NN = {}; var f = Function('eval = 42;'); f()"),
-      njs_str("SyntaxError: Identifier \"eval\" is forbidden as left-hand in assignment in runtime:1") },
+      njs_str("SyntaxError: Identifier \"eval\" is forbidden as left-hand in assignment in runtime") },
+
+    { njs_str("new Function('}); let a; a; function o(){}; //')"),
+      njs_str("SyntaxError: Unexpected token \"}\" in runtime") },
+
+    { njs_str("new Function('}); let a; a; function o(){}; ({')"),
+      njs_str("SyntaxError: single function literal required") },
 
     { njs_str("RegExp()"),
       njs_str("/(?:)/") },
@@ -19811,7 +19817,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("[object AsyncFunction]") },
 
     { njs_str("let f = new Function('x', 'await 1; return x'); f(1)"),
-      njs_str("SyntaxError: await is only valid in async functions in runtime:1") },
+      njs_str("SyntaxError: await is only valid in async functions in runtime") },
 
     { njs_str("new AsyncFunction()"),
       njs_str("ReferenceError: \"AsyncFunction\" is not defined") },
@@ -21676,7 +21682,9 @@ done:
         return NJS_ERROR;
     }
 
-    success = njs_strstr_eq(&expected->ret, &s);
+    success = expected->ret.length <= s.length
+              && (memcmp(expected->ret.start, s.start, expected->ret.length)
+                  == 0);
     if (!success) {
         njs_stderror("njs(\"%V\")\nexpected: \"%V\"\n     got: \"%V\"\n",
                      &expected->script, &expected->ret, &s);
