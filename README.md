@@ -310,20 +310,30 @@ https://github.com/nginx/nginx.git
 ## Building NGINX JavaScript as a module of NGINX
 To build NGINX JavaScript as a dynamic module, execute the following commands from the NGINX source code repository's root directory:
 
+> [!NOTE]
+> Replace `<NJS_SRC_ROOT_DIR>` with the actual path to your NJS source directory.
+
 ```bash
 auto/configure --add-dynamic-module=<NJS_SRC_ROOT_DIR>/nginx
 ```
 
 To build with [QuickJS](https://nginx.org/en/docs/njs/engine.html) support, provide include and library path using `--with-cc-opt=` and `--with-ld-opt=` options:
+
+> [!NOTE]
+> Replace `<NJS_SRC_ROOT_DIR>` with the actual path to your NJS source directory and `<QUICKJS_SRC_ROOT_DIR>` with the actual path to your QuickJS source directory.
+
 ```bash
 auto/configure --add-dynamic-module=<NJS_SRC_ROOT_DIR>/nginx \
-    --with-cc-opt="-I<QUICKJS_SRC_ROOT_DIR>" --with-ld-opt="-L<QUICKJS_SRC_ROOT_DIR>"
+    --with-cc-opt="-I<QUICKJS_SRC_ROOT_DIR>" \
+    --with-ld-opt="-L<QUICKJS_SRC_ROOT_DIR>"
 ```
 
 > [!WARNING]
 > By default, this method will only build the `ngx_http_js_module` module. To use NJS with the NGINX Stream module, you'll need to enable it during the `configure` step so it builds with the NGINX binary. Doing so will automatically compile the `ngx_stream_js_module` module when NJS is added to the build. One way of accomplishing this is to alter the `configure` step to:
+>
 > ```bash
-> auto/configure --with-stream --add-dynamic-module=<NJS_SRC_ROOT_DIR>/nginx
+> auto/configure --with-stream \
+>     --add-dynamic-module=<NJS_SRC_ROOT_DIR>/nginx
 > ```
 
 Compile the module
