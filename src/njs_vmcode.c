@@ -2591,7 +2591,7 @@ njs_function_frame_create(njs_vm_t *vm, njs_value_t *value,
 }
 
 
-inline njs_object_t *
+njs_object_t *
 njs_function_new_object(njs_vm_t *vm, njs_value_t *constructor)
 {
     njs_value_t     proto, bound;
