@@ -11,7 +11,7 @@
 static njs_int_t
 lvlhsh_unit_test_key_test(njs_lvlhsh_query_t *lhq, void *data)
 {
-    if (*(uintptr_t *) lhq->key.start == (uintptr_t) data) {
+    if (*(uintptr_t *) lhq->key.start == *(uintptr_t *)data) {
         return NJS_OK;
     }
 
@@ -51,13 +51,13 @@ lvlhsh_unit_test_add(njs_lvlhsh_t *lh, const njs_lvlhsh_proto_t *proto,
     lhq.replace = 0;
     lhq.key.length = sizeof(uintptr_t);
     lhq.key.start = (u_char *) &key;
-    lhq.value = (void *) key;
     lhq.proto = proto;
     lhq.pool = pool;
 
     switch (njs_lvlhsh_insert(lh, &lhq)) {
 
     case NJS_OK:
+        ((njs_flathsh_elt_t *)lhq.value)->value[0] = (void *)key;
         return NJS_OK;
 
     case NJS_DECLINED:
@@ -84,7 +84,7 @@ lvlhsh_unit_test_get(njs_lvlhsh_t *lh, const njs_lvlhsh_proto_t *proto,
 
     if (njs_lvlhsh_find(lh, &lhq) == NJS_OK) {
 
-        if (key == (uintptr_t) lhq.value) {
+        if (key == (uintptr_t) ((njs_flathsh_elt_t *)lhq.value)->value[0]) {
             return NJS_OK;
         }
     }

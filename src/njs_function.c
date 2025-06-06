@@ -126,10 +126,26 @@ njs_function_name_set(njs_vm_t *vm, njs_function_t *function,
     njs_object_prop_t    *prop;
     njs_flathsh_query_t  lhq;
 
-    prop = njs_object_prop_alloc(vm, name, 0);
-    if (njs_slow_path(prop == NULL)) {
+
+    lhq.key_hash = NJS_ATOM_STRING_name;
+    lhq.replace = 0;
+    lhq.pool = vm->mem_pool;
+    lhq.proto = &njs_object_hash_proto;
+
+    ret = njs_flathsh_unique_insert(&function->object.hash, &lhq);
+    if (njs_slow_path(ret != NJS_OK)) {
+        njs_internal_error(vm, "lvlhsh insert failed");
         return NJS_ERROR;
     }
+
+    prop = (njs_object_prop_t *)(lhq.value);
+
+    prop->type = NJS_PROPERTY;
+    prop->enumerable = 0;
+    prop->configurable = 1;
+    prop->writable = 0;
+
+    prop->u.value = *name;
 
     symbol = 0;
 
@@ -170,20 +186,6 @@ njs_function_name_set(njs_vm_t *vm, njs_function_t *function,
         } else {
             njs_set_empty_string(vm, njs_prop_value(prop));
         }
-    }
-
-    prop->configurable = 1;
-
-    lhq.value = prop;
-    lhq.key_hash = NJS_ATOM_STRING_name;
-    lhq.replace = 0;
-    lhq.pool = vm->mem_pool;
-    lhq.proto = &njs_object_hash_proto;
-
-    ret = njs_flathsh_unique_insert(&function->object.hash, &lhq);
-    if (njs_slow_path(ret != NJS_OK)) {
-        njs_internal_error(vm, "lvlhsh insert failed");
-        return NJS_ERROR;
     }
 
     return NJS_OK;
@@ -327,12 +329,12 @@ njs_function_prototype_thrower(njs_vm_t *vm, njs_value_t *args,
 const njs_object_prop_init_t  njs_arguments_object_instance_properties[] =
 {
     {
-        .atom_id = NJS_ATOM_STRING_callee,
         .desc = {
+        .atom_id = NJS_ATOM_STRING_callee,
             .type = NJS_ACCESSOR,
             .u.accessor = njs_accessor(njs_function_prototype_thrower, 0,
                                        njs_function_prototype_thrower, 0),
-            .writable = NJS_ATTRIBUTE_UNSET,
+            .writable = NJS_ATTRIBUTE_FALSE,
         },
     },
 };
@@ -894,14 +896,6 @@ njs_function_property_prototype_set(njs_vm_t *vm, njs_flathsh_t *hash,
     njs_object_prop_t    *prop;
     njs_flathsh_query_t  lhq;
 
-    prop = njs_object_prop_alloc(vm, prototype, 0);
-    if (njs_slow_path(prop == NULL)) {
-        return NULL;
-    }
-
-    prop->writable = 1;
-
-    lhq.value = prop;
     lhq.key_hash = NJS_ATOM_STRING_prototype;
     lhq.replace = 1;
     lhq.pool = vm->mem_pool;
@@ -909,13 +903,21 @@ njs_function_property_prototype_set(njs_vm_t *vm, njs_flathsh_t *hash,
 
     ret = njs_flathsh_unique_insert(hash, &lhq);
 
-    if (njs_fast_path(ret == NJS_OK)) {
-        return njs_prop_value(prop);
+    if (njs_slow_path(ret != NJS_OK)) {
+        njs_internal_error(vm, "lvlhsh insert failed");
+        return NULL;
     }
 
-    njs_internal_error(vm, "lvlhsh insert failed");
+    prop = (njs_object_prop_t *)(lhq.value);
+    prop->type = NJS_PROPERTY;
+    prop->enumerable = 0;
+    prop->configurable = 0;
+    prop->writable = 1;
 
-    return NULL;
+    prop->u.value = *prototype;
+
+    return njs_prop_value(prop);
+
 }
 
 
@@ -1432,23 +1434,23 @@ static const njs_object_prop_init_t  njs_function_prototype_properties[] =
     NJS_DECLARE_PROP_NATIVE(STRING_bind, njs_function_prototype_bind, 1, 0),
 
     {
-        .atom_id = NJS_ATOM_STRING_caller,
         .desc = {
+            .atom_id = NJS_ATOM_STRING_caller,
             .type = NJS_ACCESSOR,
             .u.accessor = njs_accessor(njs_function_prototype_thrower, 0,
                                        njs_function_prototype_thrower, 0),
-            .writable = NJS_ATTRIBUTE_UNSET,
+            .writable = NJS_ATTRIBUTE_FALSE,
             .configurable = 1,
         },
     },
 
     {
-        .atom_id = NJS_ATOM_STRING_arguments,
         .desc = {
+            .atom_id = NJS_ATOM_STRING_arguments,
             .type = NJS_ACCESSOR,
             .u.accessor = njs_accessor(njs_function_prototype_thrower, 0,
                                        njs_function_prototype_thrower, 0),
-            .writable = NJS_ATTRIBUTE_UNSET,
+            .writable = NJS_ATTRIBUTE_FALSE,
             .configurable = 1,
         },
     },

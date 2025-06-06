@@ -58,15 +58,6 @@ njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
             continue;
         }
 
-        prop = njs_object_prop_alloc(vm, &njs_value_invalid, 1);
-        if (njs_slow_path(prop == NULL)) {
-            goto memory_error;
-        }
-
-        prop->writable = external->writable;
-        prop->configurable = external->configurable;
-        prop->enumerable = external->enumerable;
-
         if (external->flags & NJS_EXTERN_SYMBOL) {
             lhq.key_hash = external->name.symbol;
 
@@ -81,7 +72,21 @@ njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
             lhq.key_hash = prop_name.atom_id;
         }
 
-        lhq.value = prop;
+        ret = njs_flathsh_unique_insert(hash, &lhq);
+        if (njs_slow_path(ret != NJS_OK)) {
+            njs_internal_error(vm, "lvlhsh insert failed");
+            return NJS_ERROR;
+        }
+
+        prop = (njs_object_prop_t *)(lhq.value);
+
+        prop->type = NJS_PROPERTY;
+        prop->enumerable = external->enumerable;
+        prop->configurable = external->configurable;
+        prop->writable = external->writable;
+
+        prop->u.value = njs_value_invalid;
+
 
         switch (external->flags & NJS_EXTERN_TYPE_MASK) {
         case NJS_EXTERN_METHOD:
@@ -167,12 +172,6 @@ njs_external_add(njs_vm_t *vm, njs_arr_t *protos,
             break;
         }
 
-        ret = njs_flathsh_unique_insert(hash, &lhq);
-        if (njs_slow_path(ret != NJS_OK)) {
-            njs_internal_error(vm, "lvlhsh insert failed");
-            return NJS_ERROR;
-        }
-
         external++;
     }
 
@@ -224,16 +223,6 @@ njs_external_prop_handler(njs_vm_t *vm, njs_object_prop_t *self,
         njs_set_object_value(retval, ov);
     }
 
-    prop = njs_object_prop_alloc(vm, retval, 1);
-    if (njs_slow_path(prop == NULL)) {
-        return NJS_ERROR;
-    }
-
-    prop->writable = self->writable;
-    prop->configurable = self->configurable;
-    prop->enumerable = self->enumerable;
-
-    lhq.value = prop;
     lhq.key_hash = atom_id;
     lhq.replace = 1;
     lhq.pool = vm->mem_pool;
@@ -244,6 +233,15 @@ njs_external_prop_handler(njs_vm_t *vm, njs_object_prop_t *self,
         njs_internal_error(vm, "lvlhsh insert/replace failed");
         return NJS_ERROR;
     }
+
+    prop = (njs_object_prop_t *)(lhq.value);
+
+    prop->type = NJS_PROPERTY;
+    prop->enumerable = self->enumerable;
+    prop->configurable = self->configurable;
+    prop->writable = self->writable;
+
+    prop->u.value = *retval;
 
     return NJS_OK;
 }

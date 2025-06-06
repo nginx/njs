@@ -702,8 +702,10 @@ njs_array_length(njs_vm_t *vm,njs_object_prop_t *prop, uint32_t unused,
         }
     }
 
-    prop->type = NJS_PROPERTY;
-    njs_set_number(njs_prop_value(prop), length);
+    ret = njs_array_length_redefine(vm, value, length, 1);
+    if (ret != NJS_OK) {
+        return ret;
+    }
 
     njs_value_assign(retval, setval);
 

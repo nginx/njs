@@ -960,6 +960,7 @@ njs_external_property_query(njs_vm_t *vm, njs_property_query_t *pq,
 
     pq->lhq.value = prop;
 
+    prop->type = NJS_PROPERTY;
     prop->writable = slots->writable;
     prop->configurable = slots->configurable;
     prop->enumerable = slots->enumerable;
@@ -1057,7 +1058,9 @@ slow_path:
         switch (prop->type) {
         case NJS_PROPERTY:
         case NJS_ACCESSOR:
-            if (njs_is_data_descriptor(prop)) {
+            if (njs_is_data_descriptor(prop) ||
+                prop->type == NJS_PROPERTY_PLACE_REF)
+            {
                 njs_value_assign(retval, njs_prop_value(prop));
                 break;
             }
@@ -1177,7 +1180,9 @@ slow_path:
     case NJS_OK:
         prop = pq.lhq.value;
 
-        if (njs_is_data_descriptor(prop)) {
+        if (njs_is_data_descriptor(prop) ||
+            prop->type == NJS_PROPERTY_PLACE_REF)
+        {
             if (!prop->writable) {
                 njs_atom_string_get(vm, atom_id, &pq.lhq.key);
                 njs_type_error(vm,
@@ -1279,10 +1284,7 @@ slow_path:
                 return NJS_ERROR;
             }
 
-            elt->value = (&pq.lhq)->value;
-
-            prop = (njs_object_prop_t *) elt->value;
-
+            prop = (njs_object_prop_t *)elt;
             prop->type = NJS_PROPERTY;
             prop->enumerable = 1;
             prop->configurable = 1;
@@ -1318,13 +1320,8 @@ slow_path:
         goto fail;
     }
 
-    prop = njs_object_prop_alloc(vm, &njs_value_undefined, 1);
-    if (njs_slow_path(prop == NULL)) {
-        return NJS_ERROR;
-    }
 
     pq.lhq.replace = 0;
-    pq.lhq.value = prop;
     pq.lhq.key_hash = atom_id;
     pq.lhq.pool = vm->mem_pool;
 
@@ -1333,6 +1330,12 @@ slow_path:
         njs_internal_error(vm, "lvlhsh insert failed");
         return NJS_ERROR;
     }
+
+    prop = (njs_object_prop_t *)(pq.lhq.value);
+    prop->type = NJS_PROPERTY;
+    prop->enumerable = 1;
+    prop->configurable = 1;
+    prop->writable = 1;
 
 found:
 

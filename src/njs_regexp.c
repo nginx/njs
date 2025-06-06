@@ -1038,10 +1038,22 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_value_t *r, njs_utf8_t utf8,
     }
 
     /* FIXME: implement fast CreateDataPropertyOrThrow(). */
-    prop = njs_object_prop_alloc(vm, &njs_value_undefined, 1);
-    if (njs_slow_path(prop == NULL)) {
-        goto fail;
+
+    lhq.key_hash = NJS_ATOM_STRING_index;
+    lhq.replace = 0;
+    lhq.pool = vm->mem_pool;
+    lhq.proto = &njs_object_hash_proto;
+
+    ret = njs_flathsh_unique_insert(&array->object.hash, &lhq);
+    if (njs_slow_path(ret != NJS_OK)) {
+        goto insert_fail;
     }
+
+    prop = (njs_object_prop_t *)(lhq.value);
+    prop->type = NJS_PROPERTY;
+    prop->enumerable = 1;
+    prop->configurable = 1;
+    prop->writable = 1;
 
     c = njs_regex_capture(match_data, 0);
 
@@ -1054,42 +1066,33 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_value_t *r, njs_utf8_t utf8,
 
     njs_set_number(&prop->u.value, index);
 
-    lhq.key_hash = NJS_ATOM_STRING_index;
-    lhq.replace = 0;
-    lhq.value = prop;
-    lhq.pool = vm->mem_pool;
-    lhq.proto = &njs_object_hash_proto;
-
-    ret = njs_flathsh_unique_insert(&array->object.hash, &lhq);
-    if (njs_slow_path(ret != NJS_OK)) {
-        goto insert_fail;
-    }
-
-    prop = njs_object_prop_alloc(vm, &regexp->string, 1);
-    if (njs_slow_path(prop == NULL)) {
-        goto fail;
-    }
-
     lhq.key_hash = NJS_ATOM_STRING_input;
-    lhq.value = prop;
 
     ret = njs_flathsh_unique_insert(&array->object.hash, &lhq);
     if (njs_slow_path(ret != NJS_OK)) {
         goto insert_fail;
     }
 
-    prop = njs_object_prop_alloc(vm, &njs_value_undefined, 1);
-    if (njs_slow_path(prop == NULL)) {
-        goto fail;
-    }
+    prop = (njs_object_prop_t *)(lhq.value);
+    prop->type = NJS_PROPERTY;
+    prop->enumerable = 1;
+    prop->configurable = 1;
+    prop->writable = 1;
+    prop->u.value = regexp->string;
 
     lhq.key_hash = NJS_ATOM_STRING_groups;
-    lhq.value = prop;
 
     ret = njs_flathsh_unique_insert(&array->object.hash, &lhq);
     if (njs_slow_path(ret != NJS_OK)) {
         goto insert_fail;
     }
+
+    prop = (njs_object_prop_t *)(lhq.value);
+    prop->type = NJS_PROPERTY;
+    prop->enumerable = 1;
+    prop->configurable = 1;
+    prop->writable = 1;
+    prop->u.value = njs_value_undefined;
 
     if (pattern->ngroups != 0) {
         groups = njs_object_alloc(vm);
@@ -1110,18 +1113,19 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_value_t *r, njs_utf8_t utf8,
                 goto fail;
             }
 
-            prop = njs_object_prop_alloc(vm, &array->start[group->capture], 1);
-            if (njs_slow_path(prop == NULL)) {
-                goto fail;
-            }
-
             lhq.key_hash = name.atom_id;
-            lhq.value = prop;
 
             ret = njs_flathsh_unique_insert(&groups->hash, &lhq);
             if (njs_slow_path(ret != NJS_OK)) {
                 goto insert_fail;
             }
+
+            prop = (njs_object_prop_t *)(lhq.value);
+            prop->type = NJS_PROPERTY;
+            prop->enumerable = 1;
+            prop->configurable = 1;
+            prop->writable = 1;
+            prop->u.value = array->start[group->capture];
 
             i++;
 
@@ -1149,25 +1153,9 @@ static void
 njs_regexp_exec_result_free(njs_vm_t *vm, njs_array_t *result)
 {
     njs_flathsh_t        *hash;
-    njs_object_prop_t    *prop;
-    njs_flathsh_elt_t    *elt;
-    njs_flathsh_each_t   lhe;
     njs_flathsh_query_t  lhq;
 
-    njs_flathsh_each_init(&lhe, &njs_object_hash_proto);
-
     hash = &result->object.hash;
-
-    for ( ;; ) {
-        elt = njs_flathsh_each(hash, &lhe);
-        if (elt == NULL) {
-            break;
-        }
-
-        prop = elt->value;
-
-        njs_mp_free(vm->mem_pool, prop);
-    }
 
     lhq.pool = vm->mem_pool;
     lhq.proto = &njs_object_hash_proto;

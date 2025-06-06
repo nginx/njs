@@ -433,17 +433,11 @@ njs_builtin_traverse(njs_vm_t *vm, njs_traverse_t *traverse, void *data)
 
     /* NJS_BUILTIN_TRAVERSE_KEYS. */
 
-    prop = njs_object_prop_alloc(vm, &njs_value_null, 0);
-    if (njs_slow_path(prop == NULL)) {
-        return NJS_ERROR;
-    }
-
     ret = njs_atom_string_create(vm, &prop_name, buf, p - buf);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
 
-    lhq.value = prop;
     lhq.key_hash = prop_name.atom_id;
     lhq.replace = 1;
     lhq.pool = vm->mem_pool;
@@ -454,6 +448,16 @@ njs_builtin_traverse(njs_vm_t *vm, njs_traverse_t *traverse, void *data)
         njs_internal_error(vm, "lvlhsh insert/replace failed");
         return NJS_ERROR;
     }
+
+    prop = (njs_object_prop_t *)(lhq.value);
+
+    prop->type = NJS_PROPERTY;
+
+    prop->enumerable = 0;
+    prop->configurable = 0;
+    prop->writable = 0;
+
+    prop->u.value = njs_value_null;
 
     return NJS_OK;
 }
@@ -477,6 +481,7 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
     njs_uint_t              i, n;
     njs_value_t             value, tag;
     njs_object_t            object;
+    njs_object_prop_t       *prop;
     njs_lvlhsh_each_t       lhe;
     njs_exotic_slots_t      *slots;
     njs_function_name_t     *fn;
@@ -538,11 +543,12 @@ njs_builtin_match_native_function(njs_vm_t *vm, njs_function_t *function,
     njs_lvlhsh_each_init(&lhe, &njs_modules_hash_proto);
 
     for ( ;; ) {
-        module = njs_lvlhsh_each(&vm->modules_hash, &lhe);
-
-        if (module == NULL) {
+        prop = (njs_object_prop_t *)njs_flathsh_each(&vm->modules_hash, &lhe);
+        if (prop == NULL) {
             break;
         }
+
+        module = prop->u.mod;
 
         if (njs_is_object(&module->value)
             && !njs_object(&module->value)->shared)
@@ -815,15 +821,6 @@ njs_global_this_object(njs_vm_t *vm, njs_object_prop_t *self, uint32_t atom_id,
         njs_value_assign(retval, setval);
     }
 
-    prop = njs_object_prop_alloc(vm, retval, 1);
-    if (njs_slow_path(prop == NULL)) {
-        return NJS_ERROR;
-    }
-
-    njs_value_assign(njs_prop_value(prop), retval);
-    prop->enumerable = self->enumerable;
-
-    lhq.value = prop;
     lhq.key_hash = atom_id;
     lhq.replace = 1;
     lhq.pool = vm->mem_pool;
@@ -834,6 +831,15 @@ njs_global_this_object(njs_vm_t *vm, njs_object_prop_t *self, uint32_t atom_id,
         njs_internal_error(vm, "lvlhsh insert/replace failed");
         return NJS_ERROR;
     }
+
+    prop = (njs_object_prop_t *)(lhq.value);
+
+    prop->type = NJS_PROPERTY;
+    prop->enumerable = self->enumerable;
+    prop->configurable = 1;
+    prop->writable = 1;
+
+    prop->u.value = *retval;
 
     return NJS_OK;
 }
@@ -866,15 +872,6 @@ njs_top_level_object(njs_vm_t *vm, njs_object_prop_t *self, uint32_t atom_id,
         object->__proto__ = njs_vm_proto(vm, NJS_OBJ_TYPE_OBJECT);
     }
 
-    prop = njs_object_prop_alloc(vm, retval, 1);
-    if (njs_slow_path(prop == NULL)) {
-        return NJS_ERROR;
-    }
-
-    njs_value_assign(njs_prop_value(prop), retval);
-    prop->enumerable = self->enumerable;
-
-    lhq.value = prop;
     lhq.key_hash = atom_id;
     lhq.replace = 1;
     lhq.pool = vm->mem_pool;
@@ -885,6 +882,15 @@ njs_top_level_object(njs_vm_t *vm, njs_object_prop_t *self, uint32_t atom_id,
         njs_internal_error(vm, "lvlhsh insert/replace failed");
         return NJS_ERROR;
     }
+
+    prop = (njs_object_prop_t *)(lhq.value);
+
+    prop->type = NJS_PROPERTY;
+    prop->enumerable = self->enumerable;
+    prop->configurable = 1;
+    prop->writable = 1;
+
+    prop->u.value = *retval;
 
     return NJS_OK;
 }
@@ -915,15 +921,6 @@ njs_top_level_constructor(njs_vm_t *vm, njs_object_prop_t *self,
         return NJS_OK;
     }
 
-    prop = njs_object_prop_alloc(vm, retval, 1);
-    if (njs_slow_path(prop == NULL)) {
-        return NJS_ERROR;
-    }
-
-    njs_value_assign(njs_prop_value(prop), retval);
-    prop->enumerable = 0;
-
-    lhq.value = prop;
     lhq.key_hash = atom_id;
     lhq.replace = 1;
     lhq.pool = vm->mem_pool;
@@ -934,6 +931,15 @@ njs_top_level_constructor(njs_vm_t *vm, njs_object_prop_t *self,
         njs_internal_error(vm, "lvlhsh insert/replace failed");
         return NJS_ERROR;
     }
+
+    prop = (njs_object_prop_t *)(lhq.value);
+
+    prop->type = NJS_PROPERTY;
+    prop->enumerable = 0;
+    prop->configurable = 1;
+    prop->writable = 1;
+
+    prop->u.value = *retval;
 
     return NJS_OK;
 }
@@ -1205,28 +1211,29 @@ njs_process_object_argv(njs_vm_t *vm, njs_object_prop_t *pr, uint32_t unused,
         }
     }
 
-    prop = njs_object_prop_alloc(vm, &njs_value_undefined, 1);
-    if (njs_slow_path(prop == NULL)) {
-        return NJS_ERROR;
-    }
-
-    njs_set_array(njs_prop_value(prop), argv);
-
-    lhq.value = prop;
     lhq.key_hash = NJS_ATOM_STRING_argv;
     lhq.replace = 1;
     lhq.pool = vm->mem_pool;
     lhq.proto = &njs_object_hash_proto;
 
     ret = njs_flathsh_unique_insert(njs_object_hash(process), &lhq);
-    if (njs_fast_path(ret == NJS_OK)) {
-        njs_value_assign(retval, njs_prop_value(prop));
-        return NJS_OK;
+    if (njs_slow_path(ret != NJS_OK)) {
+        njs_internal_error(vm, "lvlhsh insert failed");
+        return NJS_ERROR;
     }
 
-    njs_internal_error(vm, "lvlhsh insert failed");
+    prop = (njs_object_prop_t *)(lhq.value);
 
-    return NJS_ERROR;
+    prop->type = NJS_PROPERTY;
+    prop->enumerable = 1;
+    prop->configurable = 1;
+    prop->writable = 1;
+
+    njs_set_array(njs_prop_value(prop), argv);
+
+    njs_value_assign(retval, njs_prop_value(prop));
+    return NJS_OK;
+
 }
 
 
@@ -1251,10 +1258,6 @@ njs_env_hash_init(njs_vm_t *vm, njs_flathsh_t *hash, char **environment)
     ep = environment;
 
     while (*ep != NULL) {
-        prop = njs_object_prop_alloc(vm, &njs_value_undefined, 1);
-        if (njs_slow_path(prop == NULL)) {
-            return NJS_ERROR;
-        }
 
         entry = (u_char *) *ep++;
 
@@ -1283,17 +1286,11 @@ njs_env_hash_init(njs_vm_t *vm, njs_flathsh_t *hash, char **environment)
 
         val++;
 
-        ret = njs_string_create(vm, njs_prop_value(prop), val, njs_strlen(val));
-        if (njs_slow_path(ret != NJS_OK)) {
-            return NJS_ERROR;
-        }
-
         ret = njs_atom_atomize_key(vm, &prop_name);
         if (ret != NJS_OK) {
             return ret;
         }
 
-        lhq.value = prop;
         lhq.key_hash = prop_name.atom_id;
 
         ret = njs_flathsh_unique_insert(hash, &lhq);
@@ -1309,7 +1306,21 @@ njs_env_hash_init(njs_vm_t *vm, njs_flathsh_t *hash, char **environment)
              * Always using the first element among the duplicates
              * and ignoring the rest.
              */
+            continue;
         }
+
+        prop = (njs_object_prop_t *)(lhq.value);
+
+        prop->type = NJS_PROPERTY;
+        prop->enumerable = 1;
+        prop->configurable = 1;
+        prop->writable = 1;
+
+        ret = njs_string_create(vm, njs_prop_value(prop), val, njs_strlen(val));
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
+
     }
 
     return NJS_OK;
@@ -1332,28 +1343,29 @@ njs_process_object_env(njs_vm_t *vm, njs_object_prop_t *pr, uint32_t unused,
 
     env->shared_hash = vm->shared->env_hash;
 
-    prop = njs_object_prop_alloc(vm, &njs_value_undefined, 1);
-    if (njs_slow_path(prop == NULL)) {
-        return NJS_ERROR;
-    }
-
-    njs_set_object(njs_prop_value(prop), env);
-
     lhq.replace = 1;
     lhq.pool = vm->mem_pool;
     lhq.proto = &njs_object_hash_proto;
-    lhq.value = prop;
     lhq.key_hash = NJS_ATOM_STRING_env;
 
     ret = njs_flathsh_unique_insert(njs_object_hash(process), &lhq);
-    if (njs_fast_path(ret == NJS_OK)) {
-        njs_value_assign(retval, njs_prop_value(prop));
-        return NJS_OK;
+    if (njs_slow_path(ret != NJS_OK)) {
+        njs_internal_error(vm, "lvlhsh insert failed");
+
+        return NJS_ERROR;
     }
 
-    njs_internal_error(vm, "lvlhsh insert failed");
+    prop = (njs_object_prop_t *)(lhq.value);
 
-    return NJS_ERROR;
+    prop->type = NJS_PROPERTY;
+    prop->enumerable = 1;
+    prop->configurable = 1;
+    prop->writable = 1;
+
+    njs_set_object(njs_prop_value(prop), env);
+
+    njs_value_assign(retval, njs_prop_value(prop));
+    return NJS_OK;
 }
 
 

@@ -394,12 +394,6 @@ njs_json_parse_object(njs_json_parse_ctx_t *ctx, njs_value_t *value,
             return NULL;
         }
 
-        prop = njs_object_prop_alloc(ctx->vm, &prop_value, 1);
-        if (njs_slow_path(prop == NULL)) {
-            goto memory_error;
-        }
-
-        lhq.value = prop;
         lhq.key_hash = prop_name.atom_id;
         lhq.replace = 1;
         lhq.pool = ctx->pool;
@@ -410,6 +404,15 @@ njs_json_parse_object(njs_json_parse_ctx_t *ctx, njs_value_t *value,
             njs_internal_error(ctx->vm, "lvlhsh insert/replace failed");
             return NULL;
         }
+
+        prop = (njs_object_prop_t *)(lhq.value);
+
+        prop->type = NJS_PROPERTY;
+        prop->enumerable = 1;
+        prop->configurable = 1;
+        prop->writable = 1;
+
+        prop->u.value = prop_value;
 
         p = njs_json_skip_space(p, ctx->end);
         if (njs_slow_path(p == ctx->end)) {
@@ -1609,12 +1612,6 @@ njs_json_wrap_value(njs_vm_t *vm, njs_value_t *wrapper,
     wrapper->type = NJS_OBJECT;
     wrapper->data.truth = 1;
 
-    prop = njs_object_prop_alloc(vm, value, 1);
-    if (njs_slow_path(prop == NULL)) {
-        return NULL;
-    }
-
-    lhq.value = prop;
     lhq.key_hash = NJS_ATOM_STRING_empty;
     lhq.replace = 0;
     lhq.pool = vm->mem_pool;
@@ -1624,6 +1621,15 @@ njs_json_wrap_value(njs_vm_t *vm, njs_value_t *wrapper,
     if (njs_slow_path(ret != NJS_OK)) {
         return NULL;
     }
+
+    prop = (njs_object_prop_t *)(lhq.value);
+
+    prop->type = NJS_PROPERTY;
+    prop->enumerable = 1;
+    prop->configurable = 1;
+    prop->writable = 1;
+
+    prop->u.value = *value;
 
     return wrapper->data.u.object;
 }
