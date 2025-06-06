@@ -339,7 +339,6 @@ struct njs_object_prop_s {
 #define njs_prop_setter(_p)     (_p)->u.accessor.setter
 
     njs_object_prop_type_t      type:8;          /* 3 bits */
-    njs_object_prop_type_t      enum_in_object_hash:8; /* 3 bits */
 
     njs_object_attribute_t      writable:8;      /* 2 bits */
     njs_object_attribute_t      enumerable:8;    /* 2 bits */

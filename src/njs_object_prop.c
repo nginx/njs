@@ -58,7 +58,6 @@ njs_object_prop_alloc2(njs_vm_t *vm,
     }
 
     prop->type = type;
-    prop->enum_in_object_hash = 0;
 
     if (flags != NJS_OBJECT_PROP_UNSET) {
         prop->enumerable = !!(flags & NJS_OBJECT_PROP_ENUMERABLE);
