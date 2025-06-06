@@ -2732,8 +2732,8 @@ static njs_int_t
 njs_buffer(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t atom_id,
     njs_value_t *value, njs_value_t *unused, njs_value_t *retval)
 {
-    return njs_object_prop_init(vm, &njs_buffer_constructor_init, prop, atom_id,
-                                value, retval);
+    return njs_object_props_init(vm, &njs_buffer_constructor_init, prop,
+                                 atom_id, value, retval);
 }
 
 
@@ -2741,8 +2741,8 @@ static njs_int_t
 njs_buffer_constants(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t atom_id,
     njs_value_t *value, njs_value_t *unused, njs_value_t *retval)
 {
-    return njs_object_prop_init(vm, &njs_buffer_constants_init, prop, atom_id,
-                                value, retval);
+    return njs_object_props_init(vm, &njs_buffer_constants_init, prop, atom_id,
+                                 value, retval);
 }
 
 

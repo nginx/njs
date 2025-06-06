@@ -960,6 +960,7 @@ njs_external_property_query(njs_vm_t *vm, njs_property_query_t *pq,
 
     pq->lhq.value = prop;
 
+    prop->type = NJS_PROPERTY;
     prop->writable = slots->writable;
     prop->configurable = slots->configurable;
     prop->enumerable = slots->enumerable;
@@ -1279,10 +1280,7 @@ slow_path:
                 return NJS_ERROR;
             }
 
-            elt->value = (&pq.lhq)->value;
-
-            prop = (njs_object_prop_t *) elt->value;
-
+            prop = (njs_object_prop_t *) elt;
             prop->type = NJS_PROPERTY;
             prop->enumerable = 1;
             prop->configurable = 1;
@@ -1318,13 +1316,8 @@ slow_path:
         goto fail;
     }
 
-    prop = njs_object_prop_alloc(vm, &njs_value_undefined, 1);
-    if (njs_slow_path(prop == NULL)) {
-        return NJS_ERROR;
-    }
 
     pq.lhq.replace = 0;
-    pq.lhq.value = prop;
     pq.lhq.key_hash = atom_id;
     pq.lhq.pool = vm->mem_pool;
 
@@ -1333,6 +1326,12 @@ slow_path:
         njs_internal_error(vm, "lvlhsh insert failed");
         return NJS_ERROR;
     }
+
+    prop = pq.lhq.value;
+    prop->type = NJS_PROPERTY;
+    prop->enumerable = 1;
+    prop->configurable = 1;
+    prop->writable = 1;
 
 found:
 

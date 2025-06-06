@@ -13,9 +13,18 @@ typedef struct {
 
 
 typedef struct {
-    uint32_t     next_elt;
+    /* next_elt + property descriptor : 32 bits */
+
+    uint32_t     next_elt:26;
+
+    uint32_t     type:3;
+    uint32_t     writable:1;
+    uint32_t     enumerable:1;
+    uint32_t     configurable:1;
+
     uint32_t     key_hash;
-    void         *value;
+
+    void         *value[16 / sizeof(void *)];
 } njs_flathsh_elt_t;
 
 
@@ -174,7 +183,7 @@ typedef struct njs_flathsh_proto_s  njs_lvlhsh_proto_t;
 #define njs_lvlhsh_delete(lh, lhq) njs_flathsh_delete(lh, lhq)
 #define njs_lvlhsh_each_init(lhe, _proto)  njs_flathsh_each_init(lhe, _proto)
 
-njs_inline void *
+njs_inline njs_flathsh_elt_t *
 njs_lvlhsh_each(const njs_flathsh_t *lh, njs_flathsh_each_t *lhe)
 {
     njs_flathsh_elt_t  *e;
@@ -184,7 +193,7 @@ njs_lvlhsh_each(const njs_flathsh_t *lh, njs_flathsh_each_t *lhe)
         return NULL;
     }
 
-    return e->value;
+    return e;
 }
 
 
