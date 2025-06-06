@@ -287,7 +287,8 @@ struct njs_object_type_init_s {
 
 
 typedef enum {
-    NJS_PROPERTY = 0,
+    NJS_FREE_FLATHSH_ELEMENT = 0,
+    NJS_PROPERTY,
     NJS_ACCESSOR,
     NJS_PROPERTY_HANDLER,
 
@@ -305,22 +306,23 @@ typedef enum {
 } njs_prop_query_t;
 
 
-/*
- * Attributes are generally used as Boolean values.
- * The UNSET value is can be seen:
- * for newly created property descriptors in njs_define_property(),
- * for writable attribute of accessor descriptors (desc->writable
- * cannot be used as a boolean value).
- */
-typedef enum {
-    NJS_ATTRIBUTE_FALSE = 0,
-    NJS_ATTRIBUTE_TRUE = 1,
-    NJS_ATTRIBUTE_UNSET,
-} njs_object_attribute_t;
-
+/* njs_object_prop_s: same structure and length as njs_flathsh_elt_t. */
 
 struct njs_object_prop_s {
+    /* next_elt + property descriptor : 32 bits */
+
+    uint32_t     next_elt:26;
+
+    uint32_t     type:3;
+    uint32_t     writable:1;
+    uint32_t     enumerable:1;
+    uint32_t     configurable:1;
+
+    uint32_t     atom_id;
+
     union {
+        njs_value_t             *val;
+        njs_mod_t               *mod;
         njs_value_t             value;
         struct {
             njs_function_t      *getter;
@@ -328,7 +330,8 @@ struct njs_object_prop_s {
         } accessor;
     } u;
 
-#define njs_prop_value(_p)      (&(_p)->u.value)
+#define njs_prop_value(_p)      (&((njs_object_prop_t *) (_p))->u.value)
+#define njs_prop_module(_p)     (((njs_object_prop_t *) (_p))->u.mod)
 #define njs_prop_handler(_p)    (_p)->u.value.data.u.prop_handler
 #define njs_prop_ref(_p)        (_p)->u.value.data.u.value
 #define njs_prop_typed_ref(_p)  (_p)->u.value.data.u.typed_array
@@ -338,17 +341,11 @@ struct njs_object_prop_s {
 #define njs_prop_getter(_p)     (_p)->u.accessor.getter
 #define njs_prop_setter(_p)     (_p)->u.accessor.setter
 
-    njs_object_prop_type_t      type:8;          /* 3 bits */
-
-    njs_object_attribute_t      writable:8;      /* 2 bits */
-    njs_object_attribute_t      enumerable:8;    /* 2 bits */
-    njs_object_attribute_t      configurable:8;  /* 2 bits */
 };
 
 
 struct njs_object_prop_init_s {
     struct njs_object_prop_s    desc;
-    uint32_t                    atom_id;
 };
 
 

@@ -101,8 +101,8 @@ njs_int_t njs_object_length(njs_vm_t *vm, njs_value_t *value, int64_t *dst);
 
 njs_int_t njs_prop_private_copy(njs_vm_t *vm, njs_property_query_t *pq,
     njs_object_t *proto);
-njs_object_prop_t *njs_object_prop_alloc(njs_vm_t *vm,
-    const njs_value_t *value, uint8_t attributes);
+void njs_object_prop_init(njs_object_prop_t *prop, njs_object_prop_type_t type,
+    uint8_t attributes);
 njs_int_t njs_object_property(njs_vm_t *vm, njs_object_t *object,
     njs_flathsh_query_t *lhq, njs_value_t *retval);
 njs_object_prop_t *njs_object_property_add(njs_vm_t *vm, njs_value_t *object,
@@ -114,7 +114,7 @@ njs_int_t njs_object_prop_descriptor(njs_vm_t *vm, njs_value_t *dest,
 njs_int_t njs_object_get_prototype_of(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 const char *njs_prop_type_string(njs_object_prop_type_t type);
-njs_int_t njs_object_prop_init(njs_vm_t *vm, const njs_object_init_t* init,
+njs_int_t njs_object_props_init(njs_vm_t *vm, const njs_object_init_t* init,
     njs_object_prop_t *base, uint32_t atom_id, njs_value_t *value,
     njs_value_t *retval);
 
@@ -122,10 +122,10 @@ njs_int_t njs_object_prop_init(njs_vm_t *vm, const njs_object_init_t* init,
 njs_inline njs_bool_t
 njs_is_data_descriptor(njs_object_prop_t *prop)
 {
-    return prop->writable != NJS_ATTRIBUTE_UNSET
-           || (prop->type != NJS_ACCESSOR && njs_is_valid(njs_prop_value(prop)))
+    return (prop->type == NJS_PROPERTY && njs_is_valid(njs_prop_value(prop)))
+           || prop->type == NJS_PROPERTY_REF
+           || prop->type == NJS_PROPERTY_PLACE_REF
            || prop->type == NJS_PROPERTY_HANDLER;
-
 }
 
 
@@ -133,13 +133,6 @@ njs_inline njs_bool_t
 njs_is_accessor_descriptor(njs_object_prop_t *prop)
 {
     return prop->type == NJS_ACCESSOR;
-}
-
-
-njs_inline njs_bool_t
-njs_is_generic_descriptor(njs_object_prop_t *prop)
-{
-    return !njs_is_data_descriptor(prop) && !njs_is_accessor_descriptor(prop);
 }
 
 
