@@ -8,8 +8,9 @@
 #include <njs_main.h>
 
 
-static njs_int_t njs_object_property_query(njs_vm_t *vm,
-    njs_property_query_t *pq, njs_object_t *object, uint32_t atom_id);
+njs_inline njs_int_t
+njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
+    njs_object_t *object, uint32_t atom_id);
 static njs_int_t njs_array_property_query(njs_vm_t *vm,
     njs_property_query_t *pq, njs_array_t *array, uint32_t index,
     uint32_t atom_id);
