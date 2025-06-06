@@ -1452,7 +1452,6 @@ slow_path:
     }
 
     prop->type = NJS_WHITEOUT;
-    prop->enum_in_object_hash = 1;
 
     return NJS_OK;
 }

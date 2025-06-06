@@ -993,13 +993,7 @@ njs_get_own_ordered_keys(njs_vm_t *vm, const njs_object_t *object,
 
                 njs_object_prop_t *hash_prop = lhq.value;
 
-                /* select names of prop which are not deleted and
-                 * not deleted and created again i.e.,
-                 * they are replaced shared hash props
-                 */
-                if (hash_prop->type != NJS_WHITEOUT &&
-                    !(hash_prop->enum_in_object_hash))
-                {
+                if (hash_prop->type != NJS_WHITEOUT) {
                     njs_process_prop(vm, &prop_name, flags, items_string,
                                      items_symbol);
                 }
@@ -1060,8 +1054,7 @@ local_hash:
             } else {
                 /* prop is:  in_hash && in_shared_hash */
 
-                /* select names of not deleted and created again */
-                if (prop->enum_in_object_hash) {
+                if (prop->type == NJS_WHITEOUT) {
                     njs_process_prop(vm, &prop_name, flags, items_string,
                                      items_symbol);
                 }
