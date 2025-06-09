@@ -31,12 +31,6 @@ typedef struct {
 } ngx_js_rejected_promise_t;
 
 
-#if defined(PATH_MAX)
-#define NGX_MAX_PATH             PATH_MAX
-#else
-#define NGX_MAX_PATH             4096
-#endif
-
 typedef struct {
     int                 fd;
     njs_str_t           name;
