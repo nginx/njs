@@ -109,8 +109,9 @@ typedef struct {
 
 
 typedef struct {
-    njs_value_t                     *value;
+    njs_function_lambda_t           *lambda;
     njs_index_t                     index;
+    njs_bool_t                      async;
 } njs_declaration_t;
 
 

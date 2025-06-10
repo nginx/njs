@@ -310,7 +310,6 @@ njs_vm_compile_module(njs_vm_t *vm, njs_str_t *name, u_char **start,
     u_char *end)
 {
     njs_int_t              ret;
-    njs_arr_t              *arr;
     njs_mod_t              *module;
     njs_parser_t           parser;
     njs_vm_code_t          *code;
@@ -365,10 +364,6 @@ njs_vm_compile_module(njs_vm_t *vm, njs_str_t *name, u_char **start,
 
     lambda->start = generator.code_start;
     lambda->nlocal = scope->items;
-
-    arr = scope->declarations;
-    lambda->declarations = (arr != NULL) ? arr->start : NULL;
-    lambda->ndeclarations = (arr != NULL) ? arr->items : 0;
 
     module->function.u.lambda = lambda;
 
