@@ -523,7 +523,6 @@ njs_function_lambda_call(njs_vm_t *vm, njs_value_t *retval, void *promise_cap)
     njs_value_t            *args, **local, *value;
     njs_value_t            **cur_local, **cur_closures;
     njs_function_t         *function;
-    njs_declaration_t      *declr;
     njs_function_lambda_t  *lambda;
 
     frame = (njs_frame_t *) vm->top_frame;
@@ -581,29 +580,6 @@ njs_function_lambda_call(njs_vm_t *vm, njs_value_t *retval, void *promise_cap)
     }
 
     vm->active_frame = frame;
-
-    /* Closures */
-
-    n = lambda->ndeclarations;
-
-    while (n != 0) {
-        n--;
-
-        declr = &lambda->declarations[n];
-        value = njs_scope_value(vm, declr->index);
-
-        *value = *declr->value;
-
-        function = njs_function_value_copy(vm, value);
-        if (njs_slow_path(function == NULL)) {
-            return NJS_ERROR;
-        }
-
-        ret = njs_function_capture_closure(vm, function, function->u.lambda);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return ret;
-        }
-    }
 
     ret = njs_vmcode_interpreter(vm, lambda->start, retval, promise_cap, NULL);
 

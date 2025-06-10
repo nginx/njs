@@ -30,9 +30,6 @@ static njs_code_name_t  code_names[] = {
     { NJS_VMCODE_TEMPLATE_LITERAL, sizeof(njs_vmcode_template_literal_t),
           njs_str("TEMPLATE LITERAL") },
 
-    { NJS_VMCODE_FUNCTION_COPY, sizeof(njs_vmcode_function_copy_t),
-          njs_str("FUNCTION COPY   ") },
-
     { NJS_VMCODE_PROPERTY_GET, sizeof(njs_vmcode_prop_get_t),
           njs_str("PROP GET        ") },
     { NJS_VMCODE_PROPERTY_ATOM_GET, sizeof(njs_vmcode_prop_get_t),

@@ -79,7 +79,8 @@ njs_variable_function_add(njs_parser_t *parser, njs_parser_scope_t *scope,
     var->index = njs_scope_index(root->type, root->items, NJS_LEVEL_LOCAL,
                                  type);
 
-    declr->value = &var->value;
+    declr->lambda = lambda;
+    declr->async = !ctor;
     declr->index = var->index;
 
     root->items++;

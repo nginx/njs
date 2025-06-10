@@ -38,7 +38,6 @@ enum {
     NJS_VMCODE_IF_EQUAL_JUMP,
     NJS_VMCODE_PROPERTY_INIT,
     NJS_VMCODE_RETURN,
-    NJS_VMCODE_FUNCTION_COPY,
     NJS_VMCODE_FUNCTION_FRAME,
     NJS_VMCODE_METHOD_FRAME,
     NJS_VMCODE_FUNCTION_CALL,
@@ -379,13 +378,6 @@ typedef struct {
         njs_str_t              message;
     } u;
 } njs_vmcode_error_t;
-
-
-typedef struct {
-    njs_vmcode_t               code;
-    njs_value_t                *function;
-    njs_index_t                retval;
-} njs_vmcode_function_copy_t;
 
 
 typedef struct {
