@@ -202,29 +202,15 @@ njs_function_frame_size(njs_native_frame_t *frame)
 }
 
 
-njs_inline size_t
-njs_function_frame_args_count(njs_native_frame_t *frame)
+njs_inline njs_bool_t
+njs_is_value_allocated_on_frame(njs_native_frame_t *frame, njs_value_t *value)
 {
-    uintptr_t  start;
+    void  *start, *end;
 
-    start = (uintptr_t) ((u_char *) frame + NJS_FRAME_SIZE);
+    start = frame;
+    end = frame->free;
 
-    return ((uintptr_t) frame->local - start) / sizeof(njs_value_t *);
-}
-
-
-njs_inline njs_value_t *
-njs_function_frame_values(njs_native_frame_t *frame, njs_value_t **end)
-{
-    size_t     count;
-    uintptr_t  start;
-
-    start = (uintptr_t) ((u_char *) frame + NJS_FRAME_SIZE);
-    count = ((uintptr_t) frame->arguments - start) / sizeof(njs_value_t *);
-
-    *end = frame->arguments + count;
-
-    return frame->arguments;
+    return start <= (void *) value && (void *) value < end;
 }
 
 
