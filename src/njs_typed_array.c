@@ -324,13 +324,14 @@ static njs_int_t
 njs_typed_array_from(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
 {
-    double             num;
-    int64_t            length, i;
-    njs_int_t          ret;
-    njs_value_t        *this, *source, *mapfn;
-    njs_value_t        arguments[3], value;
-    njs_function_t     *function;
-    njs_typed_array_t  *array;
+    double              num;
+    int64_t             length, i;
+    njs_int_t           ret;
+    njs_value_t         *this, *source, *mapfn;
+    njs_value_t         arguments[3], value;
+    njs_function_t      *function;
+    njs_typed_array_t   *array;
+    njs_array_buffer_t  *buffer;
 
     this = njs_argument(args, 0);
 
@@ -371,6 +372,7 @@ njs_typed_array_from(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     array = njs_typed_array(retval);
+    buffer = njs_typed_array_buffer(array);
     arguments[0] = *njs_arg(args, nargs, 3);
 
     for (i = 0; i < length; i++) {
@@ -393,7 +395,9 @@ njs_typed_array_from(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             return NJS_ERROR;
         }
 
-        njs_typed_array_prop_set(vm, array, i, num);
+        if (!njs_is_detached_buffer(buffer)) {
+            njs_typed_array_prop_set(vm, array, i, num);
+        }
     }
 
     njs_set_typed_array(retval, array);
