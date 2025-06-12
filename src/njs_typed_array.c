@@ -912,6 +912,20 @@ njs_typed_array_prototype_fill(njs_vm_t *vm, njs_value_t *args,
 }
 
 
+static void
+njs_slice_memcpy(uint8_t *dst, const uint8_t *src, size_t len)
+{
+    if (dst + len <= src || dst >= src + len) {
+        /* no overlap: can use memcpy */
+        memcpy(dst, src, len);
+
+    } else {
+        while (len-- != 0)
+            *dst++ = *src++;
+    }
+}
+
+
 njs_int_t
 njs_typed_array_prototype_slice(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t copy, njs_value_t *retval)
@@ -990,7 +1004,7 @@ njs_typed_array_prototype_slice(njs_vm_t *vm, njs_value_t *args,
             start = start * element_size;
             count = count * element_size;
 
-            memcpy(&new_buffer->u.u8[0], &buffer->u.u8[start], count);
+            njs_slice_memcpy(&new_buffer->u.u8[0], &buffer->u.u8[start], count);
 
         } else {
             for (i = 0; i < count; i++) {
