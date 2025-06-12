@@ -91,14 +91,13 @@ NJS_EXPORT njs_int_t njs_flathsh_unique_find(const njs_flathsh_t *fh,
     njs_flathsh_query_t *fhq);
 
 /*
- * njs_flathsh_insert() adds a hash element.  If the element is already
- * present in flathsh and the fhq->replace flag is zero, then fhq->value
- * is updated with the old element and NJS_DECLINED is returned.
- * If the element is already present in flathsh and the fhq->replace flag
- * is non-zero, then the old element is replaced with the new element.
- * fhq->value is updated with the old element, and NJS_OK is returned.
+ * njs_flathsh_insert() adds a hash element.  If the element is already present
+ * in flathsh and the fhq->replace flag is zero, then NJS_DECLINED is returned.
+ * If the element is already present in flathsh and the fhq->replace flag is
+ * non-zero, then the old element is replaced with the new element and NJS_OK is
+ * returned.
  * If the element is not present in flathsh, then it is inserted and
- * NJS_OK is returned.  The fhq->value is not changed.
+ * NJS_OK is returned.
  * On memory allocation failure NJS_ERROR is returned.
  *
  * The required njs_flathsh_query_t fields: key_hash, key, proto, replace,
