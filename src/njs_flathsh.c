@@ -376,7 +376,6 @@ njs_flathsh_unique_find(const njs_flathsh_t *fh, njs_flathsh_query_t *fhq)
 njs_int_t
 njs_flathsh_insert(njs_flathsh_t *fh, njs_flathsh_query_t *fhq)
 {
-    void                 *tmp;
     njs_int_t            cell_num, elt_num;
     njs_flathsh_elt_t    *elt, *elts;
     njs_flathsh_descr_t  *h;
@@ -403,15 +402,11 @@ njs_flathsh_insert(njs_flathsh_t *fh, njs_flathsh_query_t *fhq)
             fhq->proto->test(fhq, elt->value) == NJS_OK)
         {
             if (fhq->replace) {
-                tmp = fhq->value;
-                fhq->value = elt->value;
-                elt->value = tmp;
+                elt->value = fhq->value;
 
                 return NJS_OK;
 
             } else {
-                fhq->value = elt->value;
-
                 return NJS_DECLINED;
             }
         }
