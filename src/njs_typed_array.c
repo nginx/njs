@@ -655,6 +655,11 @@ njs_typed_array_set_value(njs_vm_t *vm, njs_typed_array_t *array,
         return ret;
     }
 
+    buffer = njs_typed_array_buffer(array);
+    if (njs_slow_path(njs_is_detached_buffer(buffer))) {
+        return NJS_OK;
+    }
+
     buffer = njs_typed_array_writable(vm, array);
     if (njs_slow_path(buffer == NULL)) {
         return NJS_ERROR;

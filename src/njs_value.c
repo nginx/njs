@@ -1019,8 +1019,7 @@ njs_value_property(njs_vm_t *vm, njs_value_t *value, uint32_t atom_id,
             tarray = njs_typed_array(value);
 
             if (njs_slow_path(njs_is_detached_buffer(tarray->buffer))) {
-                njs_type_error(vm, "detached buffer");
-                return NJS_ERROR;
+                goto not_found;
             }
 
             if (njs_slow_path(index >= njs_typed_array_length(tarray))) {
@@ -1109,6 +1108,7 @@ slow_path:
         break;
 
     case NJS_DECLINED:
+not_found:
         njs_set_undefined(retval);
 
         return NJS_DECLINED;
