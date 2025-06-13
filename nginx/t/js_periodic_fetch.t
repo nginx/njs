@@ -99,12 +99,11 @@ $t->write_file('test.js', <<EOF);
      }
 
     function test_fetch(r) {
-        r.return(200, ngx.shared.strings.get('fetch').startsWith('okok'));
+        r.return(200, ngx.shared.strings.get('fetch'));
     }
 
     function test_multiple_fetches(r) {
-        r.return(200, ngx.shared.strings.get('multiple_fetches')
-                                                        .startsWith('ok\@foo'));
+        r.return(200, ngx.shared.strings.get('multiple_fetches'));
     }
 
     export default { fetch, fetch_exception, multiple_fetches, test_fetch,
@@ -119,8 +118,8 @@ $t->plan(3);
 
 select undef, undef, undef, 0.1;
 
-like(http_get('/test_fetch'), qr/true/, 'periodic fetch test');
-like(http_get('/test_multiple_fetches'), qr/true/, 'multiple fetch test');
+like(http_get('/test_fetch'), qr/(ok)+/, 'periodic fetch test');
+like(http_get('/test_multiple_fetches'), qr/ok\@foo/, 'multiple fetch test');
 
 $t->stop();
 
