@@ -934,9 +934,8 @@ njs_function_prototype_create(njs_vm_t *vm, njs_object_prop_t *prop,
     uint32_t unused, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval)
 {
-    njs_value_t     *proto, proto_value, *cons;
-    njs_object_t    *prototype;
-    njs_function_t  *function;
+    njs_value_t   *proto, proto_value, *cons;
+    njs_object_t  *prototype;
 
     if (setval == NULL) {
         prototype = njs_object_alloc(vm);
@@ -947,11 +946,6 @@ njs_function_prototype_create(njs_vm_t *vm, njs_object_prop_t *prop,
         njs_set_object(&proto_value, prototype);
 
         setval = &proto_value;
-    }
-
-    function = njs_function_value_copy(vm, value);
-    if (njs_slow_path(function == NULL)) {
-        return NJS_ERROR;
     }
 
     proto = njs_function_property_prototype_set(vm, njs_object_hash(value),

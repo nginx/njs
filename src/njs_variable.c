@@ -36,7 +36,7 @@ njs_variable_add(njs_parser_t *parser, njs_parser_scope_t *scope,
 
 njs_variable_t *
 njs_variable_function_add(njs_parser_t *parser, njs_parser_scope_t *scope,
-    uintptr_t atom_id, njs_variable_type_t type)
+    uintptr_t atom_id)
 {
     njs_bool_t             ctor;
     njs_variable_t         *var;
@@ -44,14 +44,15 @@ njs_variable_function_add(njs_parser_t *parser, njs_parser_scope_t *scope,
     njs_parser_scope_t     *root;
     njs_function_lambda_t  *lambda;
 
-    root = njs_variable_scope_find(parser, scope, atom_id, type);
+    root = njs_variable_scope_find(parser, scope, atom_id,
+                                   NJS_VARIABLE_FUNCTION);
     if (njs_slow_path(root == NULL)) {
         njs_parser_ref_error(parser, "scope not found");
         return NULL;
     }
 
-    var = njs_variable_scope_add(parser, root, scope, atom_id, type,
-                                 NJS_INDEX_ERROR);
+    var = njs_variable_scope_add(parser, root, scope, atom_id,
+                                 NJS_VARIABLE_FUNCTION, NJS_INDEX_ERROR);
     if (njs_slow_path(var == NULL)) {
         return NULL;
     }
@@ -77,7 +78,7 @@ njs_variable_function_add(njs_parser_t *parser, njs_parser_scope_t *scope,
     }
 
     var->index = njs_scope_index(root->type, root->items, NJS_LEVEL_LOCAL,
-                                 type);
+                                 NJS_VARIABLE_FUNCTION);
 
     declr->lambda = lambda;
     declr->async = !ctor;
@@ -86,7 +87,6 @@ njs_variable_function_add(njs_parser_t *parser, njs_parser_scope_t *scope,
     root->items++;
 
     var->type = NJS_VARIABLE_FUNCTION;
-    var->function = 1;
 
     return var;
 }
@@ -174,7 +174,6 @@ njs_variable_scope_find(njs_parser_t *parser, njs_parser_scope_t *scope,
 
         if (var != NULL && var->scope == root) {
             if (var->self) {
-                var->function = 0;
                 return scope;
             }
 
