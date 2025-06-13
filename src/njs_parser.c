@@ -7091,8 +7091,7 @@ njs_parser_function_declaration(njs_parser_t *parser, njs_lexer_token_t *token,
 
     njs_lexer_consume_token(parser->lexer, 1);
 
-    var = njs_variable_function_add(parser, parser->scope, atom_id,
-                                    NJS_VARIABLE_FUNCTION);
+    var = njs_variable_function_add(parser, parser->scope, atom_id);
     if (var == NULL) {
         return NJS_ERROR;
     }
