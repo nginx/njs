@@ -759,7 +759,6 @@ njs_global_this_prop_handler(njs_vm_t *vm, njs_object_prop_t *prop,
 {
     njs_value_t          *value;
     njs_variable_t       *var;
-    njs_function_t       *function;
     njs_rbtree_node_t    *rb_node;
     njs_variable_node_t  *node, var_node;
 
@@ -787,15 +786,6 @@ njs_global_this_prop_handler(njs_vm_t *vm, njs_object_prop_t *prop,
     }
 
     value = njs_scope_valid_value(vm, var->index);
-
-    if (var->type == NJS_VARIABLE_FUNCTION && njs_is_undefined(value)) {
-        njs_value_assign(value, &var->value);
-
-        function = njs_function_value_copy(vm, value);
-        if (njs_slow_path(function == NULL)) {
-            return NJS_ERROR;
-        }
-    }
 
     if (setval != NULL) {
         njs_value_assign(value, setval);

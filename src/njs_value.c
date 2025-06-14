@@ -562,7 +562,6 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *value,
     uint32_t        index;
     njs_int_t       ret;
     njs_object_t    *obj;
-    njs_function_t  *function;
 
     njs_assert(atom_id != NJS_ATOM_STRING_unknown);
 
@@ -585,6 +584,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *value,
 
     case NJS_OBJECT:
     case NJS_ARRAY:
+    case NJS_FUNCTION:
     case NJS_ARRAY_BUFFER:
     case NJS_DATA_VIEW:
     case NJS_TYPED_ARRAY:
@@ -593,15 +593,6 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *value,
     case NJS_PROMISE:
     case NJS_OBJECT_VALUE:
         obj = njs_object(value);
-        break;
-
-    case NJS_FUNCTION:
-        function = njs_function_value_copy(vm, value);
-        if (njs_slow_path(function == NULL)) {
-            return NJS_ERROR;
-        }
-
-        obj = &function->object;
         break;
 
     case NJS_UNDEFINED:

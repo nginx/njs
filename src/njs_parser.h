@@ -84,7 +84,6 @@ struct njs_parser_s {
     uint8_t                         use_lhs;
 
     uint8_t                         module;
-    njs_bool_t                      strict_semicolon;
 
     njs_str_t                       file;
     uint32_t                        line;
@@ -109,8 +108,9 @@ typedef struct {
 
 
 typedef struct {
-    njs_value_t                     *value;
+    njs_function_lambda_t           *lambda;
     njs_index_t                     index;
+    njs_bool_t                      async;
 } njs_declaration_t;
 
 
