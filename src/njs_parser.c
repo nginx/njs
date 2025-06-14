@@ -839,10 +839,9 @@ njs_inline njs_int_t
 njs_parser_expect_semicolon(njs_parser_t *parser, njs_lexer_token_t *token)
 {
     if (token->type != NJS_TOKEN_SEMICOLON) {
-        if (parser->strict_semicolon
-            || (token->type != NJS_TOKEN_END
-                && token->type != NJS_TOKEN_CLOSE_BRACE
-                && parser->lexer->prev_type != NJS_TOKEN_LINE_END))
+        if (token->type != NJS_TOKEN_END
+            && token->type != NJS_TOKEN_CLOSE_BRACE
+            && parser->lexer->prev_type != NJS_TOKEN_LINE_END)
         {
             return NJS_DECLINED;
         }
@@ -5408,10 +5407,6 @@ static njs_int_t
 njs_parser_do_while_semicolon(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
 {
-    if (parser->strict_semicolon) {
-        return njs_parser_failed(parser);
-    }
-
     parser->target->right = parser->node;
     parser->node = parser->target;
 
@@ -6257,10 +6252,9 @@ njs_parser_break_continue(njs_parser_t *parser, njs_lexer_token_t *token,
             break;
         }
 
-        if (parser->strict_semicolon
-            || (token->type != NJS_TOKEN_END
-                && token->type != NJS_TOKEN_CLOSE_BRACE
-                && parser->lexer->prev_type != NJS_TOKEN_LINE_END))
+        if (token->type != NJS_TOKEN_END
+            && token->type != NJS_TOKEN_CLOSE_BRACE
+            && parser->lexer->prev_type != NJS_TOKEN_LINE_END)
         {
             return njs_parser_failed(parser);
         }
@@ -6314,9 +6308,7 @@ njs_parser_return_statement(njs_parser_t *parser, njs_lexer_token_t *token,
         return njs_parser_failed(parser);
 
     default:
-        if (!parser->strict_semicolon
-            && parser->lexer->prev_type == NJS_TOKEN_LINE_END)
-        {
+        if (parser->lexer->prev_type == NJS_TOKEN_LINE_END) {
             break;
         }
 
