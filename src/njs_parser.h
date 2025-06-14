@@ -84,7 +84,6 @@ struct njs_parser_s {
     uint8_t                         use_lhs;
 
     uint8_t                         module;
-    njs_bool_t                      strict_semicolon;
 
     njs_str_t                       file;
     uint32_t                        line;
