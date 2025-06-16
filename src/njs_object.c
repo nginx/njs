@@ -2431,7 +2431,6 @@ njs_property_constructor_set(njs_vm_t *vm, njs_flathsh_t *hash,
         return NULL;
     }
 
-    njs_value_assign(njs_prop_value(prop), constructor);
     prop->enumerable = 0;
 
     lhq.value = prop;
