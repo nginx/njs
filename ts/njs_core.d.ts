@@ -581,6 +581,7 @@ interface NjsProcess {
     readonly env: NjsEnv;
 
     /**
+     * Send signal to a process by its PID.
      * @since 0.8.8
      */
     kill(pid: number, signal?: string | number): true;
