@@ -276,6 +276,7 @@ interface NgxSharedDict<V extends string | number = string | number> {
      *
      * @param key The key of the item to add.
      * @param value The value of the item to add.
+     * @param timeout Overrides the default timeout for this item in milliseconds.
      * @returns `true` if the value has been added successfully, `false`
      *   if the `key` already exists in this dictionary.
      * @throws {SharedMemoryError} if there's not enough free space in this
@@ -283,7 +284,7 @@ interface NgxSharedDict<V extends string | number = string | number> {
      * @throws {TypeError} if the `value` is of a different type than expected
      *   by this dictionary.
      */
-    add(key: string, value: V): boolean;
+    add(key: string, value: V, timeout?: number): boolean;
     /**
      * Removes all items from this dictionary.
      */
@@ -307,13 +308,14 @@ interface NgxSharedDict<V extends string | number = string | number> {
      * @param delta The number to increment/decrement the value by.
      * @param init The number to initialize the item with if it didn't exist
      *   (default is `0`).
+     * @param timeout Overrides the default timeout for this item in milliseconds.
      * @returns The new value.
      * @throws {SharedMemoryError} if there's not enough free space in this
      *   dictionary.
      * @throws {TypeError} if this dictionary does not expect numbers.
      */
     incr: V extends number
-      ? (key: string, delta: V, init?: number) => number
+      ? (key: string, delta: V, init?: number, timeout?: number) => number
       : never;
     /**
      * @param maxCount The maximum number of pairs to retrieve (default is 1024).
@@ -371,13 +373,14 @@ interface NgxSharedDict<V extends string | number = string | number> {
      *
      * @param key The key of the item to set.
      * @param value The value of the item to set.
+     * @param timeout Overrides the default timeout for this item in milliseconds.
      * @returns This dictionary (for method chaining).
      * @throws {SharedMemoryError} if there's not enough free space in this
      *   dictionary.
      * @throws {TypeError} if the `value` is of a different type than expected
      *   by this dictionary.
      */
-    set(key: string, value: V): this;
+    set(key: string, value: V, timeout?: number): this;
     /**
      * @returns The number of items in this shared dictionary.
      */

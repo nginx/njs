@@ -468,7 +468,7 @@ interface NginxHTTPRequest {
     /**
      * nginx variables as strings.
      *
-     * **Warning:** Bytes invalid in UTF-8 encoding may be converted into the replacement character.
+     * After 0.8.5 bytes invalid in UTF-8 encoding are converted into the replacement characters.
      *
      * @see rawVariables
      */
