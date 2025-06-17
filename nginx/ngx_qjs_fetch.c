@@ -241,6 +241,7 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
     JSValue              init, value, promise;
     ngx_int_t            rc;
     ngx_url_t            u;
+    ngx_str_t            method;
     ngx_uint_t           i;
     ngx_pool_t          *pool;
     ngx_js_ctx_t        *ctx;
@@ -410,6 +411,13 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
             continue;
         }
 
+        if (h[i].key.len == 14
+            && ngx_strncasecmp(h[i].key.data, (u_char *) "Content-Length", 14)
+            == 0)
+        {
+            continue;
+        }
+
         njs_chb_append(&http->chain, h[i].key.data, h[i].key.len);
         njs_chb_append_literal(&http->chain, ": ");
         njs_chb_append(&http->chain, h[i].value.data, h[i].value.len);
@@ -429,7 +437,18 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
         njs_chb_append(&http->chain, request.body.data, request.body.len);
 
     } else {
-        njs_chb_append_literal(&http->chain, CRLF);
+        method = request.method;
+
+        if ((method.len == 4
+            && (ngx_strncasecmp(method.data, (u_char *) "POST", 4) == 0))
+            || (method.len == 3
+                && ngx_strncasecmp(method.data, (u_char *) "PUT", 3) == 0))
+        {
+            njs_chb_append_literal(&http->chain, "Content-Length: 0" CRLF CRLF);
+
+        } else {
+            njs_chb_append_literal(&http->chain, CRLF);
+        }
     }
 
     if (u.addrs == NULL) {
