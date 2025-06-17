@@ -64,6 +64,10 @@ http {
             js_content test.body;
         }
 
+        location /body_content_length {
+            js_content test.body_content_length;
+        }
+
         location /body_special {
             js_content test.body_special;
         }
@@ -154,6 +158,13 @@ $t->write_file('test.js', <<EOF);
         .then(reply => reply[getter]())
         .then(data => r.return(200, query(data)))
         .catch(e => r.return(501, e.message))
+    }
+
+    async function body_content_length(r) {
+        let resp = await ngx.fetch(`http://127.0.0.1:$p0/loc`,
+                                   {headers: {'Content-Length': '100'},
+                                    body: "CONTENT-BODY"});
+        r.return(resp.status);
     }
 
     function property(r) {
@@ -400,12 +411,12 @@ $t->write_file('test.js', <<EOF);
 
      export default {njs: test_njs, body, broken, broken_response, body_special,
                      chain, chunked_ok, chunked_fail, header, header_iter,
-                     host_header, multi, loc, property};
+                     host_header, multi, loc, property, body_content_length };
 EOF
 
 $t->try_run('no njs.fetch');
 
-$t->plan(37);
+$t->plan(38);
 
 $t->run_daemon(\&http_daemon, port(8082));
 $t->waitforsocket('127.0.0.1:' . port(8082));
@@ -506,6 +517,14 @@ local $TODO = 'not yet' unless has_version('0.8.2');
 
 like(http_get('/body_special?loc=head/large&method=HEAD'),
 	qr/200 OK.*<empty>$/s, 'fetch head method large content-length');
+}
+
+TODO: {
+local $TODO = 'not yet' unless has_version('0.9.1');
+
+like(http_get('/body_content_length'), qr/200 OK/s,
+	'fetch body content-length');
+
 }
 
 ###############################################################################
