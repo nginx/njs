@@ -41,12 +41,12 @@ interface  RsaHashedKeyGenParams {
 }
 
 interface  EcKeyImportParams {
-    name: "ECDSA";
+    name: "ECDSA" | "ECDH";
     namedCurve: "P-256" | "P-384" | "P-521";
 }
 
 interface EcKeyGenParams {
-    name: "ECDSA";
+    name: "ECDSA" | "ECDH";
     namedCurve: "P-256" | "P-384" | "P-521";
 }
 
@@ -68,7 +68,8 @@ type ImportAlgorithm =
     | AesImportParams
     | AesVariants
     | "PBKDF2"
-    | "HKDF";
+    | "HKDF"
+    | "ECDH";
 
 type GenerateAlgorithm =
     | RsaHashedKeyGenParams
@@ -99,9 +100,15 @@ interface   Pbkdf2Params {
     interations: number;
 }
 
+interface   EcdhParams {
+    name: "ECDH";
+    public: CryptoKey;
+}
+
 type DeriveAlgorithm =
     | HkdfParams
-    | Pbkdf2Params;
+    | Pbkdf2Params
+    | EcdhParams;
 
 interface   HmacKeyGenParams {
     name: "HMAC";
