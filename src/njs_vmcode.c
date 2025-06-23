@@ -667,14 +667,52 @@ NEXT_LBL;
             src = value1;
         }
 
-        ret = njs_primitive_value_to_string(vm, &dst, src);
-        if (njs_slow_path(ret != NJS_OK)) {
-            goto error;
-        }
+        if (njs_is_number(src)) {
+            size_t        size;
+            njs_string_t  sp;
+            char          buf[64];
 
-        ret = njs_string_concat(vm, s1, s2, &name);
-        if (njs_slow_path(ret == NJS_ERROR)) {
-            goto error;
+            /* Alloc free path for "str" + int or int + "str" concatenation. */
+
+            num = njs_number(src);
+
+            if (isnan(num)) {
+                njs_atom_to_value(vm, &dst, NJS_ATOM_STRING_NaN);
+
+            } else if (isinf(num)) {
+
+                if (num < 0) {
+                    njs_atom_to_value(vm, &dst, NJS_ATOM_STRING__Infinity);
+
+                } else {
+                    njs_atom_to_value(vm, &dst, NJS_ATOM_STRING_Infinity);
+                }
+
+            } else {
+                size = njs_dtoa(num, buf);
+
+                sp.start = (u_char *) buf;
+                sp.size = size;
+                sp.length = size;
+
+                dst.string.data = &sp;
+            }
+
+            ret = njs_string_concat(vm, s1, s2, &name);
+            if (njs_slow_path(ret == NJS_ERROR)) {
+                goto error;
+            }
+
+        } else {
+            ret = njs_primitive_value_to_string(vm, &dst, src);
+            if (njs_slow_path(ret != NJS_OK)) {
+                goto error;
+            }
+
+            ret = njs_string_concat(vm, s1, s2, &name);
+            if (njs_slow_path(ret == NJS_ERROR)) {
+                goto error;
+            }
         }
 
         njs_value_assign(retval, &name);
