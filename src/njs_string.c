@@ -601,10 +601,11 @@ njs_int_t
 njs_string_prototype_concat(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
 {
+    double             num;
     u_char             *p, *start;
     uint64_t           size, length, mask;
     njs_int_t          ret;
-    njs_uint_t         i;
+    njs_uint_t         i, i_buf, n_bufs;
     njs_string_prop_t  string;
 
     if (njs_is_null_or_undefined(&args[0])) {
@@ -612,8 +613,44 @@ njs_string_prototype_concat(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
+    n_bufs = njs_min(nargs,16);
+
+    u_char        buf[n_bufs][32];
+    njs_string_t  sp[n_bufs];
+
+    i_buf = 0;
+
     for (i = 0; i < nargs; i++) {
-        if (!njs_is_string(&args[i])) {
+        if (i_buf < n_bufs && njs_is_number(&args[i])) {
+            num = njs_number(&args[i]);
+
+            if (isnan(num)) {
+                njs_atom_to_value(vm, &args[i], NJS_ATOM_STRING_NaN);
+
+            } else if (isinf(num)) {
+
+                if (num < 0) {
+                    njs_atom_to_value(vm, &args[i], NJS_ATOM_STRING__Infinity);
+
+                } else {
+                    njs_atom_to_value(vm, &args[i], NJS_ATOM_STRING_Infinity);
+                }
+
+            } else {
+                size = njs_dtoa(num, (char *) buf[i]);
+
+                sp[i_buf].start = (u_char *)buf[i];
+                sp[i_buf].length = sp[i_buf].size = size;
+
+                args[i].type = NJS_STRING;
+                args[i].truth = size != 0;
+                args[i].atom_id = NJS_ATOM_STRING_unknown;
+                args[i].string.data = &sp[i_buf];
+
+                i_buf++;
+            }
+
+        } if (!njs_is_string(&args[i])) {
             ret = njs_value_to_string(vm, &args[i], &args[i]);
             if (ret != NJS_OK) {
                 return ret;
