@@ -11036,6 +11036,15 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("''.concat.apply('a', [ 'b', 'c' ], 'd')"),
       njs_str("abc") },
 
+    { njs_str("''.concat.apply('', Array(128).fill(1.23456789123e14)) == '123456789123000'.repeat(128)"),
+      njs_str("true") },
+
+    { njs_str("''.concat.apply('', Array(128).fill(0).map((v,i)=>Math.log2(i))).startsWith('-Infinity')"),
+      njs_str("true") },
+
+    { njs_str("''.concat.apply('', Array(256).fill(0).map((v,i)=> !(i % 2) ? Math.exp(i) : 'α'.repeat(Math.log2(i)))).endsWith('110ααααααα')"),
+      njs_str("true") },
+
     { njs_str("[].join.call([1,2,3])"),
       njs_str("1,2,3") },
 

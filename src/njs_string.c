@@ -601,56 +601,114 @@ njs_int_t
 njs_string_prototype_concat(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
 {
-    u_char             *p, *start;
-    uint64_t           size, length, mask;
+    char               *np, *np_end;
+    double             num;
+    u_char             *p;
+    uint64_t           sz, size, length;
     njs_int_t          ret;
     njs_uint_t         i;
     njs_string_prop_t  string;
+    char               buf[512], tmp[NJS_DTOA_MAX_LEN];
 
     if (njs_is_null_or_undefined(&args[0])) {
         njs_type_error(vm, "\"this\" argument is null or undefined");
         return NJS_ERROR;
     }
 
+    size = 0;
+    length = 0;
+
+    np = buf;
+    np_end = buf + sizeof(buf);
+
     for (i = 0; i < nargs; i++) {
-        if (!njs_is_string(&args[i])) {
-            ret = njs_value_to_string(vm, &args[i], &args[i]);
-            if (ret != NJS_OK) {
-                return ret;
+        if (njs_is_number(&args[i])) {
+            num = njs_number(&args[i]);
+
+            if (isnan(num)) {
+                size += njs_length("NaN");
+                length += njs_length("NaN");
+
+            } else if (isinf(num)) {
+                if (num < 0) {
+                    size += njs_length("-Infinity");
+                    length += njs_length("-Infinity");
+
+                } else {
+                    size += njs_length("Infinity");
+                    length += njs_length("Infinity");
+                }
+
+            } else {
+                if (njs_fast_path(np < np_end - NJS_DTOA_MAX_LEN)) {
+                    sz = njs_dtoa(num, np + sizeof(uint8_t));
+
+                    *np = (uint8_t) sz;
+                    np += sizeof(uint8_t) + sz;
+
+                } else {
+                    sz = njs_dtoa(num, tmp);
+                }
+
+                size += sz;
+                length += sz;
             }
+
+        } else {
+            if (!njs_is_string(&args[i])) {
+                ret = njs_value_to_string(vm, &args[i], &args[i]);
+                if (ret != NJS_OK) {
+                    return ret;
+                }
+
+            }
+
+            njs_string_prop(vm, &string, &args[i]);
+
+            size += string.size;
+            length += string.length;
         }
     }
 
-    if (nargs == 1) {
-        njs_string_copy(retval, &args[0]);
-        return NJS_OK;
-    }
-
-    size = 0;
-    length = 0;
-    mask = -1;
-
-    for (i = 0; i < nargs; i++) {
-        (void) njs_string_prop(vm, &string, &args[i]);
-
-        size += string.size;
-        length += string.length;
-    }
-
-    length &= mask;
-
-    start = njs_string_alloc(vm, retval, size, length);
-    if (njs_slow_path(start == NULL)) {
+    p = njs_string_alloc(vm, retval, size, length);
+    if (njs_slow_path(p == NULL)) {
         return NJS_ERROR;
     }
 
-    p = start;
+    np = buf;
 
     for (i = 0; i < nargs; i++) {
-        (void) njs_string_prop(vm, &string, &args[i]);
+        if (njs_is_number(&args[i])) {
+            num = njs_number(&args[i]);
 
-        p = memcpy(p, string.start, string.size);
-        p += string.size;
+            if (isnan(num)) {
+                p = njs_cpymem(p, "NaN", njs_length("NaN"));
+
+            } else if (isinf(num)) {
+                if (num < 0) {
+                    p = njs_cpymem(p, "-Infinity", njs_length("-Infinity"));
+
+                } else {
+                    p = njs_cpymem(p, "Infinity", njs_length("Infinity"));
+                }
+
+            } else {
+                if (njs_fast_path(np < np_end - NJS_DTOA_MAX_LEN)) {
+                    length = *np++;
+                    p = njs_cpymem(p, np, length);
+                    np += length;
+
+                } else {
+                    sz = njs_dtoa(num, (char *) p);
+                    p += sz;
+                }
+            }
+
+        } else {
+            njs_string_prop(vm, &string, &args[i]);
+
+            p = njs_cpymem(p, string.start, string.size);
+        }
     }
 
     return NJS_OK;
