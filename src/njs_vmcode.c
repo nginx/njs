@@ -2048,6 +2048,8 @@ njs_vmcode_template_literal(njs_vm_t *vm, njs_value_t *retval)
         return ret;
     }
 
+    njs_array_destroy(vm, array);
+
     return sizeof(njs_vmcode_template_literal_t);
 }
 
