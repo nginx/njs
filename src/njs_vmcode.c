@@ -667,14 +667,52 @@ NEXT_LBL;
             src = value1;
         }
 
-        ret = njs_primitive_value_to_string(vm, &dst, src);
-        if (njs_slow_path(ret != NJS_OK)) {
-            goto error;
-        }
+        if (src->type == NJS_NUMBER) {
 
-        ret = njs_string_concat(vm, s1, s2, &name);
-        if (njs_slow_path(ret == NJS_ERROR)) {
-            goto error;
+            double  num;
+            size_t  size;
+            u_char  buf[32];
+
+            njs_string_t sp;
+
+            num = njs_number(src);
+
+            if (isnan(num)) {
+                njs_atom_to_value(vm, &dst, NJS_ATOM_STRING_NaN);
+
+            } else if (isinf(num)) {
+
+                if (num < 0) {
+                    njs_atom_to_value(vm, &dst, NJS_ATOM_STRING__Infinity);
+
+                } else {
+                    njs_atom_to_value(vm, &dst, NJS_ATOM_STRING_Infinity);
+                }
+
+            } else {
+                size = njs_dtoa(num, (char *) buf);
+
+                sp.start = (u_char *)buf;
+                sp.length = sp.size = size;
+
+                dst.string.data = &sp;
+            }
+
+            ret = njs_string_concat(vm, s1, s2, &name);
+            if (njs_slow_path(ret == NJS_ERROR)) {
+                goto error;
+            }
+
+        } else {
+            ret = njs_primitive_value_to_string(vm, &dst, src);
+            if (njs_slow_path(ret != NJS_OK)) {
+                goto error;
+            }
+
+            ret = njs_string_concat(vm, s1, s2, &name);
+            if (njs_slow_path(ret == NJS_ERROR)) {
+                goto error;
+            }
         }
 
         njs_value_assign(retval, &name);
@@ -2009,6 +2047,8 @@ njs_vmcode_template_literal(njs_vm_t *vm, njs_value_t *retval)
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
+
+    njs_array_destroy(vm, array);
 
     return sizeof(njs_vmcode_template_literal_t);
 }
