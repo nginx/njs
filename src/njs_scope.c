@@ -25,22 +25,6 @@ njs_scope_temp_index(njs_parser_scope_t *scope)
 }
 
 
-njs_value_t *
-njs_scope_create_index_value(njs_vm_t *vm, njs_index_t index)
-{
-    njs_value_t  *value;
-
-    value = njs_mp_alloc(vm->mem_pool, sizeof(njs_value_t));
-    if (njs_slow_path(value == NULL)) {
-        return NULL;
-    }
-
-    njs_scope_value_set(vm, index, value);
-
-    return value;
-}
-
-
 njs_value_t **
 njs_scope_make(njs_vm_t *vm, uint32_t count)
 {
