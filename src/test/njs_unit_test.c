@@ -11969,6 +11969,48 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("/[]a/.test('a')"),
       njs_str("false") },
 
+    { njs_str("/[#[]/.test('[')"),
+      njs_str("true") },
+
+    { njs_str("/[\\s[]/.test('[')"),
+      njs_str("true") },
+
+    { njs_str("/[#[^]/.test('[')"),
+      njs_str("true") },
+
+    { njs_str("/[#\\[]/.test('[')"),
+      njs_str("true") },
+
+    { njs_str("/[\\[^]/.test('[')"),
+      njs_str("true") },
+
+    { njs_str("/[^]abc]/.test('#abc]')"),
+      njs_str("true") },
+
+    { njs_str("/[[^]abc]/.test('[abc]')"),
+      njs_str("true") },
+
+    { njs_str("/[[^]abc]/.test('^abc]')"),
+      njs_str("true") },
+
+    { njs_str("/[]/.test('[]')"),
+      njs_str("false") },
+
+    { njs_str("/[[]/.test('[')"),
+      njs_str("true") },
+
+    { njs_str("/\\[]/.test('[]')"),
+      njs_str("true") },
+
+    { njs_str("/[]abc]/.test('abc]')"),
+      njs_str("false") },
+
+    { njs_str("/abc]/.test('abc]')"),
+      njs_str("true") },
+
+    { njs_str("/\\\\\\[]/.test('\\\\[]')"),
+      njs_str("true") },
+
 #ifdef NJS_HAVE_PCRE2
     { njs_str("/[]*a/.test('a')"),
       njs_str("true") },

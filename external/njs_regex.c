@@ -114,6 +114,11 @@ njs_regex_escape(njs_mp_t *mp, njs_str_t *text)
 
     for (p = start; p < end; p++) {
         switch (*p) {
+        case '\\':
+            p += 1;
+
+            break;
+
         case '[':
             if (p + 1 < end && p[1] == ']') {
                 p += 1;
@@ -122,6 +127,11 @@ njs_regex_escape(njs_mp_t *mp, njs_str_t *text)
             } else if (p + 2 < end && p[1] == '^' && p[2] == ']') {
                 p += 2;
                 anychars += 1;
+
+            } else {
+                while (p < end && *p != ']') {
+                    p += 1;
+                }
             }
 
             break;
@@ -146,6 +156,15 @@ njs_regex_escape(njs_mp_t *mp, njs_str_t *text)
     for (p = start; p < end; p++) {
 
         switch (*p) {
+        case '\\':
+            *dst++ = *p;
+            if (p + 1 < end) {
+                p += 1;
+                *dst++ = *p;
+            }
+
+            continue;
+
         case '[':
             if (p + 1 < end && p[1] == ']') {
                 p += 1;
@@ -155,6 +174,14 @@ njs_regex_escape(njs_mp_t *mp, njs_str_t *text)
             } else if (p + 2 < end && p[1] == '^' && p[2] == ']') {
                 p += 2;
                 dst = njs_cpymem(dst, "[\\s\\S]", 6);
+                continue;
+
+            } else {
+                *dst++ = *p;
+                while (p < end && *p != ']') {
+                    *dst++ = *p++;
+                }
+
                 continue;
             }
         }
