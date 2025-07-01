@@ -17,7 +17,7 @@ NGINX JavaScript, also known as [NJS](https://nginx.org/en/docs/njs/), is a dyna
   - [Enabling the NGINX JavaScript modules](#enabling-the-nginx-javascipt-modules)
   - [Basics of writing .js script files](#basics-of-writing-js-script-files)
   - [Reference of custom objects, methods, and properties](#reference-of-custom-objects-methods-and-properties)
-  - [Example: Hello World](#hello-world)
+  - [Example: Hello World](#example-hello-world)
   - [The NJS command line interface (CLI)](#the-njs-command-line-interface-cli)
 - [Building from source](#building-from-source)
   - [Installing dependencies](#installing-dependencies)
