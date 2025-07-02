@@ -978,6 +978,11 @@ ngx_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
                           "js load module exception: %V", &exception);
             goto destroy;
         }
+
+        if (i != length - 1) {
+            /* JS_EvalFunction() does JS_FreeValue(cx, rv) for the last rv. */
+            JS_FreeValue(cx, rv);
+        }
     }
 
     if (JS_ResolveModule(cx, rv) < 0) {
