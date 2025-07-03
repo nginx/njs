@@ -177,9 +177,14 @@ njs_regex_escape(njs_mp_t *mp, njs_str_t *text)
                 continue;
 
             } else {
-                *dst++ = *p;
+                *dst++ = *p++; /* Copy '['. */
+
                 while (p < end && *p != ']') {
                     *dst++ = *p++;
+                }
+
+                if (p < end) {
+                    *dst++ = *p; /* Copy ']'. */
                 }
 
                 continue;
@@ -188,6 +193,8 @@ njs_regex_escape(njs_mp_t *mp, njs_str_t *text)
 
         *dst++ = *p;
     }
+
+    njs_assert(dst == text->start + text->length);
 
     return NJS_OK;
 

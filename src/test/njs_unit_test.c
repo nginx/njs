@@ -9556,6 +9556,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("/["),
       njs_str("SyntaxError: Unterminated RegExp \"/[\" in 1") },
 
+    { njs_str("/[][a"),
+      njs_str("SyntaxError: Unterminated RegExp \"/[][a\" in 1") },
+
     { njs_str("/[\\"),
       njs_str("SyntaxError: Unterminated RegExp \"/[\\\" in 1") },
 
@@ -9591,10 +9594,23 @@ static njs_unit_test_t  njs_test[] =
       njs_str("/\\]cd/") },
 #endif
 
+    { njs_str("RegExp('[][a')"),
+      njs_str("SyntaxError: "
+              njs_pcre_var("pcre_compile2(\"(?!)[a\") failed: missing terminating ] for character class at \"\"",
+                           "pcre_compile(\"[][a\") failed: missing terminating ] for character class")) },
+
+    { njs_str("RegExp('[][a][a')"),
+      njs_str("SyntaxError: "
+              njs_pcre_var("pcre_compile2(\"(?!)[a][a\") failed: missing terminating ] for character class at \"\"",
+                           "pcre_compile(\"[][a][a\") failed: missing terminating ] for character class")) },
+
     { njs_str("RegExp('[\\\\')"),
       njs_str("SyntaxError: "
               njs_pcre_var("pcre_compile2(\"[\\\") failed: \\ at end of pattern at \"\"",
                            "pcre_compile(\"[\\\") failed: \\ at end of pattern")) },
+
+    { njs_str("RegExp('[][a]')"),
+      njs_str(njs_pcre_var("/(?!)[a]/", "/[][a]/")) },
 
     { njs_str("RegExp('\\\\0').source[1]"),
       njs_str("0") },
