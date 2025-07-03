@@ -11003,6 +11003,30 @@ static njs_unit_test_t  njs_test[] =
                  "f.apply(123, {})"),
       njs_str("123") },
 
+    { njs_str("'Hello'.concat(' ', 'World')"),
+      njs_str("Hello World") },
+
+    { njs_str("'Value: '.concat(42, ' and ', 3.14)"),
+      njs_str("Value: 42 and 3.14") },
+
+    { njs_str("'Flags: '.concat(true, ' and ', false)"),
+      njs_str("Flags: true and false") },
+
+    { njs_str("'Values: '.concat(null, ' and ', undefined)"),
+      njs_str("Values: null and undefined") },
+
+    { njs_str("'Mixed: '.concat(123, ' ', true, ' ', null, ' ', undefined)"),
+      njs_str("Mixed: 123 true null undefined") },
+
+    { njs_str("'Special: '.concat(NaN, ' ', Infinity, ' ', -Infinity)"),
+      njs_str("Special: NaN Infinity -Infinity") },
+
+    { njs_str("'Numbers: '.concat(1234567890, ' ', 0.123456789, ' ', 1.23e-10)"),
+      njs_str("Numbers: 1234567890 0.123456789 1.23e-10") },
+
+    { njs_str("'Zero: '.concat(0, ' ', -0)"),
+      njs_str("Zero: 0 0") },
+
     { njs_str("(function(index, ...rest){ return rest[index];})"
               ".apply({}, [1022].concat(Array(1023).fill(1).map((v,i)=>i.toString(16))))"),
       njs_str("3fe") },
