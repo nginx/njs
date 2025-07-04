@@ -13,7 +13,7 @@ njs_module_hash_test(njs_lvlhsh_query_t *lhq, void *data)
 {
     njs_mod_t  *module;
 
-    module = data;
+    module = *(njs_mod_t **)data;
 
     if (njs_strstr_eq(&lhq->key, &module->name)) {
         return NJS_OK;
@@ -39,18 +39,20 @@ njs_module_find(njs_vm_t *vm, njs_str_t *name, njs_bool_t shared)
     njs_int_t           ret;
     njs_mod_t           *shrd, *module;
     njs_object_t        *object;
+    njs_object_prop_t   *prop;
     njs_lvlhsh_query_t  lhq;
+
 
     lhq.key = *name;
     lhq.key_hash = njs_djb_hash(name->start, name->length);
     lhq.proto = &njs_modules_hash_proto;
 
     if (njs_lvlhsh_find(&vm->modules_hash, &lhq) == NJS_OK) {
-        return lhq.value;
+        return ((njs_object_prop_t *)lhq.value)->u.mod;
     }
 
     if (njs_lvlhsh_find(&vm->shared->modules_hash, &lhq) == NJS_OK) {
-        shrd = lhq.value;
+        shrd = ((njs_object_prop_t *)lhq.value)->u.mod;
 
         if (shared) {
             return shrd;
@@ -70,13 +72,19 @@ njs_module_find(njs_vm_t *vm, njs_str_t *name, njs_bool_t shared)
         }
 
         lhq.replace = 0;
-        lhq.value = module;
         lhq.pool = vm->mem_pool;
 
         ret = njs_lvlhsh_insert(&vm->modules_hash, &lhq);
-        if (njs_fast_path(ret == NJS_OK)) {
-            return module;
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NULL;
         }
+
+        prop = (njs_object_prop_t *)(lhq.value);
+
+        prop->u.mod = module;
+
+        return module;
+
     }
 
     return NULL;
@@ -88,6 +96,7 @@ njs_module_add(njs_vm_t *vm, njs_str_t *name, njs_value_t *value)
 {
     njs_int_t           ret;
     njs_mod_t           *module;
+    njs_object_prop_t   *prop;
     njs_lvlhsh_query_t  lhq;
 
     module = njs_mp_zalloc(vm->mem_pool, sizeof(njs_mod_t));
@@ -105,7 +114,6 @@ njs_module_add(njs_vm_t *vm, njs_str_t *name, njs_value_t *value)
     lhq.replace = 0;
     lhq.key = *name;
     lhq.key_hash = njs_djb_hash(name->start, name->length);
-    lhq.value = module;
     lhq.pool = vm->mem_pool;
     lhq.proto = &njs_modules_hash_proto;
 
@@ -114,6 +122,10 @@ njs_module_add(njs_vm_t *vm, njs_str_t *name, njs_value_t *value)
         njs_internal_error(vm, "lvlhsh insert failed");
         return NULL;
     }
+
+    prop = (njs_object_prop_t *)(lhq.value);
+
+    prop->u.mod = module;
 
     if (value != NULL) {
         njs_value_assign(&module->value, value);

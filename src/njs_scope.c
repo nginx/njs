@@ -108,7 +108,7 @@ njs_scope_values_hash_test(njs_lvlhsh_query_t *lhq, void *data)
     njs_str_t    string;
     njs_value_t  *value;
 
-    value = data;
+    value = *(njs_value_t **)data;
 
     if (njs_is_string(value)) {
         /* parser strings are always initialized. */
@@ -156,6 +156,7 @@ njs_scope_value_index(njs_vm_t *vm, const njs_value_t *src, njs_uint_t runtime,
     njs_value_t         *value;
     njs_string_t        *string;
     njs_lvlhsh_t        *values_hash;
+    njs_object_prop_t   *pr;
     njs_lvlhsh_query_t  lhq;
 
     is_string = 0;
@@ -181,12 +182,12 @@ njs_scope_value_index(njs_vm_t *vm, const njs_value_t *src, njs_uint_t runtime,
     lhq.proto = &njs_values_hash_proto;
 
     if (njs_lvlhsh_find(&vm->shared->values_hash, &lhq) == NJS_OK) {
-        value = lhq.value;
+        value = ((njs_object_prop_t *)lhq.value)->u.val;
 
         *index = (njs_index_t *) ((u_char *) value + sizeof(njs_value_t));
 
     } else if (runtime && njs_lvlhsh_find(&vm->values_hash, &lhq) == NJS_OK) {
-        value = lhq.value;
+        value = ((njs_object_prop_t *)lhq.value)->u.val;
 
         *index = (njs_index_t *) ((u_char *) value + sizeof(njs_value_t));
 
@@ -228,7 +229,6 @@ njs_scope_value_index(njs_vm_t *vm, const njs_value_t *src, njs_uint_t runtime,
         **index = NJS_INDEX_ERROR;
 
         lhq.replace = 0;
-        lhq.value = value;
         lhq.pool = vm->mem_pool;
 
         values_hash = runtime ? &vm->values_hash : &vm->shared->values_hash;
@@ -237,6 +237,10 @@ njs_scope_value_index(njs_vm_t *vm, const njs_value_t *src, njs_uint_t runtime,
         if (njs_slow_path(ret != NJS_OK)) {
             return NULL;
         }
+
+        pr = (njs_object_prop_t *)lhq.value;
+        pr->u.val = value;
+
     }
 
     if (start != (u_char *) src) {

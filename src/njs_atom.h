@@ -23,6 +23,8 @@ uint32_t njs_atom_hash_init(njs_vm_t *vm);
 njs_int_t njs_atom_symbol_add(njs_vm_t *vm, njs_value_t *value);
 njs_value_t *njs_atom_find_or_add(njs_vm_t *vm, u_char *key, size_t size,
     size_t length, uint32_t hash);
+njs_value_t *njs_atom_find_or_add_val(njs_vm_t *vm, njs_value_t *value,
+    uint32_t hash);
 
 
 njs_inline njs_int_t

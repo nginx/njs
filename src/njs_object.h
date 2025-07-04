@@ -103,6 +103,8 @@ njs_int_t njs_prop_private_copy(njs_vm_t *vm, njs_property_query_t *pq,
     njs_object_t *proto);
 njs_object_prop_t *njs_object_prop_alloc(njs_vm_t *vm,
     const njs_value_t *value, uint8_t attributes);
+njs_object_prop_t njs_object_prop(
+    const njs_value_t *value, uint8_t attributes);
 njs_int_t njs_object_property(njs_vm_t *vm, njs_object_t *object,
     njs_flathsh_query_t *lhq, njs_value_t *retval);
 njs_object_prop_t *njs_object_property_add(njs_vm_t *vm, njs_value_t *object,
@@ -122,8 +124,7 @@ njs_int_t njs_object_prop_init(njs_vm_t *vm, const njs_object_init_t* init,
 njs_inline njs_bool_t
 njs_is_data_descriptor(njs_object_prop_t *prop)
 {
-    return prop->writable != NJS_ATTRIBUTE_UNSET
-           || (prop->type != NJS_ACCESSOR && njs_is_valid(njs_prop_value(prop)))
+    return (prop->type != NJS_ACCESSOR && njs_is_valid(njs_prop_value(prop)))
            || prop->type == NJS_PROPERTY_HANDLER;
 
 }
@@ -133,13 +134,6 @@ njs_inline njs_bool_t
 njs_is_accessor_descriptor(njs_object_prop_t *prop)
 {
     return prop->type == NJS_ACCESSOR;
-}
-
-
-njs_inline njs_bool_t
-njs_is_generic_descriptor(njs_object_prop_t *prop)
-{
-    return !njs_is_data_descriptor(prop) && !njs_is_accessor_descriptor(prop);
 }
 
 

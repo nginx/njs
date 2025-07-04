@@ -9,8 +9,8 @@
 
 #define NJS_DECLARE_PROP_VALUE(_name, _v, _fl)                                \
     {                                                                         \
-        .atom_id = NJS_ATOM_ ## _name,                                        \
         .desc = {                                                             \
+            .atom_id = NJS_ATOM_ ## _name,                                    \
             .type = NJS_PROPERTY,                                             \
             .u.value = _v,                                                    \
             .enumerable = !!(_fl & NJS_OBJECT_PROP_ENUMERABLE),               \
@@ -28,8 +28,8 @@
 
 #define NJS_DECLARE_PROP_HANDLER(_name, _native, _m16, _fl)                   \
     {                                                                         \
-        .atom_id = NJS_ATOM_ ## _name,                                        \
         .desc = {                                                             \
+            .atom_id = NJS_ATOM_ ## _name,                                    \
             .type = NJS_PROPERTY_HANDLER,                                     \
             .u.value = njs_prop_handler2(_native, _m16),                      \
             .enumerable = !!(_fl & NJS_OBJECT_PROP_ENUMERABLE),               \
@@ -41,11 +41,11 @@
 
 #define NJS_DECLARE_PROP_GETTER(_name, _native, _magic)                       \
     {                                                                         \
-        .atom_id = NJS_ATOM_ ## _name,                                        \
         .desc = {                                                             \
+            .atom_id = NJS_ATOM_ ## _name,                                    \
             .type = NJS_ACCESSOR,                                             \
             .u.accessor = njs_getter(_native, _magic),                        \
-            .writable = NJS_ATTRIBUTE_UNSET,                                  \
+            .writable = NJS_ATTRIBUTE_FALSE,                                  \
             .configurable = 1,                                                \
         },                                                                    \
     }

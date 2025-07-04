@@ -2123,12 +2123,6 @@ njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
             }
         }
 
-        prop = njs_object_prop_alloc(vm, init, 1);
-        if (njs_slow_path(prop == NULL)) {
-            return NJS_ERROR;
-        }
-
-        lhq.value = prop;
         lhq.key_hash = name.atom_id;
         lhq.replace = 1;
         lhq.pool = vm->mem_pool;
@@ -2139,6 +2133,13 @@ njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
             njs_internal_error(vm, "lvlhsh insert/replace failed");
             return NJS_ERROR;
         }
+
+        prop = (njs_object_prop_t *)(lhq.value);
+        prop->type = NJS_PROPERTY;
+        prop->enumerable = 1;
+        prop->configurable = 1;
+        prop->writable = 1;
+        prop->u.value = *init;
 
         break;
 

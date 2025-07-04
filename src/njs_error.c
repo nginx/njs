@@ -212,12 +212,7 @@ njs_error_alloc(njs_vm_t *vm, njs_object_t *proto, const njs_value_t *name,
     lhq.proto = &njs_object_hash_proto;
 
     if (name != NULL) {
-        prop = njs_object_prop_alloc(vm, name, 1);
-        if (njs_slow_path(prop == NULL)) {
-            goto memory_error;
-        }
 
-        lhq.value = prop;
         lhq.key_hash = NJS_ATOM_STRING_name;
 
         ret = njs_flathsh_unique_insert(&error->hash, &lhq);
@@ -225,17 +220,19 @@ njs_error_alloc(njs_vm_t *vm, njs_object_t *proto, const njs_value_t *name,
             njs_internal_error(vm, "lvlhsh insert failed");
             return NULL;
         }
+
+        prop = (njs_object_prop_t *)(lhq.value);
+
+        prop->type = NJS_PROPERTY;
+        prop->enumerable = 1;
+        prop->configurable = 1;
+        prop->writable = 1;
+
+        prop->u.value = *name;
     }
 
     if (message!= NULL) {
-        prop = njs_object_prop_alloc(vm, message, 1);
-        if (njs_slow_path(prop == NULL)) {
-            goto memory_error;
-        }
 
-        prop->enumerable = 0;
-
-        lhq.value = prop;
         lhq.key_hash = NJS_ATOM_STRING_message;
 
         ret = njs_flathsh_unique_insert(&error->hash, &lhq);
@@ -243,17 +240,20 @@ njs_error_alloc(njs_vm_t *vm, njs_object_t *proto, const njs_value_t *name,
             njs_internal_error(vm, "lvlhsh insert failed");
             return NULL;
         }
+
+        prop = (njs_object_prop_t *)(lhq.value);
+
+        prop->type = NJS_PROPERTY;
+        prop->enumerable = 0;
+        prop->configurable = 1;
+        prop->writable = 1;
+
+        prop->u.value = *message;
+
     }
 
     if (errors != NULL) {
-        prop = njs_object_prop_alloc(vm, errors, 1);
-        if (njs_slow_path(prop == NULL)) {
-            goto memory_error;
-        }
 
-        prop->enumerable = 0;
-
-        lhq.value = prop;
         lhq.key_hash = NJS_ATOM_STRING_errors;
 
         ret = njs_flathsh_unique_insert(&error->hash, &lhq);
@@ -261,6 +261,17 @@ njs_error_alloc(njs_vm_t *vm, njs_object_t *proto, const njs_value_t *name,
             njs_internal_error(vm, "lvlhsh insert failed");
             return NULL;
         }
+
+
+        prop = (njs_object_prop_t *)(lhq.value);
+
+        prop->type = NJS_PROPERTY;
+        prop->enumerable = 0;
+        prop->configurable = 1;
+        prop->writable = 1;
+
+        prop->u.value = *errors;
+
     }
 
     return error;
