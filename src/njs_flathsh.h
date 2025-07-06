@@ -72,7 +72,7 @@ struct njs_flathsh_query_s {
 
 
 #define njs_hash_elts(h)                                                       \
-    ((njs_flathsh_elt_t *) ((char *) (h) + 16 /* njs_flathsh_descr_t size */))
+    ((njs_flathsh_elt_t *) ((char *) (h) + sizeof(njs_flathsh_descr_t)))
 
 
 /*
