@@ -2455,6 +2455,8 @@ ngx_http_js_ext_send_header(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
+    r->disable_not_modified = 1;
+
     if (ngx_http_send_header(r) == NGX_ERROR) {
         return NJS_ERROR;
     }
@@ -2737,6 +2739,8 @@ ngx_http_js_ext_return(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
         cv.value.data = text.start;
         cv.value.len = text.length;
+
+        r->disable_not_modified = 1;
 
         ctx->status = ngx_http_send_response(r, status, NULL, &cv);
 
@@ -5445,6 +5449,8 @@ ngx_http_qjs_ext_return(JSContext *cx, JSValueConst this_val,
         cv.value.data = body.data;
         cv.value.len = body.len;
 
+        r->disable_not_modified = 1;
+
         ctx->status = ngx_http_send_response(r, status, NULL, &cv);
 
         if (ctx->status == NGX_ERROR) {
@@ -5669,6 +5675,8 @@ ngx_http_qjs_ext_send_header(JSContext *cx, JSValueConst this_val,
     if (ngx_http_set_content_type(r) != NGX_OK) {
         return JS_ThrowInternalError(cx, "failed to set content type");
     }
+
+    r->disable_not_modified = 1;
 
     if (ngx_http_send_header(r) == NGX_ERROR) {
         return JS_ThrowInternalError(cx, "failed to send header");
