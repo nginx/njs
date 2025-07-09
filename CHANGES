@@ -1,3 +1,58 @@
+Changes with njs 0.9.1                                       10 Jul 2025
+
+    nginx modules:
+
+    *) Feature: added Fetch API for QuickJS engine.
+
+    *) Feature: added state file for a shared dictionary.
+
+    *) Bugfix: fixed handling of Content-Length header when
+       a body is provided for Fetch API.
+
+    *) Bugfix: fixed qjs engine after bellard/quickjs@458c34d2.
+
+    *) Bugfix: fixed NULL pointer dereference when processing
+       If-* headers.
+
+    Core:
+
+    *) Feature: added ECDH support for WebCrypto.
+
+    *) Improvement: reduced memory consumption by the object hash.
+       The new hash uses 42% less memory per element.
+
+    *) Improvement: reduced memory consumption for concatenation of
+       numbers and strings.
+
+    *) Improvement: reduced memory consumption of
+       String.prototype.concat() with scalar values.
+
+    *) Bugfix: fixed segfault in njs_property_query().
+       The issue was introduced in b28e50b1 (0.9.0).
+
+    *) Bugfix: fixed Function constructor template injection.
+
+    *) Bugfix: fixed GCC compilation with O3 optimization level.
+
+    *) Bugfix: fixed constant is too large for 'long' warning
+       on MIPS -mabi=n32.
+
+    *) Bugfix: fixed compilation with GCC 4.1.
+
+    *) Bugfix: fixed %TypedArray%.from() with the buffer is detached
+       by the mapper.
+
+    *) Bugfix: fixed %TypedArray%.prototype.slice() with overlapping
+       buffers.
+
+    *) Bugfix: fixed handling of detached buffers for typed arrays.
+
+    *) Bugfix: fixed frame saving for async functions with
+       closures.
+
+    *) Bugfix: fixed RegExp compilation of patterns with
+       escaped '[' characters.
+
 Changes with njs 0.9.0                                       06 May 2025
 
      Core:
