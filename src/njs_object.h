@@ -123,9 +123,10 @@ njs_inline njs_bool_t
 njs_is_data_descriptor(njs_object_prop_t *prop)
 {
     return (prop->type == NJS_PROPERTY && njs_is_valid(njs_prop_value(prop)))
-           || prop->type == NJS_PROPERTY_REF
-           || prop->type == NJS_PROPERTY_PLACE_REF
-           || prop->type == NJS_PROPERTY_HANDLER;
+            || prop->type == NJS_PROPERTY_HANDLER
+            || prop->type == NJS_PROPERTY_REF
+            || prop->type == NJS_PROPERTY_PLACE_REF
+            || prop->type == NJS_PROPERTY_TYPED_ARRAY_REF;
 }
 
 
