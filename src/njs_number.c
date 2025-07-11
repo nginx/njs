@@ -35,7 +35,7 @@ njs_key_to_index(const njs_value_t *value)
 
         array = njs_array(value);
 
-        if (njs_lvlhsh_is_empty(&array->object.hash)) {
+        if (njs_flathsh_is_empty(&array->object.hash)) {
 
             if (array->length == 0) {
                 /* An empty array value is zero. */

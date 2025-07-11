@@ -13,7 +13,7 @@
 
 
 typedef struct {
-    njs_lvlhsh_t          hash;
+    njs_flathsh_t         hash;
 
     uint32_t              a;
     uint32_t              d;
@@ -56,7 +56,7 @@ njs_module_t  njs_unit_test_external_module = {
 
 
 static njs_int_t
-lvlhsh_unit_test_key_test(njs_lvlhsh_query_t *lhq, void *data)
+flathsh_unit_test_key_test(njs_flathsh_query_t *fhq, void *data)
 {
     njs_str_t             name;
     njs_unit_test_prop_t  *prop;
@@ -64,11 +64,11 @@ lvlhsh_unit_test_key_test(njs_lvlhsh_query_t *lhq, void *data)
     prop = *(njs_unit_test_prop_t **) data;
     name = prop->name;
 
-    if (name.length != lhq->key.length) {
+    if (name.length != fhq->key.length) {
         return NJS_DECLINED;
     }
 
-    if (memcmp(name.start, lhq->key.start, lhq->key.length) == 0) {
+    if (memcmp(name.start, fhq->key.start, fhq->key.length) == 0) {
         return NJS_OK;
     }
 
@@ -77,29 +77,28 @@ lvlhsh_unit_test_key_test(njs_lvlhsh_query_t *lhq, void *data)
 
 
 static void *
-lvlhsh_unit_test_pool_alloc(void *pool, size_t size)
+flathsh_unit_test_pool_alloc(void *pool, size_t size)
 {
     return njs_mp_align(pool, NJS_MAX_ALIGNMENT, size);
 }
 
 
 static void
-lvlhsh_unit_test_pool_free(void *pool, void *p, size_t size)
+flathsh_unit_test_pool_free(void *pool, void *p, size_t size)
 {
     njs_mp_free(pool, p);
 }
 
 
-static const njs_lvlhsh_proto_t  lvlhsh_proto  njs_aligned(64) = {
-    NJS_LVLHSH_LARGE_SLAB,
-    lvlhsh_unit_test_key_test,
-    lvlhsh_unit_test_pool_alloc,
-    lvlhsh_unit_test_pool_free,
+static const njs_flathsh_proto_t  flathsh_proto  njs_aligned(64) = {
+    flathsh_unit_test_key_test,
+    flathsh_unit_test_pool_alloc,
+    flathsh_unit_test_pool_free,
 };
 
 
 static njs_unit_test_prop_t *
-lvlhsh_unit_test_alloc(njs_mp_t *pool, const njs_str_t *name,
+flathsh_unit_test_alloc(njs_mp_t *pool, const njs_str_t *name,
     const njs_value_t *value)
 {
     njs_unit_test_prop_t *prop;
@@ -120,22 +119,21 @@ lvlhsh_unit_test_alloc(njs_mp_t *pool, const njs_str_t *name,
 
 
 static njs_int_t
-lvlhsh_unit_test_add(njs_mp_t *pool, njs_unit_test_req_t *r,
+flathsh_unit_test_add(njs_mp_t *pool, njs_unit_test_req_t *r,
     njs_unit_test_prop_t *prop)
 {
-    njs_lvlhsh_query_t  lhq;
+    njs_flathsh_query_t  fhq;
 
-    lhq.key = prop->name;
-    lhq.key_hash = njs_djb_hash(lhq.key.start, lhq.key.length);
+    fhq.key = prop->name;
+    fhq.key_hash = njs_djb_hash(fhq.key.start, fhq.key.length);
 
-    lhq.replace = 1;
-    lhq.proto = &lvlhsh_proto;
-    lhq.pool = pool;
+    fhq.replace = 1;
+    fhq.proto = &flathsh_proto;
+    fhq.pool = pool;
 
-    switch (njs_lvlhsh_insert(&r->hash, &lhq)) {
-
+    switch (njs_flathsh_insert(&r->hash, &fhq)) {
     case NJS_OK:
-        ((njs_flathsh_elt_t *) lhq.value)->value[0] = (void *) prop;
+        ((njs_flathsh_elt_t *) fhq.value)->value[0] = (void *) prop;
         return NJS_OK;
 
     case NJS_DECLINED:
@@ -237,7 +235,7 @@ njs_unit_test_r_vars(njs_vm_t *vm, njs_object_prop_t *self, uint32_t atom_id,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     njs_int_t             ret;
-    njs_lvlhsh_query_t    lhq;
+    njs_flathsh_query_t   fhq;
     njs_unit_test_req_t   *r;
     njs_unit_test_prop_t  *prop;
 
@@ -247,7 +245,7 @@ njs_unit_test_r_vars(njs_vm_t *vm, njs_object_prop_t *self, uint32_t atom_id,
         return NJS_DECLINED;
     }
 
-    ret = njs_vm_prop_name(vm, atom_id, &lhq.key);
+    ret = njs_vm_prop_name(vm, atom_id, &fhq.key);
     if (ret != NJS_OK) {
         if (setval == NULL && retval != NULL) {
             /* Get. */
@@ -260,7 +258,7 @@ njs_unit_test_r_vars(njs_vm_t *vm, njs_object_prop_t *self, uint32_t atom_id,
 
     if (setval != NULL || retval == NULL) {
         /* Set or Delete. */
-        if (lhq.key.length == 5 && memcmp(lhq.key.start, "error", 5) == 0) {
+        if (fhq.key.length == 5 && memcmp(fhq.key.start, "error", 5) == 0) {
             njs_vm_error(vm, "cannot %s \"error\" prop",
                          retval != NULL ? "set" : "delete");
             return NJS_ERROR;
@@ -269,15 +267,15 @@ njs_unit_test_r_vars(njs_vm_t *vm, njs_object_prop_t *self, uint32_t atom_id,
 
     if (setval != NULL) {
         /* Set. */
-        prop = lvlhsh_unit_test_alloc(njs_vm_memory_pool(vm), &lhq.key, setval);
+        prop = flathsh_unit_test_alloc(njs_vm_memory_pool(vm), &fhq.key, setval);
         if (prop == NULL) {
             njs_vm_memory_error(vm);
             return NJS_ERROR;
         }
 
-        ret = lvlhsh_unit_test_add(njs_vm_memory_pool(vm), r, prop);
+        ret = flathsh_unit_test_add(njs_vm_memory_pool(vm), r, prop);
         if (ret != NJS_OK) {
-            njs_vm_error(vm, "lvlhsh_unit_test_add() failed");
+            njs_vm_error(vm, "flathsh_unit_test_add() failed");
             return NJS_ERROR;
         }
 
@@ -286,13 +284,13 @@ njs_unit_test_r_vars(njs_vm_t *vm, njs_object_prop_t *self, uint32_t atom_id,
 
     /* Get or Delete. */
 
-    lhq.key_hash = njs_djb_hash(lhq.key.start, lhq.key.length);
-    lhq.proto = &lvlhsh_proto;
+    fhq.key_hash = njs_djb_hash(fhq.key.start, fhq.key.length);
+    fhq.proto = &flathsh_proto;
 
-    ret = njs_lvlhsh_find(&r->hash, &lhq);
+    ret = njs_flathsh_find(&r->hash, &fhq);
 
     if (ret == NJS_OK) {
-        prop = ((njs_flathsh_elt_t *) lhq.value)->value[0];
+        prop = ((njs_flathsh_elt_t *) fhq.value)->value[0];
 
         if (retval == NULL) {
             njs_value_invalid_set(njs_value_arg(&prop->value));
@@ -1130,19 +1128,19 @@ njs_externals_init_internal(njs_vm_t *vm, njs_unit_test_req_init_t *init,
                 return NJS_ERROR;
             }
 
-            prop = lvlhsh_unit_test_alloc(njs_vm_memory_pool(vm),
-                                          &init[i].props[j].name,
-                                          njs_value_arg(&value));
+            prop = flathsh_unit_test_alloc(njs_vm_memory_pool(vm),
+                                           &init[i].props[j].name,
+                                           njs_value_arg(&value));
 
             if (njs_slow_path(prop == NULL)) {
-                njs_printf("lvlhsh_unit_test_alloc() failed\n");
+                njs_printf("flathsh_unit_test_alloc() failed\n");
                 return NJS_ERROR;
             }
 
-            ret = lvlhsh_unit_test_add(njs_vm_memory_pool(vm), &requests[i],
-                                       prop);
+            ret = flathsh_unit_test_add(njs_vm_memory_pool(vm), &requests[i],
+                                        prop);
             if (njs_slow_path(ret != NJS_OK)) {
-                njs_printf("lvlhsh_unit_test_add() failed\n");
+                njs_printf("flathsh_unit_test_add() failed\n");
                 return NJS_ERROR;
             }
         }

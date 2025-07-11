@@ -28,7 +28,7 @@ njs_function_alloc(njs_vm_t *vm, njs_function_lambda_t *lambda,
 
     /*
      * njs_mp_zalloc() does also:
-     *   njs_lvlhsh_init(&function->object.hash);
+     *   njs_flathsh_init(&function->object.hash);
      *   function->object.__proto__ = NULL;
      */
 
@@ -124,20 +124,20 @@ njs_function_name_set(njs_vm_t *vm, njs_function_t *function,
     njs_value_t          value;
     njs_string_prop_t    string;
     njs_object_prop_t    *prop;
-    njs_flathsh_query_t  lhq;
+    njs_flathsh_query_t  fhq;
 
-    lhq.key_hash = NJS_ATOM_STRING_name;
-    lhq.replace = 0;
-    lhq.pool = vm->mem_pool;
-    lhq.proto = &njs_object_hash_proto;
+    fhq.key_hash = NJS_ATOM_STRING_name;
+    fhq.replace = 0;
+    fhq.pool = vm->mem_pool;
+    fhq.proto = &njs_object_hash_proto;
 
-    ret = njs_flathsh_unique_insert(&function->object.hash, &lhq);
+    ret = njs_flathsh_unique_insert(&function->object.hash, &fhq);
     if (njs_slow_path(ret != NJS_OK)) {
-        njs_internal_error(vm, "lvlhsh insert failed");
+        njs_internal_error(vm, "flathsh insert failed");
         return NJS_ERROR;
     }
 
-    prop = lhq.value;
+    prop = fhq.value;
 
     prop->type = NJS_PROPERTY;
     prop->enumerable = 0;
@@ -892,21 +892,21 @@ njs_function_property_prototype_set(njs_vm_t *vm, njs_flathsh_t *hash,
 {
     njs_int_t            ret;
     njs_object_prop_t    *prop;
-    njs_flathsh_query_t  lhq;
+    njs_flathsh_query_t  fhq;
 
-    lhq.key_hash = NJS_ATOM_STRING_prototype;
-    lhq.replace = 1;
-    lhq.pool = vm->mem_pool;
-    lhq.proto = &njs_object_hash_proto;
+    fhq.key_hash = NJS_ATOM_STRING_prototype;
+    fhq.replace = 1;
+    fhq.pool = vm->mem_pool;
+    fhq.proto = &njs_object_hash_proto;
 
-    ret = njs_flathsh_unique_insert(hash, &lhq);
+    ret = njs_flathsh_unique_insert(hash, &fhq);
 
     if (njs_slow_path(ret != NJS_OK)) {
-        njs_internal_error(vm, "lvlhsh insert failed");
+        njs_internal_error(vm, "flathsh insert failed");
         return NULL;
     }
 
-    prop = lhq.value;
+    prop = fhq.value;
 
     prop->type = NJS_PROPERTY;
     prop->enumerable = 0;
@@ -1353,7 +1353,7 @@ njs_function_prototype_bind(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     function->native = 1;
     function->u.native = njs_function_bound_call;
 
-    njs_lvlhsh_init(&function->object.hash);
+    njs_flathsh_init(&function->object.hash);
 
     /* Bound functions have no "prototype" property. */
     function->object.shared_hash = vm->shared->arrow_instance_hash;

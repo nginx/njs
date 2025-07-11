@@ -501,7 +501,7 @@ njs_regexp_alloc(njs_vm_t *vm, njs_regexp_pattern_t *pattern)
     regexp = njs_mp_alloc(vm->mem_pool, sizeof(njs_regexp_t));
 
     if (njs_fast_path(regexp != NULL)) {
-        njs_lvlhsh_init(&regexp->object.hash);
+        njs_flathsh_init(&regexp->object.hash);
         regexp->object.shared_hash = vm->shared->regexp_instance_hash;
         regexp->object.__proto__ = njs_vm_proto(vm, NJS_OBJ_TYPE_REGEXP);
         regexp->object.slots = NULL;
@@ -1007,7 +1007,7 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_value_t *r, njs_utf8_t utf8,
     njs_regexp_t          *regexp;
     njs_object_prop_t     *prop;
     njs_regexp_group_t    *group;
-    njs_flathsh_query_t   lhq;
+    njs_flathsh_query_t   fhq;
     njs_regexp_pattern_t  *pattern;
 
     regexp = njs_regexp(r);
@@ -1039,17 +1039,17 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_value_t *r, njs_utf8_t utf8,
 
     /* FIXME: implement fast CreateDataPropertyOrThrow(). */
 
-    lhq.key_hash = NJS_ATOM_STRING_index;
-    lhq.replace = 0;
-    lhq.pool = vm->mem_pool;
-    lhq.proto = &njs_object_hash_proto;
+    fhq.key_hash = NJS_ATOM_STRING_index;
+    fhq.replace = 0;
+    fhq.pool = vm->mem_pool;
+    fhq.proto = &njs_object_hash_proto;
 
-    ret = njs_flathsh_unique_insert(&array->object.hash, &lhq);
+    ret = njs_flathsh_unique_insert(&array->object.hash, &fhq);
     if (njs_slow_path(ret != NJS_OK)) {
         goto insert_fail;
     }
 
-    prop = lhq.value;
+    prop = fhq.value;
 
     prop->type = NJS_PROPERTY;
     prop->enumerable = 1;
@@ -1067,14 +1067,14 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_value_t *r, njs_utf8_t utf8,
 
     njs_set_number(&prop->u.value, index);
 
-    lhq.key_hash = NJS_ATOM_STRING_input;
+    fhq.key_hash = NJS_ATOM_STRING_input;
 
-    ret = njs_flathsh_unique_insert(&array->object.hash, &lhq);
+    ret = njs_flathsh_unique_insert(&array->object.hash, &fhq);
     if (njs_slow_path(ret != NJS_OK)) {
         goto insert_fail;
     }
 
-    prop = lhq.value;
+    prop = fhq.value;
 
     prop->type = NJS_PROPERTY;
     prop->enumerable = 1;
@@ -1082,14 +1082,14 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_value_t *r, njs_utf8_t utf8,
     prop->writable = 1;
     prop->u.value = regexp->string;
 
-    lhq.key_hash = NJS_ATOM_STRING_groups;
+    fhq.key_hash = NJS_ATOM_STRING_groups;
 
-    ret = njs_flathsh_unique_insert(&array->object.hash, &lhq);
+    ret = njs_flathsh_unique_insert(&array->object.hash, &fhq);
     if (njs_slow_path(ret != NJS_OK)) {
         goto insert_fail;
     }
 
-    prop = lhq.value;
+    prop = fhq.value;
 
     prop->type = NJS_PROPERTY;
     prop->enumerable = 1;
@@ -1116,14 +1116,14 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_value_t *r, njs_utf8_t utf8,
                 goto fail;
             }
 
-            lhq.key_hash = name.atom_id;
+            fhq.key_hash = name.atom_id;
 
-            ret = njs_flathsh_unique_insert(&groups->hash, &lhq);
+            ret = njs_flathsh_unique_insert(&groups->hash, &fhq);
             if (njs_slow_path(ret != NJS_OK)) {
                 goto insert_fail;
             }
 
-            prop = lhq.value;
+            prop = fhq.value;
 
             prop->type = NJS_PROPERTY;
             prop->enumerable = 1;
@@ -1141,7 +1141,7 @@ njs_regexp_exec_result(njs_vm_t *vm, njs_value_t *r, njs_utf8_t utf8,
 
 insert_fail:
 
-    njs_internal_error(vm, "lvlhsh insert failed");
+    njs_internal_error(vm, "flathsh insert failed");
 
 fail:
 
@@ -1157,14 +1157,14 @@ static void
 njs_regexp_exec_result_free(njs_vm_t *vm, njs_array_t *result)
 {
     njs_flathsh_t        *hash;
-    njs_flathsh_query_t  lhq;
+    njs_flathsh_query_t  fhq;
 
     hash = &result->object.hash;
 
-    lhq.pool = vm->mem_pool;
-    lhq.proto = &njs_object_hash_proto;
+    fhq.pool = vm->mem_pool;
+    fhq.proto = &njs_object_hash_proto;
 
-    njs_flathsh_destroy(hash, &lhq);
+    njs_flathsh_destroy(hash, &fhq);
 
     njs_array_destroy(vm, result);
 }

@@ -350,14 +350,14 @@ struct njs_object_prop_init_s {
 
 
 typedef struct {
-    njs_flathsh_query_t         lhq;
+    njs_flathsh_query_t         fhq;
 
     uint8_t                     query;
 
     /* scratch is used to get the value of an NJS_PROPERTY_HANDLER property. */
     njs_object_prop_t           scratch;
 
-    njs_flathsh_t              *own_whiteout;
+    njs_flathsh_t               *own_whiteout;
 
     uint8_t                     temp;
     uint8_t                     own;
@@ -987,7 +987,7 @@ njs_property_query_init(njs_property_query_t *pq, njs_prop_query_t query,
         pq->own = own;
 
         if (query == NJS_PROPERTY_QUERY_SET) {
-            pq->lhq.value = NULL;
+            pq->fhq.value = NULL;
             pq->own_whiteout = NULL;
             pq->temp = 0;
         }

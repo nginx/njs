@@ -128,16 +128,16 @@ struct njs_vm_s {
     njs_native_frame_t       *top_frame;
     njs_frame_t              *active_frame;
 
-    njs_lvlhsh_t             atom_hash_shared;
-    njs_lvlhsh_t             atom_hash;
-    njs_lvlhsh_t             *atom_hash_current;
+    njs_flathsh_t            atom_hash_shared;
+    njs_flathsh_t            atom_hash;
+    njs_flathsh_t            *atom_hash_current;
     uint32_t                 shared_atom_count;
     uint32_t                 atom_id_generator;
 
-    njs_lvlhsh_t             values_hash;
+    njs_flathsh_t            values_hash;
 
     njs_arr_t                *modules;
-    njs_lvlhsh_t             modules_hash;
+    njs_flathsh_t            modules_hash;
 
     uint32_t                 event_id;
     njs_queue_t              jobs;
@@ -207,7 +207,7 @@ typedef struct {
 
 
 struct njs_vm_shared_s {
-    njs_lvlhsh_t             values_hash;
+    njs_flathsh_t            values_hash;
 
     njs_flathsh_t            array_instance_hash;
     njs_flathsh_t            string_instance_hash;
@@ -218,7 +218,7 @@ struct njs_vm_shared_s {
     njs_flathsh_t            regexp_instance_hash;
 
     size_t                   module_items;
-    njs_lvlhsh_t             modules_hash;
+    njs_flathsh_t            modules_hash;
 
     njs_flathsh_t            env_hash;
 
@@ -253,8 +253,8 @@ njs_int_t njs_builtin_match_native_function(njs_vm_t *vm,
 void njs_disassemble(u_char *start, u_char *end, njs_int_t count,
     njs_arr_t *lines);
 
-void *njs_lvlhsh_alloc(void *data, size_t size);
-void njs_lvlhsh_free(void *data, void *p, size_t size);
+void *njs_flathsh_proto_alloc(void *data, size_t size);
+void njs_flathsh_proto_free(void *data, void *p, size_t size);
 
 
 extern const njs_str_t    njs_entry_empty;
