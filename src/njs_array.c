@@ -81,7 +81,7 @@ njs_array_alloc(njs_vm_t *vm, njs_bool_t flat, uint64_t length, uint32_t spare)
     }
 
     array->start = array->data;
-    njs_lvlhsh_init(&array->object.hash);
+    njs_flathsh_init(&array->object.hash);
     array->object.shared_hash = vm->shared->array_instance_hash;
     array->object.__proto__ = njs_vm_proto(vm, NJS_OBJ_TYPE_ARRAY);
     array->object.slots = NULL;
@@ -1615,13 +1615,13 @@ njs_array_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 {
     njs_int_t            ret;
     njs_value_t          value;
-    njs_flathsh_query_t  lhq;
+    njs_flathsh_query_t  fhq;
 
     if (njs_is_object(njs_argument(args, 0))) {
-        lhq.proto = &njs_object_hash_proto;
-        lhq.key_hash = NJS_ATOM_STRING_join;
+        fhq.proto = &njs_object_hash_proto;
+        fhq.key_hash = NJS_ATOM_STRING_join;
 
-        ret = njs_object_property(vm, njs_object(njs_argument(args, 0)), &lhq,
+        ret = njs_object_property(vm, njs_object(njs_argument(args, 0)), &fhq,
                                   &value);
 
         if (njs_slow_path(ret == NJS_ERROR)) {

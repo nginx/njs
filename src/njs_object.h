@@ -104,7 +104,7 @@ njs_int_t njs_prop_private_copy(njs_vm_t *vm, njs_property_query_t *pq,
 void njs_object_prop_init(njs_object_prop_t *prop, njs_object_prop_type_t type,
     uint8_t attributes);
 njs_int_t njs_object_property(njs_vm_t *vm, njs_object_t *object,
-    njs_flathsh_query_t *lhq, njs_value_t *retval);
+    njs_flathsh_query_t *fhq, njs_value_t *retval);
 njs_object_prop_t *njs_object_property_add(njs_vm_t *vm, njs_value_t *object,
     uint32_t atom_id, njs_bool_t replace);
 njs_int_t njs_object_prop_define(njs_vm_t *vm, njs_value_t *object,

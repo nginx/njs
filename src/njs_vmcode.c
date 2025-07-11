@@ -2064,7 +2064,7 @@ njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
     njs_array_t          *array;
     njs_value_t          *val, name;
     njs_object_prop_t    *prop;
-    njs_flathsh_query_t  lhq;
+    njs_flathsh_query_t  fhq;
 
     switch (value->type) {
     case NJS_ARRAY:
@@ -2123,18 +2123,18 @@ njs_vmcode_property_init(njs_vm_t *vm, njs_value_t *value, njs_value_t *key,
             }
         }
 
-        lhq.key_hash = name.atom_id;
-        lhq.replace = 1;
-        lhq.pool = vm->mem_pool;
-        lhq.proto = &njs_object_hash_proto;
+        fhq.key_hash = name.atom_id;
+        fhq.replace = 1;
+        fhq.pool = vm->mem_pool;
+        fhq.proto = &njs_object_hash_proto;
 
-        ret = njs_flathsh_unique_insert(njs_object_hash(value), &lhq);
+        ret = njs_flathsh_unique_insert(njs_object_hash(value), &fhq);
         if (njs_slow_path(ret != NJS_OK)) {
-            njs_internal_error(vm, "lvlhsh insert/replace failed");
+            njs_internal_error(vm, "flathsh insert/replace failed");
             return NJS_ERROR;
         }
 
-        prop = lhq.value;
+        prop = fhq.value;
 
         prop->type = NJS_PROPERTY;
         prop->enumerable = 1;
@@ -2164,26 +2164,26 @@ njs_vmcode_proto_init(njs_vm_t *vm, njs_value_t *value, njs_value_t *unused,
     njs_value_t          retval;
     njs_jump_off_t       ret;
     njs_object_prop_t    *prop;
-    njs_flathsh_query_t  lhq;
+    njs_flathsh_query_t  fhq;
 
-    lhq.key_hash = NJS_ATOM_STRING___proto__;
-    lhq.proto = &njs_object_hash_proto;
-    lhq.pool = vm->mem_pool;
+    fhq.key_hash = NJS_ATOM_STRING___proto__;
+    fhq.proto = &njs_object_hash_proto;
+    fhq.pool = vm->mem_pool;
 
     obj = njs_object(value);
 
-    ret = njs_flathsh_unique_find(&obj->__proto__->shared_hash, &lhq);
+    ret = njs_flathsh_unique_find(&obj->__proto__->shared_hash, &fhq);
     if (njs_slow_path(ret != NJS_OK)) {
         goto fail;
     }
 
-    prop = lhq.value;
+    prop = fhq.value;
 
     if (prop->type != NJS_PROPERTY_HANDLER) {
         goto fail;
     }
 
-    ret = njs_prop_handler(prop)(vm, prop, lhq.key_hash, value, init, &retval);
+    ret = njs_prop_handler(prop)(vm, prop, fhq.key_hash, value, init, &retval);
     if (njs_slow_path(ret != NJS_OK)) {
         goto fail;
     }

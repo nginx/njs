@@ -143,7 +143,7 @@ njs_flathsh_descr_t *
 njs_flathsh_new(njs_flathsh_query_t *fhq)
 {
     return njs_flathsh_alloc(fhq, NJS_FLATHSH_HASH_INITIAL_SIZE,
-                           NJS_FLATHSH_ELTS_INITIAL_SIZE);
+                             NJS_FLATHSH_ELTS_INITIAL_SIZE);
 }
 
 

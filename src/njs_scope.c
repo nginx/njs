@@ -103,7 +103,7 @@ njs_scope_value_get(njs_vm_t *vm, njs_index_t index)
 
 
 static njs_int_t
-njs_scope_values_hash_test(njs_lvlhsh_query_t *lhq, void *data)
+njs_scope_values_hash_test(njs_flathsh_query_t *fhq, void *data)
 {
     njs_str_t    string;
     njs_value_t  *value;
@@ -119,8 +119,8 @@ njs_scope_values_hash_test(njs_lvlhsh_query_t *lhq, void *data)
         string.length = sizeof(njs_value_t);
     }
 
-    if (lhq->key.length == string.length
-        && memcmp(lhq->key.start, string.start, string.length) == 0)
+    if (fhq->key.length == string.length
+        && memcmp(fhq->key.start, string.start, string.length) == 0)
     {
         return NJS_OK;
     }
@@ -129,13 +129,12 @@ njs_scope_values_hash_test(njs_lvlhsh_query_t *lhq, void *data)
 }
 
 
-static const njs_lvlhsh_proto_t  njs_values_hash_proto
+static const njs_flathsh_proto_t  njs_values_hash_proto
     njs_aligned(64) =
 {
-    NJS_LVLHSH_DEFAULT,
     njs_scope_values_hash_test,
-    njs_lvlhsh_alloc,
-    njs_lvlhsh_free,
+    njs_flathsh_proto_alloc,
+    njs_flathsh_proto_free,
 };
 
 
@@ -148,16 +147,16 @@ static njs_value_t *
 njs_scope_value_index(njs_vm_t *vm, const njs_value_t *src, njs_uint_t runtime,
     njs_index_t **index)
 {
-    u_char              *start;
-    uint32_t            value_size, size, length;
-    njs_int_t           ret;
-    njs_str_t           str;
-    njs_bool_t          is_string;
-    njs_value_t         *value;
-    njs_string_t        *string;
-    njs_lvlhsh_t        *values_hash;
-    njs_object_prop_t   *pr;
-    njs_lvlhsh_query_t  lhq;
+    u_char               *start;
+    uint32_t             value_size, size, length;
+    njs_int_t            ret;
+    njs_str_t            str;
+    njs_bool_t           is_string;
+    njs_value_t          *value;
+    njs_string_t         *string;
+    njs_flathsh_t        *values_hash;
+    njs_object_prop_t    *pr;
+    njs_flathsh_query_t  fhq;
 
     is_string = 0;
     value_size = sizeof(njs_value_t);
@@ -176,18 +175,18 @@ njs_scope_value_index(njs_vm_t *vm, const njs_value_t *src, njs_uint_t runtime,
         start = (u_char *) src;
     }
 
-    lhq.key_hash = njs_djb_hash(start, size);
-    lhq.key.length = size;
-    lhq.key.start = start;
-    lhq.proto = &njs_values_hash_proto;
+    fhq.key_hash = njs_djb_hash(start, size);
+    fhq.key.length = size;
+    fhq.key.start = start;
+    fhq.proto = &njs_values_hash_proto;
 
-    if (njs_lvlhsh_find(&vm->shared->values_hash, &lhq) == NJS_OK) {
-        value = ((njs_object_prop_t *) lhq.value)->u.val;
+    if (njs_flathsh_find(&vm->shared->values_hash, &fhq) == NJS_OK) {
+        value = ((njs_object_prop_t *) fhq.value)->u.val;
 
         *index = (njs_index_t *) ((u_char *) value + sizeof(njs_value_t));
 
-    } else if (runtime && njs_lvlhsh_find(&vm->values_hash, &lhq) == NJS_OK) {
-        value = ((njs_object_prop_t *) lhq.value)->u.val;
+    } else if (runtime && njs_flathsh_find(&vm->values_hash, &fhq) == NJS_OK) {
+        value = ((njs_object_prop_t *) fhq.value)->u.val;
 
         *index = (njs_index_t *) ((u_char *) value + sizeof(njs_value_t));
 
@@ -228,17 +227,17 @@ njs_scope_value_index(njs_vm_t *vm, const njs_value_t *src, njs_uint_t runtime,
         *index = (njs_index_t *) ((u_char *) value + sizeof(njs_value_t));
         **index = NJS_INDEX_ERROR;
 
-        lhq.replace = 0;
-        lhq.pool = vm->mem_pool;
+        fhq.replace = 0;
+        fhq.pool = vm->mem_pool;
 
         values_hash = runtime ? &vm->values_hash : &vm->shared->values_hash;
 
-        ret = njs_lvlhsh_insert(values_hash, &lhq);
+        ret = njs_flathsh_insert(values_hash, &fhq);
         if (njs_slow_path(ret != NJS_OK)) {
             return NULL;
         }
 
-        pr = lhq.value;
+        pr = fhq.value;
         pr->u.val = value;
     }
 

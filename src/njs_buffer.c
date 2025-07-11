@@ -156,8 +156,8 @@ njs_buffer_set(njs_vm_t *vm, njs_value_t *value, const u_char *start,
 
     proto = njs_vm_proto(vm, NJS_OBJ_TYPE_ARRAY_BUFFER);
 
-    njs_lvlhsh_init(&buffer->object.hash);
-    njs_lvlhsh_init(&buffer->object.shared_hash);
+    njs_flathsh_init(&buffer->object.hash);
+    njs_flathsh_init(&buffer->object.shared_hash);
     buffer->object.__proto__ = proto;
     buffer->object.slots = NULL;
     buffer->object.type = NJS_ARRAY_BUFFER;
@@ -171,8 +171,8 @@ njs_buffer_set(njs_vm_t *vm, njs_value_t *value, const u_char *start,
     proto = njs_vm_proto(vm, NJS_OBJ_TYPE_BUFFER);
 
     array->type = NJS_OBJ_TYPE_UINT8_ARRAY;
-    njs_lvlhsh_init(&array->object.hash);
-    njs_lvlhsh_init(&array->object.shared_hash);
+    njs_flathsh_init(&array->object.hash);
+    njs_flathsh_init(&array->object.shared_hash);
     array->object.__proto__ = proto;
     array->object.slots = NULL;
     array->object.type = NJS_TYPED_ARRAY;
