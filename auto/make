@@ -301,12 +301,12 @@ njs_fuzzer: $NJS_BUILD_DIR/njs_auto_config.h \\
 lib_test: $NJS_BUILD_DIR/njs_auto_config.h \\
 	$NJS_BUILD_DIR/random_unit_test \\
 	$NJS_BUILD_DIR/rbtree_unit_test \\
-	$NJS_BUILD_DIR/lvlhsh_unit_test \\
+	$NJS_BUILD_DIR/flathsh_unit_test \\
 	$NJS_BUILD_DIR/unicode_unit_test
 
 	$NJS_BUILD_DIR/random_unit_test
 	$NJS_BUILD_DIR/rbtree_unit_test
-	$NJS_BUILD_DIR/lvlhsh_unit_test
+	$NJS_BUILD_DIR/flathsh_unit_test
 	$NJS_BUILD_DIR/unicode_unit_test
 
 test262_njs: njs

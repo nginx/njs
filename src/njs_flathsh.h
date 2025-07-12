@@ -46,7 +46,6 @@ typedef struct njs_flathsh_proto_s  njs_flathsh_proto_t;
 
 
 struct njs_flathsh_proto_s {
-    uint32_t                   not_used;
     njs_flathsh_test_t         test;
     njs_flathsh_alloc_t        alloc;
     njs_flathsh_free_t         free;
@@ -162,39 +161,6 @@ NJS_EXPORT njs_flathsh_elt_t *njs_flathsh_add_elt(njs_flathsh_t *fh,
 
 NJS_EXPORT njs_flathsh_descr_t *njs_flathsh_new(njs_flathsh_query_t *fhq);
 NJS_EXPORT void njs_flathsh_destroy(njs_flathsh_t *fh, njs_flathsh_query_t *fhq);
-
-
-/* Temporary backward compatibility .*/
-
-typedef struct njs_flathsh_query_s  njs_lvlhsh_query_t;
-
-#define NJS_LVLHSH_DEFAULT      0
-#define NJS_LVLHSH_LARGE_SLAB   0
-
-typedef struct njs_flathsh_proto_s  njs_lvlhsh_proto_t;
-
-#define njs_lvlhsh_is_empty njs_flathsh_is_empty
-#define njs_lvlhsh_init njs_flathsh_init
-#define njs_lvlhsh_eq njs_flathsh_eq
-#define njs_lvlhsh_t njs_flathsh_t
-#define njs_lvlhsh_each_t njs_flathsh_each_t
-#define njs_lvlhsh_find(lh, lhq) njs_flathsh_find(lh, lhq)
-#define njs_lvlhsh_insert(lh, lhq) njs_flathsh_insert(lh, lhq)
-#define njs_lvlhsh_delete(lh, lhq) njs_flathsh_delete(lh, lhq)
-#define njs_lvlhsh_each_init(lhe, _proto)  njs_flathsh_each_init(lhe, _proto)
-
-njs_inline njs_flathsh_elt_t *
-njs_lvlhsh_each(const njs_flathsh_t *lh, njs_flathsh_each_t *lhe)
-{
-    njs_flathsh_elt_t  *e;
-
-    e = njs_flathsh_each(lh, lhe);
-    if (e == NULL) {
-        return NULL;
-    }
-
-    return e;
-}
 
 
 #endif /* _NJS_FLATHSH_H_INCLUDED_ */

@@ -375,8 +375,8 @@ njs_date_alloc(njs_vm_t *vm, double time)
         return NULL;
     }
 
-    njs_lvlhsh_init(&date->object.hash);
-    njs_lvlhsh_init(&date->object.shared_hash);
+    njs_flathsh_init(&date->object.hash);
+    njs_flathsh_init(&date->object.shared_hash);
     date->object.type = NJS_DATE;
     date->object.shared = 0;
     date->object.extensible = 1;
@@ -1443,13 +1443,13 @@ njs_date_prototype_to_json(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 {
     njs_int_t            ret;
     njs_value_t          value;
-    njs_flathsh_query_t  lhq;
+    njs_flathsh_query_t  fhq;
 
     if (njs_is_object(njs_argument(args, 0))) {
-        lhq.proto = &njs_object_hash_proto;
-        lhq.key_hash = NJS_ATOM_STRING_toISOString;
+        fhq.proto = &njs_object_hash_proto;
+        fhq.key_hash = NJS_ATOM_STRING_toISOString;
 
-        ret = njs_object_property(vm, njs_object(njs_argument(args, 0)), &lhq,
+        ret = njs_object_property(vm, njs_object(njs_argument(args, 0)), &fhq,
                                   &value);
 
         if (njs_slow_path(ret == NJS_ERROR)) {

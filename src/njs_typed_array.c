@@ -178,8 +178,8 @@ njs_typed_array_alloc(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    njs_lvlhsh_init(&array->object.hash);
-    njs_lvlhsh_init(&array->object.shared_hash);
+    njs_flathsh_init(&array->object.hash);
+    njs_flathsh_init(&array->object.shared_hash);
     array->object.__proto__ = njs_vm_proto(vm, type);
     array->object.type = NJS_TYPED_ARRAY;
     array->object.extensible = 1;
@@ -2400,8 +2400,8 @@ njs_data_view_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     view->byte_length = size;
     view->type = NJS_OBJ_TYPE_DATA_VIEW;
 
-    njs_lvlhsh_init(&view->object.hash);
-    njs_lvlhsh_init(&view->object.shared_hash);
+    njs_flathsh_init(&view->object.hash);
+    njs_flathsh_init(&view->object.shared_hash);
     view->object.__proto__ = njs_vm_proto(vm, view->type);
     view->object.type = NJS_DATA_VIEW;
     view->object.extensible = 1;

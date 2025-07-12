@@ -117,8 +117,8 @@ njs_promise_alloc(njs_vm_t *vm)
         goto memory_error;
     }
 
-    njs_lvlhsh_init(&promise->object.hash);
-    njs_lvlhsh_init(&promise->object.shared_hash);
+    njs_flathsh_init(&promise->object.hash);
+    njs_flathsh_init(&promise->object.shared_hash);
     promise->object.type = NJS_PROMISE;
     promise->object.shared = 0;
     promise->object.extensible = 1;
