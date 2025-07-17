@@ -176,6 +176,70 @@ interface CryptoKey {
 
 type CryptoKeyPair = { privateKey: CryptoKey, publicKey: CryptoKey };
 
+interface CertificateNameAttributes {
+    /**
+     * Common Name (e.g., "example.com")
+     */
+    CN?: string;
+
+    /**
+     * Country (e.g., "US")
+     */
+    C?: string;
+
+    /**
+     * State/Province (e.g., "California")
+     */
+    ST?: string;
+
+    /**
+     * Locality/City (e.g., "San Francisco")
+     */
+    L?: string;
+
+    /**
+     * Organization (e.g., "Example Corp")
+     */
+    O?: string;
+
+    /**
+     * Organizational Unit (e.g., "IT Department")
+     */
+    OU?: string;
+
+    /**
+     * Email Address (e.g., "admin@example.com")
+     */
+    E?: string;
+}
+
+interface CertificateGenerationOptions {
+    /**
+     * Subject name attributes for the certificate
+     */
+    subject: CertificateNameAttributes;
+
+    /**
+     * Issuer name attributes for the certificate (optional, defaults to subject for self-signed)
+     */
+    issuer?: CertificateNameAttributes;
+
+    /**
+     * Serial number for the certificate (optional, defaults to "1")
+     */
+    serialNumber?: string;
+
+    /**
+     * Certificate validity start time in milliseconds since epoch (optional, defaults to now)
+     */
+    notBefore?: number;
+
+    /**
+     * Certificate validity end time in milliseconds since epoch (optional, defaults to 1 year from now)
+     */
+    notAfter?: number;
+}
+
 interface SubtleCrypto {
     /**
      * Decrypts encrypted data.
@@ -297,6 +361,42 @@ interface SubtleCrypto {
     generateKey(algorithm: RsaHashedKeyGenParams | EcKeyGenParams,
                 extractable: boolean,
                 usage: Array<string>): Promise<CryptoKeyPair>;
+
+    /**
+     * Generates a self-signed X.509 certificate from a key pair.
+     *
+     * @param options Certificate generation options including subject, issuer, validity period, etc.
+     * @param keyPair CryptoKeyPair containing the private and public keys to use for certificate generation.
+     *
+     * @example
+     * ```typescript
+     * const keyPair = await crypto.subtle.generateKey(
+     *   { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256", modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]) },
+     *   false,
+     *   ["sign", "verify"]
+     * );
+     *
+     * const certificate = await crypto.subtle.generateCertificate(
+     *   {
+     *     subject: {
+     *       CN: "example.com",
+     *       O: "Example Corporation",
+     *       C: "US"
+     *     },
+     *     issuer: {
+     *       CN: "Example CA",
+     *       O: "Example Corporation"
+     *     },
+     *     serialNumber: "123456789",
+     *     notBefore: Date.now(),
+     *     notAfter: Date.now() + (365 * 24 * 60 * 60 * 1000)
+     *   },
+     *   keyPair
+     * );
+     * ```
+     */
+    generateCertificate(options: CertificateGenerationOptions,
+                       keyPair: CryptoKeyPair): Promise<ArrayBuffer>;
 
     /**
      * Generates a digital signature.

@@ -119,6 +119,8 @@ static njs_int_t njs_ext_export_key(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t njs_ext_generate_key(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
+static njs_int_t njs_ext_generate_certificate(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t njs_ext_import_key(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t njs_ext_sign(njs_vm_t *vm, njs_value_t *args,
@@ -516,6 +518,17 @@ static njs_external_t  njs_ext_subtle_webcrypto[] = {
         .enumerable = 1,
         .u.method = {
             .native = njs_ext_generate_key,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("generateCertificate"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = njs_ext_generate_certificate,
         }
     },
 
@@ -2885,6 +2898,366 @@ fail:
 
     if (ctx != NULL) {
         EVP_PKEY_CTX_free(ctx);
+    }
+
+    return njs_webcrypto_result(vm, NULL, NJS_ERROR, retval);
+}
+
+
+static njs_int_t
+njs_add_name_attributes(njs_vm_t *vm, X509_NAME *name, njs_value_t *attrs)
+{
+    njs_int_t              ret;
+    njs_value_t            *val;
+    njs_str_t              attr_value;
+    njs_opaque_value_t     lvalue;
+
+    static const njs_str_t string_CN = njs_str("CN");
+    static const njs_str_t string_C = njs_str("C");
+    static const njs_str_t string_ST = njs_str("ST");
+    static const njs_str_t string_L = njs_str("L");
+    static const njs_str_t string_O = njs_str("O");
+    static const njs_str_t string_OU = njs_str("OU");
+    static const njs_str_t string_E = njs_str("E");
+
+    /* Define attribute mapping */
+    struct {
+        const njs_str_t *key;
+        const char *openssl_name;
+    } attr_map[] = {
+        { &string_CN, "CN" },
+        { &string_C, "C" },
+        { &string_ST, "ST" },
+        { &string_L, "L" },
+        { &string_O, "O" },
+        { &string_OU, "OU" },
+        { &string_E, "E" }
+    };
+
+    int attr_count = 0;
+
+    for (size_t i = 0; i < sizeof(attr_map) / sizeof(attr_map[0]); i++) {
+        val = njs_vm_object_prop(vm, attrs, attr_map[i].key, &lvalue);
+        if (val != NULL) {
+            ret = njs_vm_value_to_bytes(vm, &attr_value, val);
+            if (njs_slow_path(ret != NJS_OK)) {
+                return NJS_ERROR;
+            }
+
+            if (X509_NAME_add_entry_by_txt(name, attr_map[i].openssl_name, MBSTRING_ASC,
+                                           attr_value.start, attr_value.length, -1, 0) != 1) {
+                njs_webcrypto_error(vm, "X509_NAME_add_entry_by_txt() failed");
+                return NJS_ERROR;
+            }
+            attr_count++;
+        }
+    }
+
+    if (attr_count == 0) {
+        njs_webcrypto_error(vm, "X509_NAME_add_entry_by_txt() failed");
+        return NJS_ERROR;
+    }
+
+    return NJS_OK;
+}
+
+static njs_int_t
+njs_ext_generate_certificate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused, njs_value_t *retval)
+{
+    njs_int_t              ret;
+    njs_value_t            *options, *keyPair, *privKey, *pubKey, *val;
+    njs_opaque_value_t     result, lvalue;
+    njs_webcrypto_key_t    *privateKey, *publicKey;
+    njs_str_t              serialNumber, cert_data;
+    X509                   *cert = NULL;
+    X509_NAME              *name = NULL;
+    ASN1_INTEGER           *serial_asn1 = NULL;
+    EVP_PKEY               *pkey = NULL;
+    BIGNUM                 *serial_bn = NULL;
+    u_char                 *cert_buf = NULL;
+    int                    cert_len;
+    int64_t                notBefore, notAfter;
+    int                    issuer_is_subject = 0;
+
+    static const njs_str_t string_subject = njs_str("subject");
+    static const njs_str_t string_issuer = njs_str("issuer");
+    static const njs_str_t string_serialNumber = njs_str("serialNumber");
+    static const njs_str_t string_notBefore = njs_str("notBefore");
+    static const njs_str_t string_notAfter = njs_str("notAfter");
+    static const njs_str_t string_privateKey = njs_str("privateKey");
+    static const njs_str_t string_publicKey = njs_str("publicKey");
+
+    if (nargs < 3) {
+        njs_vm_type_error(vm, "generateCertificate requires at least 2 arguments");
+        return NJS_ERROR;
+    }
+
+    options = njs_arg(args, nargs, 1);
+    keyPair = njs_arg(args, nargs, 2);
+
+    if (!njs_value_is_object(options)) {
+        njs_vm_type_error(vm, "generateCertificate options must be an object");
+        return NJS_ERROR;
+    }
+
+    if (!njs_value_is_object(keyPair)) {
+        njs_vm_type_error(vm, "generateCertificate keyPair must be an object");
+        return NJS_ERROR;
+    }
+
+    /* Get private key from keyPair */
+    privKey = njs_vm_object_prop(vm, keyPair, &string_privateKey, &lvalue);
+    if (njs_slow_path(privKey == NULL)) {
+        njs_vm_type_error(vm, "keyPair.privateKey is required");
+        return NJS_ERROR;
+    }
+
+    privateKey = njs_vm_external(vm, njs_webcrypto_crypto_key_proto_id, privKey);
+    if (njs_slow_path(privateKey == NULL)) {
+        njs_vm_type_error(vm, "keyPair.privateKey is not a CryptoKey object");
+        return NJS_ERROR;
+    }
+
+    /* Get public key from keyPair */
+    pubKey = njs_vm_object_prop(vm, keyPair, &string_publicKey, &lvalue);
+    if (njs_slow_path(pubKey == NULL)) {
+        njs_vm_type_error(vm, "keyPair.publicKey is required");
+        return NJS_ERROR;
+    }
+
+    publicKey = njs_vm_external(vm, njs_webcrypto_crypto_key_proto_id, pubKey);
+    if (njs_slow_path(publicKey == NULL)) {
+        njs_vm_type_error(vm, "keyPair.publicKey is not a CryptoKey object");
+        return NJS_ERROR;
+    }
+
+    /* Extract subject */
+njs_opaque_value_t subject_lvalue, issuer_lvalue;
+    njs_value_t *subject_val = njs_vm_object_prop(vm, options, &string_subject, &subject_lvalue);
+    if (njs_slow_path(subject_val == NULL)) {
+        njs_vm_type_error(vm, "certificate subject is required");
+        return NJS_ERROR;
+    }
+
+    if (!njs_value_is_object(subject_val)) {
+        njs_vm_type_error(vm, "certificate subject must be an object");
+        return NJS_ERROR;
+    }
+njs_value_t *subject_attrs = subject_val;
+
+    /* Extract issuer (optional, defaults to subject for self-signed) */
+njs_value_t *issuer_val = njs_vm_object_prop(vm, options, &string_issuer, &issuer_lvalue);
+njs_value_t *issuer_attrs = NULL;
+    if (issuer_val != NULL) {
+        if (!njs_value_is_object(issuer_val)) {
+            njs_vm_type_error(vm, "certificate issuer must be an object");
+            return NJS_ERROR;
+        }
+        issuer_attrs = issuer_val;
+    } else {
+        issuer_is_subject = 1;  /* Self-signed certificate */
+    }
+
+    /* Extract serial number (optional, defaults to "1") */
+    val = njs_vm_object_prop(vm, options, &string_serialNumber, &lvalue);
+    if (val != NULL) {
+        ret = njs_vm_value_to_bytes(vm, &serialNumber, val);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
+    } else {
+        serialNumber.start = NULL;
+        serialNumber.length = 0;
+    }
+
+    /* Extract validity period */
+    val = njs_vm_object_prop(vm, options, &string_notBefore, &lvalue);
+    if (val != NULL) {
+        ret = njs_value_to_integer(vm, val, &notBefore);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
+    } else {
+        notBefore = 0;  /* Now */
+    }
+
+    val = njs_vm_object_prop(vm, options, &string_notAfter, &lvalue);
+    if (val != NULL) {
+        ret = njs_value_to_integer(vm, val, &notAfter);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
+    } else {
+        notAfter = 365LL * 24 * 60 * 60 * 1000;  /* 1 year from now */
+    }
+
+    /* Create X509 certificate */
+    cert = X509_new();
+    if (njs_slow_path(cert == NULL)) {
+        njs_webcrypto_error(vm, "X509_new() failed");
+        goto fail;
+    }
+
+    /* Set version (X509v3) */
+    if (X509_set_version(cert, 2) != 1) {
+        njs_webcrypto_error(vm, "X509_set_version() failed");
+        goto fail;
+    }
+
+    /* Set serial number */
+    serial_asn1 = ASN1_INTEGER_new();
+    if (njs_slow_path(serial_asn1 == NULL)) {
+        njs_webcrypto_error(vm, "ASN1_INTEGER_new() failed");
+        goto fail;
+    }
+
+    if (serialNumber.start != NULL && serialNumber.length > 0) {
+        /* Convert serialNumber to BIGNUM */
+        serial_bn = BN_bin2bn(serialNumber.start, serialNumber.length, NULL);
+        if (njs_slow_path(serial_bn == NULL)) {
+            njs_webcrypto_error(vm, "BN_bin2bn() failed");
+            goto fail;
+        }
+
+        if (BN_to_ASN1_INTEGER(serial_bn, serial_asn1) == NULL) {
+            njs_webcrypto_error(vm, "BN_to_ASN1_INTEGER() failed");
+            goto fail;
+        }
+    } else {
+        /* Default to serial number 1 */
+        if (ASN1_INTEGER_set_uint64(serial_asn1, 1) != 1) {
+            njs_webcrypto_error(vm, "ASN1_INTEGER_set_uint64() failed");
+            goto fail;
+        }
+    }
+
+    if (X509_set_serialNumber(cert, serial_asn1) != 1) {
+        njs_webcrypto_error(vm, "X509_set_serialNumber() failed");
+        goto fail;
+    }
+
+    /* Set validity period */
+    if (X509_gmtime_adj(X509_getm_notBefore(cert), notBefore / 1000) == NULL) {
+        njs_webcrypto_error(vm, "X509_gmtime_adj(notBefore) failed");
+        goto fail;
+    }
+
+    if (X509_gmtime_adj(X509_getm_notAfter(cert), notAfter / 1000) == NULL) {
+        njs_webcrypto_error(vm, "X509_gmtime_adj(notAfter) failed");
+        goto fail;
+    }
+
+    /* Set subject name */
+    name = X509_NAME_new();
+    if (njs_slow_path(name == NULL)) {
+        njs_webcrypto_error(vm, "X509_NAME_new() failed");
+        goto fail;
+    }
+
+    ret = njs_add_name_attributes(vm, name, subject_attrs);
+    if (njs_slow_path(ret != NJS_OK)) {
+        goto fail;
+    }
+
+    if (X509_set_subject_name(cert, name) != 1) {
+        njs_webcrypto_error(vm, "X509_set_subject_name() failed");
+        goto fail;
+    }
+
+    if (issuer_is_subject) {
+        /* Set issuer name (same as subject for self-signed) */
+        if (X509_set_issuer_name(cert, name) != 1) {
+            njs_webcrypto_error(vm, "X509_set_issuer_name() failed");
+            goto fail;
+        }
+    } else {
+        /* Create separate issuer name */
+        X509_NAME *issuer_name = X509_NAME_new();
+        if (njs_slow_path(issuer_name == NULL)) {
+            njs_webcrypto_error(vm, "X509_NAME_new() failed");
+            goto fail;
+        }
+
+        ret = njs_add_name_attributes(vm, issuer_name, issuer_attrs);
+        if (njs_slow_path(ret != NJS_OK)) {
+            X509_NAME_free(issuer_name);
+            goto fail;
+        }
+
+        if (X509_set_issuer_name(cert, issuer_name) != 1) {
+            njs_webcrypto_error(vm, "X509_set_issuer_name() failed");
+            X509_NAME_free(issuer_name);
+            goto fail;
+        }
+
+        X509_NAME_free(issuer_name);
+    }
+
+    /* Set public key */
+    pkey = privateKey->u.a.pkey;
+    if (X509_set_pubkey(cert, pkey) != 1) {
+        njs_webcrypto_error(vm, "X509_set_pubkey() failed");
+        goto fail;
+    }
+
+    /* Sign the certificate with the private key */
+    if (X509_sign(cert, pkey, EVP_sha256()) == 0) {
+        njs_webcrypto_error(vm, "X509_sign() failed");
+        goto fail;
+    }
+
+    /* Convert certificate to DER format */
+    cert_len = i2d_X509(cert, &cert_buf);
+    if (njs_slow_path(cert_len <= 0)) {
+        njs_webcrypto_error(vm, "i2d_X509() failed");
+        goto fail;
+    }
+
+    /* Create result array buffer */
+    cert_data.start = cert_buf;
+    cert_data.length = cert_len;
+
+    ret = njs_webcrypto_array_buffer(vm, njs_value_arg(&result),
+                                     cert_data.start, cert_data.length);
+    if (njs_slow_path(ret != NJS_OK)) {
+        goto fail;
+    }
+
+    /* Cleanup */
+    if (serial_bn != NULL) {
+        BN_free(serial_bn);
+    }
+    if (serial_asn1 != NULL) {
+        ASN1_INTEGER_free(serial_asn1);
+    }
+    if (name != NULL) {
+        X509_NAME_free(name);
+    }
+    if (cert != NULL) {
+        X509_free(cert);
+    }
+    if (cert_buf != NULL) {
+        OPENSSL_free(cert_buf);
+    }
+
+    return njs_webcrypto_result(vm, &result, NJS_OK, retval);
+
+fail:
+    if (serial_bn != NULL) {
+        BN_free(serial_bn);
+    }
+    if (serial_asn1 != NULL) {
+        ASN1_INTEGER_free(serial_asn1);
+    }
+    if (name != NULL) {
+        X509_NAME_free(name);
+    }
+    if (cert != NULL) {
+        X509_free(cert);
+    }
+    if (cert_buf != NULL) {
+        OPENSSL_free(cert_buf);
     }
 
     return njs_webcrypto_result(vm, NULL, NJS_ERROR, retval);
