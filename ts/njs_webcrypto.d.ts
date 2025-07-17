@@ -176,6 +176,33 @@ interface CryptoKey {
 
 type CryptoKeyPair = { privateKey: CryptoKey, publicKey: CryptoKey };
 
+interface CertificateGenerationOptions {
+    /**
+     * Subject name for the certificate (e.g., "CN=example.com")
+     */
+    subject: string;
+
+    /**
+     * Issuer name for the certificate (optional, defaults to subject for self-signed)
+     */
+    issuer?: string;
+
+    /**
+     * Serial number for the certificate (optional, defaults to "1")
+     */
+    serialNumber?: string;
+
+    /**
+     * Certificate validity start time in milliseconds since epoch (optional, defaults to now)
+     */
+    notBefore?: number;
+
+    /**
+     * Certificate validity end time in milliseconds since epoch (optional, defaults to 1 year from now)
+     */
+    notAfter?: number;
+}
+
 interface SubtleCrypto {
     /**
      * Decrypts encrypted data.
@@ -297,6 +324,15 @@ interface SubtleCrypto {
     generateKey(algorithm: RsaHashedKeyGenParams | EcKeyGenParams,
                 extractable: boolean,
                 usage: Array<string>): Promise<CryptoKeyPair>;
+
+    /**
+     * Generates a self-signed X.509 certificate from a key pair.
+     *
+     * @param options Certificate generation options including subject, issuer, validity period, etc.
+     * @param keyPair CryptoKeyPair containing the private and public keys to use for certificate generation.
+     */
+    generateCertificate(options: CertificateGenerationOptions,
+                       keyPair: CryptoKeyPair): Promise<ArrayBuffer>;
 
     /**
      * Generates a digital signature.

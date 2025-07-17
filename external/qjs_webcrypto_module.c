@@ -125,6 +125,8 @@ static JSValue qjs_webcrypto_export_key(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv);
 static JSValue qjs_webcrypto_generate_key(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv);
+static JSValue qjs_webcrypto_generate_certificate(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv);
 static JSValue qjs_webcrypto_import_key(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv);
 static JSValue qjs_webcrypto_sign(JSContext *cx, JSValueConst this_val,
@@ -439,6 +441,7 @@ static const JSCFunctionListEntry qjs_webcrypto_subtle[] = {
     JS_CFUNC_MAGIC_DEF("encrypt", 4, qjs_webcrypto_cipher, 1),
     JS_CFUNC_DEF("exportKey", 3, qjs_webcrypto_export_key),
     JS_CFUNC_DEF("generateKey", 3, qjs_webcrypto_generate_key),
+    JS_CFUNC_DEF("generateCertificate", 3, qjs_webcrypto_generate_certificate),
     JS_CFUNC_MAGIC_DEF("sign", 4, qjs_webcrypto_sign, 0),
     JS_CFUNC_MAGIC_DEF("verify", 4, qjs_webcrypto_sign, 1),
 };
@@ -2662,6 +2665,371 @@ fail:
     JS_FreeValue(cx, keypub);
 
     return qjs_promise_result(cx, JS_EXCEPTION);
+}
+
+
+static JSValue
+qjs_webcrypto_generate_certificate(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv)
+{
+    JSValue                ret, options, keyPair, privateKey, publicKey, val;
+    qjs_webcrypto_key_t    *priv_key = NULL, *pub_key = NULL;
+    qjs_bytes_t            subject, issuer, serialNumber;
+    X509                   *cert = NULL;
+    X509_NAME              *subj_name = NULL, *issuer_name = NULL;
+    ASN1_INTEGER           *serial_asn1 = NULL;
+    EVP_PKEY               *priv_pkey = NULL, *pub_pkey = NULL;
+    u_char                 *cert_buf = NULL;
+    int                    cert_len;
+    int64_t                notBefore, notAfter;
+    JSValue                result = JS_UNDEFINED;
+    BIGNUM                 *serial_bn = NULL;
+    int                    issuer_is_subject = 0;
+
+    /* Initialize bytes structures */
+    memset(&subject, 0, sizeof(subject));
+    memset(&issuer, 0, sizeof(issuer));
+    memset(&serialNumber, 0, sizeof(serialNumber));
+
+    if (argc < 2) {
+        return qjs_promise_result(cx, JS_ThrowTypeError(cx, "generateCertificate requires at least 2 arguments"));
+    }
+
+    options = argv[0];
+    keyPair = argv[1];
+
+    if (!JS_IsObject(options)) {
+        return qjs_promise_result(cx, JS_ThrowTypeError(cx, "generateCertificate options must be an object"));
+    }
+
+    if (!JS_IsObject(keyPair)) {
+        return qjs_promise_result(cx, JS_ThrowTypeError(cx, "generateCertificate keyPair must be an object"));
+    }
+
+    /* Get private key from keyPair */
+    privateKey = JS_GetPropertyStr(cx, keyPair, "privateKey");
+    if (JS_IsException(privateKey)) {
+        ret = privateKey;
+        goto cleanup;
+    }
+
+    if (JS_IsUndefined(privateKey)) {
+        ret = JS_ThrowTypeError(cx, "keyPair.privateKey is required");
+        goto cleanup;
+    }
+
+    priv_key = JS_GetOpaque2(cx, privateKey, QJS_CORE_CLASS_ID_WEBCRYPTO_KEY);
+    if (priv_key == NULL) {
+        ret = JS_ThrowTypeError(cx, "keyPair.privateKey is not a CryptoKey object");
+        goto cleanup;
+    }
+
+    /* Get public key from keyPair */
+    publicKey = JS_GetPropertyStr(cx, keyPair, "publicKey");
+    if (JS_IsException(publicKey)) {
+        ret = publicKey;
+        goto cleanup;
+    }
+
+    pub_key = JS_GetOpaque2(cx, publicKey, QJS_CORE_CLASS_ID_WEBCRYPTO_KEY);
+    if (pub_key == NULL) {
+        ret = JS_ThrowTypeError(cx, "keyPair.publicKey is not a CryptoKey object");
+        goto cleanup;
+    }
+
+    /* Extract subject */
+    val = JS_GetPropertyStr(cx, options, "subject");
+    if (JS_IsException(val)) {
+        ret = val;
+        goto cleanup;
+    }
+    if (JS_IsUndefined(val)) {
+        ret = JS_ThrowTypeError(cx, "certificate subject is required");
+        goto cleanup;
+    }
+    if (qjs_to_bytes(cx, &subject, val) != 0) {
+        ret = JS_EXCEPTION;
+        goto cleanup;
+    }
+    JS_FreeValue(cx, val);
+
+    /* Extract issuer (optional, defaults to subject for self-signed) */
+    val = JS_GetPropertyStr(cx, options, "issuer");
+    if (JS_IsException(val)) {
+        ret = val;
+        goto cleanup;
+    }
+    if (!JS_IsUndefined(val)) {
+        if (qjs_to_bytes(cx, &issuer, val) != 0) {
+            ret = JS_EXCEPTION;
+            goto cleanup;
+        }
+    } else {
+        issuer_is_subject = 1;  /* Self-signed certificate */
+    }
+    JS_FreeValue(cx, val);
+
+    /* Extract serial number (optional, defaults to "1") */
+    val = JS_GetPropertyStr(cx, options, "serialNumber");
+    if (JS_IsException(val)) {
+        ret = val;
+        goto cleanup;
+    }
+    if (!JS_IsUndefined(val)) {
+        if (qjs_to_bytes(cx, &serialNumber, val) != 0) {
+            ret = JS_EXCEPTION;
+            goto cleanup;
+        }
+    }
+    JS_FreeValue(cx, val);
+
+    /* Extract validity period */
+    val = JS_GetPropertyStr(cx, options, "notBefore");
+    if (JS_IsException(val)) {
+        ret = val;
+        goto cleanup;
+    }
+    if (!JS_IsUndefined(val)) {
+        if (JS_ToInt64(cx, &notBefore, val) < 0) {
+            ret = JS_EXCEPTION;
+            goto cleanup;
+        }
+    } else {
+        notBefore = 0;  /* Now */
+    }
+    JS_FreeValue(cx, val);
+
+    val = JS_GetPropertyStr(cx, options, "notAfter");
+    if (JS_IsException(val)) {
+        ret = val;
+        goto cleanup;
+    }
+    if (!JS_IsUndefined(val)) {
+        if (JS_ToInt64(cx, &notAfter, val) < 0) {
+            ret = JS_EXCEPTION;
+            goto cleanup;
+        }
+    } else {
+        notAfter = 365LL * 24 * 60 * 60 * 1000;  /* 1 year from now */
+    }
+    JS_FreeValue(cx, val);
+
+    /* Create X509 certificate */
+    cert = X509_new();
+    if (cert == NULL) {
+        qjs_webcrypto_error(cx, "X509_new() failed");
+        ret = JS_EXCEPTION;
+        goto cleanup;
+    }
+
+    /* Set version (X509v3) */
+    if (X509_set_version(cert, 2) != 1) {
+        qjs_webcrypto_error(cx, "X509_set_version() failed");
+        ret = JS_EXCEPTION;
+        goto cleanup;
+    }
+
+    /* Set serial number */
+    serial_asn1 = ASN1_INTEGER_new();
+    if (serial_asn1 == NULL) {
+        qjs_webcrypto_error(cx, "ASN1_INTEGER_new() failed");
+        ret = JS_EXCEPTION;
+        goto cleanup;
+    }
+
+    if (serialNumber.start != NULL) {
+        /* Convert serialNumber to BIGNUM */
+        if (serialNumber.tag == JS_TAG_STRING) {
+            /* Handle string serial numbers (hex or decimal) */
+            char *serial_str = (char *) serialNumber.start;
+            
+            /* Try to parse as decimal first */
+            serial_bn = BN_new();
+            if (serial_bn == NULL) {
+                qjs_webcrypto_error(cx, "BN_new() failed");
+                ret = JS_EXCEPTION;
+                goto cleanup;
+            }
+            
+            if (BN_dec2bn(&serial_bn, serial_str) == 0) {
+                /* If decimal parsing failed, try hex */
+                BN_free(serial_bn);
+                serial_bn = BN_new();
+                if (serial_bn == NULL) {
+                    qjs_webcrypto_error(cx, "BN_new() failed");
+                    ret = JS_EXCEPTION;
+                    goto cleanup;
+                }
+                
+                if (BN_hex2bn(&serial_bn, serial_str) == 0) {
+                    /* If both failed, fallback to treating as raw bytes */
+                    BN_free(serial_bn);
+                    serial_bn = BN_bin2bn(serialNumber.start, serialNumber.length, NULL);
+                    if (serial_bn == NULL) {
+                        qjs_webcrypto_error(cx, "BN_bin2bn() failed");
+                        ret = JS_EXCEPTION;
+                        goto cleanup;
+                    }
+                }
+            }
+        } else {
+            /* Handle binary serial numbers */
+            serial_bn = BN_bin2bn(serialNumber.start, serialNumber.length, NULL);
+            if (serial_bn == NULL) {
+                qjs_webcrypto_error(cx, "BN_bin2bn() failed");
+                ret = JS_EXCEPTION;
+                goto cleanup;
+            }
+        }
+        
+        if (BN_to_ASN1_INTEGER(serial_bn, serial_asn1) == NULL) {
+            qjs_webcrypto_error(cx, "BN_to_ASN1_INTEGER() failed");
+            ret = JS_EXCEPTION;
+            goto cleanup;
+        }
+    } else {
+        /* Default to serial number 1 */
+        if (ASN1_INTEGER_set_uint64(serial_asn1, 1) != 1) {
+            qjs_webcrypto_error(cx, "ASN1_INTEGER_set_uint64() failed");
+            ret = JS_EXCEPTION;
+            goto cleanup;
+        }
+    }
+
+    if (X509_set_serialNumber(cert, serial_asn1) != 1) {
+        qjs_webcrypto_error(cx, "X509_set_serialNumber() failed");
+        ret = JS_EXCEPTION;
+        goto cleanup;
+    }
+
+    /* Set validity period */
+    if (X509_gmtime_adj(X509_getm_notBefore(cert), notBefore / 1000) == NULL) {
+        qjs_webcrypto_error(cx, "X509_gmtime_adj(notBefore) failed");
+        ret = JS_EXCEPTION;
+        goto cleanup;
+    }
+    if (X509_gmtime_adj(X509_getm_notAfter(cert), notAfter / 1000) == NULL) {
+        qjs_webcrypto_error(cx, "X509_gmtime_adj(notAfter) failed");
+        ret = JS_EXCEPTION;
+        goto cleanup;
+    }
+
+    /* Set subject name */
+    subj_name = X509_NAME_new();
+    if (subj_name == NULL) {
+        qjs_webcrypto_error(cx, "X509_NAME_new() failed");
+        ret = JS_EXCEPTION;
+        goto cleanup;
+    }
+    if (X509_NAME_add_entry_by_txt(subj_name, "CN", MBSTRING_ASC,
+                                   subject.start, subject.length, -1, 0) != 1) {
+        qjs_webcrypto_error(cx, "X509_NAME_add_entry_by_txt(subject) failed");
+        ret = JS_EXCEPTION;
+        goto cleanup;
+    }
+    if (X509_set_subject_name(cert, subj_name) != 1) {
+        qjs_webcrypto_error(cx, "X509_set_subject_name() failed");
+        ret = JS_EXCEPTION;
+        goto cleanup;
+    }
+
+    /* Set issuer name */
+    if (issuer_is_subject) {
+        /* Self-signed certificate */
+        if (X509_set_issuer_name(cert, subj_name) != 1) {
+            qjs_webcrypto_error(cx, "X509_set_issuer_name() failed");
+            ret = JS_EXCEPTION;
+            goto cleanup;
+        }
+    } else {
+        /* Different issuer */
+        issuer_name = X509_NAME_new();
+        if (issuer_name == NULL) {
+            qjs_webcrypto_error(cx, "X509_NAME_new() failed");
+            ret = JS_EXCEPTION;
+            goto cleanup;
+        }
+        if (X509_NAME_add_entry_by_txt(issuer_name, "CN", MBSTRING_ASC,
+                                       issuer.start, issuer.length, -1, 0) != 1) {
+            qjs_webcrypto_error(cx, "X509_NAME_add_entry_by_txt(issuer) failed");
+            ret = JS_EXCEPTION;
+            goto cleanup;
+        }
+        if (X509_set_issuer_name(cert, issuer_name) != 1) {
+            qjs_webcrypto_error(cx, "X509_set_issuer_name() failed");
+            ret = JS_EXCEPTION;
+            goto cleanup;
+        }
+    }
+
+    /* Set public key from pub_key, not priv_key */
+    pub_pkey = pub_key->u.a.pkey;
+    if (X509_set_pubkey(cert, pub_pkey) != 1) {
+        qjs_webcrypto_error(cx, "X509_set_pubkey() failed");
+        ret = JS_EXCEPTION;
+        goto cleanup;
+    }
+
+    /* Sign the certificate with the private key */
+    priv_pkey = priv_key->u.a.pkey;
+    if (X509_sign(cert, priv_pkey, EVP_sha256()) == 0) {
+        qjs_webcrypto_error(cx, "X509_sign() failed");
+        ret = JS_EXCEPTION;
+        goto cleanup;
+    }
+
+    /* Convert certificate to DER format */
+    cert_len = i2d_X509(cert, &cert_buf);
+    if (cert_len <= 0) {
+        qjs_webcrypto_error(cx, "i2d_X509() failed");
+        ret = JS_EXCEPTION;
+        goto cleanup;
+    }
+
+    /* Create result array buffer */
+    result = JS_NewArrayBufferCopy(cx, cert_buf, cert_len);
+    if (JS_IsException(result)) {
+        ret = result;
+        goto cleanup;
+    }
+
+    /* Return result wrapped in promise */
+    ret = qjs_promise_result(cx, result);
+
+cleanup:
+    if (serial_bn != NULL) {
+        BN_free(serial_bn);
+    }
+    if (serial_asn1 != NULL) {
+        ASN1_INTEGER_free(serial_asn1);
+    }
+    if (subj_name != NULL) {
+        X509_NAME_free(subj_name);
+    }
+    if (issuer_name != NULL) {
+        X509_NAME_free(issuer_name);
+    }
+    if (cert != NULL) {
+        X509_free(cert);
+    }
+    if (cert_buf != NULL) {
+        OPENSSL_free(cert_buf);
+    }
+    if (subject.start != NULL) {
+        qjs_bytes_free(cx, &subject);
+    }
+    if (issuer.start != NULL && !issuer_is_subject) {
+        qjs_bytes_free(cx, &issuer);
+    }
+    if (serialNumber.start != NULL) {
+        qjs_bytes_free(cx, &serialNumber);
+    }
+    JS_FreeValue(cx, privateKey);
+    JS_FreeValue(cx, publicKey);
+
+    /* Don't free result here - it's consumed by qjs_promise_result() */
+
+    return qjs_promise_result(cx, ret);
 }
 
 
