@@ -61,14 +61,15 @@ http {
 stream {
     %%TEST_GLOBALS_STREAM%%
 
-    js_set $js_addr      test.addr;
-    js_set $js_var       test.variable;
-    js_set $js_log       test.log;
-    js_set $js_unk       test.unk;
-    js_set $js_req_line  test.req_line;
-    js_set $js_sess_unk  test.sess_unk;
-    js_set $js_async     test.asyncf;
-    js_set $js_buffer    test.buffer;
+    js_set $js_addr          test.addr;
+    js_set $js_var           test.variable;
+    js_set $js_log           test.log;
+    js_set $js_unk           test.unk;
+    js_set $js_req_line      test.req_line;
+    js_set $js_sess_unk      test.sess_unk;
+    js_set $js_async         test.asyncf;
+    js_set $js_async_direct  test.asyncf_direct;
+    js_set $js_buffer        test.buffer;
 
     js_import test.js;
 
@@ -190,6 +191,11 @@ stream {
     server {
         listen      127.0.0.1:8100;
         return      $js_async;
+    }
+
+    server {
+        listen      127.0.0.1:8102;
+        return      $js_async_direct;
     }
 
     server {
@@ -384,17 +390,24 @@ $t->write_file('test.js', <<EOF);
         s.setReturnValue(`retval: \${a1 + a2}`);
     }
 
+    async function asyncf_direct(s) {
+        const a1 = await pr(10);
+        const a2 = await pr(20);
+
+        return `retval: \${a1 + a2}`;
+    }
+
     export default {njs:test_njs, addr, variable, sess_unk, log, access_step,
                     preread_step, filter_step, access_undecided, access_allow,
                     access_deny, preread_async, preread_data, preread_req_line,
                     req_line, filter_empty, filter_header_inject, filter_search,
                     access_except, preread_except, filter_except, asyncf,
-                    buffer};
+                    asyncf_direct, buffer};
 
 EOF
 
 $t->run_daemon(\&stream_daemon, port(8090));
-$t->try_run('no stream njs available')->plan(25);
+$t->try_run('no stream njs available')->plan(26);
 $t->waitforsocket('127.0.0.1:' . port(8090));
 
 ###############################################################################
@@ -427,7 +440,10 @@ stream('127.0.0.1:' . port(8097))->io('x');
 stream('127.0.0.1:' . port(8098))->io('x');
 stream('127.0.0.1:' . port(8099))->io('x');
 
-is(stream('127.0.0.1:' . port(8100))->read(), 'retval: 30', 'asyncf');
+is(stream('127.0.0.1:' . port(8100))->read(), 'retval: 30',
+        'async var handler setReturnValue');
+is(stream('127.0.0.1:' . port(8102))->read(), 'retval: 30',
+        'async var handler direct');
 
 TODO: {
 local $TODO = 'not yet' unless has_version('0.8.3');

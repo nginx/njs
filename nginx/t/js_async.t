@@ -35,9 +35,10 @@ events {
 http {
     %%TEST_GLOBALS_HTTP%%
 
-    js_set $test_async      test.set_timeout;
-    js_set $context_var     test.context_var;
-    js_set $test_set_rv_var test.set_rv_var;
+    js_set $test_async       test.set_timeout;
+    js_set $context_var      test.context_var;
+    js_set $test_set_rv_var  test.set_rv_var;
+    js_set $test_promise_var test.set_promise_var;
 
     js_import test.js;
 
@@ -83,6 +84,10 @@ http {
 
         location /set_rv_var {
             return 200 $test_set_rv_var;
+        }
+
+        location /promise_var {
+            return 200 $test_promise_var;
         }
 
         location /await_reject {
@@ -198,6 +203,13 @@ $t->write_file('test.js', <<EOF);
         r.setReturnValue(`retval: \${a1 + a2}`);
     }
 
+    async function set_promise_var(r) {
+        const a1 = await pr(10);
+        const a2 = await pr(20);
+
+        return `retval: \${a1 + a2}`;
+    }
+
     async function timeout(ms) {
         return new Promise((resolve, reject) => {
             setTimeout(() => {
@@ -213,11 +225,11 @@ $t->write_file('test.js', <<EOF);
 
     export default {njs:test_njs, set_timeout, set_timeout_data,
                     set_timeout_many, context_var, shared_ctx, limit_rate,
-                    async_content, set_rv_var, await_reject};
+                    async_content, set_rv_var, set_promise_var, await_reject};
 
 EOF
 
-$t->try_run('no njs available')->plan(10);
+$t->try_run('no njs available')->plan(11);
 
 ###############################################################################
 
@@ -229,6 +241,7 @@ like(http_get('/limit_rate'), qr/A{50}/, 'limit_rate');
 
 like(http_get('/async_content'), qr/retval: AB/, 'async content');
 like(http_get('/set_rv_var'), qr/retval: 30/, 'set return value variable');
+like(http_get('/promise_var'), qr/retval: 30/, 'fulfilled promise variable');
 
 http_get('/async_var');
 http_get('/await_reject');
