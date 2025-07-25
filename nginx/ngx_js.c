@@ -54,7 +54,14 @@ static void ngx_engine_njs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
     ngx_js_loc_conf_t *conf);
 static ngx_int_t ngx_js_init_preload_vm(njs_vm_t *vm, ngx_js_loc_conf_t *conf);
 
+static ngx_int_t ngx_njs_execute_pending_jobs(njs_vm_t *vm, ngx_log_t *log);
+static njs_int_t ngx_njs_await(njs_vm_t *vm, ngx_log_t *log,
+    njs_value_t *value);
+
 #if (NJS_HAVE_QUICKJS)
+static ngx_int_t ngx_qjs_execute_pending_jobs(JSContext *cx, ngx_log_t *log);
+static ngx_int_t ngx_qjs_await(JSContext *cx, ngx_log_t *log,
+    JSValueConst *value);
 static ngx_int_t ngx_engine_qjs_init(ngx_engine_t *engine,
     ngx_engine_opts_t *opts);
 static ngx_int_t ngx_engine_qjs_compile(ngx_js_loc_conf_t *conf, ngx_log_t *log,
@@ -657,10 +664,61 @@ ngx_engine_njs_compile(ngx_js_loc_conf_t *conf, ngx_log_t *log, u_char *start,
 }
 
 
+static ngx_int_t
+ngx_njs_execute_pending_jobs(njs_vm_t *vm, ngx_log_t *log)
+{
+    njs_int_t  ret;
+    njs_str_t  exception;
+
+    for ( ;; ) {
+        ret = njs_vm_execute_pending_job(vm);
+        if (ret <= NJS_OK) {
+            if (ret == NJS_ERROR) {
+                njs_vm_exception_string(vm, &exception);
+                ngx_log_error(NGX_LOG_ERR, log, 0, "js job exception: %V",
+                              &exception);
+                return NGX_ERROR;
+            }
+
+            break;
+        }
+    }
+
+    return NGX_OK;
+}
+
+
+static njs_int_t
+ngx_njs_await(njs_vm_t *vm, ngx_log_t *log, njs_value_t *value)
+{
+    ngx_int_t            ret;
+    njs_promise_type_t   state;
+
+    ret = ngx_njs_execute_pending_jobs(vm, log);
+    if (ret != NGX_OK) {
+        return NGX_ERROR;
+    }
+
+    if (njs_value_is_promise(value)) {
+        state = njs_promise_state(value);
+
+        if (state == NJS_PROMISE_FULFILL) {
+            njs_value_assign(value, njs_promise_result(value));
+
+        } else if (state == NJS_PROMISE_REJECTED) {
+            njs_vm_throw(vm, njs_promise_result(value));
+        }
+    }
+
+    return NGX_OK;
+}
+
+
 ngx_engine_t *
 ngx_njs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
 {
     njs_vm_t            *vm;
+    njs_int_t            ret;
     ngx_engine_t        *engine;
     njs_opaque_value_t   retval;
 
@@ -671,8 +729,7 @@ ngx_njs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
 
     engine = njs_mp_alloc(njs_vm_memory_pool(vm), sizeof(ngx_engine_t));
     if (engine == NULL) {
-        njs_vm_destroy(vm);
-        return NULL;
+        goto destroy;
     }
 
     memcpy(engine, cf->engine, sizeof(ngx_engine_t));
@@ -681,13 +738,21 @@ ngx_njs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
 
     if (njs_vm_start(vm, njs_value_arg(&retval)) == NJS_ERROR) {
         ngx_js_log_exception(vm, ctx->log, "exception");
+        goto destroy;
+    }
 
-        njs_vm_destroy(vm);
-
-        return NULL;
+    ret = ngx_njs_await(vm, ctx->log, njs_value_arg(&retval));
+    if (ret == NGX_ERROR) {
+        goto destroy;
     }
 
     return engine;
+
+destroy:
+
+    njs_vm_destroy(vm);
+
+    return NULL;
 }
 
 
@@ -720,17 +785,9 @@ ngx_engine_njs_call(ngx_js_ctx_t *ctx, ngx_str_t *fname,
         return NGX_ERROR;
     }
 
-    for ( ;; ) {
-        ret = njs_vm_execute_pending_job(vm);
-        if (ret <= NJS_OK) {
-            if (ret == NJS_ERROR) {
-                ngx_js_log_exception(vm, ctx->log, "exception");
-
-                return NGX_ERROR;
-            }
-
-            break;
-        }
+    ret = ngx_njs_await(vm, ctx->log, njs_value_arg(&ctx->retval));
+    if (ret == NGX_ERROR) {
+        return NGX_ERROR;
     }
 
     return njs_rbtree_is_empty(&ctx->waiting_events) ? NGX_OK : NGX_AGAIN;
@@ -808,6 +865,66 @@ ngx_engine_njs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
 #if (NJS_HAVE_QUICKJS)
 
 static ngx_int_t
+ngx_qjs_execute_pending_jobs(JSContext *cx, ngx_log_t *log)
+{
+    int          rc;
+    JSValue      value;
+    JSContext   *cx1;
+    const char  *exception;
+
+    for ( ;; ) {
+        rc = JS_ExecutePendingJob(JS_GetRuntime(cx), &cx1);
+        if (rc <= 0) {
+            if (rc == 0) {
+                break;
+            }
+
+            value = JS_GetException(cx);
+            exception = JS_ToCString(cx, value);
+            JS_FreeValue(cx, value);
+
+            ngx_log_error(NGX_LOG_ERR, log, 0, "js job exception: %s",
+                          exception);
+
+            JS_FreeCString(cx, exception);
+
+            return NGX_ERROR;
+        }
+    }
+
+    return NGX_OK;
+}
+
+
+static ngx_int_t
+ngx_qjs_await(JSContext *cx, ngx_log_t *log, JSValue *value)
+{
+    JSValue             ret;
+    ngx_int_t           rc;
+    JSPromiseStateEnum  state;
+
+    rc = ngx_qjs_execute_pending_jobs(cx, log);
+    if (rc != NGX_OK) {
+        return NGX_ERROR;
+    }
+
+    state = JS_PromiseState(cx, *value);
+    if (state == JS_PROMISE_FULFILLED) {
+        ret = JS_PromiseResult(cx, *value);
+        JS_FreeValue(cx, *value);
+        *value = ret;
+
+    } else if (state == JS_PROMISE_REJECTED) {
+        ret = JS_Throw(cx, JS_PromiseResult(cx, *value));
+        JS_FreeValue(cx, *value);
+        *value = ret;
+    }
+
+    return NGX_OK;
+}
+
+
+static ngx_int_t
 ngx_engine_qjs_init(ngx_engine_t *engine, ngx_engine_opts_t *opts)
 {
     JSRuntime  *rt;
@@ -871,48 +988,13 @@ ngx_engine_qjs_compile(ngx_js_loc_conf_t *conf, ngx_log_t *log, u_char *start,
 }
 
 
-static JSValue
-js_std_await(JSContext *ctx, JSValue obj)
-{
-    int         state, err;
-    JSValue     ret;
-    JSContext  *ctx1;
-
-    for (;;) {
-        state = JS_PromiseState(ctx, obj);
-        if (state == JS_PROMISE_FULFILLED) {
-            ret = JS_PromiseResult(ctx, obj);
-            JS_FreeValue(ctx, obj);
-            break;
-
-        } else if (state == JS_PROMISE_REJECTED) {
-            ret = JS_Throw(ctx, JS_PromiseResult(ctx, obj));
-            JS_FreeValue(ctx, obj);
-            break;
-
-        } else if (state == JS_PROMISE_PENDING) {
-            err = JS_ExecutePendingJob(JS_GetRuntime(ctx), &ctx1);
-            if (err < 0) {
-               /* js_std_dump_error(ctx1); */
-            }
-
-        } else {
-            /* not a promise */
-            ret = obj;
-            break;
-        }
-    }
-
-    return ret;
-}
-
-
 ngx_engine_t *
 ngx_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
 {
     JSValue               rv;
     njs_mp_t             *mp;
     uint32_t              i, length;
+    ngx_int_t             rc;
     JSRuntime            *rt;
     JSContext            *cx;
     ngx_engine_t         *engine;
@@ -990,13 +1072,12 @@ ngx_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
         goto destroy;
     }
 
-    rv = js_std_await(cx, rv);
-    if (JS_IsException(rv)) {
-        ngx_qjs_log_exception(engine, ctx->log, "eval exception");
+    rc = ngx_qjs_await(cx, ctx->log, &rv);
+    JS_FreeValue(cx, rv);
+    if (rc == NGX_ERROR) {
+        ngx_qjs_log_exception(engine, ctx->log, "await exception");
         goto destroy;
     }
-
-    JS_FreeValue(cx, rv);
 
     return engine;
 
@@ -1014,10 +1095,9 @@ static ngx_int_t
 ngx_engine_qjs_call(ngx_js_ctx_t *ctx, ngx_str_t *fname,
     njs_opaque_value_t *args, njs_uint_t nargs)
 {
-    int         rc;
     JSValue     fn, val;
-    JSRuntime  *rt;
-    JSContext  *cx, *cx1;
+    ngx_int_t   rc;
+    JSContext  *cx;
 
     cx = ctx->engine->u.qjs.ctx;
 
@@ -1041,19 +1121,10 @@ ngx_engine_qjs_call(ngx_js_ctx_t *ctx, ngx_str_t *fname,
     JS_FreeValue(cx, ngx_qjs_arg(ctx->retval));
     ngx_qjs_arg(ctx->retval) = val;
 
-    rt = JS_GetRuntime(cx);
-
-    for ( ;; ) {
-        rc = JS_ExecutePendingJob(rt, &cx1);
-        if (rc <= 0) {
-            if (rc == -1) {
-                ngx_qjs_log_exception(ctx->engine, ctx->log, "job exception");
-
-                return NGX_ERROR;
-            }
-
-            break;
-        }
+    rc = ngx_qjs_await(cx, ctx->log, &ngx_qjs_arg(ctx->retval));
+    if (rc == NGX_ERROR) {
+        ngx_qjs_log_exception(ctx->engine, ctx->log, "await exception");
+        return NGX_ERROR;
     }
 
     return njs_rbtree_is_empty(&ctx->waiting_events) ? NGX_OK : NGX_AGAIN;
@@ -1365,10 +1436,8 @@ ngx_qjs_dump_obj(ngx_engine_t *e, JSValueConst val, ngx_str_t *dst)
 ngx_int_t
 ngx_qjs_call(JSContext *cx, JSValue fn, JSValue *argv, int argc)
 {
-    int            rc;
     JSValue        ret;
-    JSRuntime     *rt;
-    JSContext     *cx1;
+    ngx_int_t      rc;
     ngx_js_ctx_t  *ctx;
 
     ctx = ngx_qjs_external_ctx(cx, JS_GetContextOpaque(cx));
@@ -1382,19 +1451,9 @@ ngx_qjs_call(JSContext *cx, JSValue fn, JSValue *argv, int argc)
 
     JS_FreeValue(cx, ret);
 
-    rt = JS_GetRuntime(cx);
-
-    for ( ;; ) {
-        rc = JS_ExecutePendingJob(rt, &cx1);
-        if (rc <= 0) {
-            if (rc == -1) {
-                ngx_qjs_log_exception(ctx->engine, ctx->log, "job exception");
-
-                return NGX_ERROR;
-            }
-
-            break;
-        }
+    rc = ngx_qjs_execute_pending_jobs(cx, ctx->log);
+    if (rc != NGX_OK) {
+        return NGX_ERROR;
     }
 
     return NGX_OK;
@@ -2202,6 +2261,7 @@ ngx_js_call(njs_vm_t *vm, njs_function_t *func, njs_opaque_value_t *args,
     njs_uint_t nargs)
 {
     njs_int_t          ret;
+    ngx_js_ctx_t      *ctx;
     ngx_connection_t  *c;
 
     ret = njs_vm_call(vm, func, njs_value_arg(args), nargs);
@@ -2214,19 +2274,11 @@ ngx_js_call(njs_vm_t *vm, njs_function_t *func, njs_opaque_value_t *args,
         return NGX_ERROR;
     }
 
-    for ( ;; ) {
-        ret = njs_vm_execute_pending_job(vm);
-        if (ret <= NJS_OK) {
-            c = ngx_external_connection(vm, njs_vm_external_ptr(vm));
+    ctx = ngx_external_ctx(vm, njs_vm_external_ptr(vm));
 
-            if (ret == NJS_ERROR) {
-                ngx_js_log_exception(vm, c->log, "job exception");
-
-                return NGX_ERROR;
-            }
-
-            break;
-        }
+    ret = ngx_njs_execute_pending_jobs(vm, ctx->log);
+    if (ret != NGX_OK) {
+        return NGX_ERROR;
     }
 
     return NGX_OK;
