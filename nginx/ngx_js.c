@@ -10,6 +10,7 @@
 #include <ngx_core.h>
 #include <math.h>
 #include "ngx_js.h"
+#include <njs_main.h>
 
 
 typedef struct {
@@ -754,8 +755,19 @@ ngx_engine_njs_string(ngx_engine_t *e, njs_opaque_value_t *value,
 {
     ngx_int_t  rc;
     njs_str_t  s;
+    njs_value_t *val = njs_value_arg(value);
 
-    rc = ngx_js_string(e->u.njs.vm, njs_value_arg(value), &s);
+    /* Check if the value is a fulfilled promise and use its result. */
+    if (njs_is_promise(val)) {
+        njs_promise_t *promise = njs_promise(val);
+        njs_promise_data_t *promise_data = njs_data(&promise->value);
+
+        if (promise_data->state == NJS_PROMISE_FULFILL) {
+            val = &promise_data->result;
+        }
+    }
+
+    rc = ngx_js_string(e->u.njs.vm, val, &s);
 
     str->data = s.start;
     str->len = s.length;
@@ -1098,7 +1110,22 @@ static ngx_int_t
 ngx_engine_qjs_string(ngx_engine_t *e, njs_opaque_value_t *value,
     ngx_str_t *str)
 {
-    return ngx_qjs_dump_obj(e, ngx_qjs_arg(*value), str);
+    JSValue val = ngx_qjs_arg(*value);
+    JSContext *cx = e->u.qjs.ctx;
+
+    /* Check if the value is a fulfilled promise and use its result. */
+    if (JS_IsObject(val)) {
+        JSPromiseStateEnum state = JS_PromiseState(cx, val);
+
+        if (state == JS_PROMISE_FULFILLED) {
+            JSValue result = JS_PromiseResult(cx, val);
+            ngx_int_t rc = ngx_qjs_dump_obj(e, result, str);
+            JS_FreeValue(cx, result);
+            return rc;
+        }
+    }
+
+    return ngx_qjs_dump_obj(e, val, str);
 }
 
 
