@@ -12,6 +12,9 @@
 #include "ngx_js.h"
 
 
+#define NGX_MAX_JOB_ITERATIONS 0x1000
+
+
 typedef struct {
     ngx_queue_t          labels;
 } ngx_js_console_t;
@@ -691,6 +694,7 @@ ngx_engine_njs_call(ngx_js_ctx_t *ctx, ngx_str_t *fname,
     njs_int_t        ret;
     njs_str_t        name;
     ngx_str_t        exception;
+    ngx_uint_t       job_count = 0;
     njs_function_t  *func;
 
     name.start = fname->data;
@@ -729,6 +733,33 @@ ngx_engine_njs_call(ngx_js_ctx_t *ctx, ngx_str_t *fname,
 
             break;
         }
+
+        job_count++;
+        if (job_count >= NGX_MAX_JOB_ITERATIONS) {
+            ngx_log_error(NGX_LOG_ERR, ctx->log, 0,
+                          "js job queue processing limit exceeded (%ui iterations), "
+                          "possible infinite loop in microtasks", NGX_MAX_JOB_ITERATIONS);
+            return NGX_ERROR;
+        }
+    }
+
+    njs_value_t *val = njs_value_arg(&ctx->retval);
+    if (njs_value_is_promise(val)) {
+        njs_promise_type_t  state = njs_promise_state(val);
+
+        if (state == NJS_PROMISE_FULFILL) {
+            njs_value_assign(val, njs_promise_result(val));
+
+        } else if (state == NJS_PROMISE_REJECTED) {
+            njs_vm_throw(vm, njs_promise_result(val));
+
+        } else if (state == NJS_PROMISE_PENDING &&
+                   njs_rbtree_is_empty(&ctx->waiting_events))
+        {
+            ngx_log_error(NGX_LOG_ERR, ctx->log, 0, 
+                          "js promise pending, no jobs, no waiting_events");
+            return NGX_ERROR;
+        }
     }
 
     return njs_rbtree_is_empty(&ctx->waiting_events) ? NGX_OK : NGX_AGAIN;
@@ -754,8 +785,9 @@ ngx_engine_njs_string(ngx_engine_t *e, njs_opaque_value_t *value,
 {
     ngx_int_t  rc;
     njs_str_t  s;
+    njs_value_t *val = njs_value_arg(value);
 
-    rc = ngx_js_string(e->u.njs.vm, njs_value_arg(value), &s);
+    rc = ngx_js_string(e->u.njs.vm, val, &s);
 
     str->data = s.start;
     str->len = s.length;
@@ -1032,6 +1064,7 @@ ngx_engine_qjs_call(ngx_js_ctx_t *ctx, ngx_str_t *fname,
     ngx_str_t   exception;
     JSRuntime  *rt;
     JSContext  *cx, *cx1;
+    ngx_uint_t  job_count = 0;
 
     cx = ctx->engine->u.qjs.ctx;
 
@@ -1074,6 +1107,37 @@ ngx_engine_qjs_call(ngx_js_ctx_t *ctx, ngx_str_t *fname,
 
             break;
         }
+
+        job_count++;
+        if (job_count >= NGX_MAX_JOB_ITERATIONS) {
+            ngx_log_error(NGX_LOG_ERR, ctx->log, 0,
+                          "js job queue processing limit exceeded (%ui iterations), "
+                          "possible infinite loop in microtasks", NGX_MAX_JOB_ITERATIONS);
+            return NGX_ERROR;
+        }
+    }
+
+    JSValue retval = ngx_qjs_arg(ctx->retval);
+    if (JS_IsObject(retval)) {
+        JSPromiseStateEnum state = JS_PromiseState(cx, retval);
+
+        if (state == JS_PROMISE_FULFILLED) {
+            JSValue result = JS_PromiseResult(cx, retval);
+            JS_FreeValue(cx, ngx_qjs_arg(ctx->retval));
+            ngx_qjs_arg(ctx->retval) = result;
+
+        } else if (state == JS_PROMISE_REJECTED) {
+            JSValue rejection = JS_PromiseResult(cx, retval);
+            JS_FreeValue(cx, ngx_qjs_arg(ctx->retval));
+            ngx_qjs_arg(ctx->retval) = JS_Throw(cx, rejection);
+
+        } else if (state == JS_PROMISE_PENDING &&
+                   njs_rbtree_is_empty(&ctx->waiting_events))
+        {
+            ngx_log_error(NGX_LOG_ERR, ctx->log, 0, 
+                          "js promise pending, no jobs, no waiting_events");
+            return NGX_ERROR;
+        }
     }
 
     return njs_rbtree_is_empty(&ctx->waiting_events) ? NGX_OK : NGX_AGAIN;
@@ -1098,7 +1162,9 @@ static ngx_int_t
 ngx_engine_qjs_string(ngx_engine_t *e, njs_opaque_value_t *value,
     ngx_str_t *str)
 {
-    return ngx_qjs_dump_obj(e, ngx_qjs_arg(*value), str);
+    JSValue val = ngx_qjs_arg(*value);
+
+    return ngx_qjs_dump_obj(e, val, str);
 }
 
 
