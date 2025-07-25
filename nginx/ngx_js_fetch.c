@@ -42,7 +42,7 @@ static void ngx_js_fetch_destructor(ngx_js_event_t *event);
 static njs_int_t ngx_js_fetch_promissified_result(njs_vm_t *vm,
     njs_value_t *result, njs_int_t rc, njs_value_t *retval);
 static void ngx_js_fetch_done(ngx_js_fetch_t *fetch, njs_opaque_value_t *retval,
-                              njs_int_t rc);
+                              njs_int_t rc, njs_int_t is_sync);
 static njs_int_t ngx_js_http_promise_trampoline(njs_vm_t *vm,
     njs_value_t *args, njs_uint_t nargs, njs_index_t unused,
     njs_value_t *retval);
@@ -754,7 +754,7 @@ fail:
 
     njs_vm_exception_get(vm, njs_value_arg(&lvalue));
 
-    ngx_js_fetch_done(fetch, &lvalue, NJS_ERROR);
+    ngx_js_fetch_done(fetch, &lvalue, NJS_ERROR, 1);
 
     njs_value_assign(retval, njs_value_arg(&fetch->promise));
 
@@ -1220,7 +1220,7 @@ ngx_js_fetch_error(ngx_js_http_t *http, const char *err)
 
     njs_vm_exception_get(fetch->vm, njs_value_arg(&fetch->response_value));
 
-    ngx_js_fetch_done(fetch, &fetch->response_value, NJS_ERROR);
+    ngx_js_fetch_done(fetch, &fetch->response_value, NJS_ERROR, 0);
 }
 
 
@@ -1288,12 +1288,14 @@ error:
 
 static void
 ngx_js_fetch_done(ngx_js_fetch_t *fetch, njs_opaque_value_t *retval,
-    njs_int_t rc)
+    njs_int_t rc, njs_int_t is_sync)
 {
     njs_vm_t            *vm;
+    njs_int_t            ret;
     ngx_js_ctx_t        *ctx;
     ngx_js_http_t       *http;
     ngx_js_event_t      *event;
+    njs_function_t      *callback;
     njs_opaque_value_t   arguments[2], *action;
 
     http = &fetch->http;
@@ -1311,8 +1313,31 @@ ngx_js_fetch_done(ngx_js_fetch_t *fetch, njs_opaque_value_t *retval,
         vm = fetch->vm;
         event = fetch->event;
 
-        rc = ngx_js_call(vm, njs_value_function(njs_value_arg(&event->function)),
+        if (!is_sync) {
+            /* called from microtask, just execute it. */
+            rc = ngx_js_call(vm,
+                         njs_value_function(njs_value_arg(&event->function)),
                          &arguments[0], 2);
+
+        } else {
+            /* called directly from fetch(), enqueue to microtasks */
+
+            callback = njs_vm_function_alloc(vm,
+                                             ngx_js_http_promise_trampoline, 0,
+                                             0);
+            if (callback == NULL) {
+                rc = NJS_ERROR;
+            } else {
+
+                rc = NJS_OK;
+            }
+
+            ret = njs_vm_enqueue_job(vm, callback, njs_value_arg(&arguments),
+                                     2);
+            if (ret == NJS_ERROR) {
+                rc = ret;
+            }
+        }
 
         ctx = ngx_external_ctx(vm,  njs_vm_external_ptr(vm));
         ngx_js_del_event(ctx, event);
@@ -1326,12 +1351,16 @@ static njs_int_t
 ngx_js_http_promise_trampoline(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
 {
+    njs_int_t        ret;
     njs_function_t  *callback;
 
     callback = njs_value_function(njs_argument(args, 1));
 
     if (callback != NULL) {
-        return njs_vm_call(vm, callback, njs_argument(args, 2), 1);
+        ret = njs_vm_call(vm, callback, njs_argument(args, 2), 1);
+        if (ret != NJS_OK) {
+            return ret;
+        }
     }
 
     return NJS_OK;
@@ -1586,7 +1615,7 @@ ngx_js_fetch_process_done(ngx_js_http_t *http)
         return;
     }
 
-    ngx_js_fetch_done(fetch, &fetch->response_value, NJS_OK);
+    ngx_js_fetch_done(fetch, &fetch->response_value, NJS_OK, 0);
 }
 
 

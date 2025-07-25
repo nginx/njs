@@ -1341,7 +1341,7 @@ static ngx_int_t
 ngx_http_js_header_filter(ngx_http_request_t *r)
 {
     ngx_int_t                rc;
-    njs_int_t                pending;
+    ngx_int_t                pending;
     ngx_http_js_ctx_t       *ctx;
     ngx_http_js_loc_conf_t  *jlcf;
 
@@ -1363,7 +1363,6 @@ ngx_http_js_header_filter(ngx_http_request_t *r)
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
     ctx->filter = 1;
-    pending = ngx_js_ctx_pending(ctx);
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http js header call \"%V\"", &jlcf->header_filter);
@@ -1374,6 +1373,8 @@ ngx_http_js_header_filter(ngx_http_request_t *r)
     if (rc == NGX_ERROR) {
         return NGX_ERROR;
     }
+
+    pending = ngx_js_ctx_pending(ctx);
 
     if (!pending && rc == NGX_AGAIN) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
@@ -1443,8 +1444,6 @@ ngx_http_njs_body_filter(ngx_http_request_t *r, ngx_http_js_loc_conf_t *jlcf,
                 return ret;
             }
 
-            pending = ngx_js_ctx_pending(ctx);
-
             ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                            "http js body call \"%V\"", &jlcf->body_filter);
 
@@ -1454,6 +1453,8 @@ ngx_http_njs_body_filter(ngx_http_request_t *r, ngx_http_js_loc_conf_t *jlcf,
             if (rc == NGX_ERROR) {
                 return NGX_ERROR;
             }
+
+            pending = ngx_js_ctx_pending(ctx);
 
             if (!pending && rc == NGX_AGAIN) {
                 ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
@@ -1568,14 +1569,14 @@ ngx_http_js_variable_set(ngx_http_request_t *r, ngx_http_variable_value_t *v,
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
-    pending = ngx_js_ctx_pending(ctx);
-
     rc = ctx->engine->call((ngx_js_ctx_t *) ctx, fname, &ctx->args[0], 1);
 
     if (rc == NGX_ERROR) {
         v->not_found = 1;
         return NGX_OK;
     }
+
+    pending = ngx_js_ctx_pending(ctx);
 
     if (!pending && rc == NGX_AGAIN) {
         ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
@@ -7499,8 +7500,6 @@ ngx_http_qjs_body_filter(ngx_http_request_t *r, ngx_http_js_loc_conf_t *jlcf,
                 return NGX_ERROR;
             }
 
-            pending = ngx_js_ctx_pending(ctx);
-
             ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0,
                            "http js body call \"%V\"", &jlcf->body_filter);
 
@@ -7514,6 +7513,8 @@ ngx_http_qjs_body_filter(ngx_http_request_t *r, ngx_http_js_loc_conf_t *jlcf,
             if (rc == NGX_ERROR) {
                 return NGX_ERROR;
             }
+
+            pending = ngx_js_ctx_pending(ctx);
 
             if (!pending && rc == NGX_AGAIN) {
                 ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,

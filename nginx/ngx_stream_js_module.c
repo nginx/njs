@@ -1310,10 +1310,14 @@ ngx_stream_js_run_event(ngx_stream_session_t *s, ngx_stream_js_ctx_t *ctx,
 
     if (ret == NJS_ERROR) {
 error:
-        ngx_js_exception(vm, &exception);
+        ret = ngx_js_exception(vm, &exception);
+        if (ret != NGX_OK) {
+            ngx_log_error(NGX_LOG_ERR, c->log, 0, "js can't get exception");
 
-        ngx_log_error(NGX_LOG_ERR, c->log, 0, "js exception: %V",
-                      &exception);
+        } else {
+            ngx_log_error(NGX_LOG_ERR, c->log, 0, "js exception: %V",
+                          &exception);
+        }
 
         return NGX_ERROR;
     }
@@ -2751,10 +2755,14 @@ ngx_stream_qjs_run_event(ngx_stream_session_t *s, ngx_stream_js_ctx_t *ctx,
 
     if (rc == NGX_ERROR) {
 error:
-        ngx_qjs_exception(ctx->engine, &exception);
+        rc = ngx_qjs_exception(ctx->engine, &exception);
+        if (rc != NGX_OK) {
+            ngx_log_error(NGX_LOG_ERR, c->log, 0, "js can't get exception");
 
-        ngx_log_error(NGX_LOG_ERR, c->log, 0, "js exception: %V",
-                      &exception);
+        } else {
+            ngx_log_error(NGX_LOG_ERR, c->log, 0, "js exception: %V",
+                          &exception);
+        }
 
         return NGX_ERROR;
     }

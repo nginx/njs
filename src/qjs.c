@@ -6,6 +6,7 @@
 
 #include <qjs.h>
 #include <njs.h> /* NJS_VERSION */
+#include <njs_rbtree.h>
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -1346,7 +1347,7 @@ qjs_array_length(JSContext *cx, JSValueConst arr, uint32_t *plen)
 }
 
 
-static JSValue
+JSValue
 qjs_promise_fill_trampoline(JSContext *cx, int argc, JSValueConst *argv)
 {
     return JS_Call(cx, argv[0], JS_UNDEFINED, 1, &argv[1]);
@@ -1382,4 +1383,96 @@ qjs_promise_result(JSContext *cx, JSValue result)
     JS_FreeValue(cx, arguments[1]);
 
     return promise;
+}
+
+
+njs_int_t
+qjs_await(JSContext *ctx, void *log, void *waiting_events, JSValue *obj,
+    qjs_log_t log_error)
+{
+    int           rc;
+    JSValue       ret;
+
+    rc = qjs_execute_pending_jobs(ctx, log, log_error);
+    if (rc == NJS_ERROR) {
+        return NJS_ERROR;
+    }
+
+    if (JS_IsObject(*obj)) {
+        JSPromiseStateEnum state = JS_PromiseState(ctx, *obj);
+        if (state == JS_PROMISE_FULFILLED) {
+            ret = JS_PromiseResult(ctx, *obj);
+            JS_FreeValue(ctx, *obj);
+            *obj = ret;
+            return NJS_AGAIN;
+
+        } else if (state == JS_PROMISE_REJECTED) {
+            JSValue rejection = JS_PromiseResult(ctx, *obj);
+            JS_FreeValue(ctx, *obj);
+            *obj = JS_Throw(ctx, rejection);
+            return NJS_AGAIN;
+
+        } else if (state == JS_PROMISE_PENDING) {
+            if (waiting_events &&
+                njs_rbtree_is_empty((njs_rbtree_t *)waiting_events))
+            {
+                log_error(log,
+                          "js promise pending, no jobs, no waiting_events",
+                          NULL);
+                return NJS_ERROR;
+            }
+        }
+    }
+    return NJS_OK;
+}
+
+
+njs_int_t
+qjs_execute_pending_jobs(JSContext *ctx, void *log, qjs_log_t log_error)
+{
+    int        rc, job_count;
+    njs_str_t  exception;
+    JSContext  *cx;
+
+    job_count = 0;
+
+    for ( ;; ) {
+        rc = JS_ExecutePendingJob(JS_GetRuntime(ctx), &cx);
+        if (rc < 0) {
+            JSValue  exception_val;
+
+            exception_val = JS_GetException(ctx);
+
+            JSValue exception_str = JS_ToString(ctx, exception_val);
+            JS_FreeValue(ctx, exception_val);
+
+            exception.start = (u_char *)JS_ToCString(ctx, exception_str);
+            exception.length = strlen((char *)exception.start);
+            JS_FreeValue(ctx, exception_str);
+
+            log_error(log, "js job exception: %V", &exception);
+
+            JS_FreeCString(ctx, (char *)exception.start);
+
+        }
+        if (rc == 0) {
+            break;
+        }
+
+        job_count++;
+
+        if (job_count >= NJS_MAX_JOB_ITERATIONS) {
+            #define EXPAND(x) STRINGIZE(x)
+            #define STRINGIZE(x) #x
+                log_error(log,
+                          "js job queue processing exceeded "
+                          EXPAND(NJS_MAX_JOB_ITERATIONS) " iterations",
+                          NULL);
+            #undef STRINGIZE
+            #undef EXPAND
+            return NJS_ERROR;
+        }
+    }
+
+    return NJS_OK;
 }

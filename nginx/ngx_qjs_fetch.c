@@ -39,7 +39,7 @@ static ngx_qjs_fetch_t *ngx_qjs_fetch_alloc(JSContext *cx, ngx_pool_t *pool,
 static void ngx_qjs_fetch_error(ngx_js_http_t *http, const char *err);
 static void ngx_qjs_fetch_destructor(ngx_qjs_event_t *event);
 static void ngx_qjs_fetch_done(ngx_qjs_fetch_t *fetch, JSValue retval,
-    ngx_int_t rc);
+    ngx_int_t rc, ngx_int_t is_sync);
 
 static ngx_int_t ngx_qjs_request_ctor(JSContext *cx, ngx_js_request_t *request,
     ngx_url_t *u, int argc, JSValueConst *argv);
@@ -487,7 +487,7 @@ fail:
 
     fetch->response_value = JS_GetException(cx);
 
-    ngx_qjs_fetch_done(fetch, fetch->response_value, NGX_ERROR);
+    ngx_qjs_fetch_done(fetch, fetch->response_value, NGX_ERROR, 1);
 
     return promise;
 }
@@ -1278,7 +1278,7 @@ ngx_qjs_fetch_error(ngx_js_http_t *http, const char *err)
 
     fetch->response_value = JS_GetException(fetch->cx);
 
-    ngx_qjs_fetch_done(fetch, fetch->response_value, NGX_ERROR);
+    ngx_qjs_fetch_done(fetch, fetch->response_value, NGX_ERROR, 0);
 }
 
 
@@ -1307,7 +1307,8 @@ ngx_qjs_fetch_destructor(ngx_qjs_event_t *event)
 
 
 static void
-ngx_qjs_fetch_done(ngx_qjs_fetch_t *fetch, JSValue retval, ngx_int_t rc)
+ngx_qjs_fetch_done(ngx_qjs_fetch_t *fetch, JSValue retval, ngx_int_t rc,
+    ngx_int_t is_sync)
 {
     void             *external;
     JSValue           action;
@@ -1329,7 +1330,22 @@ ngx_qjs_fetch_done(ngx_qjs_fetch_t *fetch, JSValue retval, ngx_int_t rc)
         cx = fetch->cx;
         event = fetch->event;
 
-        rc = ngx_qjs_call(cx, action, &retval, 1);
+        if (!is_sync) {
+            rc = ngx_qjs_call(cx, action, &retval, 1);
+
+        } else {
+
+            JSValue  arguments[2];
+
+            arguments[0] = action;
+            arguments[1] = retval;
+
+            if (JS_EnqueueJob(cx, qjs_promise_fill_trampoline, 2, arguments) < 0) {
+                rc = NGX_ERROR;
+            } else {
+                rc = NGX_OK;
+            }
+        }
 
         external = JS_GetContextOpaque(cx);
         ctx = ngx_qjs_external_ctx(cx, external);
@@ -1369,7 +1385,7 @@ ngx_qjs_fetch_process_done(ngx_js_http_t *http)
 
     JS_SetOpaque(fetch->response_value, &http->response);
 
-    ngx_qjs_fetch_done(fetch, fetch->response_value, NGX_OK);
+    ngx_qjs_fetch_done(fetch, fetch->response_value, NGX_OK, 0);
 }
 
 

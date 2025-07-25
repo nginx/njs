@@ -192,10 +192,39 @@ njs_vm_ctor_push(njs_vm_t *vm)
 
 
 void
-njs_vm_destroy(njs_vm_t *vm)
+njs_vm_call_exit_hook(njs_vm_t *vm)
 {
     if (vm->hooks[NJS_HOOK_EXIT] != NULL) {
         (void) njs_vm_call(vm, vm->hooks[NJS_HOOK_EXIT], NULL, 0);
+        vm->hooks[NJS_HOOK_EXIT] = NULL;
+    }
+}
+
+
+void
+njs_vm_destroy(njs_vm_t *vm)
+{
+    njs_int_t  ret, job_count;
+
+    job_count = 0;
+
+    if (vm->hooks[NJS_HOOK_EXIT] != NULL) {
+        (void) njs_vm_call(vm, vm->hooks[NJS_HOOK_EXIT], NULL, 0);
+
+        /* njs_vm_execute_pending_jobs, but ignore errors. */
+
+        for ( ;; ) {
+            ret = njs_vm_execute_pending_job(vm);
+            if (ret == NJS_OK) {
+                break;
+            }
+
+            job_count++;
+
+            if (job_count >= NJS_MAX_JOB_ITERATIONS) {
+                break;
+            }
+        }
     }
 
     njs_mp_destroy(vm->mem_pool);
@@ -724,6 +753,78 @@ njs_vm_execute_pending_job(njs_vm_t *vm)
     return 1;
 }
 
+
+njs_int_t
+njs_vm_execute_pending_jobs(njs_vm_t *vm, void *log, njs_log_t log_error)
+{
+    njs_int_t  ret, job_count;
+    njs_str_t  exception_string;
+
+    job_count = 0;
+
+    for ( ;; ) {
+        ret = njs_vm_execute_pending_job(vm);
+        if (ret < NJS_OK) {
+            if (log_error != NULL) {
+                njs_vm_exception_string(vm, &exception_string);
+                log_error(log, "js job exception: %V", &exception_string);
+            }
+        }
+        if (ret == NJS_OK) {
+            break;
+        }
+
+        job_count++;
+
+        if (job_count >= NJS_MAX_JOB_ITERATIONS) {
+            if (log_error != NULL) {
+                #define EXPAND(x) STRINGIZE(x)
+                #define STRINGIZE(x) #x
+                    log_error(log, "js job queue processing exceeded "
+                              EXPAND(NJS_MAX_JOB_ITERATIONS) " iterations",
+                              NULL);
+                #undef STRINGIZE
+                #undef EXPAND
+            }
+            return NJS_ERROR;
+        }
+    }
+
+    return NJS_OK;
+}
+
+
+njs_int_t
+njs_vm_await(njs_vm_t *vm, void *log, void *waiting_events,
+             njs_opaque_value_t *retval, njs_log_t log_error)
+{
+    njs_int_t   ret;
+
+    ret = njs_vm_execute_pending_jobs(vm, log, log_error);
+    if (ret != NJS_OK) {
+        return NJS_ERROR;
+    }
+
+    njs_value_t *val = njs_value_arg(retval);
+    if (njs_value_is_promise(val)) {
+        njs_promise_type_t  state = njs_promise_state(val);
+
+        if (state == NJS_PROMISE_FULFILL) {
+            njs_value_assign(val, njs_promise_result(val));
+
+        } else if (state == NJS_PROMISE_REJECTED) {
+            njs_vm_throw(vm, njs_promise_result(val));
+
+        } else if (state == NJS_PROMISE_PENDING &&
+                   njs_rbtree_is_empty((njs_rbtree_t *)waiting_events))
+        {
+            log_error(log,
+                      "js promise pending, no jobs, no waiting_events", NULL);
+            return NJS_ERROR;
+        }
+    }
+    return NJS_OK;
+}
 
 void
 njs_vm_set_module_loader(njs_vm_t *vm, njs_module_loader_t module_loader,
