@@ -6,6 +6,7 @@
 
 #include <qjs.h>
 #include <njs.h> /* NJS_VERSION */
+#include <njs_rbtree.h>
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -1346,7 +1347,7 @@ qjs_array_length(JSContext *cx, JSValueConst arr, uint32_t *plen)
 }
 
 
-static JSValue
+JSValue
 qjs_promise_fill_trampoline(JSContext *cx, int argc, JSValueConst *argv)
 {
     return JS_Call(cx, argv[0], JS_UNDEFINED, 1, &argv[1]);

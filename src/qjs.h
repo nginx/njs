@@ -42,6 +42,7 @@ enum {
 
 
 typedef JSModuleDef *(*qjs_addon_init_pt)(JSContext *ctx, const char *name);
+typedef void (*qjs_log_t) (void *log, const char *message, void *value);
 
 typedef struct {
     const char                     *name;
@@ -52,6 +53,7 @@ typedef struct {
 JSContext *qjs_new_context(JSRuntime *rt, qjs_module_t **addons);
 JSValue qjs_call_exit_hook(JSContext *ctx);
 
+JSValue qjs_promise_fill_trampoline(JSContext *cx, int argc, JSValueConst *argv);
 
 JSValue qjs_new_uint8_array(JSContext *ctx, int argc, JSValueConst *argv);
 JSValue qjs_new_array_buffer(JSContext *cx, uint8_t *src, size_t len);

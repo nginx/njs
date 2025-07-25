@@ -1364,7 +1364,7 @@ static ngx_int_t
 ngx_http_js_header_filter(ngx_http_request_t *r)
 {
     ngx_int_t                rc;
-    njs_int_t                pending;
+    ngx_int_t                pending;
     ngx_http_js_ctx_t       *ctx;
     ngx_http_js_loc_conf_t  *jlcf;
 

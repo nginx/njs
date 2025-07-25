@@ -14,7 +14,6 @@
 #define NJS_VERSION                 "0.9.4"
 #define NJS_VERSION_NUMBER          0x000904
 
-
 #include <string.h>
 #include <njs_types.h>
 #include <njs_clang.h>
@@ -310,6 +309,7 @@ typedef njs_int_t (*njs_iterator_handler_t)(njs_vm_t *vm,
 NJS_EXPORT void njs_vm_opt_init(njs_vm_opt_t *options);
 NJS_EXPORT njs_vm_t *njs_vm_create(njs_vm_opt_t *options);
 NJS_EXPORT void njs_vm_destroy(njs_vm_t *vm);
+NJS_EXPORT void njs_vm_call_exit_hook(njs_vm_t *vm);
 
 NJS_EXPORT njs_int_t njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end);
 NJS_EXPORT void njs_vm_set_module_loader(njs_vm_t *vm,

@@ -1233,7 +1233,8 @@ ngx_js_fetch_done(ngx_js_fetch_t *fetch, njs_opaque_value_t *retval,
         vm = fetch->vm;
         event = fetch->event;
 
-        rc = ngx_js_call(vm, njs_value_function(njs_value_arg(&event->function)),
+        rc = ngx_js_call(vm,
+                         njs_value_function(njs_value_arg(&event->function)),
                          &arguments[0], 2);
 
         ctx = ngx_external_ctx(vm,  njs_vm_external_ptr(vm));

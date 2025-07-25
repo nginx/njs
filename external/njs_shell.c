@@ -2697,6 +2697,8 @@ njs_engine_qjs_destroy(njs_engine_t *engine)
 {
     uint32_t                i;
     njs_ev_t                *ev;
+    njs_int_t               ret;
+    JSContext               *cx;
     njs_queue_t             *events;
     njs_console_t           *console;
     njs_262agent_t          *agent;
@@ -2704,6 +2706,13 @@ njs_engine_qjs_destroy(njs_engine_t *engine)
     njs_rejected_promise_t  *rejected_promise;
 
     qjs_call_exit_hook(engine->u.qjs.ctx);
+
+    for ( ;; ) {
+        ret = JS_ExecutePendingJob(JS_GetRuntime(engine->u.qjs.ctx), &cx);
+        if (ret == 0) {
+            break;
+        }
+    }
 
     console = JS_GetRuntimeOpaque(engine->u.qjs.rt);
 

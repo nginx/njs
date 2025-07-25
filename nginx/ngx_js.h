@@ -287,7 +287,6 @@ struct ngx_engine_s {
                                         ngx_str_t *str);
     void                      (*destroy)(ngx_engine_t *e, ngx_js_ctx_t *ctx,
                                          ngx_js_loc_conf_t *conf);
-
     unsigned                    type;
     const char                 *name;
     njs_mp_t                   *pool;
@@ -438,6 +437,8 @@ void ngx_js_log(njs_vm_t *vm, njs_external_ptr_t external,
     ngx_uint_t level, const char *fmt, ...);
 void ngx_js_logger(ngx_connection_t *c, ngx_uint_t level,
     const u_char *start, size_t length);
+void ngx_js_log_error_callback(void *log, const  char *message, void *arg);
+
 char * ngx_js_import(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 char * ngx_js_engine(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 char * ngx_js_preload_object(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);

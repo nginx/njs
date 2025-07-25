@@ -192,10 +192,31 @@ njs_vm_ctor_push(njs_vm_t *vm)
 
 
 void
-njs_vm_destroy(njs_vm_t *vm)
+njs_vm_call_exit_hook(njs_vm_t *vm)
 {
     if (vm->hooks[NJS_HOOK_EXIT] != NULL) {
         (void) njs_vm_call(vm, vm->hooks[NJS_HOOK_EXIT], NULL, 0);
+        vm->hooks[NJS_HOOK_EXIT] = NULL;
+    }
+}
+
+
+void
+njs_vm_destroy(njs_vm_t *vm)
+{
+    njs_int_t  ret;
+
+    if (vm->hooks[NJS_HOOK_EXIT] != NULL) {
+        (void) njs_vm_call(vm, vm->hooks[NJS_HOOK_EXIT], NULL, 0);
+
+        /* Execute pending jobs, but ignore errors. */
+
+        for ( ;; ) {
+            ret = njs_vm_execute_pending_job(vm);
+            if (ret == NJS_OK) {
+                break;
+            }
+        }
     }
 
     njs_mp_destroy(vm->mem_pool);
