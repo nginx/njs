@@ -21856,6 +21856,7 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
         options.module = opts->module;
         options.unsafe = opts->unsafe;
         options.backtrace = opts->backtrace;
+        options.max_stack_size = 64 * 1024;
         options.addons = opts->externals ? njs_unit_test_addon_external_modules
                                          : njs_unit_test_addon_modules;
 
@@ -22008,6 +22009,7 @@ njs_interactive_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
         options.init = 1;
         options.interactive = 1;
         options.backtrace = 1;
+        options.max_stack_size = 64 * 1024;
         options.addons = opts->externals ? njs_unit_test_addon_external_modules
                                          : njs_unit_test_addon_modules;
 
