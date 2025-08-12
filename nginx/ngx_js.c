@@ -3483,7 +3483,7 @@ ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
                 return NGX_ERROR;
             }
 
-            s = prev->imports->elts;
+            s = prev->paths->elts;
 
             for (i = 0; i < prev->paths->nelts; i++) {
                 path = ngx_array_push(paths);
@@ -3494,7 +3494,7 @@ ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
                 *path = s[i];
             }
 
-            s = conf->imports->elts;
+            s = conf->paths->elts;
 
             for (i = 0; i < conf->paths->nelts; i++) {
                 path = ngx_array_push(paths);
