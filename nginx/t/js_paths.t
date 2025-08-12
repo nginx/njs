@@ -51,6 +51,11 @@ http {
         location /test2 {
             js_content test.test2;
         }
+
+        location /merge {
+            js_path "lib3";
+            js_content test.test3;
+        }
     }
 }
 
@@ -60,6 +65,7 @@ $t->write_file('test.js', <<EOF);
     import m1 from 'module1.js';
     import m2 from 'module2.js';
     import m3 from 'lib1/module1.js';
+    import m4 from 'lib3/module3.js';
 
     function test(r) {
         r.return(200, m1[r.args.fun](r.args.a, r.args.b));
@@ -70,10 +76,10 @@ $t->write_file('test.js', <<EOF);
     }
 
     function test3(r) {
-        r.return(200, m3.sum(r.args.a, r.args.b));
+        m4.handler(r);
     }
 
-    export default {test, test2};
+    export default {test, test2, test3};
 
 EOF
 
@@ -81,6 +87,7 @@ my $d = $t->testdir();
 
 mkdir("$d/lib1");
 mkdir("$d/lib2");
+mkdir("$d/lib3");
 
 $t->write_file('lib1/module1.js', <<EOF);
     function sum(a, b) { return Number(a) + Number(b); }
@@ -97,8 +104,17 @@ $t->write_file('lib2/module2.js', <<EOF);
 
 EOF
 
+$t->write_file('lib3/module3.js', <<EOF);
+    function handler(r) {
+        r.return(200, 'Hello from lib3');
+    }
 
-$t->try_run('no njs available')->plan(4);
+    export default {handler};
+
+EOF
+
+
+$t->try_run('no njs available')->plan(5);
 
 ###############################################################################
 
@@ -106,5 +122,6 @@ like(http_get('/test?fun=sum&a=3&b=4'), qr/7/s, 'test sum');
 like(http_get('/test?fun=prod&a=3&b=4'), qr/12/s, 'test prod');
 like(http_get('/test2?a=3&b=4'), qr/34/s, 'test2');
 like(http_get('/test2?a=A&b=B'), qr/AB/s, 'test2 relative');
+like(http_get('/merge'), qr/Hello from lib3/s, 'test merge');
 
 ###############################################################################
