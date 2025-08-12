@@ -186,8 +186,10 @@ struct ngx_js_loc_conf_s {
 
 
 typedef struct {
-    ngx_str_t fname;
-    unsigned  flags;
+    ngx_str_t    fname;
+    unsigned     flags;
+    u_char      *file_name;
+    ngx_uint_t   line;
 } ngx_js_set_t;
 
 

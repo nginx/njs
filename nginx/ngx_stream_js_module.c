@@ -46,6 +46,9 @@ typedef struct {
 
     ngx_log_t               log;
     ngx_event_t             event;
+
+    u_char                 *file_name;
+    ngx_uint_t              line;
 } ngx_js_periodic_t;
 
 
@@ -3392,6 +3395,8 @@ invalid:
     periodic->jitter = jitter;
     periodic->worker_affinity = mask;
     periodic->conf_ctx = cf->ctx;
+    periodic->file_name = cf->conf_file->file.name.data;
+    periodic->line = cf->conf_file->line;
 
     return NGX_CONF_OK;
 }
@@ -3425,6 +3430,8 @@ ngx_stream_js_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     }
 
     data->fname = value[2];
+    data->file_name = cf->conf_file->file.name.data;
+    data->line = cf->conf_file->line;
 
     if (v->get_handler == ngx_stream_js_variable_set) {
         prev = (ngx_js_set_t *) v->data;
@@ -3562,7 +3569,40 @@ ngx_stream_js_merge_srv_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_conf_merge_str_value(conf->preread, prev->preread, "");
     ngx_conf_merge_str_value(conf->filter, prev->filter, "");
 
-    return ngx_js_merge_conf(cf, parent, child, ngx_stream_js_init_conf_vm);
+    if (ngx_js_merge_conf(cf, parent, child, ngx_stream_js_init_conf_vm)
+        != NGX_OK)
+    {
+        return NGX_CONF_ERROR;
+    }
+
+    if (conf->access.len != 0) {
+        if (conf->imports == NGX_CONF_UNSET_PTR) {
+            ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
+                          "no imports defined for \"js_access\" \"%V\", "
+                          "use \"js_import\" directive", &conf->access);
+            return NGX_CONF_ERROR;
+        }
+    }
+
+    if (conf->preread.len != 0) {
+        if (conf->imports == NGX_CONF_UNSET_PTR) {
+            ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
+                          "no imports defined for \"js_preread\" \"%V\", "
+                          "use \"js_import\" directive", &conf->preread);
+            return NGX_CONF_ERROR;
+        }
+    }
+
+    if (conf->filter.len != 0) {
+        if (conf->imports == NGX_CONF_UNSET_PTR) {
+            ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
+                          "no imports defined for \"js_filter\" \"%V\", "
+                          "use \"js_import\" directive", &conf->filter);
+            return NGX_CONF_ERROR;
+        }
+    }
+
+    return NGX_CONF_OK;
 }
 
 
@@ -3577,8 +3617,16 @@ ngx_stream_js_shared_dict_zone(ngx_conf_t *cf, ngx_command_t *cmd,
 static ngx_int_t
 ngx_stream_js_init(ngx_conf_t *cf)
 {
-    ngx_stream_handler_pt        *h;
-    ngx_stream_core_main_conf_t  *cmcf;
+    ngx_uint_t                   i;
+    ngx_flag_t                   found_issue;
+    ngx_js_set_t                *data;
+    ngx_hash_key_t              *key;
+    ngx_stream_variable_t       *v;
+    ngx_js_periodic_t           *periodic;
+    ngx_js_loc_conf_t           *jlcf;
+    ngx_js_main_conf_t          *jmcf;
+    ngx_stream_handler_pt       *h;
+    ngx_stream_core_main_conf_t *cmcf;
 
     ngx_stream_next_filter = ngx_stream_top_filter;
     ngx_stream_top_filter = ngx_stream_js_body_filter;
@@ -3598,6 +3646,45 @@ ngx_stream_js_init(ngx_conf_t *cf)
     }
 
     *h = ngx_stream_js_preread_handler;
+
+    jmcf = ngx_stream_conf_get_module_main_conf(cf, ngx_stream_js_module);
+    jlcf = ngx_stream_conf_get_module_srv_conf(cf, ngx_stream_js_module);
+
+    if (jlcf->engine == NULL) {
+        found_issue = 0;
+
+        if (jmcf->periodics != NULL) {
+            periodic = jmcf->periodics->elts;
+
+            for (i = 0; i < jmcf->periodics->nelts; i++) {
+                ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
+                              "no \"js_import\" directives found for "
+                              "\"js_periodic\" \"%V\" in %s:%ui",
+                              &periodic[i].method, periodic[i].file_name,
+                              periodic[i].line);
+            }
+
+            found_issue = 1;
+        }
+
+        key = cmcf->variables_keys->keys.elts;
+
+        for (i = 0; i < cmcf->variables_keys->keys.nelts; i++) {
+            v = key[i].value;
+            if (v->get_handler == ngx_stream_js_variable_set) {
+                data = (ngx_js_set_t *) v->data;
+                ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
+                              "no \"js_import\" directives found for "
+                              "\"js_set\" \"$%V\" \"%V\" in %s:%ui", &v->name,
+                              &data->fname, data->file_name, data->line);
+                found_issue = 1;
+            }
+        }
+
+        if (found_issue) {
+            return NGX_ERROR;
+        }
+    }
 
     return NGX_OK;
 }
