@@ -158,7 +158,8 @@ typedef struct {
     njs_opaque_value_t     retval;                                            \
     njs_arr_t             *rejected_promises;                                 \
     njs_rbtree_t           waiting_events;                                    \
-    ngx_socket_t           event_id
+    ngx_socket_t           event_id;                                          \
+    ngx_int_t              broken
 
 
 #define ngx_js_add_event(ctx, event)                                          \
