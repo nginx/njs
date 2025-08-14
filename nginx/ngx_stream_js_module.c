@@ -2638,7 +2638,6 @@ ngx_stream_qjs_run_event(ngx_stream_session_t *s, ngx_stream_js_ctx_t *ctx,
     ngx_stream_js_ev_t *event, ngx_uint_t from_upstream)
 {
     size_t             len;
-    u_char            *p;
     JSContext         *cx;
     ngx_int_t          rc;
     ngx_str_t          exception;
@@ -2658,17 +2657,7 @@ ngx_stream_qjs_run_event(ngx_stream_session_t *s, ngx_stream_js_ctx_t *ctx,
 
     len = b ? b->last - b->pos : 0;
 
-    p = ngx_pnalloc(c->pool, len);
-    if (p == NULL) {
-        (void) JS_ThrowOutOfMemory(cx);
-        goto error;
-    }
-
-    if (len) {
-        ngx_memcpy(p, b->pos, len);
-    }
-
-    argv[0] = ngx_qjs_prop(cx, event->data_type, p, len);
+    argv[0] = ngx_qjs_prop(cx, event->data_type, b ? b->pos : NULL, len);
     if (JS_IsException(argv[0])) {
         goto error;
     }

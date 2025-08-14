@@ -7398,7 +7398,6 @@ ngx_http_qjs_body_filter(ngx_http_request_t *r, ngx_http_js_loc_conf_t *jlcf,
     ngx_http_js_ctx_t *ctx, ngx_chain_t *in)
 {
     size_t             len;
-    u_char            *p;
     JSAtom             last_key;
     JSValue            arguments[3], last;
     ngx_int_t          rc;
@@ -7425,16 +7424,7 @@ ngx_http_qjs_body_filter(ngx_http_request_t *r, ngx_http_js_loc_conf_t *jlcf,
         if (!ctx->done) {
             len = b->last - b->pos;
 
-            p = ngx_pnalloc(r->pool, len);
-            if (p == NULL) {
-                return NJS_ERROR;
-            }
-
-            if (len) {
-                ngx_memcpy(p, b->pos, len);
-            }
-
-            arguments[1] = ngx_qjs_prop(cx, jlcf->buffer_type, p, len);
+            arguments[1] = ngx_qjs_prop(cx, jlcf->buffer_type, b->pos, len);
             if (JS_IsException(arguments[1])) {
                 JS_FreeAtom(cx, last_key);
                 return NGX_ERROR;
