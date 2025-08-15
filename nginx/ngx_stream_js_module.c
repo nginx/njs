@@ -2174,6 +2174,7 @@ ngx_stream_qjs_ext_on(JSContext *cx, JSValueConst this_val, int argc,
     }
 
     e = ngx_stream_qjs_event(ses->session, cx, &name);
+    js_free(cx, name.data);
     if (e == NULL) {
         return JS_EXCEPTION;
     }
@@ -2217,6 +2218,7 @@ ngx_stream_qjs_ext_off(JSContext *cx, JSValueConst this_val, int argc,
     }
 
     e = ngx_stream_qjs_event(s, cx, &name);
+    js_free(cx, name.data);
     if (e == NULL) {
         return JS_EXCEPTION;
     }
@@ -2295,10 +2297,6 @@ ngx_stream_qjs_ext_send(JSContext *cx, JSValueConst this_val, int argc,
         return JS_ThrowInternalError(cx, "cannot send buffer in this handler");
     }
 
-    if (ngx_qjs_string(cx, argv[0], &buffer) != NGX_OK) {
-        return JS_EXCEPTION;
-    }
-
     /*
      * ctx->buf != NULL when s.send() is called while processing incoming
      * data chunks, otherwise s.send() is called asynchronously
@@ -2358,6 +2356,10 @@ ngx_stream_qjs_ext_send(JSContext *cx, JSValueConst this_val, int argc,
         return JS_ThrowInternalError(cx, "memory error");
     }
 
+    if (ngx_qjs_string_alloc(cx, argv[0], &buffer) != NGX_OK) {
+        return JS_EXCEPTION;
+    }
+
     b = cl->buf;
 
     b->flush = flush;
@@ -2366,6 +2368,10 @@ ngx_stream_qjs_ext_send(JSContext *cx, JSValueConst this_val, int argc,
     b->memory = (buffer.len ? 1 : 0);
     b->sync = (buffer.len ? 0 : 1);
     b->tag = (ngx_buf_tag_t) &ngx_stream_js_module;
+
+    if (b->start != NULL) {
+        js_free(cx, b->start);
+    }
 
     b->start = buffer.data;
     b->end = buffer.data + buffer.len;
@@ -2380,6 +2386,7 @@ ngx_stream_qjs_ext_send(JSContext *cx, JSValueConst this_val, int argc,
     } else {
 
         if (ngx_stream_js_next_filter(s, ctx, cl, from_upstream) == NGX_ERROR) {
+            js_free(cx, buffer.data);
             return JS_ThrowInternalError(cx, "ngx_stream_js_next_filter() "
                                          "failed");
         }
@@ -2638,7 +2645,6 @@ ngx_stream_qjs_run_event(ngx_stream_session_t *s, ngx_stream_js_ctx_t *ctx,
     ngx_stream_js_ev_t *event, ngx_uint_t from_upstream)
 {
     size_t             len;
-    u_char            *p;
     JSContext         *cx;
     ngx_int_t          rc;
     ngx_str_t          exception;
@@ -2658,17 +2664,7 @@ ngx_stream_qjs_run_event(ngx_stream_session_t *s, ngx_stream_js_ctx_t *ctx,
 
     len = b ? b->last - b->pos : 0;
 
-    p = ngx_pnalloc(c->pool, len);
-    if (p == NULL) {
-        (void) JS_ThrowOutOfMemory(cx);
-        goto error;
-    }
-
-    if (len) {
-        ngx_memcpy(p, b->pos, len);
-    }
-
-    argv[0] = ngx_qjs_prop(cx, event->data_type, p, len);
+    argv[0] = ngx_qjs_prop(cx, event->data_type, b ? b->pos : NULL, len);
     if (JS_IsException(argv[0])) {
         goto error;
     }
@@ -2922,6 +2918,8 @@ ngx_stream_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
 {
     ngx_uint_t                 i;
     JSValue                    cb;
+    ngx_chain_t               *cl;
+    ngx_stream_js_ctx_t       *sctx;
     ngx_stream_qjs_session_t  *ses;
 
     if (ctx != NULL) {
@@ -2937,6 +2935,18 @@ ngx_stream_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
                 ses->callbacks[i] = JS_UNDEFINED;
                 JS_FreeValue(e->u.qjs.ctx, cb);
             }
+        }
+
+        sctx = (ngx_stream_js_ctx_t *) ctx;
+
+        cl = sctx->free;
+
+        while (cl != NULL) {
+            if (cl->buf->start != NULL) {
+                js_free(e->u.qjs.ctx, cl->buf->start);
+            }
+
+            cl = cl->next;
         }
     }
 

@@ -1530,6 +1530,75 @@ string:
 }
 
 
+ngx_int_t
+ngx_qjs_string_alloc(JSContext *cx, JSValueConst val, ngx_str_t *dst)
+{
+    size_t         len, byte_offset, byte_length;
+    u_char        *start;
+    JSValue        buffer;
+    const char    *str;
+    ngx_js_ctx_t  *ctx;
+    ngx_engine_t  *e;
+
+    ctx = ngx_qjs_external_ctx(cx, JS_GetContextOpaque(cx));
+    e = ctx->engine;
+
+    if (JS_IsNullOrUndefined(val)) {
+        dst->data = NULL;
+        dst->len = 0;
+        return NGX_OK;
+    }
+
+    cx = e->u.qjs.ctx;
+
+    if (JS_IsString(val)) {
+        goto string;
+    }
+
+    buffer = JS_GetTypedArrayBuffer(cx, val, &byte_offset, &byte_length, NULL);
+    if (!JS_IsException(buffer)) {
+        start = JS_GetArrayBuffer(cx, &dst->len, buffer);
+
+        JS_FreeValue(cx, buffer);
+
+        if (start != NULL) {
+            start += byte_offset;
+            dst->len = byte_length;
+
+            dst->data = dst->len ? js_malloc(cx, dst->len) : NULL;
+            if (dst->len && dst->data == NULL) {
+                return NGX_ERROR;
+            }
+
+            memcpy(dst->data, start, dst->len);
+            return NGX_OK;
+        }
+    }
+
+string:
+
+    str = JS_ToCStringLen(cx, &len, val);
+    if (str == NULL) {
+        return NGX_ERROR;
+    }
+
+    start = len ? js_malloc(cx, len) : NULL;
+    if (len && start == NULL) {
+        JS_FreeCString(cx, str);
+        return NGX_ERROR;
+    }
+
+    memcpy(start, str, len);
+
+    JS_FreeCString(cx, str);
+
+    dst->data = start;
+    dst->len = len;
+
+    return NGX_OK;
+}
+
+
 static void
 ngx_qjs_timer_handler(ngx_event_t *ev)
 {
