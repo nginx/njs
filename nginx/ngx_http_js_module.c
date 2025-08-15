@@ -1540,6 +1540,9 @@ ngx_http_js_variable_set(ngx_http_request_t *r, ngx_http_variable_value_t *v,
     }
 
     if (rc == NGX_DECLINED) {
+        ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
+                      "no \"js_import\" directives found for \"js_set\" \"%V\"",
+                      fname);
         v->not_found = 1;
         return NGX_OK;
     }
@@ -7691,14 +7694,10 @@ ngx_http_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf)
 static ngx_int_t
 ngx_http_js_init(ngx_conf_t *cf)
 {
-    ngx_uint_t                  i, found_issue;
-    ngx_js_set_t               *data;
-    ngx_hash_key_t             *key;
-    ngx_http_variable_t        *v;
-    ngx_js_periodic_t          *periodic;
-    ngx_js_loc_conf_t          *jlcf;
-    ngx_js_main_conf_t         *jmcf;
-    ngx_http_core_main_conf_t  *cmcf;
+    ngx_uint_t           i, found_issue;
+    ngx_js_periodic_t   *periodic;
+    ngx_js_loc_conf_t   *jlcf;
+    ngx_js_main_conf_t  *jmcf;
 
     ngx_http_next_header_filter = ngx_http_top_header_filter;
     ngx_http_top_header_filter = ngx_http_js_header_filter;
@@ -7724,21 +7723,6 @@ ngx_http_js_init(ngx_conf_t *cf)
             }
 
             found_issue = 1;
-        }
-
-        cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
-        key = cmcf->variables_keys->keys.elts;
-
-        for (i = 0; i < cmcf->variables_keys->keys.nelts; i++) {
-            v = key[i].value;
-            if (v->get_handler == ngx_http_js_variable_set) {
-                data = (ngx_js_set_t *) v->data;
-                ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
-                              "no \"js_import\" directives found for "
-                              "\"js_set\" \"$%V\" \"%V\" in %s:%ui", &v->name,
-                              &data->fname, data->file_name, data->line);
-                found_issue = 1;
-            }
         }
 
         if (found_issue) {
@@ -7981,8 +7965,6 @@ ngx_http_js_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     data->fname = value[2];
     data->flags = 0;
-    data->file_name = cf->conf_file->file.name.data;
-    data->line = cf->conf_file->line;
 
     if (v->get_handler == ngx_http_js_variable_set) {
         prev = (ngx_js_set_t *) v->data;
