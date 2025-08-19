@@ -2273,10 +2273,12 @@ static JSValue
 ngx_stream_qjs_ext_send(JSContext *cx, JSValueConst this_val, int argc,
     JSValueConst *argv, int from_upstream)
 {
-    JSValue                val;
+    size_t                 byte_offset, byte_length, len;
+    JSValue                val, buf;
     unsigned               last_buf, flush;
     ngx_str_t              buffer;
     ngx_buf_t             *b;
+    const char            *str;
     ngx_chain_t           *cl;
     ngx_connection_t      *c;
     ngx_stream_js_ctx_t   *ctx;
@@ -2293,10 +2295,6 @@ ngx_stream_qjs_ext_send(JSContext *cx, JSValueConst this_val, int argc,
 
     if (!ctx->filter) {
         return JS_ThrowInternalError(cx, "cannot send buffer in this handler");
-    }
-
-    if (ngx_qjs_string(cx, argv[0], &buffer) != NGX_OK) {
-        return JS_EXCEPTION;
     }
 
     /*
@@ -2353,39 +2351,125 @@ ngx_stream_qjs_ext_send(JSContext *cx, JSValueConst this_val, int argc,
         }
     }
 
-    cl = ngx_chain_get_free_buf(c->pool, &ctx->free);
-    if (cl == NULL) {
-        return JS_ThrowInternalError(cx, "memory error");
+    val = argv[0];
+
+    if (JS_IsNullOrUndefined(val)) {
+        buffer.len = 0;
+        buffer.data = NULL;
     }
 
-    b = cl->buf;
+    str = NULL;
 
-    b->flush = flush;
-    b->last_buf = last_buf;
+    if (JS_IsString(val)) {
+        goto string;
+    }
 
-    b->memory = (buffer.len ? 1 : 0);
-    b->sync = (buffer.len ? 0 : 1);
-    b->tag = (ngx_buf_tag_t) &ngx_stream_js_module;
+    buf = JS_GetTypedArrayBuffer(cx, val, &byte_offset, &byte_length, NULL);
+    if (!JS_IsException(buf)) {
+        buffer.data = JS_GetArrayBuffer(cx, &buffer.len, buf);
 
-    b->start = buffer.data;
-    b->end = buffer.data + buffer.len;
+        JS_FreeValue(cx, buf);
 
-    b->pos = b->start;
-    b->last = b->end;
-
-    if (from_upstream == NGX_JS_BOOL_UNSET) {
-        *ctx->last_out = cl;
-        ctx->last_out = &cl->next;
+        if (buffer.data != NULL) {
+            buffer.data += byte_offset;
+            buffer.len = byte_length;
+        }
 
     } else {
+string:
 
-        if (ngx_stream_js_next_filter(s, ctx, cl, from_upstream) == NGX_ERROR) {
-            return JS_ThrowInternalError(cx, "ngx_stream_js_next_filter() "
-                                         "failed");
+        str = JS_ToCStringLen(cx, &buffer.len, val);
+        if (str == NULL) {
+            return JS_EXCEPTION;
         }
+
+        buffer.data = (u_char *) str;
+    }
+
+    do {
+        cl = ngx_chain_get_free_buf(c->pool, &ctx->free);
+        if (cl == NULL) {
+            goto out_of_memory;
+        }
+
+        b = cl->buf;
+
+        if (b->start == NULL) {
+            b->start = ngx_pnalloc(c->pool, buffer.len);
+            if (b->start == NULL) {
+                goto out_of_memory;
+            }
+
+            len = buffer.len;
+            b->end = b->start + len;
+
+        } else {
+            if (buffer.len != 0 && ngx_buf_size(b) == 0) {
+                b->start = ngx_pnalloc(c->pool, buffer.len);
+                if (b->start == NULL) {
+                    goto out_of_memory;
+                }
+
+                b->end = b->start + buffer.len;
+            }
+
+            len = ngx_min(buffer.len, (size_t) (b->end - b->start));
+        }
+
+        memcpy(b->start, buffer.data, len);
+
+        b->pos = b->start;
+        b->last = b->start + len;
+
+        if (buffer.len == len) {
+            b->last_buf = last_buf;
+            b->flush = flush;
+
+        } else {
+            b->last_buf = 0;
+            b->flush = 0;
+        }
+
+        b->memory = (buffer.len ? 1 : 0);
+        b->sync = (buffer.len ? 0 : 1);
+        b->tag = (ngx_buf_tag_t) &ngx_stream_js_module;
+
+        buffer.data += len;
+        buffer.len -= len;
+
+        if (from_upstream == NGX_JS_BOOL_UNSET) {
+            *ctx->last_out = cl;
+            ctx->last_out = &cl->next;
+
+        } else {
+
+            if (ngx_stream_js_next_filter(s, ctx, cl, from_upstream)
+                == NGX_ERROR)
+            {
+                if (str != NULL) {
+                    JS_FreeCString(cx, str);
+                }
+
+                return JS_ThrowInternalError(cx, "ngx_stream_js_next_filter() "
+                                             "failed");
+            }
+        }
+
+    } while (buffer.len != 0);
+
+    if (str != NULL) {
+        JS_FreeCString(cx, str);
     }
 
     return JS_UNDEFINED;
+
+out_of_memory:
+
+    if (str != NULL) {
+        JS_FreeCString(cx, str);
+    }
+
+    return JS_ThrowInternalError(cx, "memory error");
 }
 
 
