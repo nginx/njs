@@ -5592,10 +5592,12 @@ static JSValue
 ngx_http_qjs_ext_send_buffer(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv)
 {
+    size_t               byte_offset, byte_length, len;
     unsigned             last_buf, flush;
-    JSValue              flags, value;
+    JSValue              flags, value, val, buf;
     ngx_str_t            buffer;
     ngx_buf_t           *b;
+    const char          *str;
     ngx_chain_t         *cl;
     ngx_http_js_ctx_t   *ctx;
     ngx_http_request_t  *r;
@@ -5609,10 +5611,6 @@ ngx_http_qjs_ext_send_buffer(JSContext *cx, JSValueConst this_val,
 
     if (!ctx->filter) {
         return JS_ThrowTypeError(cx, "cannot send buffer while not filtering");
-    }
-
-    if (ngx_qjs_string(cx, argv[0], &buffer) != NGX_OK) {
-        return JS_ThrowTypeError(cx, "failed get buffer arg");
     }
 
     flush = ctx->buf->flush;
@@ -5638,29 +5636,110 @@ ngx_http_qjs_ext_send_buffer(JSContext *cx, JSValueConst this_val,
         JS_FreeValue(cx, value);
     }
 
-    cl = ngx_chain_get_free_buf(r->pool, &ctx->free);
-    if (cl == NULL) {
-        return JS_ThrowOutOfMemory(cx);
+    val = argv[0];
+
+    if (JS_IsNullOrUndefined(val)) {
+        buffer.len = 0;
+        buffer.data = NULL;
     }
 
-    b = cl->buf;
+    str = NULL;
 
-    b->flush = flush;
-    b->last_buf = last_buf;
+    if (JS_IsString(val)) {
+        goto string;
+    }
 
-    b->memory = (buffer.len ? 1 : 0);
-    b->sync = (buffer.len ? 0 : 1);
-    b->tag = (ngx_buf_tag_t) &ngx_http_js_module;
+    buf = JS_GetTypedArrayBuffer(cx, val, &byte_offset, &byte_length, NULL);
+    if (!JS_IsException(buf)) {
+        buffer.data = JS_GetArrayBuffer(cx, &buffer.len, buf);
 
-    b->start = buffer.data;
-    b->end = buffer.data + buffer.len;
-    b->pos = b->start;
-    b->last = b->end;
+        JS_FreeValue(cx, buf);
 
-    *ctx->last_out = cl;
-    ctx->last_out = &cl->next;
+        if (buffer.data != NULL) {
+            buffer.data += byte_offset;
+            buffer.len = byte_length;
+        }
+
+    } else {
+string:
+
+        str = JS_ToCStringLen(cx, &buffer.len, val);
+        if (str == NULL) {
+            return JS_EXCEPTION;
+        }
+
+        buffer.data = (u_char *) str;
+    }
+
+    do {
+        cl = ngx_chain_get_free_buf(r->pool, &ctx->free);
+        if (cl == NULL) {
+            goto out_of_memory;
+        }
+
+        b = cl->buf;
+
+        if (b->start == NULL) {
+            b->start = ngx_pnalloc(r->pool, buffer.len);
+            if (b->start == NULL) {
+                goto out_of_memory;
+            }
+
+            len = buffer.len;
+            b->end = b->start + len;
+
+        } else {
+            if (buffer.len != 0 && ngx_buf_size(b) == 0) {
+                b->start = ngx_pnalloc(r->pool, buffer.len);
+                if (b->start == NULL) {
+                    goto out_of_memory;
+                }
+
+                b->end = b->start + buffer.len;
+            }
+
+            len = ngx_min(buffer.len, (size_t) (b->end - b->start));
+        }
+
+        memcpy(b->start, buffer.data, len);
+
+        b->pos = b->start;
+        b->last = b->start + len;
+
+        if (buffer.len == len) {
+            b->last_buf = last_buf;
+            b->flush = flush;
+
+        } else {
+            b->last_buf = 0;
+            b->flush = 0;
+        }
+
+        b->memory = (buffer.len ? 1 : 0);
+        b->sync = (buffer.len ? 0 : 1);
+        b->tag = (ngx_buf_tag_t) &ngx_http_js_module;
+
+        buffer.data += len;
+        buffer.len -= len;
+
+        *ctx->last_out = cl;
+        ctx->last_out = &cl->next;
+
+    } while (buffer.len != 0);
+
+    if (str != NULL) {
+        JS_FreeCString(cx, str);
+    }
 
     return JS_UNDEFINED;
+
+out_of_memory:
+
+    if (str != NULL) {
+        JS_FreeCString(cx, str);
+    }
+
+    return JS_ThrowOutOfMemory(cx);
 }
 
 
@@ -7389,7 +7468,6 @@ ngx_http_qjs_body_filter(ngx_http_request_t *r, ngx_http_js_loc_conf_t *jlcf,
     ngx_http_js_ctx_t *ctx, ngx_chain_t *in)
 {
     size_t             len;
-    u_char            *p;
     JSAtom             last_key;
     JSValue            arguments[3], last;
     ngx_int_t          rc;
@@ -7416,16 +7494,7 @@ ngx_http_qjs_body_filter(ngx_http_request_t *r, ngx_http_js_loc_conf_t *jlcf,
         if (!ctx->done) {
             len = b->last - b->pos;
 
-            p = ngx_pnalloc(r->pool, len);
-            if (p == NULL) {
-                return NJS_ERROR;
-            }
-
-            if (len) {
-                ngx_memcpy(p, b->pos, len);
-            }
-
-            arguments[1] = ngx_qjs_prop(cx, jlcf->buffer_type, p, len);
+            arguments[1] = ngx_qjs_prop(cx, jlcf->buffer_type, b->pos, len);
             if (JS_IsException(arguments[1])) {
                 JS_FreeAtom(cx, last_key);
                 return NGX_ERROR;
