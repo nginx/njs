@@ -5,6 +5,7 @@
 
 NJS_QUICKJS_LIB=
 NJS_HAVE_QUICKJS=NO
+NJS_QUICKJS_DEFAULT_INCS="src $NJS_BUILD_DIR"
 
 if [ $NJS_TRY_QUICKJS = YES ]; then
     njs_found=no
@@ -12,14 +13,9 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
     njs_feature="QuickJS library -lquickjs.lto"
     njs_feature_name=NJS_HAVE_QUICKJS
     njs_feature_run=yes
-    njs_feature_incs=
+    njs_feature_incs="$NJS_QUICKJS_DEFAULT_INCS"
     njs_feature_libs="-lquickjs.lto -lm -ldl -lpthread"
-    njs_feature_test="#if defined(__GNUC__) && (__GNUC__ >= 8)
-                      #pragma GCC diagnostic push
-                      #pragma GCC diagnostic ignored \"-Wcast-function-type\"
-                      #endif
-
-                      #include <quickjs.h>
+    njs_feature_test="#include <qjs.h>
 
                       int main() {
                           JSRuntime *rt;
@@ -39,7 +35,7 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
 
     if [ $njs_found = no ]; then
         njs_feature="QuickJS library -I/usr/include/quickjs/ -L/usr/lib/quickjs/ -lquickjs.lto"
-        njs_feature_incs="/usr/include/quickjs/"
+        njs_feature_incs="$NJS_QUICKJS_DEFAULT_INCS /usr/include/quickjs/"
         njs_feature_libs="-L/usr/lib/quickjs/ -lquickjs.lto -lm -ldl -lpthread"
 
         . auto/feature
@@ -47,7 +43,7 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
 
     if [ $njs_found = no ]; then
         njs_feature="QuickJS library -I/usr/include/quickjs/ -L/usr/lib/quickjs/ -lquickjs"
-        njs_feature_incs="/usr/include/quickjs/"
+        njs_feature_incs="$NJS_QUICKJS_DEFAULT_INCS /usr/include/quickjs/"
         njs_feature_libs="-L/usr/lib/quickjs/ -lquickjs -lm -ldl -lpthread"
 
         . auto/feature
@@ -55,7 +51,7 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
 
     if [ $njs_found = no ]; then
         njs_feature="QuickJS-NG library -lqjs"
-        njs_feature_incs=""
+        njs_feature_incs="$NJS_QUICKJS_DEFAULT_INCS"
         njs_feature_libs="-lqjs -lm -ldl -lpthread"
 
         . auto/feature
@@ -66,12 +62,7 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
 
         njs_feature="QuickJS JS_GetClassID()"
         njs_feature_name=NJS_HAVE_QUICKJS_GET_CLASS_ID
-        njs_feature_test="#if defined(__GNUC__) && (__GNUC__ >= 8)
-                          #pragma GCC diagnostic push
-                          #pragma GCC diagnostic ignored \"-Wcast-function-type\"
-                          #endif
-
-                          #include <quickjs.h>
+        njs_feature_test="#include <qjs.h>
 
                           int main() {
                               (void) JS_GetClassID(JS_UNDEFINED);
@@ -89,12 +80,7 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
 
         njs_feature="QuickJS JS_NewTypedArray()"
         njs_feature_name=NJS_HAVE_QUICKJS_NEW_TYPED_ARRAY
-        njs_feature_test="#if defined(__GNUC__) && (__GNUC__ >= 8)
-                          #pragma GCC diagnostic push
-                          #pragma GCC diagnostic ignored \"-Wcast-function-type\"
-                          #endif
-
-                          #include <quickjs.h>
+        njs_feature_test="#include <qjs.h>
 
                           int main() {
                               JSValue   ta, argv;
@@ -116,12 +102,7 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
 
         njs_feature="QuickJS JS_IsSameValue()"
         njs_feature_name=NJS_HAVE_QUICKJS_IS_SAME_VALUE
-        njs_feature_test="#if defined(__GNUC__) && (__GNUC__ >= 8)
-                          #pragma GCC diagnostic push
-                          #pragma GCC diagnostic ignored \"-Wcast-function-type\"
-                          #endif
-
-                          #include <quickjs.h>
+        njs_feature_test="#include <qjs.h>
 
                           int main() {
                               JSRuntime *rt;
@@ -139,12 +120,7 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
 
         njs_feature="QuickJS JS_IsArray()"
         njs_feature_name=NJS_HAVE_QUICKJS_IS_ARRAY_SINGLE_ARG
-        njs_feature_test="#if defined(__GNUC__) && (__GNUC__ >= 8)
-                          #pragma GCC diagnostic push
-                          #pragma GCC diagnostic ignored \"-Wcast-function-type\"
-                          #endif
-
-                          #include <quickjs.h>
+        njs_feature_test="#include <qjs.h>
 
                           int main() {
                               JSRuntime *rt;
@@ -162,12 +138,7 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
 
         njs_feature="QuickJS JS_AddIntrinsicBigInt()"
         njs_feature_name=NJS_HAVE_QUICKJS_ADD_INTRINSIC_BIG_INT
-        njs_feature_test="#if defined(__GNUC__) && (__GNUC__ >= 8)
-                          #pragma GCC diagnostic push
-                          #pragma GCC diagnostic ignored \"-Wcast-function-type\"
-                          #endif
-
-                          #include <quickjs.h>
+        njs_feature_test="#include <qjs.h>
 
                           int main() {
                               JSRuntime *rt;
@@ -186,12 +157,7 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
         njs_feature="QuickJS version"
         njs_feature_name=NJS_QUICKJS_VERSION
         njs_feature_run=value
-        njs_feature_test="#if defined(__GNUC__) && (__GNUC__ >= 8)
-                          #pragma GCC diagnostic push
-                          #pragma GCC diagnostic ignored \"-Wcast-function-type\"
-                          #endif
-
-                          #include <quickjs.h>
+        njs_feature_test="#include <qjs.h>
 
                           int main() {
 #if defined(QJS_VERSION_MAJOR)
@@ -206,7 +172,8 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
 
         NJS_HAVE_QUICKJS=YES
         NJS_QUICKJS_LIB="$njs_feature_libs"
-        NJS_LIB_INCS="$NJS_LIB_INCS $njs_feature_incs"
+        NJS_QUICKJS_INCS=`echo "$njs_feature_incs" | sed -e "s|^$NJS_QUICKJS_DEFAULT_INCS||"`
+        NJS_LIB_INCS="$NJS_LIB_INCS $NJS_QUICKJS_INCS"
         NJS_LIB_AUX_LIBS="$NJS_LIB_AUX_LIBS $njs_feature_libs"
     fi
 
