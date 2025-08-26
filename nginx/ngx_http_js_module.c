@@ -1609,7 +1609,7 @@ static ngx_int_t
 ngx_http_js_init_vm(ngx_http_request_t *r, njs_int_t proto_id)
 {
     ngx_http_js_ctx_t       *ctx;
-    ngx_pool_cleanup_t      *cln;
+    ngx_http_cleanup_t      *cln;
     ngx_http_js_loc_conf_t  *jlcf;
 
     jlcf = ngx_http_get_module_loc_conf(r, ngx_http_js_module);
@@ -1644,7 +1644,7 @@ ngx_http_js_init_vm(ngx_http_request_t *r, njs_int_t proto_id)
                    "http js vm clone %s: %p from: %p", jlcf->engine->name,
                    ctx->engine, jlcf->engine);
 
-    cln = ngx_pool_cleanup_add(r->pool, 0);
+    cln = ngx_http_cleanup_add(r, 0);
     if (cln == NULL) {
         return NGX_ERROR;
     }
