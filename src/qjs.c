@@ -19,6 +19,12 @@ typedef struct {
 } qjs_signal_entry_t;
 
 
+typedef struct {
+#define QJS_NJS_HOOK_EXIT      0
+    JSValue         hooks[1];
+} qjs_njs_t;
+
+
 typedef enum {
     QJS_ENCODING_UTF8,
 } qjs_encoding_t;
@@ -42,7 +48,13 @@ typedef struct {
 extern char  **environ;
 
 
-static JSValue qjs_njs_getter(JSContext *ctx, JSValueConst this_val);
+static int qjs_add_intrinsic_njs(JSContext *cx, JSValueConst global);
+static JSValue qjs_njs_on(JSContext *ctx, JSValueConst this_val, int argc,
+    JSValueConst *argv);
+static void qjs_njs_mark(JSRuntime *rt, JSValueConst val,
+    JS_MarkFunc *mark_func);
+static void qjs_njs_finalizer(JSRuntime *rt, JSValue val);
+
 static JSValue qjs_process_env(JSContext *ctx, JSValueConst this_val);
 static JSValue qjs_process_kill(JSContext *ctx, JSValueConst this_val,
     int argc, JSValueConst *argv);
@@ -99,10 +111,6 @@ static qjs_encoding_label_t  qjs_encoding_labels[] =
 };
 
 
-static const JSCFunctionListEntry qjs_global_proto[] = {
-    JS_CGETSET_DEF("njs", qjs_njs_getter, NULL),
-};
-
 static const JSCFunctionListEntry qjs_text_decoder_proto[] = {
     JS_PROP_STRING_DEF("[Symbol.toStringTag]", "TextDecoder",
                        JS_PROP_CONFIGURABLE),
@@ -126,6 +134,7 @@ static const JSCFunctionListEntry qjs_njs_proto[] = {
     JS_PROP_INT32_DEF("version_number", NJS_VERSION_NUMBER,
                       JS_PROP_C_W_E),
     JS_PROP_STRING_DEF("engine", "QuickJS", JS_PROP_C_W_E),
+    JS_CFUNC_DEF("on", 2, qjs_njs_on),
 };
 
 static const JSCFunctionListEntry qjs_process_proto[] = {
@@ -134,6 +143,13 @@ static const JSCFunctionListEntry qjs_process_proto[] = {
     JS_CFUNC_DEF("kill", 2, qjs_process_kill),
     JS_CGETSET_DEF("pid", qjs_process_pid, NULL),
     JS_CGETSET_DEF("ppid", qjs_process_ppid, NULL),
+};
+
+
+static JSClassDef qjs_njs_class = {
+    "njs",
+    .finalizer = qjs_njs_finalizer,
+    .gc_mark = qjs_njs_mark,
 };
 
 
@@ -186,6 +202,10 @@ qjs_new_context(JSRuntime *rt, qjs_module_t **addons)
 
     global_obj = JS_GetGlobalObject(ctx);
 
+    if (qjs_add_intrinsic_njs(ctx, global_obj) < 0) {
+        return NULL;
+    }
+
     if (qjs_add_intrinsic_text_decoder(ctx, global_obj) < 0) {
         return NULL;
     }
@@ -193,9 +213,6 @@ qjs_new_context(JSRuntime *rt, qjs_module_t **addons)
     if (qjs_add_intrinsic_text_encoder(ctx, global_obj) < 0) {
         return NULL;
     }
-
-    JS_SetPropertyFunctionList(ctx, global_obj, qjs_global_proto,
-                               njs_nitems(qjs_global_proto));
 
     prop = JS_NewAtom(ctx, "eval");
     if (prop == JS_ATOM_NULL) {
@@ -225,20 +242,167 @@ qjs_new_context(JSRuntime *rt, qjs_module_t **addons)
 }
 
 
-static JSValue
-qjs_njs_getter(JSContext *ctx, JSValueConst this_val)
+JSValue
+qjs_call_exit_hook(JSContext *ctx)
 {
-    JSValue  obj;
+    JSValue    global, obj, ret;
+    qjs_njs_t  *njs;
 
-    obj = JS_NewObject(ctx);
+    global = JS_GetGlobalObject(ctx);
+
+    obj = JS_GetPropertyStr(ctx, global, "njs");
+    if (JS_IsException(obj) || JS_IsUndefined(obj)) {
+        goto done;
+    }
+
+    njs = JS_GetOpaque(obj, QJS_CORE_CLASS_ID_NJS);
+    if (njs != NULL && JS_IsFunction(ctx, njs->hooks[QJS_NJS_HOOK_EXIT])) {
+        ret = JS_Call(ctx, njs->hooks[QJS_NJS_HOOK_EXIT], JS_UNDEFINED,
+                      0, NULL);
+
+        JS_FreeValue(ctx, njs->hooks[QJS_NJS_HOOK_EXIT]);
+        njs->hooks[QJS_NJS_HOOK_EXIT] = JS_UNDEFINED;
+
+        if (JS_IsException(ret)) {
+            JS_FreeValue(ctx, obj);
+            JS_FreeValue(ctx, global);
+            return ret;
+        }
+
+        JS_FreeValue(ctx, ret);
+    }
+
+done:
+
+    JS_FreeValue(ctx, obj);
+    JS_FreeValue(ctx, global);
+
+    return JS_UNDEFINED;
+}
+
+
+static int
+qjs_add_intrinsic_njs(JSContext *cx, JSValueConst global)
+{
+    JSValue  obj, proto;
+
+    if (JS_NewClass(JS_GetRuntime(cx), QJS_CORE_CLASS_ID_NJS,
+                    &qjs_njs_class) < 0)
+    {
+        return -1;
+    }
+
+    proto = JS_NewObject(cx);
+    if (JS_IsException(proto)) {
+        return -1;
+    }
+
+    JS_SetPropertyFunctionList(cx, proto, qjs_njs_proto,
+                               njs_nitems(qjs_njs_proto));
+
+    JS_SetClassProto(cx, QJS_CORE_CLASS_ID_NJS, proto);
+
+    obj = JS_NewObjectClass(cx, QJS_CORE_CLASS_ID_NJS);
     if (JS_IsException(obj)) {
+        return -1;
+    }
+
+    if (JS_SetPropertyStr(cx, global, "njs", obj) < 0) {
+        JS_FreeValue(cx, obj);
+        return -1;
+    }
+
+    return 0;
+}
+
+
+static void
+qjs_njs_mark(JSRuntime *rt, JSValueConst val, JS_MarkFunc *mark_func)
+{
+    unsigned   i;
+    qjs_njs_t  *njs;
+
+    njs = JS_GetOpaque(val, QJS_CORE_CLASS_ID_NJS);
+    if (njs != NULL) {
+        for (i = 0; i < njs_nitems(njs->hooks); i++) {
+            JS_MarkValue(rt, njs->hooks[i], mark_func);
+        }
+    }
+}
+
+
+static void
+qjs_njs_finalizer(JSRuntime *rt, JSValue val)
+{
+    unsigned   i;
+    qjs_njs_t  *njs;
+
+    njs = JS_GetOpaque(val, QJS_CORE_CLASS_ID_NJS);
+    if (njs != NULL) {
+        for (i = 0; i < njs_nitems(njs->hooks); i++) {
+            JS_FreeValueRT(rt, njs->hooks[i]);
+        }
+
+        js_free_rt(rt, njs);
+    }
+}
+
+
+static JSValue
+qjs_njs_on(JSContext *ctx, JSValueConst this_val, int argc,
+    JSValueConst *argv)
+{
+    unsigned   i, n;
+    qjs_njs_t  *njs;
+    njs_str_t  name;
+
+    static const njs_str_t hooks[] = {
+        njs_str("exit"),
+    };
+
+    njs = JS_GetOpaque(this_val, QJS_CORE_CLASS_ID_NJS);
+    if (njs == NULL) {
+        njs = js_mallocz(ctx, sizeof(qjs_njs_t));
+        if (njs == NULL) {
+            return JS_ThrowOutOfMemory(ctx);
+        }
+
+        JS_SetOpaque(this_val, njs);
+    }
+
+    name.start = (u_char *) JS_ToCStringLen(ctx, &name.length, argv[0]);
+    if (name.start == NULL) {
         return JS_EXCEPTION;
     }
 
-    JS_SetPropertyFunctionList(ctx, obj, qjs_njs_proto,
-                               njs_nitems(qjs_njs_proto));
+    i = 0;
+    n = njs_nitems(hooks);
 
-    return obj;
+    while (i < n) {
+        if (njs_strstr_eq(&name, &hooks[i])) {
+            break;
+        }
+
+        i++;
+    }
+
+    if (i == n) {
+        JS_ThrowTypeError(ctx, "unknown hook \"%s\"", name.start);
+        JS_FreeCString(ctx, (const char *) name.start);
+        return JS_EXCEPTION;
+    }
+
+    JS_FreeCString(ctx, (const char *) name.start);
+
+    if (!JS_IsFunction(ctx, argv[1]) && !JS_IsNull(argv[1])) {
+        JS_ThrowTypeError(ctx, "callback is not a function or null");
+        return JS_EXCEPTION;
+    }
+
+    JS_FreeValue(ctx, njs->hooks[i]);
+    njs->hooks[i] = JS_DupValue(ctx, argv[1]);
+
+    return JS_UNDEFINED;
 }
 
 
