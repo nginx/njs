@@ -48,6 +48,7 @@ enum {
     QJS_CORE_CLASS_ID_UINT8_ARRAY_CTOR,
     QJS_CORE_CLASS_ID_TEXT_DECODER,
     QJS_CORE_CLASS_ID_TEXT_ENCODER,
+    QJS_CORE_CLASS_ID_NJS,
     QJS_CORE_CLASS_ID_FS_STATS,
     QJS_CORE_CLASS_ID_FS_DIRENT,
     QJS_CORE_CLASS_ID_FS_FILEHANDLE,
@@ -70,6 +71,7 @@ typedef struct {
 
 
 JSContext *qjs_new_context(JSRuntime *rt, qjs_module_t **addons);
+JSValue qjs_call_exit_hook(JSContext *ctx);
 
 
 JSValue qjs_new_uint8_array(JSContext *ctx, int argc, JSValueConst *argv);

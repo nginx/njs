@@ -1130,6 +1130,7 @@ ngx_engine_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
     uint32_t              i, length;
     ngx_str_t             exception;
     JSRuntime            *rt;
+    JSValue               ret;
     JSContext            *cx;
     JSClassID             class_id;
     JSMemoryUsage         stats;
@@ -1142,6 +1143,13 @@ ngx_engine_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
     cx = e->u.qjs.ctx;
 
     if (ctx != NULL) {
+        ret = qjs_call_exit_hook(cx);
+        if (JS_IsException(ret)) {
+            ngx_qjs_exception(e, &exception);
+            ngx_log_error(NGX_LOG_ERR, ctx->log, 0,
+                          "js exit hook exception: %V", &exception);
+        }
+
         node = njs_rbtree_min(&ctx->waiting_events);
 
         while (njs_rbtree_is_there_successor(&ctx->waiting_events, node)) {
