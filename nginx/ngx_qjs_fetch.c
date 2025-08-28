@@ -1768,7 +1768,6 @@ static JSValue
 ngx_qjs_ext_fetch_headers_delete(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv)
 {
-    ngx_int_t          rc;
     ngx_str_t          name;
     ngx_uint_t         i;
     ngx_list_part_t   *part;
@@ -1781,8 +1780,8 @@ ngx_qjs_ext_fetch_headers_delete(JSContext *cx, JSValueConst this_val,
                                      "\"this\" is not fetch headers object");
     }
 
-    rc = ngx_qjs_string(cx, argv[0], &name);
-    if (rc != NGX_OK) {
+    name.data = (u_char *) JS_ToCStringLen(cx, &name.len, argv[0]);
+    if (name.data == NULL) {
         return JS_EXCEPTION;
     }
 
@@ -1819,6 +1818,8 @@ ngx_qjs_ext_fetch_headers_delete(JSContext *cx, JSValueConst this_val,
         headers->content_type = NULL;
     }
 
+    JS_FreeCString(cx, (const char *) name.data);
+
     return JS_UNDEFINED;
 }
 
@@ -1827,7 +1828,6 @@ static JSValue
 ngx_qjs_ext_fetch_headers_foreach(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv)
 {
-    int                ret;
     JSValue            callback, keys, key;
     JSValue            header, retval, arguments[2];
     uint32_t           length;;
@@ -1862,13 +1862,14 @@ ngx_qjs_ext_fetch_headers_foreach(JSContext *cx, JSValueConst this_val,
             goto fail;
         }
 
-        ret = ngx_qjs_string(cx, key, &name);
-        if (ret != NGX_OK) {
+        name.data = (u_char *) JS_ToCStringLen(cx, &name.len, key);
+        if (name.data == NULL) {
             JS_FreeValue(cx, key);
             goto fail;
         }
 
         header = ngx_qjs_headers_get(cx, this_val, &name, 0);
+        JS_FreeCString(cx, (char *) name.data);
         if (JS_IsException(header)) {
             JS_FreeValue(cx, key);
             goto fail;
@@ -1900,15 +1901,19 @@ static JSValue
 ngx_qjs_ext_fetch_headers_get(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv, int magic)
 {
-    ngx_int_t  rc;
+    JSValue    ret;
     ngx_str_t  name;
 
-    rc = ngx_qjs_string(cx, argv[0], &name);
-    if (rc != NGX_OK) {
+    name.data = (u_char *) JS_ToCStringLen(cx, &name.len, argv[0]);
+    if (name.data == NULL) {
         return JS_EXCEPTION;
     }
 
-    return ngx_qjs_headers_get(cx, this_val, &name, magic);
+    ret = ngx_qjs_headers_get(cx, this_val, &name, magic);
+
+    JS_FreeCString(cx, (char *) name.data);
+
+    return ret;
 }
 
 
@@ -1920,12 +1925,13 @@ ngx_qjs_ext_fetch_headers_has(JSContext *cx, JSValueConst this_val,
     ngx_int_t  rc;
     ngx_str_t  name;
 
-    rc = ngx_qjs_string(cx, argv[0], &name);
-    if (rc != NGX_OK) {
+    name.data = (u_char *) JS_ToCStringLen(cx, &name.len, argv[0]);
+    if (name.data == NULL) {
         return JS_EXCEPTION;
     }
 
     retval = ngx_qjs_headers_get(cx, this_val, &name, 0);
+    JS_FreeCString(cx, (char *) name.data);
     if (JS_IsException(retval)) {
         return JS_EXCEPTION;
     }
@@ -1954,13 +1960,14 @@ ngx_qjs_ext_fetch_headers_set(JSContext *cx, JSValueConst this_val,
                                      "\"this\" is not fetch headers object");
     }
 
-    rc = ngx_qjs_string(cx, argv[0], &name);
-    if (rc != NGX_OK) {
+    name.data = (u_char *) JS_ToCStringLen(cx, &name.len, argv[0]);
+    if (name.data == NULL) {
         return JS_EXCEPTION;
     }
 
     rc = ngx_qjs_string(cx, argv[1], &value);
     if (rc != NGX_OK) {
+        JS_FreeCString(cx, (const char *) name.data);
         return JS_EXCEPTION;
     }
 
@@ -1997,12 +2004,15 @@ ngx_qjs_ext_fetch_headers_set(JSContext *cx, JSValueConst this_val,
                 *pp = NULL;
             }
 
+            JS_FreeCString(cx, (const char *) name.data);
+
             return JS_UNDEFINED;
         }
     }
 
     rc = ngx_qjs_headers_append(cx, headers, name.data, name.len,
                                  value.data, value.len);
+    JS_FreeCString(cx, (const char *) name.data);
     if (rc != NGX_OK) {
         return JS_EXCEPTION;
     }
@@ -2426,7 +2436,6 @@ ngx_qjs_fetch_flag_set(JSContext *cx, const ngx_qjs_entry_t *entries,
      JSValue object, const char *prop)
 {
     JSValue                value;
-    ngx_int_t              rc;
     ngx_str_t              flag;
     const ngx_qjs_entry_t  *e;
 
@@ -2440,9 +2449,9 @@ ngx_qjs_fetch_flag_set(JSContext *cx, const ngx_qjs_entry_t *entries,
         return entries[0].value;
     }
 
-    rc = ngx_qjs_string(cx, value, &flag);
+    flag.data = (u_char *) JS_ToCStringLen(cx, &flag.len, value);
     JS_FreeValue(cx, value);
-    if (rc != NGX_OK) {
+    if (flag.data == NULL) {
         return NGX_ERROR;
     }
 
@@ -2450,12 +2459,15 @@ ngx_qjs_fetch_flag_set(JSContext *cx, const ngx_qjs_entry_t *entries,
         if (flag.len == e->name.len
             && ngx_strncasecmp(e->name.data, flag.data, flag.len) == 0)
         {
+            JS_FreeCString(cx, (const char *) flag.data);
             return e->value;
         }
     }
 
     JS_ThrowInternalError(cx, "unknown %s type: %.*s", prop,
                           (int) flag.len, flag.data);
+
+    JS_FreeCString(cx, (const char *) flag.data);
 
     return NGX_ERROR;
 }
