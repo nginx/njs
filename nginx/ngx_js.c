@@ -1462,7 +1462,8 @@ ngx_qjs_integer(JSContext *cx, JSValueConst val, ngx_int_t *n)
 
 
 ngx_int_t
-ngx_qjs_string(JSContext *cx, JSValueConst val, ngx_str_t *dst)
+ngx_qjs_string(JSContext *cx, ngx_pool_t *pool, JSValueConst val,
+    ngx_str_t *dst)
 {
     size_t         len, byte_offset, byte_length;
     u_char        *start;
@@ -1496,7 +1497,7 @@ ngx_qjs_string(JSContext *cx, JSValueConst val, ngx_str_t *dst)
             start += byte_offset;
             dst->len = byte_length;
 
-            dst->data = njs_mp_alloc(e->pool, dst->len);
+            dst->data = ngx_pnalloc(pool, dst->len);
             if (dst->data == NULL) {
                 return NGX_ERROR;
             }
@@ -1513,7 +1514,7 @@ string:
         return NGX_ERROR;
     }
 
-    start = njs_mp_alloc(e->pool, len);
+    start = ngx_pnalloc(pool, len);
     if (start == NULL) {
         JS_FreeCString(cx, str);
         return NGX_ERROR;

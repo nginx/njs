@@ -622,7 +622,7 @@ ngx_qjs_request_ctor(JSContext *cx, ngx_js_request_t *request,
     }
 
     if (JS_IsString(input)) {
-        rc = ngx_qjs_string(cx, input, &request->url);
+        rc = ngx_qjs_string(cx, pool, input, &request->url);
         if (rc != NGX_OK) {
             JS_ThrowInternalError(cx, "failed to convert url arg");
             return NGX_ERROR;
@@ -694,7 +694,7 @@ ngx_qjs_request_ctor(JSContext *cx, ngx_js_request_t *request,
         }
 
         if (!JS_IsUndefined(value)) {
-            rc = ngx_qjs_string(cx, value, &request->method);
+            rc = ngx_qjs_string(cx, pool, value, &request->method);
             JS_FreeValue(cx, value);
 
             if (rc != NGX_OK) {
@@ -774,7 +774,7 @@ ngx_qjs_request_ctor(JSContext *cx, ngx_js_request_t *request,
         }
 
         if (!JS_IsUndefined(value)) {
-            if (ngx_qjs_string(cx, value, &request->body) != NGX_OK) {
+            if (ngx_qjs_string(cx, pool, value, &request->body) != NGX_OK) {
                 JS_FreeValue(cx, value);
                 JS_ThrowInternalError(cx, "invalid Request body");
                 return NGX_ERROR;
@@ -866,7 +866,7 @@ ngx_qjs_fetch_response_ctor(JSContext *cx, JSValueConst new_target, int argc,
         }
 
         if (!JS_IsUndefined(value)) {
-            ret = ngx_qjs_string(cx, value, &response->status_text);
+            ret = ngx_qjs_string(cx, pool, value, &response->status_text);
             JS_FreeValue(cx, value);
 
             if (ret < 0) {
@@ -913,7 +913,7 @@ ngx_qjs_fetch_response_ctor(JSContext *cx, JSValueConst new_target, int argc,
     body = argv[0];
 
     if (!JS_IsNullOrUndefined(body)) {
-        if (ngx_qjs_string(cx, body, &bd) != NGX_OK) {
+        if (ngx_qjs_string(cx, pool, body, &bd) != NGX_OK) {
             return JS_ThrowInternalError(cx, "invalid Response body");
         }
 
@@ -1054,16 +1054,19 @@ static ngx_int_t
 ngx_qjs_headers_fill_header_free(JSContext *cx, ngx_js_headers_t *headers,
     JSValue prop_name, JSValue prop_value)
 {
-    ngx_int_t  rc;
-    ngx_str_t  name, value;
+    ngx_int_t   rc;
+    ngx_str_t   name, value;
+    ngx_pool_t  *pool;
 
-    if (ngx_qjs_string(cx, prop_name, &name) != NGX_OK) {
+    pool = ngx_qjs_external_pool(cx, JS_GetContextOpaque(cx));
+
+    if (ngx_qjs_string(cx, pool, prop_name, &name) != NGX_OK) {
         JS_FreeValue(cx, prop_name);
         JS_FreeValue(cx, prop_value);
         return NGX_ERROR;
     }
 
-    if (ngx_qjs_string(cx, prop_value, &value) != NGX_OK) {
+    if (ngx_qjs_string(cx, pool, prop_value, &value) != NGX_OK) {
         JS_FreeValue(cx, prop_name);
         JS_FreeValue(cx, prop_value);
         return NGX_ERROR;
@@ -1950,6 +1953,7 @@ ngx_qjs_ext_fetch_headers_set(JSContext *cx, JSValueConst this_val,
     ngx_int_t          rc;
     ngx_str_t          name, value;
     ngx_uint_t         i;
+    ngx_pool_t        *pool;
     ngx_list_part_t   *part;
     ngx_js_tb_elt_t   *h, **ph, **pp;
     ngx_js_headers_t  *headers;
@@ -1965,7 +1969,9 @@ ngx_qjs_ext_fetch_headers_set(JSContext *cx, JSValueConst this_val,
         return JS_EXCEPTION;
     }
 
-    rc = ngx_qjs_string(cx, argv[1], &value);
+    pool = ngx_qjs_external_pool(cx, JS_GetContextOpaque(cx));
+
+    rc = ngx_qjs_string(cx, pool, argv[1], &value);
     if (rc != NGX_OK) {
         JS_FreeCString(cx, (const char *) name.data);
         return JS_EXCEPTION;
