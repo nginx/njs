@@ -2651,7 +2651,7 @@ ngx_stream_qjs_variables_set_property(JSContext *cx, JSValueConst obj,
         return -1;
     }
 
-    if (ngx_qjs_string(cx, value, &val) != NGX_OK) {
+    if (ngx_qjs_string(cx, s->connection->pool, value, &val) != NGX_OK) {
         return -1;
     }
 
