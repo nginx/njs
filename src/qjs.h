@@ -19,28 +19,7 @@
 #include <njs_chb.h>
 #include <njs_utils.h>
 #include <njs_assert.h>
-
-#ifndef __has_warning
-#  define __has_warning(x) 0
-#endif
-
-#if (defined(__GNUC__) && (__GNUC__ >= 8))                                    \
-    || (defined(__clang__) && __has_warning("-Wcast-function-type"))
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wcast-function-type"
-#endif
-
-#include <quickjs.h>
-
-#ifndef JS_BOOL
-#define JS_BOOL bool
-#endif
-
-#if (defined(__GNUC__) && (__GNUC__ >= 8))                                    \
-    || (defined(__clang__) && __has_warning("-Wcast-function-type"))
-#pragma GCC diagnostic pop
-#endif
-#include <pthread.h>
+#include <quickjs_compat.h>
 
 
 #define QJS_CORE_CLASS_ID_OFFSET    64
