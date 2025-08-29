@@ -805,10 +805,12 @@ ngx_qjs_fetch_response_ctor(JSContext *cx, JSValueConst new_target, int argc,
     JSValueConst *argv)
 {
     int                 ret;
+    size_t              byte_offset, byte_length;
     u_char             *p, *end;
-    JSValue             init, value, body, proto, obj;
+    JSValue             init, value, body, proto, obj, buf;
     ngx_str_t           bd;
     ngx_int_t           rc;
+    const char         *str;
     ngx_pool_t         *pool;
     ngx_js_ctx_t       *ctx;
     ngx_js_response_t  *response;
@@ -913,11 +915,38 @@ ngx_qjs_fetch_response_ctor(JSContext *cx, JSValueConst new_target, int argc,
     body = argv[0];
 
     if (!JS_IsNullOrUndefined(body)) {
-        if (ngx_qjs_string(cx, pool, body, &bd) != NGX_OK) {
-            return JS_ThrowInternalError(cx, "invalid Response body");
+        str = NULL;
+        if (JS_IsString(body)) {
+            goto string;
+        }
+
+        buf = JS_GetTypedArrayBuffer(cx, body, &byte_offset, &byte_length, NULL);
+        if (!JS_IsException(buf)) {
+            bd.data = JS_GetArrayBuffer(cx, &bd.len, buf);
+
+            JS_FreeValue(cx, buf);
+
+            if (bd.data != NULL) {
+                bd.data += byte_offset;
+                bd.len = byte_length;
+            }
+
+        } else {
+
+string:
+            str = JS_ToCStringLen(cx, &bd.len, body);
+            if (str == NULL) {
+                return JS_EXCEPTION;
+            }
+
+            bd.data = (u_char *) str;
         }
 
         njs_chb_append(&response->chain, bd.data, bd.len);
+
+        if (str != NULL) {
+            JS_FreeCString(cx, str);
+        }
 
         if (JS_IsString(body)) {
             rc = ngx_qjs_headers_append(cx, &response->headers,
