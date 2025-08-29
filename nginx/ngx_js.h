@@ -39,6 +39,7 @@
 
 #define ngx_js_buffer_type(btype) ((btype) & ~NGX_JS_DEPRECATED)
 
+#if (NJS_HAVE_QUICKJS)
 /*
  * This static table solves the problem of a native QuickJS approach
  * which uses a static variables of type JSClassID and JS_NewClassID() to
@@ -47,23 +48,25 @@
  * are loaded dynamically.
  */
 
-#define NGX_QJS_CLASS_ID_OFFSET (QJS_CORE_CLASS_ID_LAST)
-#define NGX_QJS_CLASS_ID_CONSOLE (NGX_QJS_CLASS_ID_OFFSET + 1)
-#define NGX_QJS_CLASS_ID_HTTP_REQUEST (NGX_QJS_CLASS_ID_OFFSET + 2)
-#define NGX_QJS_CLASS_ID_HTTP_PERIODIC (NGX_QJS_CLASS_ID_OFFSET + 3)
-#define NGX_QJS_CLASS_ID_HTTP_VARS (NGX_QJS_CLASS_ID_OFFSET + 4)
-#define NGX_QJS_CLASS_ID_HTTP_HEADERS_IN (NGX_QJS_CLASS_ID_OFFSET + 5)
-#define NGX_QJS_CLASS_ID_HTTP_HEADERS_OUT (NGX_QJS_CLASS_ID_OFFSET + 6)
-#define NGX_QJS_CLASS_ID_STREAM_SESSION (NGX_QJS_CLASS_ID_OFFSET + 7)
-#define NGX_QJS_CLASS_ID_STREAM_PERIODIC (NGX_QJS_CLASS_ID_OFFSET + 8)
-#define NGX_QJS_CLASS_ID_STREAM_FLAGS (NGX_QJS_CLASS_ID_OFFSET + 9)
-#define NGX_QJS_CLASS_ID_STREAM_VARS (NGX_QJS_CLASS_ID_OFFSET + 10)
-#define NGX_QJS_CLASS_ID_SHARED (NGX_QJS_CLASS_ID_OFFSET + 11)
-#define NGX_QJS_CLASS_ID_SHARED_DICT (NGX_QJS_CLASS_ID_OFFSET + 12)
-#define NGX_QJS_CLASS_ID_SHARED_DICT_ERROR (NGX_QJS_CLASS_ID_OFFSET + 13)
-#define NGX_QJS_CLASS_ID_FETCH_HEADERS (NGX_QJS_CLASS_ID_OFFSET + 14)
-#define NGX_QJS_CLASS_ID_FETCH_REQUEST (NGX_QJS_CLASS_ID_OFFSET + 15)
-#define NGX_QJS_CLASS_ID_FETCH_RESPONSE (NGX_QJS_CLASS_ID_OFFSET + 16)
+enum {
+    NGX_QJS_CLASS_ID_CONSOLE = QJS_CORE_CLASS_ID_LAST,
+    NGX_QJS_CLASS_ID_HTTP_REQUEST,
+    NGX_QJS_CLASS_ID_HTTP_PERIODIC,
+    NGX_QJS_CLASS_ID_HTTP_VARS,
+    NGX_QJS_CLASS_ID_HTTP_HEADERS_IN,
+    NGX_QJS_CLASS_ID_HTTP_HEADERS_OUT,
+    NGX_QJS_CLASS_ID_STREAM_SESSION,
+    NGX_QJS_CLASS_ID_STREAM_PERIODIC,
+    NGX_QJS_CLASS_ID_STREAM_FLAGS,
+    NGX_QJS_CLASS_ID_STREAM_VARS,
+    NGX_QJS_CLASS_ID_SHARED,
+    NGX_QJS_CLASS_ID_SHARED_DICT,
+    NGX_QJS_CLASS_ID_SHARED_DICT_ERROR,
+    NGX_QJS_CLASS_ID_FETCH_HEADERS,
+    NGX_QJS_CLASS_ID_FETCH_REQUEST,
+    NGX_QJS_CLASS_ID_FETCH_RESPONSE,
+};
+#endif
 
 
 typedef struct ngx_js_loc_conf_s ngx_js_loc_conf_t;
@@ -351,7 +354,8 @@ ngx_int_t ngx_qjs_call(JSContext *cx, JSValue function, JSValue *argv,
     int argc);
 ngx_int_t ngx_qjs_exception(ngx_engine_t *e, ngx_str_t *s);
 ngx_int_t ngx_qjs_integer(JSContext *cx, JSValueConst val, ngx_int_t *n);
-ngx_int_t ngx_qjs_string(JSContext *cx, JSValueConst val, ngx_str_t *str);
+ngx_int_t ngx_qjs_string(JSContext *cx, ngx_pool_t *pool, JSValueConst val,
+    ngx_str_t *dst);
 
 JSValue ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
      JSValueConst *argv);

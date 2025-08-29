@@ -2085,9 +2085,10 @@ ngx_stream_qjs_ext_log(JSContext *cx, JSValueConst this_val, int argc,
 
 
 static const ngx_stream_qjs_event_t *
-ngx_stream_qjs_event(ngx_stream_session_t *s, JSContext *cx, ngx_str_t *event)
+ngx_stream_qjs_event(ngx_stream_session_t *s, JSContext *cx, JSValue name)
 {
     ngx_uint_t            i, n, type;
+    ngx_str_t             event;
     ngx_stream_js_ctx_t  *ctx;
 
     static const ngx_stream_qjs_event_t events[] = {
@@ -2116,14 +2117,19 @@ ngx_stream_qjs_event(ngx_stream_session_t *s, JSContext *cx, ngx_str_t *event)
         },
     };
 
+    event.data = (u_char *) JS_ToCStringLen(cx, &event.len, name);
+    if (event.data == NULL) {
+        return NULL;
+    }
+
     ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
 
     i = 0;
     n = sizeof(events) / sizeof(events[0]);
 
     while (i < n) {
-        if (event->len == events[i].name.len
-            && ngx_memcmp(event->data, events[i].name.data, event->len)
+        if (event.len == events[i].name.len
+            && ngx_memcmp(event.data, events[i].name.data, event.len)
                == 0)
         {
             break;
@@ -2134,9 +2140,12 @@ ngx_stream_qjs_event(ngx_stream_session_t *s, JSContext *cx, ngx_str_t *event)
 
     if (i == n) {
         (void) JS_ThrowInternalError(cx, "unknown event \"%.*s\"",
-                                     (int) event->len, event->data);
+                                     (int) event.len, event.data);
+        JS_FreeCString(cx, (char *) event.data);
         return NULL;
     }
+
+    JS_FreeCString(cx, (char *) event.data);
 
     ctx->events[events[i].id].data_type = events[i].data_type;
 
@@ -2157,7 +2166,6 @@ static JSValue
 ngx_stream_qjs_ext_on(JSContext *cx, JSValueConst this_val, int argc,
     JSValueConst *argv)
 {
-    ngx_str_t                      name;
     ngx_stream_js_ctx_t           *ctx;
     ngx_stream_qjs_session_t      *ses;
     const ngx_stream_qjs_event_t  *e;
@@ -2169,18 +2177,14 @@ ngx_stream_qjs_ext_on(JSContext *cx, JSValueConst this_val, int argc,
 
     ctx = ngx_stream_get_module_ctx(ses->session, ngx_stream_js_module);
 
-    if (ngx_qjs_string(cx, argv[0], &name) != NGX_OK) {
-        return JS_EXCEPTION;
-    }
-
-    e = ngx_stream_qjs_event(ses->session, cx, &name);
+    e = ngx_stream_qjs_event(ses->session, cx, argv[0]);
     if (e == NULL) {
         return JS_EXCEPTION;
     }
 
     if (JS_IsFunction(cx, ngx_qjs_arg(ctx->events[e->id].function))) {
         return JS_ThrowInternalError(cx, "event handler \"%s\" is already set",
-                                     name.data);
+                                     e->name.data);
     }
 
     if (!JS_IsFunction(cx, argv[1])) {
@@ -2200,7 +2204,6 @@ static JSValue
 ngx_stream_qjs_ext_off(JSContext *cx, JSValueConst this_val, int argc,
     JSValueConst *argv)
 {
-    ngx_str_t                      name;
     ngx_stream_js_ctx_t           *ctx;
     ngx_stream_session_t          *s;
     const ngx_stream_qjs_event_t  *e;
@@ -2212,11 +2215,7 @@ ngx_stream_qjs_ext_off(JSContext *cx, JSValueConst this_val, int argc,
 
     ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
 
-    if (ngx_qjs_string(cx, argv[0], &name) != NGX_OK) {
-        return JS_EXCEPTION;
-    }
-
-    e = ngx_stream_qjs_event(s, cx, &name);
+    e = ngx_stream_qjs_event(s, cx, argv[0]);
     if (e == NULL) {
         return JS_EXCEPTION;
     }
@@ -2652,7 +2651,7 @@ ngx_stream_qjs_variables_set_property(JSContext *cx, JSValueConst obj,
         return -1;
     }
 
-    if (ngx_qjs_string(cx, value, &val) != NGX_OK) {
+    if (ngx_qjs_string(cx, s->connection->pool, value, &val) != NGX_OK) {
         return -1;
     }
 

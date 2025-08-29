@@ -1130,6 +1130,7 @@ ngx_engine_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
     uint32_t              i, length;
     ngx_str_t             exception;
     JSRuntime            *rt;
+    JSValue               ret;
     JSContext            *cx;
     JSClassID             class_id;
     JSMemoryUsage         stats;
@@ -1142,6 +1143,13 @@ ngx_engine_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
     cx = e->u.qjs.ctx;
 
     if (ctx != NULL) {
+        ret = qjs_call_exit_hook(cx);
+        if (JS_IsException(ret)) {
+            ngx_qjs_exception(e, &exception);
+            ngx_log_error(NGX_LOG_ERR, ctx->log, 0,
+                          "js exit hook exception: %V", &exception);
+        }
+
         node = njs_rbtree_min(&ctx->waiting_events);
 
         while (njs_rbtree_is_there_successor(&ctx->waiting_events, node)) {
@@ -1462,7 +1470,8 @@ ngx_qjs_integer(JSContext *cx, JSValueConst val, ngx_int_t *n)
 
 
 ngx_int_t
-ngx_qjs_string(JSContext *cx, JSValueConst val, ngx_str_t *dst)
+ngx_qjs_string(JSContext *cx, ngx_pool_t *pool, JSValueConst val,
+    ngx_str_t *dst)
 {
     size_t         len, byte_offset, byte_length;
     u_char        *start;
@@ -1496,7 +1505,7 @@ ngx_qjs_string(JSContext *cx, JSValueConst val, ngx_str_t *dst)
             start += byte_offset;
             dst->len = byte_length;
 
-            dst->data = njs_mp_alloc(e->pool, dst->len);
+            dst->data = ngx_pnalloc(pool, dst->len);
             if (dst->data == NULL) {
                 return NGX_ERROR;
             }
@@ -1513,7 +1522,7 @@ string:
         return NGX_ERROR;
     }
 
-    start = njs_mp_alloc(e->pool, len);
+    start = ngx_pnalloc(pool, len);
     if (start == NULL) {
         JS_FreeCString(cx, str);
         return NGX_ERROR;
