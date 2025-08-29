@@ -134,7 +134,9 @@ jobs:
 
       - name: Configure and build nginx and njs modules with quickjs, asan, static modules
         run: |
+          $MAKE_UTILITY clean
           cd nginx-source
+          $MAKE_UTILITY clean
           $NGINX_CONFIGURE_CMD --with-cc-opt="$CC_OPT -I${{ github.workspace }}/quickjs -fsanitize=address -DNJS_DEBUG_MEMORY -DNGX_DEBUG_PALLOC -DNGX_DEBUG_MALLOC" --with-ld-opt="$LD_OPT -L${{ github.workspace }}/quickjs -fsanitize=address" --add-module=../nginx || cat objs/autoconf.err
           $MAKE_UTILITY -j$(nproc)
 

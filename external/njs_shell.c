@@ -13,6 +13,7 @@
 
 #if (NJS_HAVE_QUICKJS)
 #include <qjs.h>
+#include <pthread.h>
 #endif
 
 #if (!defined NJS_FUZZER_TARGET && defined NJS_HAVE_READLINE)
