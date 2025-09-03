@@ -3202,6 +3202,7 @@ static JSValue
 ngx_qjs_ext_shared_dict_delete(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv)
 {
+    JSValue          ret;
     ngx_str_t        key;
     ngx_shm_zone_t  *shm_zone;
 
@@ -3210,11 +3211,16 @@ ngx_qjs_ext_shared_dict_delete(JSContext *cx, JSValueConst this_val,
         return JS_ThrowTypeError(cx, "\"this\" is not a shared dict");
     }
 
-    if (ngx_qjs_string(cx, argv[0], &key) != NGX_OK) {
+    key.data = (u_char *) JS_ToCStringLen(cx, &key.len, argv[0]);
+    if (key.data == NULL) {
         return JS_EXCEPTION;
     }
 
-    return ngx_qjs_dict_delete(cx, shm_zone->data, &key, 0);
+    ret = ngx_qjs_dict_delete(cx, shm_zone->data, &key, 0);
+
+    JS_FreeCString(cx, (char *) key.data);
+
+    return ret;
 }
 
 
@@ -3245,6 +3251,7 @@ static JSValue
 ngx_qjs_ext_shared_dict_get(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv)
 {
+    JSValue          ret;
     ngx_str_t        key;
     ngx_shm_zone_t  *shm_zone;
 
@@ -3253,11 +3260,16 @@ ngx_qjs_ext_shared_dict_get(JSContext *cx, JSValueConst this_val,
         return JS_ThrowTypeError(cx, "\"this\" is not a shared dict");
     }
 
-    if (ngx_qjs_string(cx, argv[0], &key) != NGX_OK) {
+    key.data = (u_char *) JS_ToCStringLen(cx, &key.len, argv[0]);
+    if (key.data == NULL) {
         return JS_EXCEPTION;
     }
 
-    return ngx_qjs_dict_get(cx, shm_zone->data, &key);
+    ret = ngx_qjs_dict_get(cx, shm_zone->data, &key);
+
+    JS_FreeCString(cx, (char *) key.data);
+
+    return ret;
 }
 
 
@@ -3277,7 +3289,8 @@ ngx_qjs_ext_shared_dict_has(JSContext *cx, JSValueConst this_val,
         return JS_ThrowTypeError(cx, "\"this\" is not a shared dict");
     }
 
-    if (ngx_qjs_string(cx, argv[0], &key) != NGX_OK) {
+    key.data = (u_char *) JS_ToCStringLen(cx, &key.len, argv[0]);
+    if (key.data == NULL) {
         return JS_EXCEPTION;
     }
 
@@ -3298,6 +3311,8 @@ ngx_qjs_ext_shared_dict_has(JSContext *cx, JSValueConst this_val,
 
     ngx_rwlock_unlock(&dict->sh->rwlock);
 
+    JS_FreeCString(cx, (char *) key.data);
+
     return JS_NewBool(cx, node != NULL);
 }
 
@@ -3306,6 +3321,7 @@ static JSValue
 ngx_qjs_ext_shared_dict_incr(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv)
 {
+    JSValue          ret;
     double           delta, init;
     uint32_t         timeout;
     ngx_str_t        key;
@@ -3321,10 +3337,6 @@ ngx_qjs_ext_shared_dict_incr(JSContext *cx, JSValueConst this_val,
 
     if (dict->type != NGX_JS_DICT_TYPE_NUMBER) {
         return JS_ThrowTypeError(cx, "shared dict is not a number dict");
-    }
-
-    if (ngx_qjs_string(cx, argv[0], &key) != NGX_OK) {
-        return JS_EXCEPTION;
     }
 
     if (JS_ToFloat64(cx, &delta, argv[1]) < 0) {
@@ -3357,7 +3369,16 @@ ngx_qjs_ext_shared_dict_incr(JSContext *cx, JSValueConst this_val,
         timeout = dict->timeout;
     }
 
-    return ngx_qjs_dict_incr(cx, dict, &key, delta, init, timeout);
+    key.data = (u_char *) JS_ToCStringLen(cx, &key.len, argv[0]);
+    if (key.data == NULL) {
+        return JS_EXCEPTION;
+    }
+
+    ret = ngx_qjs_dict_incr(cx, dict, &key, delta, init, timeout);
+
+    JS_FreeCString(cx, (char *) key.data);
+
+    return ret;
 }
 
 
@@ -3576,6 +3597,7 @@ static JSValue
 ngx_qjs_ext_shared_dict_pop(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv)
 {
+    JSValue          ret;
     ngx_str_t        key;
     ngx_shm_zone_t  *shm_zone;
 
@@ -3584,11 +3606,16 @@ ngx_qjs_ext_shared_dict_pop(JSContext *cx, JSValueConst this_val,
         return JS_ThrowTypeError(cx, "\"this\" is not a shared dict");
     }
 
-    if (ngx_qjs_string(cx, argv[0], &key) != NGX_OK) {
+    key.data = (u_char *) JS_ToCStringLen(cx, &key.len, argv[0]);
+    if (key.data == NULL) {
         return JS_EXCEPTION;
     }
 
-    return ngx_qjs_dict_delete(cx, shm_zone->data, &key, 1);
+    ret = ngx_qjs_dict_delete(cx, shm_zone->data, &key, 1);
+
+    JS_FreeCString(cx, (char *) key.data);
+
+    return ret;
 }
 
 
@@ -3605,10 +3632,6 @@ ngx_qjs_ext_shared_dict_set(JSContext *cx, JSValueConst this_val,
     shm_zone = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_SHARED_DICT);
     if (shm_zone == NULL) {
         return JS_ThrowTypeError(cx, "\"this\" is not a shared dict");
-    }
-
-    if (ngx_qjs_string(cx, argv[0], &key) != NGX_OK) {
-        return JS_EXCEPTION;
     }
 
     dict = shm_zone->data;
@@ -3647,17 +3670,29 @@ ngx_qjs_ext_shared_dict_set(JSContext *cx, JSValueConst this_val,
         timeout = dict->timeout;
     }
 
+    key.data = (u_char *) JS_ToCStringLen(cx, &key.len, argv[0]);
+    if (key.data == NULL) {
+        return JS_EXCEPTION;
+    }
+
     ret = ngx_qjs_dict_set(cx, shm_zone->data, &key, argv[1], timeout, flags);
     if (JS_IsException(ret)) {
-        return JS_EXCEPTION;
+        goto done;
     }
 
     if (flags) {
         /* add() or replace(). */
-        return ret;
+        goto done;
     }
 
-    return JS_DupValue(cx, this_val);
+    JS_FreeValue(cx, ret);
+    ret = JS_DupValue(cx, this_val);
+
+done:
+
+    JS_FreeCString(cx, (char *) key.data);
+
+    return ret;
 }
 
 

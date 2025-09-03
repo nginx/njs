@@ -2703,6 +2703,8 @@ njs_engine_qjs_destroy(njs_engine_t *engine)
     njs_queue_link_t        *link;
     njs_rejected_promise_t  *rejected_promise;
 
+    qjs_call_exit_hook(engine->u.qjs.ctx);
+
     console = JS_GetRuntimeOpaque(engine->u.qjs.rt);
 
     if (console->rejected_promises != NULL) {

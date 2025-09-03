@@ -1609,7 +1609,7 @@ static ngx_int_t
 ngx_http_js_init_vm(ngx_http_request_t *r, njs_int_t proto_id)
 {
     ngx_http_js_ctx_t       *ctx;
-    ngx_pool_cleanup_t      *cln;
+    ngx_http_cleanup_t      *cln;
     ngx_http_js_loc_conf_t  *jlcf;
 
     jlcf = ngx_http_get_module_loc_conf(r, ngx_http_js_module);
@@ -1644,7 +1644,7 @@ ngx_http_js_init_vm(ngx_http_request_t *r, njs_int_t proto_id)
                    "http js vm clone %s: %p from: %p", jlcf->engine->name,
                    ctx->engine, jlcf->engine);
 
-    cln = ngx_pool_cleanup_add(r->pool, 0);
+    cln = ngx_http_cleanup_add(r, 0);
     if (cln == NULL) {
         return NGX_ERROR;
     }
@@ -5173,7 +5173,7 @@ ngx_http_qjs_ext_internal_redirect(JSContext *cx, JSValueConst this_val,
                          "internalRedirect cannot be called while filtering");
     }
 
-    if (ngx_qjs_string(cx, argv[0], &ctx->redirect_uri) != NGX_OK) {
+    if (ngx_qjs_string(cx, r->pool, argv[0], &ctx->redirect_uri) != NGX_OK) {
         return JS_EXCEPTION;
     }
 
@@ -5452,7 +5452,7 @@ ngx_http_qjs_ext_return(JSContext *cx, JSValueConst this_val,
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
     if (status < NGX_HTTP_BAD_REQUEST || !JS_IsNullOrUndefined(argv[1])) {
-        if (ngx_qjs_string(cx, argv[1], &body) != NGX_OK) {
+        if (ngx_qjs_string(cx, r->pool, argv[1], &body) != NGX_OK) {
             return JS_ThrowOutOfMemory(cx);
         }
 
@@ -5557,7 +5557,7 @@ ngx_http_qjs_ext_send(JSContext *cx, JSValueConst this_val,
     ll = &out;
 
     for (n = 0; n < (ngx_uint_t) argc; n++) {
-        if (ngx_qjs_string(cx, argv[n], &s) != NGX_OK) {
+        if (ngx_qjs_string(cx, r->pool, argv[n], &s) != NGX_OK) {
             return JS_ThrowTypeError(cx, "failed to convert arg");
         }
 
@@ -5905,7 +5905,7 @@ ngx_http_qjs_ext_subrequest(JSContext *cx, JSValueConst this_val,
                                      "the primary request");
     }
 
-    if (ngx_qjs_string(cx, argv[0], &uri) != NGX_OK) {
+    if (ngx_qjs_string(cx, r->pool, argv[0], &uri) != NGX_OK) {
         return JS_ThrowTypeError(cx, "failed to convert uri arg");
     }
 
@@ -5931,7 +5931,7 @@ ngx_http_qjs_ext_subrequest(JSContext *cx, JSValueConst this_val,
     arg = argv[1];
 
     if (JS_IsString(arg)) {
-        if (ngx_qjs_string(cx, arg, &args) != NGX_OK) {
+        if (ngx_qjs_string(cx, r->pool, arg, &args) != NGX_OK) {
             return JS_ThrowTypeError(cx, "failed to convert args");
         }
 
@@ -5952,7 +5952,7 @@ ngx_http_qjs_ext_subrequest(JSContext *cx, JSValueConst this_val,
         }
 
         if (!JS_IsUndefined(value)) {
-            rc = ngx_qjs_string(cx, value, &args);
+            rc = ngx_qjs_string(cx, r->pool, value, &args);
             JS_FreeValue(cx, value);
 
             if (rc != NGX_OK) {
@@ -5976,7 +5976,7 @@ ngx_http_qjs_ext_subrequest(JSContext *cx, JSValueConst this_val,
         }
 
         if (!JS_IsUndefined(value)) {
-            rc = ngx_qjs_string(cx, value, &method_name);
+            rc = ngx_qjs_string(cx, r->pool, value, &method_name);
             JS_FreeValue(cx, value);
 
             if (rc != NGX_OK) {
@@ -6003,7 +6003,7 @@ ngx_http_qjs_ext_subrequest(JSContext *cx, JSValueConst this_val,
         }
 
         if (!JS_IsUndefined(value)) {
-            rc = ngx_qjs_string(cx, value, &body_arg);
+            rc = ngx_qjs_string(cx, r->pool, value, &body_arg);
             JS_FreeValue(cx, value);
 
             if (rc != NGX_OK) {
@@ -6397,7 +6397,7 @@ ngx_http_qjs_variables_set_property(JSContext *cx, JSValueConst obj,
         return -1;
     }
 
-    if (ngx_qjs_string(cx, value, &s) != NGX_OK) {
+    if (ngx_qjs_string(cx, r->pool, value, &s) != NGX_OK) {
         return -1;
     }
 
@@ -6876,7 +6876,7 @@ ngx_http_qjs_headers_out_handler(JSContext *cx, ngx_http_request_t *r,
             }
         }
 
-        rc = ngx_qjs_string(cx, v, &s);
+        rc = ngx_qjs_string(cx, r->pool, v, &s);
 
         if (qjs_is_array(cx, *value)) {
             JS_FreeValue(cx, v);
@@ -6908,16 +6908,7 @@ ngx_http_qjs_headers_out_handler(JSContext *cx, ngx_http_request_t *r,
         h->key.data = p;
         h->key.len = name->len;
 
-        p = ngx_pnalloc(r->pool, s.len);
-        if (p == NULL) {
-            h->hash = 0;
-            (void) JS_ThrowOutOfMemory(cx);
-            return -1;
-        }
-
-        ngx_memcpy(p, s.data, s.len);
-
-        h->value.data = p;
+        h->value.data = s.data;
         h->value.len = s.len;
         h->hash = 1;
 
@@ -6977,7 +6968,7 @@ ngx_http_qjs_headers_out_special_handler(JSContext *cx, ngx_http_request_t *r,
         setval = JS_UNDEFINED;
     }
 
-    rc = ngx_qjs_string(cx, setval, &s);
+    rc = ngx_qjs_string(cx, r->pool, setval, &s);
 
     if (value != NULL && qjs_is_array(cx, *value)) {
         JS_FreeValue(cx, setval);
@@ -7046,16 +7037,7 @@ done:
     }
 
     if (h != NULL) {
-        p = ngx_pnalloc(r->pool, s.len);
-        if (p == NULL) {
-            h->hash = 0;
-            (void) JS_ThrowOutOfMemory(cx);
-            return -1;
-        }
-
-        ngx_memcpy(p, s.data, s.len);
-
-        h->value.data = p;
+        h->value.data = s.data;
         h->value.len = s.len;
         h->hash = 1;
     }
@@ -7212,7 +7194,7 @@ ngx_http_qjs_headers_out_content_type(JSContext *cx, ngx_http_request_t *r,
         setval = *value;
     }
 
-    rc = ngx_qjs_string(cx, setval, &s);
+    rc = ngx_qjs_string(cx, r->pool, setval, &s);
 
     if (qjs_is_array(cx, *value)) {
         JS_FreeValue(cx, setval);
