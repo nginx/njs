@@ -39,7 +39,7 @@ static ngx_int_t ngx_qjs_headers_inherit(JSContext *cx,
 static ngx_int_t ngx_qjs_headers_fill(JSContext *cx, ngx_js_headers_t *headers,
     JSValue init);
 static ngx_qjs_fetch_t *ngx_qjs_fetch_alloc(JSContext *cx, ngx_pool_t *pool,
-    ngx_log_t *log);
+    ngx_log_t *log, ngx_js_loc_conf_t *conf);
 static void ngx_qjs_fetch_error(ngx_js_http_t *http, const char *err);
 static void ngx_qjs_fetch_destructor(ngx_qjs_event_t *event);
 static void ngx_qjs_fetch_done(ngx_qjs_fetch_t *fetch, JSValue retval,
@@ -257,7 +257,8 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
     c = ngx_qjs_external_connection(cx, external);
     pool = ngx_qjs_external_pool(cx, external);
 
-    fetch = ngx_qjs_fetch_alloc(cx, pool, c->log);
+    fetch = ngx_qjs_fetch_alloc(cx, pool, c->log,
+                                ngx_qjs_external_loc_conf(cx, external));
     if (fetch == NULL) {
         return JS_ThrowOutOfMemory(cx);
     }
@@ -271,7 +272,6 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
 
     http = &fetch->http;
     http->response.url = request.url;
-    http->timeout = ngx_qjs_external_fetch_timeout(cx, external);
     http->buffer_size = ngx_qjs_external_buffer_size(cx, external);
     http->max_response_body_size =
                         ngx_qjs_external_max_response_buffer_size(cx, external);
@@ -1193,7 +1193,8 @@ fail:
 
 
 static ngx_qjs_fetch_t *
-ngx_qjs_fetch_alloc(JSContext *cx, ngx_pool_t *pool, ngx_log_t *log)
+ngx_qjs_fetch_alloc(JSContext *cx, ngx_pool_t *pool, ngx_log_t *log,
+    ngx_js_loc_conf_t *conf)
 {
     ngx_js_ctx_t     *ctx;
     ngx_js_http_t    *http;
@@ -1210,7 +1211,7 @@ ngx_qjs_fetch_alloc(JSContext *cx, ngx_pool_t *pool, ngx_log_t *log)
     http->pool = pool;
     http->log = log;
 
-    http->timeout = 10000;
+    http->conf = conf;
 
     http->http_parse.content_length_n = -1;
 

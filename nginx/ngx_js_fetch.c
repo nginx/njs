@@ -40,7 +40,7 @@ static njs_int_t ngx_js_headers_inherit(njs_vm_t *vm, ngx_js_headers_t *headers,
 static njs_int_t ngx_js_headers_fill(njs_vm_t *vm, ngx_js_headers_t *headers,
     njs_value_t *init);
 static ngx_js_fetch_t *ngx_js_fetch_alloc(njs_vm_t *vm, ngx_pool_t *pool,
-    ngx_log_t *log);
+    ngx_log_t *log, ngx_js_loc_conf_t *conf);
 static void ngx_js_fetch_error(ngx_js_http_t *http, const char *err);
 static void ngx_js_fetch_destructor(ngx_js_event_t *event);
 static njs_int_t ngx_js_fetch_promissified_result(njs_vm_t *vm,
@@ -537,7 +537,8 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     c = ngx_external_connection(vm, external);
     pool = ngx_external_pool(vm, external);
 
-    fetch = ngx_js_fetch_alloc(vm, pool, c->log);
+    fetch = ngx_js_fetch_alloc(vm, pool, c->log,
+                               ngx_external_loc_conf(vm, external));
     if (fetch == NULL) {
         return NJS_ERROR;
     }
@@ -550,15 +551,13 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     http->response.url = request.url;
-    http->timeout = ngx_external_fetch_timeout(vm, external);
-    http->buffer_size = ngx_external_buffer_size(vm, external);
-    http->max_response_body_size =
-                           ngx_external_max_response_buffer_size(vm, external);
+    http->buffer_size = http->conf->buffer_size;
+    http->max_response_body_size = http->conf->max_response_body_size;
 
 #if (NGX_SSL)
     if (u.default_port == 443) {
-        http->ssl = ngx_external_ssl(vm, external);
-        http->ssl_verify = ngx_external_ssl_verify(vm, external);
+        http->ssl = http->conf->ssl;
+        http->ssl_verify = http->conf->ssl_verify;
     }
 #endif
 
@@ -1134,7 +1133,8 @@ ngx_js_headers_fill(njs_vm_t *vm, ngx_js_headers_t *headers, njs_value_t *init)
 
 
 static ngx_js_fetch_t *
-ngx_js_fetch_alloc(njs_vm_t *vm, ngx_pool_t *pool, ngx_log_t *log)
+ngx_js_fetch_alloc(njs_vm_t *vm, ngx_pool_t *pool, ngx_log_t *log,
+    ngx_js_loc_conf_t *conf)
 {
     njs_int_t        ret;
     ngx_js_ctx_t    *ctx;
@@ -1152,8 +1152,7 @@ ngx_js_fetch_alloc(njs_vm_t *vm, ngx_pool_t *pool, ngx_log_t *log)
 
     http->pool = pool;
     http->log = log;
-
-    http->timeout = 10000;
+    http->conf = conf;
 
     http->http_parse.content_length_n = -1;
 
