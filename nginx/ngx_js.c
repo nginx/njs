@@ -10,6 +10,7 @@
 #include <ngx_core.h>
 #include <math.h>
 #include "ngx_js.h"
+#include "ngx_js_http.h"
 
 
 typedef struct {
@@ -3986,6 +3987,11 @@ ngx_js_create_conf(ngx_conf_t *cf, size_t size)
     conf->max_response_body_size = NGX_CONF_UNSET_SIZE;
     conf->timeout = NGX_CONF_UNSET_MSEC;
 
+    conf->fetch_keepalive = NGX_CONF_UNSET_UINT;
+    conf->fetch_keepalive_requests = NGX_CONF_UNSET_UINT;
+    conf->fetch_keepalive_time = NGX_CONF_UNSET_MSEC;
+    conf->fetch_keepalive_timeout = NGX_CONF_UNSET_MSEC;
+
     return conf;
 }
 
@@ -4096,6 +4102,17 @@ ngx_js_merge_conf(ngx_conf_t *cf, void *parent, void *child,
     ngx_conf_merge_size_value(conf->buffer_size, prev->buffer_size, 16384);
     ngx_conf_merge_size_value(conf->max_response_body_size,
                               prev->max_response_body_size, 1048576);
+
+    ngx_conf_merge_uint_value(conf->fetch_keepalive, prev->fetch_keepalive, 0);
+    ngx_conf_merge_uint_value(conf->fetch_keepalive_requests,
+                              prev->fetch_keepalive_requests, 1000);
+    ngx_conf_merge_msec_value(conf->fetch_keepalive_time,
+                              prev->fetch_keepalive_time, 3600000);
+    ngx_conf_merge_msec_value(conf->fetch_keepalive_timeout,
+                              prev->fetch_keepalive_timeout, 60000);
+
+    ngx_queue_init(&conf->fetch_keepalive_cache);
+    ngx_queue_init(&conf->fetch_keepalive_free);
 
     if (ngx_js_merge_vm(cf, (ngx_js_loc_conf_t *) conf,
                         (ngx_js_loc_conf_t *) prev,

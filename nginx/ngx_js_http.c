@@ -7,12 +7,23 @@
  */
 
 
-#include <ngx_config.h>
-#include <ngx_core.h>
-#include <ngx_event.h>
-#include <ngx_event_connect.h>
 #include "ngx_js.h"
 #include "ngx_js_http.h"
+
+
+typedef struct {
+    ngx_js_loc_conf_t     *conf;
+    ngx_queue_t            queue;
+    ngx_connection_t      *connection;
+
+    ngx_flag_t             ssl;
+    size_t                 host_len;
+    u_char                 host[NGX_JS_HOST_MAX_LEN];
+    in_port_t              port;
+} ngx_js_http_keepalive_cache_t;
+
+
+#define ngx_js_http_version(major, minor)  ((major) * 1000 + (minor))
 
 
 static void ngx_js_http_resolve_handler(ngx_resolver_ctx_t *ctx);
@@ -20,6 +31,11 @@ static void ngx_js_http_next(ngx_js_http_t *http);
 static void ngx_js_http_write_handler(ngx_event_t *wev);
 static void ngx_js_http_read_handler(ngx_event_t *rev);
 static void ngx_js_http_dummy_handler(ngx_event_t *ev);
+static void ngx_js_http_keepalive_close_handler(ngx_event_t *ev);
+static void ngx_js_http_keepalive_dummy_handler(ngx_event_t *ev);
+
+static ngx_int_t ngx_js_http_get_keepalive_connection(ngx_js_http_t *http);
+static ngx_int_t ngx_js_http_free_keepalive_connection(ngx_js_http_t *http);
 
 static ngx_int_t ngx_js_http_process_status_line(ngx_js_http_t *http);
 static ngx_int_t ngx_js_http_process_headers(ngx_js_http_t *http);
@@ -177,12 +193,13 @@ failed:
 static void
 ngx_js_http_close_connection(ngx_connection_t *c)
 {
-    ngx_log_debug1(NGX_LOG_DEBUG_EVENT, c->log, 0,
-                   "js http close connection: %d", c->fd);
+    ngx_log_debug2(NGX_LOG_DEBUG_EVENT, c->log, 0,
+                   "js http close connection: %p:%d", c, c->fd);
 
 #if (NGX_SSL)
     if (c->ssl) {
         c->ssl->no_wait_shutdown = 1;
+        c->ssl->no_send_shutdown = 1;
 
         if (ngx_ssl_shutdown(c) == NGX_AGAIN) {
             c->ssl->handler = ngx_js_http_close_connection;
@@ -193,6 +210,7 @@ ngx_js_http_close_connection(ngx_connection_t *c)
 
     c->destroyed = 1;
 
+    ngx_destroy_pool(c->pool);
     ngx_close_connection(c);
 }
 
@@ -210,18 +228,32 @@ ngx_js_http_resolve_done(ngx_js_http_t *http)
 void
 ngx_js_http_close_peer(ngx_js_http_t *http)
 {
-    if (http->peer.connection != NULL) {
-        ngx_js_http_close_connection(http->peer.connection);
-        http->peer.connection = NULL;
+    if (http->peer.connection == NULL) {
+        return;
     }
+
+    ngx_log_debug0(NGX_LOG_DEBUG_EVENT, http->log, 0,
+                   "js http close peer");
+
+    if (http->keepalive) {
+        if (ngx_js_http_free_keepalive_connection(http) != NGX_OK) {
+            ngx_js_http_close_connection(http->peer.connection);
+        }
+
+    } else {
+        ngx_js_http_close_connection(http->peer.connection);
+    }
+
+    http->peer.connection = NULL;
 }
 
 
 void
 ngx_js_http_connect(ngx_js_http_t *http)
 {
-    ngx_int_t    rc;
-    ngx_addr_t  *addr;
+    ngx_int_t          rc;
+    ngx_addr_t        *addr;
+    ngx_connection_t  *c;
 
     addr = &http->addrs[http->naddr];
 
@@ -235,38 +267,51 @@ ngx_js_http_connect(ngx_js_http_t *http)
     http->peer.log = http->log;
     http->peer.log_error = NGX_ERROR_ERR;
 
-    rc = ngx_event_connect_peer(&http->peer);
+    rc = ngx_js_http_get_keepalive_connection(http);
+    if (rc != NGX_OK) {
+        rc = ngx_event_connect_peer(&http->peer);
+        if (rc == NGX_ERROR) {
+            ngx_js_http_error(http, "connect failed");
+            return;
+        }
 
-    if (rc == NGX_ERROR) {
-        ngx_js_http_error(http, "connect failed");
-        return;
+        if (rc == NGX_BUSY || rc == NGX_DECLINED) {
+            ngx_js_http_next(http);
+            return;
+        }
     }
 
-    if (rc == NGX_BUSY || rc == NGX_DECLINED) {
-        ngx_js_http_next(http);
-        return;
+    c = http->peer.connection;
+
+    c->requests++;
+    c->data = http;
+
+    if (c->pool == NULL) {
+        /* we need separate pool here to be able to cache SSL connections */
+        c->pool = ngx_create_pool(128, http->log);
+        if (c->pool == NULL) {
+            ngx_js_http_error(http, "create pool failed");
+            return;
+        }
     }
 
-    http->peer.connection->data = http;
-    http->peer.connection->pool = http->pool;
-
-    http->peer.connection->write->handler = ngx_js_http_write_handler;
-    http->peer.connection->read->handler = ngx_js_http_read_handler;
+    c->write->handler = ngx_js_http_write_handler;
+    c->read->handler = ngx_js_http_read_handler;
 
     http->process = ngx_js_http_process_status_line;
 
-    ngx_add_timer(http->peer.connection->read, http->conf->timeout);
-    ngx_add_timer(http->peer.connection->write, http->conf->timeout);
+    ngx_add_timer(c->read, http->conf->timeout);
+    ngx_add_timer(c->write, http->conf->timeout);
 
 #if (NGX_SSL)
-    if (http->ssl != NULL && http->peer.connection->ssl == NULL) {
+    if (http->ssl != NULL && c->ssl == NULL) {
         ngx_js_http_ssl_init_connection(http);
         return;
     }
 #endif
 
     if (rc == NGX_OK) {
-        ngx_js_http_write_handler(http->peer.connection->write);
+        ngx_js_http_write_handler(c->write);
     }
 }
 
@@ -346,10 +391,10 @@ ngx_js_http_ssl_handshake(ngx_js_http_t *http)
                 goto failed;
             }
 
-            if (ngx_ssl_check_host(c, &http->tls_name) != NGX_OK) {
+            if (ngx_ssl_check_host(c, &http->host) != NGX_OK) {
                 ngx_log_error(NGX_LOG_ERR, c->log, 0,
                               "js http SSL certificate does not match \"%V\"",
-                              &http->tls_name);
+                              &http->host);
                 goto failed;
             }
         }
@@ -380,7 +425,7 @@ ngx_js_http_ssl_name(ngx_js_http_t *http)
     u_char  *p;
 
     /* as per RFC 6066, literal IPv4 and IPv6 addresses are not permitted */
-    ngx_str_t  *name = &http->tls_name;
+    ngx_str_t  *name = &http->host;
 
     if (name->len == 0 || *name->data == '[') {
         goto done;
@@ -571,6 +616,10 @@ ngx_js_http_read_handler(ngx_event_t *rev)
                 return;
             }
 
+            if (rc == NGX_DONE) {
+                break;
+            }
+
             continue;
         }
 
@@ -630,6 +679,10 @@ ngx_js_http_process_status_line(ngx_js_http_t *http)
         http->response.status_text.data = hp->status_text;
         http->response.status_text.len = hp->status_text_end - hp->status_text;
         http->process = ngx_js_http_process_headers;
+
+        if (http->keepalive) {
+            http->keepalive = (hp->http_version >= ngx_js_http_version(1, 1));
+        }
 
         return http->process(http);
     }
@@ -694,21 +747,33 @@ ngx_js_http_process_headers(ngx_js_http_t *http)
                 && ngx_strncasecmp(hp->header_start, (u_char *) "chunked",
                                    vlen) == 0)
             {
-                hp->chunked = 1;
+                http->chunked = 1;
+            }
+
+            if (len == (sizeof("Connection") - 1)
+                && ngx_strncasecmp(hp->header_name_start,
+                                   (u_char *) "Connection", len) == 0)
+            {
+                if (vlen == (sizeof("close") - 1)
+                    && ngx_strncasecmp(hp->header_start, (u_char *) "close",
+                                       vlen) == 0)
+                {
+                    http->keepalive = 0;
+                }
             }
 
             if (len == (sizeof("Content-Length") - 1)
                 && ngx_strncasecmp(hp->header_name_start,
                                    (u_char *) "Content-Length", len) == 0)
             {
-                hp->content_length_n = ngx_atoof(hp->header_start, vlen);
-                if (hp->content_length_n == NGX_ERROR) {
+                http->content_length_n = ngx_atoof(hp->header_start, vlen);
+                if (http->content_length_n == NGX_ERROR) {
                     ngx_js_http_error(http, "invalid http content length");
                     return NGX_ERROR;
                 }
 
                 if (!http->header_only
-                    && hp->content_length_n
+                    && http->content_length_n
                        > (off_t) http->max_response_body_size)
                 {
                     ngx_js_http_error(http,
@@ -762,22 +827,22 @@ ngx_js_http_process_body(ngx_js_http_t *http)
         }
 
         if (!http->header_only
-            && http->http_parse.chunked
-            && http->http_parse.content_length_n == -1)
+            && http->chunked
+            && http->content_length_n == -1)
         {
             ngx_js_http_error(http, "invalid http chunked response");
             return NGX_ERROR;
         }
 
         if (http->header_only
-            || http->http_parse.content_length_n == -1
-            || size == http->http_parse.content_length_n)
+            || http->content_length_n == -1
+            || size == http->content_length_n)
         {
             http->ready_handler(http);
             return NGX_DONE;
         }
 
-        if (size < http->http_parse.content_length_n) {
+        if (size < http->content_length_n) {
             return NGX_AGAIN;
         }
 
@@ -787,7 +852,7 @@ ngx_js_http_process_body(ngx_js_http_t *http)
 
     b = http->buffer;
 
-    if (http->http_parse.chunked) {
+    if (http->chunked) {
         rc = ngx_js_http_parse_chunked(&http->http_chunk_parse, b,
                                        &http->response.chain);
         if (rc == NGX_ERROR) {
@@ -798,7 +863,7 @@ ngx_js_http_process_body(ngx_js_http_t *http)
         size = njs_chb_size(&http->response.chain);
 
         if (rc == NGX_OK) {
-            http->http_parse.content_length_n = size;
+            http->content_length_n = size;
         }
 
         if (size > http->max_response_body_size * 10) {
@@ -814,11 +879,11 @@ ngx_js_http_process_body(ngx_js_http_t *http)
         if (http->header_only) {
             need = 0;
 
-        } else  if (http->http_parse.content_length_n == -1) {
+        } else  if (http->content_length_n == -1) {
             need = http->max_response_body_size - size;
 
         } else {
-            need = http->http_parse.content_length_n - size;
+            need = http->content_length_n - size;
         }
 
         chsize = ngx_min(need, b->last - b->pos);
@@ -1074,7 +1139,7 @@ done:
     b->pos = p + 1;
     hp->state = sw_start;
 
-    hp->http_version = hp->http_major * 1000 + hp->http_minor;
+    hp->http_version = ngx_js_http_version(hp->http_major, hp->http_minor);
 
     return NGX_OK;
 }
@@ -1548,4 +1613,243 @@ ngx_js_check_header_name(u_char *name, size_t len)
     }
 
     return NGX_OK;
+}
+
+
+static ngx_int_t
+ngx_js_http_get_keepalive_connection(ngx_js_http_t *http)
+{
+    ngx_str_t                      *host;
+    ngx_queue_t                    *q;
+    ngx_connection_t               *c;
+    ngx_js_loc_conf_t              *conf;
+    ngx_js_http_keepalive_cache_t  *cache;
+
+    if (!http->keepalive) {
+        return NGX_DECLINED;
+    }
+
+    conf = http->conf;
+
+    host = &http->host;
+
+    for (q = ngx_queue_head(&conf->fetch_keepalive_cache);
+         q != ngx_queue_sentinel(&conf->fetch_keepalive_cache);
+         q = ngx_queue_next(q))
+    {
+        cache = ngx_queue_data(q, ngx_js_http_keepalive_cache_t, queue);
+
+        if (host->len != cache->host_len) {
+            continue;
+        }
+
+        if ((http->ssl != NULL) != (cache->ssl != 0)) {
+            continue;
+        }
+
+        if (ngx_strncasecmp(host->data, cache->host, host->len) != 0) {
+            continue;
+        }
+
+        if (http->port != cache->port) {
+            continue;
+        }
+
+        c = cache->connection;
+        ngx_queue_remove(q);
+        ngx_queue_insert_head(&conf->fetch_keepalive_free, q);
+
+        goto found;
+    }
+
+    return NGX_DECLINED;
+
+found:
+
+    ngx_log_debug2(NGX_LOG_DEBUG_EVENT, http->log, 0,
+                   "js http keepalive using cached connection: %p:%d",
+                   c, c->fd);
+
+    c->idle = 0;
+    c->sent = 0;
+    c->data = NULL;
+    c->log = http->log;
+    c->pool->log = http->log;
+    c->read->log = http->log;
+    c->write->log = http->log;
+
+    if (c->read->timer_set) {
+        ngx_del_timer(c->read);
+    }
+
+    http->peer.cached = 1;
+    http->peer.connection = c;
+
+    return NGX_OK;
+}
+
+
+static ngx_int_t
+ngx_js_http_free_keepalive_connection(ngx_js_http_t *http)
+{
+    ngx_uint_t                      i;
+    ngx_queue_t                    *q;
+    ngx_connection_t               *c;
+    ngx_js_loc_conf_t              *conf;
+    ngx_js_http_keepalive_cache_t  *cache;
+
+    ngx_log_debug0(NGX_LOG_DEBUG_EVENT, http->log, 0,
+                   "js http free keepalive connection");
+
+    c = http->peer.connection;
+
+    if (c == NULL
+        || c->read->eof
+        || c->read->error
+        || c->read->timedout
+        || c->write->error
+        || c->write->timedout)
+    {
+        return NGX_ERROR;
+    }
+
+    if (c->requests >= http->conf->fetch_keepalive_requests) {
+        return NGX_DONE;
+    }
+
+    if (ngx_current_msec - c->start_time > http->conf->fetch_keepalive_time) {
+        return NGX_DONE;
+    }
+
+    if (ngx_terminate || ngx_exiting) {
+        return NGX_DONE;
+    }
+
+    if (ngx_handle_read_event(c->read, 0) != NGX_OK) {
+        return NGX_ERROR;
+    }
+
+    ngx_log_debug2(NGX_LOG_DEBUG_EVENT, http->log, 0,
+                   "js http free keepalive connection, "
+                   "saving connection: %p:%d", c, c->fd);
+
+    conf = http->conf;
+
+    if (ngx_queue_empty(&conf->fetch_keepalive_cache)
+        && ngx_queue_empty(&conf->fetch_keepalive_free))
+    {
+        cache = ngx_pcalloc(ngx_cycle->pool,
+                sizeof(ngx_js_http_keepalive_cache_t) * conf->fetch_keepalive);
+        if (cache == NULL) {
+            return NGX_ERROR;
+        }
+
+        for (i = 0; i < conf->fetch_keepalive; i++) {
+            ngx_queue_insert_head(&conf->fetch_keepalive_free,
+                                  &cache[i].queue);
+            cache[i].conf = conf;
+        }
+    }
+
+    if (ngx_queue_empty(&conf->fetch_keepalive_free)) {
+        /* evict from cache */
+        q = ngx_queue_last(&conf->fetch_keepalive_cache);
+        ngx_queue_remove(q);
+
+        cache = ngx_queue_data(q, ngx_js_http_keepalive_cache_t, queue);
+        ngx_log_debug1(NGX_LOG_DEBUG_EVENT, http->log, 0,
+                       "js http free keepalive connection, evicting: %d",
+                       cache->connection->fd);
+        ngx_js_http_close_connection(cache->connection);
+
+    } else {
+        q = ngx_queue_head(&conf->fetch_keepalive_free);
+        ngx_queue_remove(q);
+        cache = ngx_queue_data(q, ngx_js_http_keepalive_cache_t, queue);
+    }
+
+    ngx_queue_insert_head(&conf->fetch_keepalive_cache, q);
+
+    c = http->peer.connection;
+    http->peer.connection = NULL;
+
+    cache->connection = c;
+
+    cache->ssl = (http->ssl != NULL);
+    ngx_memcpy(cache->host, http->host.data, http->host.len);
+    cache->host_len = http->host.len;
+    cache->port = http->port;
+
+    c->read->delayed = 0;
+    ngx_add_timer(c->read, conf->fetch_keepalive_timeout);
+
+    if (c->write->timer_set) {
+        ngx_del_timer(c->write);
+    }
+
+    c->data = cache;
+    c->write->handler = ngx_js_http_keepalive_dummy_handler;
+    c->read->handler = ngx_js_http_keepalive_close_handler;
+
+    c->idle = 1;
+    c->log = ngx_cycle->log;
+    c->pool->log = ngx_cycle->log;
+    c->read->log = ngx_cycle->log;
+    c->write->log = ngx_cycle->log;
+
+    if (c->read->ready) {
+        ngx_js_http_keepalive_close_handler(c->read);
+    }
+
+    return NGX_OK;
+}
+
+
+static void
+ngx_js_http_keepalive_dummy_handler(ngx_event_t *ev)
+{
+    ngx_log_debug0(NGX_LOG_DEBUG_EVENT, ev->log, 0,
+                   "js http keepalive dummy handler");
+}
+
+
+static void
+ngx_js_http_keepalive_close_handler(ngx_event_t *ev)
+{
+    ssize_t                         n;
+    ngx_connection_t               *c;
+    ngx_js_loc_conf_t              *conf;
+    ngx_js_http_keepalive_cache_t  *cache;
+    u_char                          buf[1];
+
+    c = ev->data;
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ev->log, 0,
+                   "js http keepalive close handler: %d", c->fd);
+
+    if (c->close || ev->timedout) {
+        goto close;
+    }
+
+    n = recv(c->fd, buf, 1, MSG_PEEK);
+
+    if (n == -1 && ngx_socket_errno == NGX_EAGAIN) {
+        ev->ready = 0;
+
+        if (ngx_handle_read_event(c->read, 0) != NGX_OK) {
+            goto close;
+        }
+
+        return;
+    }
+
+close:
+
+    cache = c->data;
+    conf = cache->conf;
+
+    ngx_js_http_close_connection(c);
+
+    ngx_queue_remove(&cache->queue);
+    ngx_queue_insert_head(&conf->fetch_keepalive_free, &cache->queue);
 }

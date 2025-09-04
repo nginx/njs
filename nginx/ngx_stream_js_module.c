@@ -351,6 +351,34 @@ static ngx_command_t  ngx_stream_js_commands[] = {
       offsetof(ngx_stream_js_srv_conf_t, timeout),
       NULL },
 
+    { ngx_string("js_fetch_keepalive"),
+      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_num_slot,
+      NGX_STREAM_SRV_CONF_OFFSET,
+      offsetof(ngx_stream_js_srv_conf_t, fetch_keepalive),
+      NULL },
+
+    { ngx_string("js_fetch_keepalive_requests"),
+      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_num_slot,
+      NGX_STREAM_SRV_CONF_OFFSET,
+      offsetof(ngx_stream_js_srv_conf_t, fetch_keepalive_requests),
+      NULL },
+
+    { ngx_string("js_fetch_keepalive_time"),
+      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_msec_slot,
+      NGX_STREAM_SRV_CONF_OFFSET,
+      offsetof(ngx_stream_js_srv_conf_t, fetch_keepalive_time),
+      NULL },
+
+    { ngx_string("js_fetch_keepalive_timeout"),
+      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_TAKE1,
+      ngx_conf_set_msec_slot,
+      NGX_STREAM_SRV_CONF_OFFSET,
+      offsetof(ngx_stream_js_srv_conf_t, fetch_keepalive_timeout),
+      NULL },
+
 #if (NGX_STREAM_SSL)
 
     { ngx_string("js_fetch_ciphers"),
