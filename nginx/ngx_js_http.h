@@ -114,8 +114,8 @@ struct ngx_js_http_s {
     in_port_t                      port;
 
     ngx_peer_connection_t          peer;
-    ngx_msec_t                     timeout;
 
+    ngx_js_loc_conf_t             *conf;
     ngx_int_t                      buffer_size;
     ngx_int_t                      max_response_body_size;
 
