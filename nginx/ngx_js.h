@@ -13,6 +13,7 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include <ngx_event.h>
+#include <ngx_event_connect.h>
 #include <njs.h>
 #include <njs_rbtree.h>
 #include <njs_arr.h>
@@ -133,7 +134,14 @@ typedef struct {
                                                                               \
     size_t                 buffer_size;                                       \
     size_t                 max_response_body_size;                            \
-    ngx_msec_t             timeout
+    ngx_msec_t             timeout;                                           \
+                                                                              \
+    ngx_uint_t             fetch_keepalive;                                   \
+    ngx_uint_t             fetch_keepalive_requests;                          \
+    ngx_msec_t             fetch_keepalive_time;                              \
+    ngx_msec_t             fetch_keepalive_timeout;                           \
+    ngx_queue_t            fetch_keepalive_cache;                             \
+    ngx_queue_t            fetch_keepalive_free
 
 
 #if defined(NGX_HTTP_SSL) || defined(NGX_STREAM_SSL)

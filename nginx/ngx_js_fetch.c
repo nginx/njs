@@ -7,10 +7,6 @@
  */
 
 
-#include <ngx_config.h>
-#include <ngx_core.h>
-#include <ngx_event.h>
-#include <ngx_event_connect.h>
 #include "ngx_js.h"
 #include "ngx_js_http.h"
 
@@ -550,6 +546,13 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         goto fail;
     }
 
+    if (u.host.len >= NGX_JS_HOST_MAX_LEN) {
+        njs_vm_error(vm, "Host name too long");
+        goto fail;
+    }
+
+    http->host = u.host;
+    http->port = u.port;
     http->response.url = request.url;
     http->buffer_size = http->conf->buffer_size;
     http->max_response_body_size = http->conf->max_response_body_size;
@@ -681,18 +684,22 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             continue;
         }
 
+        if (h[i].key.len == 10
+            && ngx_strncasecmp(h[i].key.data, (u_char *) "Connection", 10)
+            == 0)
+        {
+            continue;
+        }
+
         njs_chb_append(&http->chain, h[i].key.data, h[i].key.len);
         njs_chb_append_literal(&http->chain, ": ");
         njs_chb_append(&http->chain, h[i].value.data, h[i].value.len);
         njs_chb_append_literal(&http->chain, CRLF);
     }
 
-    njs_chb_append_literal(&http->chain, "Connection: close" CRLF);
-
-#if (NGX_SSL)
-    http->tls_name.data = u.host.data;
-    http->tls_name.len = u.host.len;
-#endif
+    if (!http->keepalive) {
+        njs_chb_append_literal(&http->chain, "Connection: close" CRLF);
+    }
 
     if (request.body.len != 0) {
         njs_chb_sprintf(&http->chain, 32, "Content-Length: %uz" CRLF CRLF,
@@ -1154,7 +1161,8 @@ ngx_js_fetch_alloc(njs_vm_t *vm, ngx_pool_t *pool, ngx_log_t *log,
     http->log = log;
     http->conf = conf;
 
-    http->http_parse.content_length_n = -1;
+    http->content_length_n = -1;
+    http->keepalive = (conf->fetch_keepalive > 0);
 
     http->append_headers = ngx_js_fetch_append_headers;
     http->ready_handler = ngx_js_fetch_process_done;
