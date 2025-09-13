@@ -942,6 +942,12 @@ ngx_js_http_parse_status_line(ngx_js_http_parse_t *hp, ngx_buf_t *b)
                 return NGX_ERROR;
             }
 
+            hp->http_major = ch - '0';
+
+            if (hp->http_major > 1) {
+                return NGX_ERROR;
+            }
+
             state = sw_major_digit;
             break;
 
@@ -956,6 +962,12 @@ ngx_js_http_parse_status_line(ngx_js_http_parse_t *hp, ngx_buf_t *b)
                 return NGX_ERROR;
             }
 
+            hp->http_major = hp->http_major * 10 + (ch - '0');
+
+            if (hp->http_major > 1) {
+                return NGX_ERROR;
+            }
+
             break;
 
         /* the first digit of minor HTTP version */
@@ -964,6 +976,7 @@ ngx_js_http_parse_status_line(ngx_js_http_parse_t *hp, ngx_buf_t *b)
                 return NGX_ERROR;
             }
 
+            hp->http_minor = ch - '0';
             state = sw_minor_digit;
             break;
 
@@ -977,6 +990,12 @@ ngx_js_http_parse_status_line(ngx_js_http_parse_t *hp, ngx_buf_t *b)
             if (ch < '0' || ch > '9') {
                 return NGX_ERROR;
             }
+
+            if (hp->http_minor > 99) {
+                return NGX_ERROR;
+            }
+
+            hp->http_minor = hp->http_minor * 10 + (ch - '0');
 
             break;
 
@@ -1054,6 +1073,8 @@ done:
 
     b->pos = p + 1;
     hp->state = sw_start;
+
+    hp->http_version = hp->http_major * 1000 + hp->http_minor;
 
     return NGX_OK;
 }

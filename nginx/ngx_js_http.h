@@ -16,6 +16,9 @@ typedef struct ngx_js_http_s  ngx_js_http_t;
 
 typedef struct {
     ngx_uint_t                     state;
+    unsigned                       http_major:16;
+    unsigned                       http_minor:16;
+    ngx_uint_t                     http_version;
     ngx_uint_t                     code;
     u_char                        *status_text;
     u_char                        *status_text_end;
