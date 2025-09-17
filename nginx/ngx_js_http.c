@@ -1643,9 +1643,11 @@ ngx_js_http_get_keepalive_connection(ngx_js_http_t *http)
             continue;
         }
 
+#if (NGX_SSL)
         if ((http->ssl != NULL) != (cache->ssl != 0)) {
             continue;
         }
+#endif
 
         if (ngx_strncasecmp(host->data, cache->host, host->len) != 0) {
             continue;
@@ -1775,7 +1777,9 @@ ngx_js_http_free_keepalive_connection(ngx_js_http_t *http)
 
     cache->connection = c;
 
+#if (NGX_SSL)
     cache->ssl = (http->ssl != NULL);
+#endif
     ngx_memcpy(cache->host, http->host.data, http->host.len);
     cache->host_len = http->host.len;
     cache->port = http->port;

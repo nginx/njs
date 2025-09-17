@@ -12,7 +12,10 @@ jobs:
 
       - name: Set the defaults and set up environment
         run: |
-          echo NGINX_CONFIGURE_CMD="auto/configure --prefix=/tmp --with-http_ssl_module --with-http_realip_module --with-http_addition_module --with-http_sub_module --with-http_dav_module --with-http_flv_module --with-http_mp4_module --with-http_gunzip_module --with-http_gzip_static_module --with-http_random_index_module --with-http_secure_link_module --with-http_stub_status_module --with-mail --with-mail_ssl_module --with-select_module --with-poll_module --with-http_auth_request_module --with-http_v2_module --with-http_slice_module --with-stream --with-stream_ssl_module --with-stream_ssl_preread_module --with-stream_realip_module --with-threads --with-cpp_test_module --with-compat --with-http_degradation_module --with-http_xslt_module --with-http_image_filter_module --with-http_perl_module --with-http_geoip_module --with-stream_geoip_module" >> $GITHUB_ENV
+          NGINX_BASE="auto/configure --prefix=/tmp --with-http_realip_module --with-http_addition_module --with-http_sub_module --with-http_dav_module --with-http_flv_module --with-http_mp4_module --with-http_gunzip_module --with-http_gzip_static_module --with-http_random_index_module --with-http_secure_link_module --with-http_stub_status_module --with-mail --with-select_module --with-poll_module --with-http_auth_request_module --with-http_v2_module --with-http_slice_module --with-stream --with-stream_realip_module --with-threads --with-cpp_test_module --with-compat --with-http_degradation_module --with-http_xslt_module --with-http_image_filter_module --with-http_perl_module --with-http_geoip_module --with-stream_geoip_module"
+          SSL_MODULES="--with-http_ssl_module --with-mail_ssl_module --with-stream_ssl_module --with-stream_ssl_preread_module"
+          echo NGINX_CONFIGURE_CMD="$NGINX_BASE $SSL_MODULES" >> $GITHUB_ENV
+          echo NGINX_CONFIGURE_CMD_NO_SSL="$NGINX_BASE" >> $GITHUB_ENV
           export DEB_BUILD_MAINT_OPTIONS="hardening=+all"
           export DEB_CFLAGS_MAINT_APPEND="-fPIC"
           export DEB_LDFLAGS_MAINT_APPEND=""-Wl,--as-needed""
@@ -124,6 +127,21 @@ jobs:
         env:
           TEST_NGINX_BINARY: "${{ github.workspace }}/nginx-source/objs/nginx"
           TEST_NGINX_GLOBALS: "load_module ${{ github.workspace }}/nginx-source/objs/ngx_http_js_module.so; load_module ${{ github.workspace }}/nginx-source/objs/ngx_stream_js_module.so;"
+          TEST_NGINX_VERBOSE: 1
+
+      - name: Configure and build nginx and njs modules, no SSL, static modules
+        run: |
+          cd nginx-source
+          NJS_OPENSSL=NO $NGINX_CONFIGURE_CMD_NO_SSL --with-cc-opt="$CC_OPT" --with-ld-opt="$LD_OPT" --add-module=../nginx || cat objs/autoconf.err
+          $MAKE_UTILITY -j$(nproc) modules
+          $MAKE_UTILITY -j$(nproc)
+
+      - name: Test njs modules, no SSL, static modules
+        run: |
+          ulimit -c unlimited
+          prove -v -j$(nproc) -Inginx-tests/lib --state=save nginx/t . || prove -v -Inginx-tests/lib --state=failed
+        env:
+          TEST_NGINX_BINARY: "${{ github.workspace }}/nginx-source/objs/nginx"
           TEST_NGINX_VERBOSE: 1
 
       - name: Create LSAN suppression file

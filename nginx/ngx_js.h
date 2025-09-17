@@ -144,7 +144,7 @@ typedef struct {
     ngx_queue_t            fetch_keepalive_free
 
 
-#if defined(NGX_HTTP_SSL) || defined(NGX_STREAM_SSL)
+#if (NGX_SSL)
 #define NGX_JS_COMMON_LOC_CONF                                                \
     _NGX_JS_COMMON_LOC_CONF;                                                  \
                                                                               \

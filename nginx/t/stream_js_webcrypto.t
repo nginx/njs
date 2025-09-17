@@ -23,7 +23,7 @@ use Test::Nginx::Stream qw/ stream /;
 select STDERR; $| = 1;
 select STDOUT; $| = 1;
 
-my $t = Test::Nginx->new()->has(qw/stream stream_return/)
+my $t = Test::Nginx->new()->has(qw/http stream stream_return/)
 	->write_file_expand('nginx.conf', <<'EOF');
 
 %%TEST_GLOBALS%%
@@ -31,6 +31,21 @@ my $t = Test::Nginx->new()->has(qw/stream stream_return/)
 daemon off;
 
 events {
+}
+
+http {
+    %%TEST_GLOBALS_HTTP%%
+
+    js_import test.js;
+
+    server {
+        listen       127.0.0.1:8080;
+        server_name  localhost;
+
+        location /has_crypto {
+            js_content test.has_crypto;
+        }
+    }
 }
 
 stream {
@@ -49,6 +64,10 @@ stream {
 EOF
 
 $t->write_file('test.js', <<EOF);
+    function has_crypto(r) {
+        r.return(200, (crypto !== undefined).toString());
+    }
+
     function count1(v) {
         return v.toString(2).match(/1/g).length;
     }
@@ -71,10 +90,15 @@ $t->write_file('test.js', <<EOF);
         return bits1 > (mean - 10 * stdd) && bits1 < (mean + 10 * stdd);
     }
 
-    export default {random_values_test};
+    export default {has_crypto, random_values_test};
 EOF
 
-$t->try_run('no stream js_var')->plan(1);
+$t->try_run('no stream js_var');
+
+plan(skip_all => 'njs crypto module not available')
+	if http_get('/has_crypto') !~ /true/;
+
+$t->plan(1);
 
 ###############################################################################
 

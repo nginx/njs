@@ -400,7 +400,7 @@ static ngx_conf_bitmask_t  ngx_http_js_engines[] = {
     { ngx_null_string, 0 }
 };
 
-#if (NGX_HTTP_SSL)
+#if (NGX_SSL)
 
 static ngx_conf_bitmask_t  ngx_http_js_ssl_protocols[] = {
     { ngx_string("TLSv1"), NGX_SSL_TLSv1 },
@@ -519,7 +519,7 @@ static ngx_command_t  ngx_http_js_commands[] = {
       offsetof(ngx_http_js_loc_conf_t, timeout),
       NULL },
 
-#if (NGX_HTTP_SSL)
+#if (NGX_SSL)
 
     { ngx_string("js_fetch_ciphers"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
@@ -8172,7 +8172,7 @@ ngx_http_js_create_loc_conf(ngx_conf_t *cf)
         return NULL;
     }
 
-#if (NGX_HTTP_SSL)
+#if (NGX_SSL)
     conf->ssl_verify = NGX_CONF_UNSET;
     conf->ssl_verify_depth = NGX_CONF_UNSET;
 #endif
