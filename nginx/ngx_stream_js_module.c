@@ -232,7 +232,7 @@ static ngx_conf_bitmask_t  ngx_stream_js_engines[] = {
     { ngx_null_string, 0 }
 };
 
-#if (NGX_STREAM_SSL)
+#if (NGX_SSL)
 
 static ngx_conf_bitmask_t  ngx_stream_js_ssl_protocols[] = {
     { ngx_string("TLSv1"), NGX_SSL_TLSv1 },
@@ -379,7 +379,7 @@ static ngx_command_t  ngx_stream_js_commands[] = {
       offsetof(ngx_stream_js_srv_conf_t, fetch_keepalive_timeout),
       NULL },
 
-#if (NGX_STREAM_SSL)
+#if (NGX_SSL)
 
     { ngx_string("js_fetch_ciphers"),
       NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_TAKE1,
@@ -3620,7 +3620,7 @@ ngx_stream_js_create_srv_conf(ngx_conf_t *cf)
         return NULL;
     }
 
-#if (NGX_STREAM_SSL)
+#if (NGX_SSL)
     conf->ssl_verify = NGX_CONF_UNSET;
     conf->ssl_verify_depth = NGX_CONF_UNSET;
 #endif

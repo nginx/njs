@@ -41,6 +41,10 @@ http {
         listen       127.0.0.1:8080;
         server_name  localhost;
 
+        location /has_crypto {
+            js_content test.has_crypto;
+        }
+
         location /random_values_test {
             js_content test.random_values_test;
         }
@@ -50,6 +54,10 @@ http {
 EOF
 
 $t->write_file('test.js', <<EOF);
+    function has_crypto(r) {
+        r.return(200, (crypto !== undefined).toString());
+    }
+
     function count1(v) {
         return v.toString(2).match(/1/g).length;
     }
@@ -72,11 +80,16 @@ $t->write_file('test.js', <<EOF);
         r.return(200, bits1 > (mean - 10 * stdd) && bits1 < (mean + 10 * stdd));
     }
 
-    export default {random_values_test};
+    export default {has_crypto, random_values_test};
 
 EOF
 
-$t->try_run('no njs')->plan(1);
+$t->try_run('no njs');
+
+plan(skip_all => 'njs crypto module not available')
+	if http_get('/has_crypto') !~ /true/;
+
+$t->plan(1);
 
 ###############################################################################
 

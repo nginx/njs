@@ -3996,7 +3996,7 @@ ngx_js_create_conf(ngx_conf_t *cf, size_t size)
 }
 
 
-#if defined(NGX_HTTP_SSL) || defined(NGX_STREAM_SSL)
+#if (NGX_SSL)
 
 static ngx_int_t
 ngx_js_merge_ssl(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
@@ -4122,7 +4122,7 @@ ngx_js_merge_conf(ngx_conf_t *cf, void *parent, void *child,
         return NGX_CONF_ERROR;
     }
 
-#if defined(NGX_HTTP_SSL) || defined(NGX_STREAM_SSL)
+#if (NGX_SSL)
 
     if (ngx_js_merge_ssl(cf, conf, prev) != NGX_OK) {
         return NGX_CONF_ERROR;
