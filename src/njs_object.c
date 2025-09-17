@@ -715,7 +715,6 @@ static njs_int_t
 njs_object_enumerate_string(njs_vm_t *vm, const njs_value_t *value,
     njs_array_t *items, uint32_t flags)
 {
-    u_char             buf[4], *c;
     uint32_t           i, len, size;
     njs_int_t          ret;
     njs_value_t        *item, *string;
@@ -763,17 +762,15 @@ njs_object_enumerate_string(njs_vm_t *vm, const njs_value_t *value,
             end = src + str_prop.size;
 
             do {
-                c = buf;
+                size = njs_utf8_next(src, end) - src;
 
-                c = njs_utf8_copy(c, &src, end);
-                size = c - buf;
-
-                ret = njs_string_new(vm, item, buf, size, 1);
+                ret = njs_string_new(vm, item, src, size, 1);
                 if (njs_slow_path(ret != NJS_OK)) {
                     return NJS_ERROR;
                 }
 
                 item++;
+                src += size;
 
             } while (src != end);
         }
@@ -828,12 +825,9 @@ njs_object_enumerate_string(njs_vm_t *vm, const njs_value_t *value,
 
                 string = &entry->start[1];
 
-                c = buf;
+                size = njs_utf8_next(src, end) - src;
 
-                c = njs_utf8_copy(c, &src, end);
-                size = c - buf;
-
-                ret = njs_string_new(vm, string, buf, size, 1);
+                ret = njs_string_new(vm, string, src, size, 1);
                 if (njs_slow_path(ret != NJS_OK)) {
                     return NJS_ERROR;
                 }
@@ -841,6 +835,7 @@ njs_object_enumerate_string(njs_vm_t *vm, const njs_value_t *value,
                 njs_set_array(item, entry);
 
                 item++;
+                src += size;
 
             } while (src != end);
         }
