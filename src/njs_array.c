@@ -788,7 +788,6 @@ static njs_int_t
 njs_array_prototype_slice_copy(njs_vm_t *vm, njs_value_t *this,
     int64_t start, int64_t length, njs_value_t *retval)
 {
-    u_char             *c, buf[4];
     size_t             size;
     uint32_t           n;
     njs_int_t          ret;
@@ -829,17 +828,15 @@ njs_array_prototype_slice_copy(njs_vm_t *vm, njs_value_t *this,
 
             do {
                 value = &array->start[n++];
-                c = buf;
-                c = njs_utf8_copy(c, &src, end);
-                size = c - buf;
+                size = njs_utf8_next(src, end) - src;
 
-                ret = njs_string_new(vm, value, buf, size, 1);
+                ret = njs_string_new(vm, value, src, size, 1);
                 if (njs_slow_path(ret != NJS_OK)) {
                     return NJS_ERROR;
                 }
 
-                length--;
-            } while (length != 0);
+                src += size;
+            } while (src != end);
 
         } else if (njs_is_object(this)) {
 
