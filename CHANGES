@@ -1,3 +1,30 @@
+Changes with njs 0.9.2                                       23 Sep 2025
+
+    nginx modules:
+
+    *) Feature: added HTTP keepalive support for ngx.fetch() API.
+
+    *) Improvement: added configure time check when js_import is
+       not defined.
+
+    *) Bugfix: fixed merging of js_path directives.
+
+    *) Bugfix: fixed building when http_ssl and stream_ssl
+       unavailable.
+
+    Core:
+
+    *) Change: increased the default stack size to 160k for njs VM.
+
+    *) Feature: added njs.on('exit') API for qjs engine.
+
+    *) Improvement: optimized memory consumption while streaming
+       in qjs.
+
+    *) Bugfix: fixed building qjs engine with clang 19.
+
+    *) Bugfix: fixed building with GCC 15 and -O3.
+
 Changes with njs 0.9.1                                       10 Jul 2025
 
     nginx modules:
