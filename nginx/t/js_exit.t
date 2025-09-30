@@ -36,7 +36,13 @@ events {
 http {
     %%TEST_GLOBALS_HTTP%%
 
+    log_format test '[var:$bs header:$foo url:$url]';
+    access_log %%TESTDIR%%/access.log test;
+
     js_import test.js;
+    js_set $foo test.foo_header;
+    js_set $url test.url;
+    js_set $bs test.bytes_sent;
 
     server {
         listen       127.0.0.1:8080;
@@ -52,25 +58,44 @@ EOF
 
 $t->write_file('test.js', <<EOF);
     function test(r) {
-	    njs.on('exit', function() {
-		    ngx.log(ngx.WARN, `exit hook: bs: \${r.variables.bytes_sent}`);
-	    });
+        njs.on('exit', function() {
+            ngx.log(ngx.WARN, `exit hook: bs: \${r.variables.bytes_sent}`);
+        });
 
-	    r.return(200, `bs: \${r.variables.bytes_sent}`);
+        r.return(200, `bs: \${r.variables.bytes_sent}`);
     }
 
-    export default { test };
+    function bytes_sent(r) {
+        return r.variables.bytes_sent;
+    }
+
+    function foo_header(r) {
+        return Buffer.from(r.headersIn.foo).toString('hex');
+    }
+
+    function url(r) {
+        return r.uri;
+    }
+
+    export default { test, bytes_sent, foo_header, url };
 
 EOF
 
-$t->try_run('no njs')->plan(2);
+$t->try_run('no njs')->plan(3);
 
 ###############################################################################
 
-like(http_get('/test'), qr/bs: 0/, 'response');
+like(http(
+	'GET /test HTTP/1.0' . CRLF
+	. 'Foo: bar' . CRLF
+	. 'Host: localhost' . CRLF . CRLF
+), qr/bs: 0/, 'response');
 
 $t->stop();
 
-like($t->read_file('error.log'), qr/\[warn\].*exit hook: bs: \d+/, 'exit hook logged');
+like($t->read_file('error.log'), qr/\[warn\].*exit hook: bs: \d+/,
+	'exit hook logged');
+like($t->read_file('access.log'), qr/\[var:\d+ header:626172 url:\/test\]/,
+	'access log has bytes_sent');
 
 ###############################################################################
