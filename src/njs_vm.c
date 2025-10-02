@@ -327,7 +327,7 @@ njs_vm_compile_module(njs_vm_t *vm, njs_str_t *name, u_char **start,
         return NULL;
     }
 
-    ret = njs_parser_init(vm, &parser, NULL, name, *start, end);
+    ret = njs_parser_init(vm, &parser, NULL, &module->name, *start, end);
     if (njs_slow_path(ret != NJS_OK)) {
         return NULL;
     }
