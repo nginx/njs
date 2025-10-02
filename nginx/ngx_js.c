@@ -571,6 +571,7 @@ ngx_engine_njs_init(ngx_engine_t *engine, ngx_engine_opts_t *opts)
 
     rc = ngx_js_set_cwd(njs_vm_memory_pool(vm), opts->conf, &vm_options.file);
     if (rc != NGX_OK) {
+        njs_vm_destroy(vm);
         return NGX_ERROR;
     }
 
@@ -665,6 +666,7 @@ ngx_njs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
 
     engine = njs_mp_alloc(njs_vm_memory_pool(vm), sizeof(ngx_engine_t));
     if (engine == NULL) {
+        njs_vm_destroy(vm);
         return NULL;
     }
 
@@ -676,6 +678,8 @@ ngx_njs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
         ngx_js_exception(vm, &exception);
 
         ngx_log_error(NGX_LOG_ERR, ctx->log, 0, "js exception: %V", &exception);
+
+        njs_vm_destroy(vm);
 
         return NULL;
     }
