@@ -557,10 +557,16 @@ ngx_engine_njs_init(ngx_engine_t *engine, ngx_engine_opts_t *opts)
     vm_options.backtrace = 1;
     vm_options.addons = opts->u.njs.addons;
     vm_options.metas = opts->u.njs.metas;
-    vm_options.file = opts->file;
     vm_options.argv = ngx_argv;
     vm_options.argc = ngx_argc;
     vm_options.init = 1;
+
+    vm_options.file.start = njs_mp_alloc(engine->pool, opts->file.length);
+    if (vm_options.file.start == NULL) {
+        return NGX_ERROR;
+    }
+
+    ngx_memcpy(vm_options.file.start, opts->file.start, opts->file.length);
 
     vm = njs_vm_create(&vm_options);
     if (vm == NULL) {
@@ -579,7 +585,7 @@ ngx_engine_njs_init(ngx_engine_t *engine, ngx_engine_opts_t *opts)
 
     engine->u.njs.vm = vm;
 
-    return NJS_OK;
+    return NGX_OK;
 }
 
 

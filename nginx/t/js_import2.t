@@ -64,6 +64,11 @@ http {
             js_content fun;
         }
 
+        location /test_exception {
+            js_import exception.js;
+            js_content exception.nonexistent;
+        }
+
         location /test_var {
             return 200 $test;
         }
@@ -105,6 +110,11 @@ $t->write_file('fun.js', <<EOF);
 
 EOF
 
+$t->write_file('exception.js', <<EOF);
+    export default {nonexistent};
+
+EOF
+
 $t->write_file('main.js', <<EOF);
     function version(r) {
         r.return(200, njs.version);
@@ -127,11 +137,13 @@ like(http_get('/test_lib'), qr/LIB-TEST/s, 'lib.test');
 like(http_get('/test_fun'), qr/FUN-TEST/s, 'fun');
 like(http_get('/proxy/test_fun'), qr/FUN-TEST/s, 'proxy fun');
 like(http_get('/test_var'), qr/P-TEST/s, 'foo.bar.p');
+http_get('/test_exception');
+http_get('/test_exception');
 
 $t->stop();
 
 my $content = $t->read_file('error.log');
 my $count = () = $content =~ m/js vm init/g;
-ok($count == 4, 'uniq js vm contexts');
+ok($count == 5, 'uniq js vm contexts');
 
 ###############################################################################
