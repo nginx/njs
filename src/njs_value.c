@@ -538,6 +538,13 @@ njs_value_is_data_view(const njs_value_t *value)
 }
 
 
+njs_int_t
+njs_value_is_promise(const njs_value_t *value)
+{
+    return njs_is_promise(value);
+}
+
+
 /*
  * ES5.1, 8.12.1: [[GetOwnProperty]], [[GetProperty]].
  * The njs_property_query() returns values
