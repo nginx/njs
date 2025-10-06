@@ -1,3 +1,12 @@
+Changes with njs 0.9.3                                       07 Oct 2025
+
+    nginx modules:
+
+    *) Bugfix: fixed heap-use-after-free while module loading.
+
+    *) Bugfix: fixed heap-use-after-free in js_set handler used
+       in log phase. The issue was introduced in 04f6dfb (0.9.2).
+
 Changes with njs 0.9.2                                       23 Sep 2025
 
     nginx modules:
