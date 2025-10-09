@@ -280,7 +280,7 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
                         ngx_qjs_external_max_response_buffer_size(cx, external);
 
 #if (NGX_SSL)
-    if (u.default_port == 443) {
+    if (ngx_js_https(&u)) {
         http->ssl = ngx_qjs_external_ssl(cx, external);
         http->ssl_verify = ngx_qjs_external_ssl_verify(cx, external);
     }
@@ -662,7 +662,7 @@ ngx_qjs_request_ctor(JSContext *cx, ngx_js_request_t *request,
     ngx_memzero(u, sizeof(ngx_url_t));
 
     u->url = request->url;
-    u->default_port = 80;
+    u->default_port = NGX_JS_HTTP_DEFAULT_PORT;
     u->uri_part = 1;
     u->no_resolve = 1;
 
@@ -678,7 +678,7 @@ ngx_qjs_request_ctor(JSContext *cx, ngx_js_request_t *request,
     {
         u->url.len -= 8;
         u->url.data += 8;
-        u->default_port = 443;
+        u->default_port = NGX_JS_HTTPS_DEFAULT_PORT;
 #endif
 
     } else {
