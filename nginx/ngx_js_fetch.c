@@ -558,7 +558,7 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     http->max_response_body_size = http->conf->max_response_body_size;
 
 #if (NGX_SSL)
-    if (u.default_port == 443) {
+    if (ngx_js_https(&u)) {
         http->ssl = http->conf->ssl;
         http->ssl_verify = http->conf->ssl_verify;
     }
@@ -1425,7 +1425,7 @@ ngx_js_request_constructor(njs_vm_t *vm, ngx_js_request_t *request,
 
     u->url.len = request->url.len;
     u->url.data = request->url.data;
-    u->default_port = 80;
+    u->default_port = NGX_JS_HTTP_DEFAULT_PORT;
     u->uri_part = 1;
     u->no_resolve = 1;
 
@@ -1441,7 +1441,7 @@ ngx_js_request_constructor(njs_vm_t *vm, ngx_js_request_t *request,
     {
         u->url.len -= 8;
         u->url.data += 8;
-        u->default_port = 443;
+        u->default_port = NGX_JS_HTTPS_DEFAULT_PORT;
 #endif
 
     } else {
