@@ -12,6 +12,10 @@
 
 
 #define NGX_JS_HOST_MAX_LEN        256
+#define NGX_JS_HTTP_DEFAULT_PORT   80
+#define NGX_JS_HTTPS_DEFAULT_PORT  443
+
+#define ngx_js_https(u) ((u)->default_port == NGX_JS_HTTPS_DEFAULT_PORT)
 
 
 typedef struct ngx_js_http_s  ngx_js_http_t;
