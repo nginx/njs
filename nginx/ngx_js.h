@@ -141,7 +141,24 @@ typedef struct {
     ngx_msec_t             fetch_keepalive_time;                              \
     ngx_msec_t             fetch_keepalive_timeout;                           \
     ngx_queue_t            fetch_keepalive_cache;                             \
-    ngx_queue_t            fetch_keepalive_free
+    ngx_queue_t            fetch_keepalive_free;                              \
+                                                                              \
+    ngx_url_t              *fetch_proxy_url;                                  \
+    ngx_str_t               fetch_proxy_auth_header;                          \
+                                                                              \
+    ngx_int_t             (*eval_proxy_url)(ngx_pool_t *pool,                 \
+                                            void *request,                    \
+                                            void *module_conf,                \
+                                            ngx_url_t **url_out,              \
+                                            ngx_str_t *auth_out)
+
+#define ngx_js_conf_dynamic_proxy(conf)                                       \
+     ((conf)->eval_proxy_url != NULL)
+
+#define ngx_js_conf_proxy(conf)                                               \
+    (((conf)->fetch_proxy_url != NULL                                         \
+      && (conf)->fetch_proxy_url->host.len > 0)                               \
+     || ngx_js_conf_dynamic_proxy(conf))
 
 
 #if (NGX_SSL)
@@ -424,6 +441,9 @@ void ngx_js_logger(ngx_connection_t *c, ngx_uint_t level,
 char * ngx_js_import(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 char * ngx_js_engine(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 char * ngx_js_preload_object(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
+char * ngx_js_fetch_proxy(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
+ngx_int_t ngx_js_parse_proxy_url(ngx_pool_t *pool, ngx_log_t *log,
+    ngx_str_t *url_str, ngx_url_t **url_out, ngx_str_t *auth_header_out);
 ngx_int_t ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
     ngx_js_loc_conf_t *prev,
     ngx_int_t (*init_vm)(ngx_conf_t *cf, ngx_js_loc_conf_t *conf));

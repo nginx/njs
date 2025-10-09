@@ -508,6 +508,7 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 {
     njs_int_t            ret;
     ngx_url_t            u;
+    ngx_str_t           *resolve_host;
     ngx_pool_t          *pool;
     njs_value_t         *init, *value;
     ngx_js_http_t       *http;
@@ -595,12 +596,45 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     NJS_CHB_MP_INIT(&http->chain, njs_vm_memory_pool(vm));
     NJS_CHB_MP_INIT(&http->response.chain, njs_vm_memory_pool(vm));
 
-    ngx_js_fetch_build_request(http, &request, &u.uri, &u);
+    resolve_host = NULL;
+    http->connect_port = http->port;
 
-    if (u.addrs == NULL) {
+    if (ngx_js_conf_proxy(http->conf)) {
+        if (ngx_js_conf_dynamic_proxy(http->conf)) {
+            if (http->conf->eval_proxy_url(http->pool, external, http->conf,
+                                           &http->proxy.url, &http->proxy.auth)
+                != NGX_OK)
+            {
+                njs_vm_error(vm, "failed to evaluate proxy URL");
+                goto fail;
+            }
+
+        } else {
+            http->proxy.url = http->conf->fetch_proxy_url;
+            http->proxy.auth = http->conf->fetch_proxy_auth_header;
+        }
+
+        if (ngx_js_http_proxy(http) && http->proxy.url->addrs == NULL) {
+            resolve_host = &http->proxy.url->host;
+            http->connect_port = http->proxy.url->port;
+        }
+    }
+
+    if (!ngx_js_http_proxy(http) && u.addrs == NULL) {
+        resolve_host = &u.host;
+    }
+
+    ngx_js_fetch_build_request(http, &request, &u.uri, &u,
+                               ngx_js_http_proxy(http) && !ngx_js_https(&u));
+
+    if (resolve_host != NULL) {
+        ngx_log_debug0(NGX_LOG_DEBUG_EVENT, http->log, 0,
+                       "js http fetch: resolving");
+
         ctx = ngx_js_http_resolve(http, ngx_external_resolver(vm, external),
-                                  &u.host,
+                                  resolve_host,
                                   ngx_external_resolver_timeout(vm, external));
+
         if (ctx == NULL) {
             njs_vm_memory_error(vm);
             return NJS_ERROR;
@@ -617,8 +651,14 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     http->naddrs = 1;
-    ngx_memcpy(&http->addr, &u.addrs[0], sizeof(ngx_addr_t));
     http->addrs = &http->addr;
+
+    if (ngx_js_http_proxy(http)) {
+        ngx_memcpy(&http->addr, &http->proxy.url->addrs[0], sizeof(ngx_addr_t));
+
+    } else {
+        ngx_memcpy(&http->addr, &u.addrs[0], sizeof(ngx_addr_t));
+    }
 
     ngx_js_http_connect(http);
 
@@ -1030,6 +1070,12 @@ ngx_js_fetch_alloc(njs_vm_t *vm, ngx_pool_t *pool, ngx_log_t *log,
     if (fetch == NULL) {
         goto failed;
     }
+
+    /*
+     * set by ngx_pcalloc():
+     *
+     * fetch->http.proxy.state = HTTP_STATE_DIRECT;
+     */
 
     http = &fetch->http;
 

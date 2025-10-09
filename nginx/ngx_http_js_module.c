@@ -15,6 +15,8 @@
 typedef struct {
     NGX_JS_COMMON_LOC_CONF;
 
+    ngx_http_complex_value_t  fetch_proxy_cv;
+
     ngx_str_t              content;
     ngx_str_t              header_filter;
     ngx_str_t              body_filter;
@@ -380,6 +382,8 @@ static char *ngx_http_js_content(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 static char *ngx_http_js_shared_dict_zone(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
+static char *ngx_http_js_fetch_proxy(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf);
 static char *ngx_http_js_body_filter_set(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 static ngx_int_t ngx_http_js_init_conf_vm(ngx_conf_t *cf,
@@ -591,6 +595,13 @@ static ngx_command_t  ngx_http_js_commands[] = {
       ngx_conf_set_msec_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
       offsetof(ngx_http_js_loc_conf_t, fetch_keepalive_timeout),
+      NULL },
+
+    { ngx_string("js_fetch_proxy"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+      ngx_http_js_fetch_proxy,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      0,
       NULL },
 
       ngx_null_command
@@ -815,6 +826,16 @@ static njs_external_t  ngx_http_js_ext_request[] = {
         .u.property = {
             .handler = ngx_http_js_ext_get_request_body,
             .magic32 = NGX_JS_BUFFER,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("requestLine"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = ngx_js_ext_string,
+            .magic32 = offsetof(ngx_http_request_t, request_line),
         }
     },
 
@@ -1080,6 +1101,8 @@ static const JSCFunctionListEntry ngx_http_qjs_ext_request[] = {
     JS_CGETSET_DEF("remoteAddress", ngx_http_qjs_ext_remote_address, NULL),
     JS_CGETSET_MAGIC_DEF("requestBuffer", ngx_http_qjs_ext_request_body, NULL,
                          NGX_JS_BUFFER),
+    JS_CGETSET_MAGIC_DEF("requestLine", ngx_http_qjs_ext_string, NULL,
+                         offsetof(ngx_http_request_t, request_line)),
     JS_CGETSET_MAGIC_DEF("requestText", ngx_http_qjs_ext_request_body, NULL,
                          NGX_JS_STRING),
     JS_CGETSET_MAGIC_DEF("responseBuffer", ngx_http_qjs_ext_response_body, NULL,
@@ -8013,6 +8036,60 @@ ngx_http_js_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     v->data = (uintptr_t) data;
 
     return NGX_CONF_OK;
+}
+
+
+static ngx_int_t
+ngx_http_js_eval_proxy_url(ngx_pool_t *pool, void *request,
+    void *module_conf, ngx_url_t **url_out, ngx_str_t *auth_out)
+{
+    ngx_str_t                value;
+    ngx_http_request_t      *r;
+    ngx_http_js_loc_conf_t  *jlcf;
+
+    r = request;
+    jlcf = module_conf;
+
+    if (ngx_http_complex_value(r, &jlcf->fetch_proxy_cv, &value) != NGX_OK) {
+        return NGX_ERROR;
+    }
+
+    return ngx_js_parse_proxy_url(pool, r->connection->log, &value,
+                                  url_out, auth_out);
+}
+
+
+static char *
+ngx_http_js_fetch_proxy(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+{
+    ngx_str_t                        *value;
+    ngx_uint_t                        n;
+    ngx_http_js_loc_conf_t           *jlcf;
+    ngx_http_compile_complex_value_t  ccv;
+
+    value = cf->args->elts;
+
+    n = ngx_http_script_variables_count(&value[1]);
+
+    if (n) {
+        ngx_memzero(&ccv, sizeof(ngx_http_compile_complex_value_t));
+
+        jlcf = conf;
+
+        ccv.cf = cf;
+        ccv.value = &value[1];
+        ccv.complex_value = &jlcf->fetch_proxy_cv;
+
+        if (ngx_http_compile_complex_value(&ccv) != NGX_OK) {
+            return NGX_CONF_ERROR;
+        }
+
+        jlcf->eval_proxy_url = ngx_http_js_eval_proxy_url;
+
+        return NGX_CONF_OK;
+    }
+
+    return ngx_js_fetch_proxy(cf, cmd, conf);
 }
 
 
