@@ -141,7 +141,13 @@ typedef struct {
     ngx_msec_t             fetch_keepalive_time;                              \
     ngx_msec_t             fetch_keepalive_timeout;                           \
     ngx_queue_t            fetch_keepalive_cache;                             \
-    ngx_queue_t            fetch_keepalive_free
+    ngx_queue_t            fetch_keepalive_free;                              \
+                                                                              \
+    ngx_url_t              fetch_proxy_url;                                   \
+    ngx_str_t              fetch_proxy_auth_header
+
+
+#define ngx_js_proxy(conf)  ((conf)->fetch_proxy_url.host.len > 0)
 
 
 #if (NGX_SSL)
@@ -423,6 +429,9 @@ void ngx_js_logger(ngx_connection_t *c, ngx_uint_t level,
 char * ngx_js_import(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 char * ngx_js_engine(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 char * ngx_js_preload_object(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
+char * ngx_js_fetch_proxy(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
+char * ngx_js_fetch_proxy_auth_basic(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf);
 ngx_int_t ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
     ngx_js_loc_conf_t *prev,
     ngx_int_t (*init_vm)(ngx_conf_t *cf, ngx_js_loc_conf_t *conf));

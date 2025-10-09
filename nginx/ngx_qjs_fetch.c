@@ -332,9 +332,60 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
     NJS_CHB_MP_INIT(&http->chain, ctx->engine->pool);
     NJS_CHB_MP_INIT(&http->response.chain, ctx->engine->pool);
 
-    ngx_js_fetch_build_request(http, &request, &u.uri, &u);
+    if (ngx_js_proxy(http->conf) && ngx_js_https(&u)) {
+        njs_chb_t      origin_chain;
+        ngx_js_http_t  temp_http;
 
-    if (u.addrs == NULL) {
+        http->proxy.state = HTTP_STATE_PROXY_CONNECT_PENDING;
+
+        NJS_CHB_MP_INIT(&origin_chain, ctx->engine->pool);
+
+        ngx_memcpy(&temp_http, http, sizeof(ngx_js_http_t));
+        temp_http.chain = origin_chain;
+
+        ngx_js_fetch_build_request(&temp_http, &request, &u.uri, &u, 0);
+
+        http->proxy.origin_request_buf = ngx_js_chain_to_buf(pool,
+                                                              &temp_http.chain);
+        if (http->proxy.origin_request_buf == NULL) {
+            goto fail;
+        }
+
+        njs_chb_destroy(&temp_http.chain);
+
+    } else {
+        ngx_js_fetch_build_request(http, &request, &u.uri, &u,
+                                   ngx_js_proxy(http->conf));
+    }
+
+    if (ngx_js_proxy(http->conf)) {
+        if (http->conf->fetch_proxy_url.addrs == NULL) {
+            ngx_log_debug0(NGX_LOG_DEBUG_EVENT, http->log, 0,
+                           "js http fetch: resolving proxy");
+
+            rs = ngx_js_http_resolve(http,
+                                     ngx_qjs_external_resolver(cx, external),
+                                     &http->conf->fetch_proxy_url.host,
+                                     http->conf->fetch_proxy_url.port,
+                                     ngx_qjs_external_resolver_timeout(cx,
+                                                                       external));
+            if (rs == NULL) {
+                JS_FreeValue(cx, promise);
+                return JS_ThrowOutOfMemory(cx);
+            }
+
+            if (rs == NGX_NO_RESOLVER) {
+                JS_ThrowInternalError(cx, "no resolver defined");
+                goto fail;
+            }
+
+            return promise;
+        }
+
+    } else if (u.addrs == NULL) {
+        ngx_log_debug0(NGX_LOG_DEBUG_EVENT, http->log, 0,
+                       "js http fetch: resolving");
+
         rs = ngx_js_http_resolve(http, ngx_qjs_external_resolver(cx, external),
                                  &u.host, u.port,
                                ngx_qjs_external_resolver_timeout(cx, external));
@@ -352,8 +403,16 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
     }
 
     http->naddrs = 1;
-    ngx_memcpy(&http->addr, &u.addrs[0], sizeof(ngx_addr_t));
-    http->addrs = &http->addr;
+
+    if (ngx_js_proxy(http->conf)) {
+        ngx_memcpy(&http->addr, &http->conf->fetch_proxy_url.addrs[0],
+                   sizeof(ngx_addr_t));
+        http->addrs = &http->addr;
+
+    } else {
+        ngx_memcpy(&http->addr, &u.addrs[0], sizeof(ngx_addr_t));
+        http->addrs = &http->addr;
+    }
 
     ngx_js_http_connect(http);
 
@@ -1088,6 +1147,12 @@ ngx_qjs_fetch_alloc(JSContext *cx, ngx_pool_t *pool, ngx_log_t *log,
     if (fetch == NULL) {
         return NULL;
     }
+
+    /*
+     * set by ngx_pcalloc():
+     *
+     * fetch->http.proxy.state = HTTP_STATE_DIRECT;
+     */
 
     http = &fetch->http;
 
