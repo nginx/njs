@@ -241,8 +241,15 @@ sub reply_handler {
 
 	my $name = join('.', @name);
 
-	if ($type == A) {
-		push @rdata, rd_addr($ttl, '127.0.0.1');
+	if ($name eq 'default.example.com' || $name eq '1.example.com') {
+		if ($type == A) {
+			push @rdata, rd_addr($ttl, '127.0.0.1');
+		}
+
+	} elsif ($name eq 'localhost') {
+		if ($type == A) {
+			push @rdata, rd_addr($ttl, '127.0.0.1');
+		}
 	}
 
 	$len = @name;
