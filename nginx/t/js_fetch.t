@@ -548,7 +548,7 @@ like(http_get('/body_content_length'), qr/200 OK/s,
 }
 
 like(http_get('/user_agent_header'),
-	qr/200 OK.*nginx-js\/1.0$/s,
+	qr/200 OK.*nginx-js$/s,
 	'fetch default user-agent header');
 like(http_get('/user_agent_header?ua=My-User-Agent'),
 	qr/200 OK.*My-User-Agent$/s, 'fetch user-agent header');
