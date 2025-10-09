@@ -167,5 +167,8 @@ void ngx_js_http_trim(u_char **value, size_t *len,
     int trim_c0_control_or_space);
 ngx_int_t ngx_js_check_header_name(u_char *name, size_t len);
 
+void ngx_js_fetch_build_request(ngx_js_http_t *http, ngx_js_request_t *request,
+    ngx_str_t *path, ngx_url_t *u);
+
 
 #endif /* _NGX_JS_HTTP_H_INCLUDED_ */
