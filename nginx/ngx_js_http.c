@@ -47,6 +47,9 @@ static ngx_int_t ngx_js_http_parse_header_line(ngx_js_http_parse_t *hp,
 static ngx_int_t ngx_js_http_parse_chunked(ngx_js_http_chunk_parse_t *hcp,
     ngx_buf_t *b, njs_chb_t *chain);
 
+static void ngx_js_fetch_append_request_headers(njs_chb_t *chain,
+    ngx_js_request_t *request);
+
 #if (NGX_SSL)
 static void ngx_js_http_ssl_init_connection(ngx_js_http_t *http);
 static void ngx_js_http_ssl_handshake_handler(ngx_connection_t *c);
@@ -1855,4 +1858,149 @@ close:
 
     ngx_queue_remove(&cache->queue);
     ngx_queue_insert_head(&conf->fetch_keepalive_free, &cache->queue);
+}
+
+
+static void
+ngx_js_fetch_append_request_headers(njs_chb_t *chain,
+    ngx_js_request_t *request)
+{
+    ngx_uint_t        i;
+    ngx_list_part_t  *part;
+    ngx_js_tb_elt_t  *h;
+
+    part = &request->headers.header_list.part;
+    h = part->elts;
+
+    for (i = 0; /* void */; i++) {
+
+        if (i >= part->nelts) {
+            if (part->next == NULL) {
+                break;
+            }
+
+            part = part->next;
+            h = part->elts;
+            i = 0;
+        }
+
+        if (h[i].hash == 0) {
+            continue;
+        }
+
+        if (h[i].key.len == 4
+            && ngx_strncasecmp(h[i].key.data, (u_char *) "Host", 4) == 0)
+        {
+            continue;
+        }
+
+        if (h[i].key.len == 14
+            && ngx_strncasecmp(h[i].key.data, (u_char *) "Content-Length",
+                               14) == 0)
+        {
+            continue;
+        }
+
+        if (h[i].key.len == 10
+            && ngx_strncasecmp(h[i].key.data, (u_char *) "Connection", 10)
+               == 0)
+        {
+            continue;
+        }
+
+        njs_chb_append(chain, h[i].key.data, h[i].key.len);
+        njs_chb_append_literal(chain, ": ");
+        njs_chb_append(chain, h[i].value.data, h[i].value.len);
+        njs_chb_append_literal(chain, CRLF);
+    }
+}
+
+
+void
+ngx_js_fetch_build_request(ngx_js_http_t *http, ngx_js_request_t *request,
+    ngx_str_t *path, ngx_url_t *u)
+{
+    ngx_str_t         method;
+    ngx_uint_t        i;
+    njs_bool_t        has_host;
+    ngx_list_part_t  *part;
+    ngx_js_tb_elt_t  *h;
+
+    njs_chb_append(&http->chain, request->method.data, request->method.len);
+    njs_chb_append_literal(&http->chain, " ");
+
+    if (path->len == 0 || path->data[0] != '/') {
+        njs_chb_append_literal(&http->chain, "/");
+    }
+
+    njs_chb_append(&http->chain, path->data, path->len);
+    njs_chb_append_literal(&http->chain, " HTTP/1.1" CRLF);
+
+    has_host = 0;
+    part = &request->headers.header_list.part;
+    h = part->elts;
+
+    for (i = 0; /* void */; i++) {
+
+        if (i >= part->nelts) {
+            if (part->next == NULL) {
+                break;
+            }
+
+            part = part->next;
+            h = part->elts;
+            i = 0;
+        }
+
+        if (h[i].hash == 0) {
+            continue;
+        }
+
+        if (h[i].key.len == 4
+            && ngx_strncasecmp(h[i].key.data, (u_char *) "Host", 4) == 0)
+        {
+            has_host = 1;
+            njs_chb_append_literal(&http->chain, "Host: ");
+            njs_chb_append(&http->chain, h[i].value.data, h[i].value.len);
+            njs_chb_append_literal(&http->chain, CRLF);
+            break;
+        }
+    }
+
+    if (!has_host) {
+        njs_chb_append_literal(&http->chain, "Host: ");
+        njs_chb_append(&http->chain, u->host.data, u->host.len);
+
+        if (!u->no_port) {
+            njs_chb_sprintf(&http->chain, 32, ":%d", u->port);
+        }
+
+        njs_chb_append_literal(&http->chain, CRLF);
+    }
+
+    ngx_js_fetch_append_request_headers(&http->chain, request);
+
+    if (!http->keepalive) {
+        njs_chb_append_literal(&http->chain, "Connection: close" CRLF);
+    }
+
+    if (request->body.len != 0) {
+        njs_chb_sprintf(&http->chain, 32, "Content-Length: %uz" CRLF CRLF,
+                        request->body.len);
+        njs_chb_append(&http->chain, request->body.data, request->body.len);
+
+    } else {
+        method = request->method;
+
+        if ((method.len == 4
+             && (ngx_strncasecmp(method.data, (u_char *) "POST", 4) == 0))
+            || (method.len == 3
+                && ngx_strncasecmp(method.data, (u_char *) "PUT", 3) == 0))
+        {
+            njs_chb_append_literal(&http->chain, "Content-Length: 0" CRLF CRLF);
+
+        } else {
+            njs_chb_append_literal(&http->chain, CRLF);
+        }
+    }
 }
