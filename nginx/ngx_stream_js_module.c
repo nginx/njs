@@ -425,6 +425,20 @@ static ngx_command_t  ngx_stream_js_commands[] = {
       0,
       NULL },
 
+    { ngx_string("js_fetch_proxy"),
+      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_TAKE1,
+      ngx_js_fetch_proxy,
+      NGX_STREAM_SRV_CONF_OFFSET,
+      0,
+      NULL },
+
+    { ngx_string("js_fetch_proxy_auth_basic"),
+      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_TAKE2,
+      ngx_js_fetch_proxy_auth_basic,
+      NGX_STREAM_SRV_CONF_OFFSET,
+      0,
+      NULL },
+
       ngx_null_command
 };
 

@@ -593,6 +593,20 @@ static ngx_command_t  ngx_http_js_commands[] = {
       offsetof(ngx_http_js_loc_conf_t, fetch_keepalive_timeout),
       NULL },
 
+    { ngx_string("js_fetch_proxy"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+      ngx_js_fetch_proxy,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      0,
+      NULL },
+
+    { ngx_string("js_fetch_proxy_auth_basic"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE2,
+      ngx_js_fetch_proxy_auth_basic,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      0,
+      NULL },
+
       ngx_null_command
 };
 
@@ -815,6 +829,16 @@ static njs_external_t  ngx_http_js_ext_request[] = {
         .u.property = {
             .handler = ngx_http_js_ext_get_request_body,
             .magic32 = NGX_JS_BUFFER,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("requestLine"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = ngx_js_ext_string,
+            .magic32 = offsetof(ngx_http_request_t, request_line),
         }
     },
 
@@ -1080,6 +1104,8 @@ static const JSCFunctionListEntry ngx_http_qjs_ext_request[] = {
     JS_CGETSET_DEF("remoteAddress", ngx_http_qjs_ext_remote_address, NULL),
     JS_CGETSET_MAGIC_DEF("requestBuffer", ngx_http_qjs_ext_request_body, NULL,
                          NGX_JS_BUFFER),
+    JS_CGETSET_MAGIC_DEF("requestLine", ngx_http_qjs_ext_string, NULL,
+                         offsetof(ngx_http_request_t, request_line)),
     JS_CGETSET_MAGIC_DEF("requestText", ngx_http_qjs_ext_request_body, NULL,
                          NGX_JS_STRING),
     JS_CGETSET_MAGIC_DEF("responseBuffer", ngx_http_qjs_ext_response_body, NULL,
