@@ -5843,17 +5843,11 @@ ngx_http_qjs_subrequest_done(ngx_http_request_t *r, void *data, ngx_int_t rc)
 
     cx = ctx->engine->u.qjs.ctx;
 
-    if (!JS_IsObject(ngx_qjs_arg(sctx->args[0]))) {
-        reply = ngx_http_qjs_request_make(cx, NGX_QJS_CLASS_ID_HTTP_REQUEST, r);
-        if (JS_IsException(reply)) {
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
-                          "js subrequest reply creation failed");
-            return NGX_ERROR;
-        }
-
-
-    } else {
-        reply = JS_DupValue(cx, ngx_qjs_arg(sctx->args[0]));
+    reply = ngx_http_qjs_request_make(cx, NGX_QJS_CLASS_ID_HTTP_REQUEST, r);
+    if (JS_IsException(reply)) {
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                      "js subrequest reply creation failed");
+        return NGX_ERROR;
     }
 
     rc = ngx_qjs_call(cx, event->function, &reply, 1);
