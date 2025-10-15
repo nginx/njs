@@ -521,20 +521,11 @@ ngx_js_http_write_handler(ngx_event_t *wev)
     b = http->buffer;
 
     if (b == NULL) {
-        size = njs_chb_size(&http->chain);
-        if (size < 0) {
-            ngx_js_http_error(http, "memory error");
-            return;
-        }
-
-        b = ngx_create_temp_buf(http->pool, size);
+        b = ngx_js_chain_to_buf(http->pool, &http->chain);
         if (b == NULL) {
             ngx_js_http_error(http, "memory error");
             return;
         }
-
-        njs_chb_join_to(&http->chain, b->last);
-        b->last += size;
 
         http->buffer = b;
     }
@@ -1858,6 +1849,29 @@ close:
 
     ngx_queue_remove(&cache->queue);
     ngx_queue_insert_head(&conf->fetch_keepalive_free, &cache->queue);
+}
+
+
+ngx_buf_t *
+ngx_js_chain_to_buf(ngx_pool_t *pool, njs_chb_t *chain)
+{
+    ssize_t     size;
+    ngx_buf_t  *buf;
+
+    size = njs_chb_size(chain);
+    if (size < 0) {
+        return NULL;
+    }
+
+    buf = ngx_create_temp_buf(pool, size);
+    if (buf == NULL) {
+        return NULL;
+    }
+
+    njs_chb_join_to(chain, buf->last);
+    buf->last += size;
+
+    return buf;
 }
 
 
