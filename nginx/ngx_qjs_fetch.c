@@ -460,7 +460,7 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
 
     if (u.addrs == NULL) {
         rs = ngx_js_http_resolve(http, ngx_qjs_external_resolver(cx, external),
-                                 &u.host, u.port,
+                                 &u.host,
                                ngx_qjs_external_resolver_timeout(cx, external));
         if (rs == NULL) {
             JS_FreeValue(cx, promise);
