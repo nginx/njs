@@ -155,7 +155,7 @@ struct ngx_js_http_s {
 
 
 ngx_resolver_ctx_t *ngx_js_http_resolve(ngx_js_http_t *http, ngx_resolver_t *r,
-    ngx_str_t *host, in_port_t port, ngx_msec_t timeout);
+    ngx_str_t *host, ngx_msec_t timeout);
 void ngx_js_http_connect(ngx_js_http_t *http);
 void ngx_js_http_resolve_done(ngx_js_http_t *http);
 void ngx_js_http_close_peer(ngx_js_http_t *http);

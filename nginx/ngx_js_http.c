@@ -75,7 +75,7 @@ ngx_js_http_error(ngx_js_http_t *http, const char *fmt, ...)
 
 ngx_resolver_ctx_t *
 ngx_js_http_resolve(ngx_js_http_t *http, ngx_resolver_t *r, ngx_str_t *host,
-    in_port_t port, ngx_msec_t timeout)
+    ngx_msec_t timeout)
 {
     ngx_int_t            ret;
     ngx_resolver_ctx_t  *ctx;
@@ -90,7 +90,6 @@ ngx_js_http_resolve(ngx_js_http_t *http, ngx_resolver_t *r, ngx_str_t *host,
     }
 
     http->ctx = ctx;
-    http->port = port;
 
     ctx->name = *host;
     ctx->handler = ngx_js_http_resolve_handler;
