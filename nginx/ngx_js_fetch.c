@@ -723,7 +723,7 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     if (u.addrs == NULL) {
         ctx = ngx_js_http_resolve(http, ngx_external_resolver(vm, external),
-                                  &u.host, u.port,
+                                  &u.host,
                                   ngx_external_resolver_timeout(vm, external));
         if (ctx == NULL) {
             njs_vm_memory_error(vm);
