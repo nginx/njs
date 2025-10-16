@@ -24,6 +24,7 @@ typedef struct {
 
 
 #define ngx_js_http_version(major, minor)  ((major) * 1000 + (minor))
+#define NGX_JS_USER_AGENT  "nginx-js"
 
 
 static void ngx_js_http_resolve_handler(ngx_resolver_ctx_t *ctx);
@@ -1936,7 +1937,7 @@ ngx_js_fetch_build_request(ngx_js_http_t *http, ngx_js_request_t *request,
 {
     ngx_str_t         method;
     ngx_uint_t        i;
-    njs_bool_t        has_host;
+    njs_bool_t        has_host, has_user_agent;
     ngx_list_part_t  *part;
     ngx_js_tb_elt_t  *h;
 
@@ -1951,6 +1952,7 @@ ngx_js_fetch_build_request(ngx_js_http_t *http, ngx_js_request_t *request,
     njs_chb_append_literal(&http->chain, " HTTP/1.1" CRLF);
 
     has_host = 0;
+    has_user_agent = 0;
     part = &request->headers.header_list.part;
     h = part->elts;
 
@@ -1977,7 +1979,17 @@ ngx_js_fetch_build_request(ngx_js_http_t *http, ngx_js_request_t *request,
             njs_chb_append_literal(&http->chain, "Host: ");
             njs_chb_append(&http->chain, h[i].value.data, h[i].value.len);
             njs_chb_append_literal(&http->chain, CRLF);
-            break;
+            continue;
+        }
+
+        if (h[i].key.len == 10
+            && ngx_strncasecmp(h[i].key.data, (u_char *) "User-Agent", 10) == 0)
+        {
+            has_user_agent = 1;
+            njs_chb_append_literal(&http->chain, "User-Agent: ");
+            njs_chb_append(&http->chain, h[i].value.data, h[i].value.len);
+            njs_chb_append_literal(&http->chain, CRLF);
+            continue;
         }
     }
 
@@ -1989,6 +2001,13 @@ ngx_js_fetch_build_request(ngx_js_http_t *http, ngx_js_request_t *request,
             njs_chb_sprintf(&http->chain, 32, ":%d", u->port);
         }
 
+        njs_chb_append_literal(&http->chain, CRLF);
+    }
+
+    if (!has_user_agent) {
+        njs_chb_append_literal(&http->chain, "User-Agent: ");
+        njs_chb_append(&http->chain, (u_char *) NGX_JS_USER_AGENT,
+                       sizeof(NGX_JS_USER_AGENT) - 1);
         njs_chb_append_literal(&http->chain, CRLF);
     }
 
