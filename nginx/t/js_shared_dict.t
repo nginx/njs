@@ -38,7 +38,7 @@ http {
 
     js_import test.js;
 
-    js_shared_dict_zone zone=foo:32k timeout=2s evict;
+    js_shared_dict_zone zone=foo:32k timeout=1s evict;
     js_shared_dict_zone zone=bar:64k type=string;
     js_shared_dict_zone zone=waka:32k timeout=1000s type=number;
     js_shared_dict_zone zone=no_timeout:32k;

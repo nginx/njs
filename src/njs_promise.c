@@ -912,6 +912,26 @@ njs_promise_perform_then(njs_vm_t *vm, njs_value_t *value,
 }
 
 
+njs_promise_type_t
+njs_promise_state(const njs_value_t *value)
+{
+        njs_promise_t *promise = njs_promise(value);
+        njs_promise_data_t *promise_data = njs_data(&promise->value);
+
+        return promise_data->state;
+}
+
+
+njs_value_t *
+njs_promise_result(const njs_value_t *value)
+{
+        njs_promise_t *promise = njs_promise(value);
+        njs_promise_data_t *promise_data = njs_data(&promise->value);
+
+        return &promise_data->result;
+}
+
+
 static njs_int_t
 njs_promise_prototype_catch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)

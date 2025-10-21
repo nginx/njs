@@ -14,6 +14,7 @@
 #define NJS_VERSION                 "0.9.4"
 #define NJS_VERSION_NUMBER          0x000904
 
+#define NJS_MAX_JOB_ITERATIONS      1000
 
 #include <string.h>
 #include <njs_types.h>
@@ -34,6 +35,7 @@ typedef struct njs_function_s         njs_function_t;
 typedef struct njs_vm_shared_s        njs_vm_shared_t;
 typedef struct njs_object_init_s      njs_object_init_t;
 typedef struct njs_object_prop_s      njs_object_prop_t;
+typedef struct njs_promise_data_s     njs_promise_data_t;
 typedef struct njs_object_prop_init_s njs_object_prop_init_t;
 typedef struct njs_object_type_init_s njs_object_type_init_t;
 typedef struct njs_external_s         njs_external_t;
@@ -218,6 +220,13 @@ typedef void *                      njs_external_ptr_t;
 
 typedef njs_mod_t *(*njs_module_loader_t)(njs_vm_t *vm,
     njs_external_ptr_t external, njs_str_t *name);
+
+typedef enum {
+    NJS_PROMISE_PENDING = 0,
+    NJS_PROMISE_FULFILL,
+    NJS_PROMISE_REJECTED
+} njs_promise_type_t;
+
 typedef void (*njs_rejection_tracker_t)(njs_vm_t *vm,
     njs_external_ptr_t external, njs_bool_t is_handled, njs_value_t *promise,
     njs_value_t *reason);
@@ -299,9 +308,13 @@ typedef njs_int_t (*njs_iterator_handler_t)(njs_vm_t *vm,
     njs_value_t *retval);
 
 
+typedef void (*njs_log_t) (void *log, const char *message, void *value);
+
+
 NJS_EXPORT void njs_vm_opt_init(njs_vm_opt_t *options);
 NJS_EXPORT njs_vm_t *njs_vm_create(njs_vm_opt_t *options);
 NJS_EXPORT void njs_vm_destroy(njs_vm_t *vm);
+NJS_EXPORT void njs_vm_call_exit_hook(njs_vm_t *vm);
 
 NJS_EXPORT njs_int_t njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end);
 NJS_EXPORT void njs_vm_set_module_loader(njs_vm_t *vm,
@@ -322,6 +335,11 @@ NJS_EXPORT njs_int_t njs_vm_enqueue_job(njs_vm_t *vm, njs_function_t *function,
  *  NJS_ERROR some exception or internal error happens.
  */
 NJS_EXPORT njs_int_t njs_vm_execute_pending_job(njs_vm_t *vm);
+NJS_EXPORT njs_int_t njs_vm_execute_pending_jobs(njs_vm_t *vm, void *log,
+     njs_log_t log_error);
+NJS_EXPORT njs_int_t njs_vm_await(njs_vm_t *vm, void *log,
+     void *waiting_events, njs_opaque_value_t *retval,
+     njs_log_t log_error);
 NJS_EXPORT njs_int_t njs_vm_pending(njs_vm_t *vm);
 
 NJS_EXPORT void njs_vm_set_rejection_tracker(njs_vm_t *vm,
@@ -505,6 +523,9 @@ NJS_EXPORT njs_int_t njs_value_is_array(const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_value_is_function(const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_value_is_buffer(const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_value_is_data_view(const njs_value_t *value);
+NJS_EXPORT njs_int_t njs_value_is_promise(const njs_value_t *value);
+NJS_EXPORT njs_promise_type_t njs_promise_state(const njs_value_t *value);
+NJS_EXPORT njs_value_t *njs_promise_result(const njs_value_t *value);
 
 NJS_EXPORT njs_int_t njs_vm_object_alloc(njs_vm_t *vm, njs_value_t *retval,
     ...);
