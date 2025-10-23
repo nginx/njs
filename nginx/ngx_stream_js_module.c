@@ -1265,7 +1265,6 @@ ngx_stream_js_run_event(ngx_stream_session_t *s, ngx_stream_js_ctx_t *ctx,
     u_char            *p;
     njs_vm_t          *vm;
     njs_int_t          ret;
-    ngx_str_t          exception;
     ngx_buf_t         *b;
     uintptr_t          flags;
     ngx_connection_t  *c;
@@ -1310,10 +1309,7 @@ ngx_stream_js_run_event(ngx_stream_session_t *s, ngx_stream_js_ctx_t *ctx,
 
     if (ret == NJS_ERROR) {
 error:
-        ngx_js_exception(vm, &exception);
-
-        ngx_log_error(NGX_LOG_ERR, c->log, 0, "js exception: %V",
-                      &exception);
+        ngx_js_log_exception(vm, c->log, "exception");
 
         return NGX_ERROR;
     }
@@ -2713,7 +2709,6 @@ ngx_stream_qjs_run_event(ngx_stream_session_t *s, ngx_stream_js_ctx_t *ctx,
     size_t             len;
     JSContext         *cx;
     ngx_int_t          rc;
-    ngx_str_t          exception;
     ngx_buf_t         *b;
     uintptr_t          flags;
     ngx_connection_t  *c;
@@ -2751,10 +2746,7 @@ ngx_stream_qjs_run_event(ngx_stream_session_t *s, ngx_stream_js_ctx_t *ctx,
 
     if (rc == NGX_ERROR) {
 error:
-        ngx_qjs_exception(ctx->engine, &exception);
-
-        ngx_log_error(NGX_LOG_ERR, c->log, 0, "js exception: %V",
-                      &exception);
+        ngx_qjs_log_exception(ctx->engine, c->log, "exception");
 
         return NGX_ERROR;
     }
