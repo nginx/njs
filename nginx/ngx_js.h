@@ -327,7 +327,7 @@ void ngx_js_ctx_init(ngx_js_ctx_t *ctx, ngx_log_t *log);
 void ngx_js_ctx_destroy(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *conf);
 ngx_int_t ngx_js_call(njs_vm_t *vm, njs_function_t *func,
     njs_opaque_value_t *args, njs_uint_t nargs);
-ngx_int_t ngx_js_exception(njs_vm_t *vm, ngx_str_t *s);
+ngx_int_t ngx_js_log_exception(njs_vm_t *vm, ngx_log_t *log, const char *txt);
 ngx_engine_t *ngx_njs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf,
     void *external);
 
@@ -362,7 +362,8 @@ void ngx_engine_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
     ngx_js_loc_conf_t *conf);
 ngx_int_t ngx_qjs_call(JSContext *cx, JSValue function, JSValue *argv,
     int argc);
-ngx_int_t ngx_qjs_exception(ngx_engine_t *e, ngx_str_t *s);
+ngx_int_t ngx_qjs_log_exception(ngx_engine_t *e, ngx_log_t *log,
+    const char *txt);
 ngx_int_t ngx_qjs_integer(JSContext *cx, JSValueConst val, ngx_int_t *n);
 ngx_int_t ngx_qjs_string(JSContext *cx, ngx_pool_t *pool, JSValueConst val,
     ngx_str_t *dst);
