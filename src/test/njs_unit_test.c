@@ -287,40 +287,40 @@ static njs_unit_test_t  njs_test[] =
       njs_str("SyntaxError: Unexpected token \".\" in 1") },
 
     { njs_str("0_1"),
-      njs_str("SyntaxError: Unexpected token \"0_\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"0_1\" in 1") },
 
     { njs_str("1_"),
-      njs_str("SyntaxError: Unexpected token \"_\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"1_\" in 1") },
 
     { njs_str("1__0"),
-      njs_str("SyntaxError: Unexpected token \"__0\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"1__0\" in 1") },
 
     { njs_str("._1"),
       njs_str("SyntaxError: Unexpected token \".\" in 1") },
 
     { njs_str(".1_"),
-      njs_str("SyntaxError: Unexpected token \"_\" in 1") },
+      njs_str("SyntaxError: Unexpected token \".1_\" in 1") },
 
     { njs_str("1_.1"),
-      njs_str("SyntaxError: Unexpected token \"_\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"1_\" in 1") },
 
     { njs_str(".0__1"),
-      njs_str("SyntaxError: Unexpected token \"__1\" in 1") },
+      njs_str("SyntaxError: Unexpected token \".0__1\" in 1") },
 
     { njs_str("1e_1"),
-      njs_str("SyntaxError: Unexpected token \"_1\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"1e_1\" in 1") },
 
     { njs_str("1e-_1"),
-      njs_str("SyntaxError: Unexpected token \"_1\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"1e\" in 1") },
 
     { njs_str("1E1__0"),
-      njs_str("SyntaxError: Unexpected token \"__0\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"1E1__0\" in 1") },
 
     { njs_str("1_e1"),
-      njs_str("SyntaxError: Unexpected token \"_e1\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"1_e1\" in 1") },
 
     { njs_str("1e1_"),
-      njs_str("SyntaxError: Unexpected token \"_\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"1e1_\" in 1") },
 
     { njs_str("-_1"),
       njs_str("ReferenceError: \"_1\" is not defined") },
@@ -352,16 +352,19 @@ static njs_unit_test_t  njs_test[] =
       njs_str("SyntaxError: Unexpected token \"0O778\" in 1") },
 
     { njs_str("0O_7"),
-      njs_str("SyntaxError: Unexpected token \"0O\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"0O_7\" in 1") },
 
     { njs_str("0O + 1"),
       njs_str("SyntaxError: Unexpected token \"0O\" in 1") },
 
     { njs_str("0o7_"),
-      njs_str("SyntaxError: Unexpected token \"_\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"0o7_\" in 1") },
 
     { njs_str("0o7__7"),
-      njs_str("SyntaxError: Unexpected token \"__7\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"0o7__7\" in 1") },
+
+    { njs_str("0o7.1"),
+      njs_str("SyntaxError: Unexpected token \".1\" in 1") },
 
     /* Legacy Octal Numbers are deprecated. */
 
@@ -375,16 +378,16 @@ static njs_unit_test_t  njs_test[] =
       njs_str("SyntaxError: Unexpected token \"09\" in 1") },
 
     { njs_str("0011"),
-      njs_str("SyntaxError: Unexpected token \"00\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"0011\" in 1") },
 
     { njs_str("0_"),
       njs_str("SyntaxError: Unexpected token \"0_\" in 1") },
 
     { njs_str("0_1"),
-      njs_str("SyntaxError: Unexpected token \"0_\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"0_1\" in 1") },
 
     { njs_str("00_1"),
-      njs_str("SyntaxError: Unexpected token \"00\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"00_1\" in 1") },
 
     /* Binary Numbers. */
 
@@ -410,16 +413,19 @@ static njs_unit_test_t  njs_test[] =
       njs_str("SyntaxError: Unexpected token \"0B12\" in 1") },
 
     { njs_str("0b_11"),
-      njs_str("SyntaxError: Unexpected token \"0b\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"0b_11\" in 1") },
 
     { njs_str("0b + 1"),
       njs_str("SyntaxError: Unexpected token \"0b\" in 1") },
 
     { njs_str("0B1__1"),
-      njs_str("SyntaxError: Unexpected token \"__1\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"0B1__1\" in 1") },
 
     { njs_str("0b11_"),
-      njs_str("SyntaxError: Unexpected token \"_\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"0b11_\" in 1") },
+
+    { njs_str("0b1.1"),
+      njs_str("SyntaxError: Unexpected token \".1\" in 1") },
 
     /* Hex Numbers. */
 
@@ -448,19 +454,19 @@ static njs_unit_test_t  njs_test[] =
       njs_str("SyntaxError: Unexpected end of input in 1") },
 
     { njs_str("0x12g"),
-      njs_str("SyntaxError: Unexpected token \"g\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"0x12g\" in 1") },
 
     { njs_str("0X_ff"),
-      njs_str("SyntaxError: Unexpected token \"0X\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"0X_ff\" in 1") },
 
     { njs_str("0X + 1"),
       njs_str("SyntaxError: Unexpected token \"0X\" in 1") },
 
     { njs_str("0xff_"),
-      njs_str("SyntaxError: Unexpected token \"_\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"0xff_\" in 1") },
 
     { njs_str("0Xf__f"),
-      njs_str("SyntaxError: Unexpected token \"__f\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"0Xf__f\" in 1") },
 
     { njs_str(""),
       njs_str("undefined") },
@@ -531,19 +537,19 @@ static njs_unit_test_t  njs_test[] =
       njs_str("-Infinity") },
 
     { njs_str("1e"),
-      njs_str("SyntaxError: Unexpected token \"e\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"1e\" in 1") },
 
     { njs_str("1.e"),
-      njs_str("SyntaxError: Unexpected token \"e\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"1.e\" in 1") },
 
     { njs_str("1e+"),
-      njs_str("SyntaxError: Unexpected token \"e\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"1e\" in 1") },
 
     { njs_str("1.e-"),
-      njs_str("SyntaxError: Unexpected token \"e\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"1.e\" in 1") },
 
     { njs_str("1eZ"),
-      njs_str("SyntaxError: Unexpected token \"eZ\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"1eZ\" in 1") },
 
     { njs_str(".e1"),
       njs_str("SyntaxError: Unexpected token \".\" in 1") },
@@ -664,9 +670,9 @@ static njs_unit_test_t  njs_test[] =
 
 #ifndef NJS_SUNC
     { njs_str("1e20.toString(14)"),
-      njs_str("33cb3bb449c2a92000") },
+      njs_str("33cb3bb449c2a90000") },
 
-    { njs_str("1.7976931348623157E+308.toString(36) == ('1a1e4vngaiqo' + '0'.repeat(187))"),
+    { njs_str("1.7976931348623157E+308.toString(36) == ('1a1e4vngail' + '0'.repeat(188))"),
       njs_str("true") },
 
     /* Largest positive double (prev_double(INFINITY)). */
@@ -677,7 +683,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("1.2312313132,1.25a850416057383,1.293699002749414,1.3010274cab0288,1.3346da6d5d455c") },
 
     { njs_str("Array(5).fill().map((n, i) => 36 - i).map((v)=>(1e23).toString(v))"),
-      njs_str("ga894a06abs0000,o5hlsorok4y0000,128fpsprqld20000,1m1s0ajv6cmo0000,2kmg5hv19br00000") },
+      njs_str("ga894a06ac00000,o5hlsorok5a0000,128fpsprqldf0000,1m1s0ajv6cn00000,2kmg5hv19br00000") },
 #endif
 
     /* Number.prototype.toFixed(frac) method. */
@@ -736,10 +742,8 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("NaN.toFixed(1)"),
       njs_str("NaN") },
 
-#if 0  /* FIXME: bignum support is requred to support frac >= 20 */
     { njs_str("(2 ** -100).toFixed(100)"),
       njs_str("0.0000000000000000000000000000007888609052210118054117285652827862296732064351090230047702789306640625") },
-#endif
 
     /* Number.prototype.toPrecision(prec) method. */
 
@@ -771,7 +775,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("0.125000,0.250000,0.500000,1.00000,2.00000,4.00000,8.00000,16.0000,32.0000,64.0000,128.000,256.000") },
 
     { njs_str("Array(5).fill().map((n, i) => i+16).map((v)=>(4.1).toPrecision(v))"),
-      njs_str("4.100000000000000,4.0999999999999996,4.09999999999999964,4.099999999999999644,4.0999999999999996447") },
+      njs_str("4.100000000000000,4.0999999999999996,4.09999999999999964,4.099999999999999645,4.0999999999999996447") },
 
     { njs_str("Array(3).fill().map((n, i) => i + 19).map((v)=>(2**(-v)).toPrecision(20))"),
       njs_str("0.0000019073486328125000000,9.5367431640625000000e-7,4.7683715820312500000e-7") },
@@ -779,13 +783,11 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Array(3).fill().map((n, i) => i + 32).map((v)=>(2**(v)+0.1).toPrecision(10))"),
       njs_str("4294967296,8589934592,1.717986918e+10") },
 
-#if 0  /* FIXME: bignum support is requred to support prec >= 20 */
     { njs_str("(1/7).toPrecision(100)"),
       njs_str("0.1428571428571428492126926812488818541169166564941406250000000000000000000000000000000000000000000000") },
 
     { njs_str("(2**128).toPrecision(40)"),
       njs_str("340282366920938463463374607431768211456.0") },
-#endif
 
     { njs_str("(2**128).toPrecision(1)"),
       njs_str("3e+38") },
@@ -794,7 +796,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("3.4e+38") },
 
     { njs_str("(2**128).toPrecision(40)"),
-      njs_str("340282366920938463490000000000000000000.0") },
+      njs_str("340282366920938463463374607431768211456.0") },
 
     { njs_str("(123).toPrecision(0)"),
       njs_str("RangeError: precision argument must be between 1 and 100") },
@@ -857,15 +859,13 @@ static njs_unit_test_t  njs_test[] =
       njs_str("-6.66667e-1,1.33333e+0,-2.00000e+0,2.66667e+0,-3.33333e+0,4.00000e+0") },
 
     { njs_str("Array(5).fill().map((n, i) => i + 1).map((v)=>((Math.pow(-1,v))*(2*v)/3).toExponential())"),
-      njs_str("-6.666666666666666e-1,1.3333333333333333e+0,-2e+0,2.6666666666666667e+0,-3.3333333333333337e+0") },
+      njs_str("-6.666666666666666e-1,1.3333333333333333e+0,-2e+0,2.6666666666666665e+0,-3.3333333333333335e+0") },
 
     { njs_str("1.7976931348623157e+308.toExponential()"),
       njs_str("1.7976931348623157e+308") },
 
-#if 0  /* FIXME: bignum support is requred to support prec >= 20 */
     { njs_str("(1/7).toExponential(100)"),
       njs_str("1.4285714285714284921269268124888185411691665649414062500000000000000000000000000000000000000000000000e-1") },
-#endif
 
     { njs_str("var v = 1.7976931348623157e+308; Number(v.toExponential()) == v"),
       njs_str("true") },
@@ -1319,10 +1319,8 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("9007199254740993 | 0"),
       njs_str("0") },
 
-#if 0
     { njs_str("9223372036854775808 | 0"),
       njs_str("0") },
-#endif
 
     { njs_str("9223372036854777856 | 0"),
       njs_str("2048") },
@@ -1366,10 +1364,8 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("-2147483648 << 0"),
       njs_str("-2147483648") },
 
-#if 0
     { njs_str("9223372036854775808 << 0"),
       njs_str("0") },
-#endif
 
     { njs_str("9223372036854777856 << 0"),
       njs_str("2048") },
@@ -1401,10 +1397,8 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("-2147483648 >> -1"),
       njs_str("-1") },
 
-#if 0
     { njs_str("9223372036854775808 >> 0"),
       njs_str("0") },
-#endif
 
     { njs_str("9223372036854777856 >> 0"),
       njs_str("2048") },
@@ -1421,10 +1415,8 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("NaN >>> 1"),
       njs_str("0") },
 
-#if 0
     { njs_str("9223372036854775808 >>> 1"),
       njs_str("0") },
-#endif
 
     { njs_str("-1 >>> 0"),
       njs_str("4294967295") },
@@ -1438,10 +1430,8 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("-2147483648 >>> -1"),
       njs_str("1") },
 
-#if 0
     { njs_str("9223372036854775808 >>> 0"),
       njs_str("0") },
-#endif
 
     { njs_str("9223372036854777856 >>> 0"),
       njs_str("2048") },
@@ -1525,10 +1515,8 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("-2147483648 & 65536"),
       njs_str("0") },
 
-#if 0
     { njs_str("9223372036854775808 & 65536"),
       njs_str("0") },
-#endif
 
     { njs_str("NaN & 65536"),
       njs_str("0") },
@@ -1542,10 +1530,8 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("-2147483648 ^ 65536"),
       njs_str("-2147418112") },
 
-#if 0
     { njs_str("9223372036854775808 ^ 65536"),
       njs_str("65536") },
-#endif
 
     { njs_str("NaN ^ 65536"),
       njs_str("65536") },
@@ -2966,7 +2952,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("SyntaxError: Unexpected token \")\" in 1") },
 
     { njs_str("for(9A=>>"),
-      njs_str("SyntaxError: Unexpected token \"A\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"9A\" in 1") },
 
     { njs_str("for(A?{,"),
       njs_str("SyntaxError: Unexpected token \",\" in 1") },
@@ -6872,7 +6858,7 @@ static njs_unit_test_t  njs_test[] =
               "2172814084,75727489,2189624325,84181890,"
               "-2122153212,75727489,-2105342971,84181890,"
               "-4.794245620412925e-38,3.091780090135418e-36,-1.9251027092506622e-37,6.230764342760857e-36,"
-              "-2.159546358334202e-301,5.447603729090798e-270,-1.4538065947240604e-296,3.72581468952343e-265") },
+              "-2.159546358334202e-301,5.447603729090798e-270,-1.4538065947240603e-296,3.72581468952343e-265") },
 
     { njs_str("var u8 = new Uint8Array(10);"
               "var dv = new DataView(u8.buffer, 1);"
@@ -10344,7 +10330,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("1") },
 
     { njs_str("(function f() { return 2.toString(); })()"),
-      njs_str("SyntaxError: Unexpected token \"toString\" in 1") },
+      njs_str("SyntaxError: Unexpected token \"2.toString\" in 1") },
 
     { njs_str("(function f() { return 2..toString(); })()"),
       njs_str("2") },
@@ -13487,10 +13473,22 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Number('0B111')"),
       njs_str("7") },
 
+    { njs_str("Number('0B111 ')"),
+      njs_str("7") },
+
+    { njs_str("Number('0B111  1')"),
+      njs_str("NaN") },
+
     { njs_str("Number('0b1_11')"),
       njs_str("NaN") },
 
     { njs_str("Number('-0b111')"),
+      njs_str("NaN") },
+
+    { njs_str("Number('0b111.')"),
+      njs_str("NaN") },
+
+    { njs_str("Number('0b111.1')"),
       njs_str("NaN") },
 
     { njs_str("Number(123)"),
@@ -13505,10 +13503,19 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Number('0O123')"),
       njs_str("83") },
 
+    { njs_str("Number('0O123   ')"),
+      njs_str("83") },
+
     { njs_str("Number('0o1_23')"),
       njs_str("NaN") },
 
     { njs_str("Number('-0o123')"),
+      njs_str("NaN") },
+
+    { njs_str("Number('0o123.')"),
+      njs_str("NaN") },
+
+    { njs_str("Number('0o123.4')"),
       njs_str("NaN") },
 
     { njs_str("Number('0x123')"),
@@ -13517,10 +13524,19 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Number('0X123')"),
       njs_str("291") },
 
+    { njs_str("Number('0X123   ')"),
+      njs_str("291") },
+
     { njs_str("Number('0x1_23')"),
       njs_str("NaN") },
 
     { njs_str("Number('-0x123')"),
+      njs_str("NaN") },
+
+    { njs_str("Number('0x123.')"),
+      njs_str("NaN") },
+
+    { njs_str("Number('0x123.4')"),
       njs_str("NaN") },
 
     { njs_str("['1', ' 1 ', '1\\t', '1\\n', '1\\r\\n'].reduce((a, x) => a + Number(x), 0)"),
@@ -13530,7 +13546,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("0.1111111111111111") },
 
     { njs_str("Number('1'.repeat(128))"),
-      njs_str("1.1111111111111113e+127") },
+      njs_str("1.1111111111111112e+127") },
 
     { njs_str("Number('1'.repeat(129))"),
       njs_str("1.1111111111111112e+128") },
@@ -18267,6 +18283,12 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("parseFloat('-5.7e+abc')"),
       njs_str("-5.7") },
 
+    { njs_str("parseFloat('5' + '0'.repeat(200))"),
+      njs_str("5e+200") },
+
+    { njs_str("parseFloat('500_000_000')"),
+      njs_str("500") },
+
     /* debugger. */
 
     { njs_str("debugger"),
@@ -18589,7 +18611,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("SyntaxError: Unexpected number at position 0") },
 
     { njs_str("JSON.parse('--')"),
-      njs_str("SyntaxError: Unexpected number at position 1") },
+      njs_str("SyntaxError: Unexpected number at position 0") },
 
     { njs_str("JSON.parse('1-')"),
       njs_str("SyntaxError: Unexpected token at position 1") },
@@ -20207,6 +20229,9 @@ static njs_unit_test_t  njs_denormals_test[] =
     { njs_str("2.2250738585072014E-308.toString(2) == ('0.' + '0'.repeat(1021) + '1')"),
       njs_str("true") },
 
+    { njs_str("Number.MAX_VALUE.toString(2) === ('1'.repeat(53) + '0'.repeat(971))"),
+      njs_str("true") },
+
     { njs_str("Number('2.2250738585072014E-323')"),
       njs_str("2.5e-323") },
 
@@ -20225,7 +20250,7 @@ static njs_unit_test_t  njs_denormals_test[] =
     { njs_str("var zeros = count => '0'.repeat(count);"
               "["
               "  [1.8858070859709815e-308, `0.${zeros(1022)}1101100011110111011100000100011001111101110001010111`],"
-              // FIXME: "  [Number.MIN_VALUE, `0.${zeros(1073)}1`]"
+              "  [Number.MIN_VALUE, `0.${zeros(1021)}1`],"
               "  [-5.06631661953108e-309, `-0.${zeros(1024)}11101001001010000001101111010101011111111011010111`],"
               "  [6.22574126804e-313, `0.${zeros(1037)}11101010101101100111000110100111001`],"
               "  [-4e-323, `-0.${zeros(1070)}1`],"
@@ -20239,40 +20264,6 @@ static njs_unit_test_t  njs_denormals_test[] =
       njs_str("4.9406564584e-324") },
 #endif
 
-};
-
-
-static njs_unit_test_t  njs_disabled_denormals_test[] =
-{
-    { njs_str("Number('2.2250738585072014E-323')"),
-      njs_str("0") },
-
-    { njs_str("Number('2.2250738585072014E-323') + 0"),
-      njs_str("0") },
-
-    /* Smallest positive double (next_double(0)). */
-    { njs_str("5E-324.toString(36)"),
-      njs_str("0") },
-
-    { njs_str("2.2250738585072014E-323.toString(2)"),
-      njs_str("0") },
-
-    /* Smallest normal double. */
-
-    { njs_str("2.2250738585072014e-308"),
-      njs_str("2.2250738585072014e-308") },
-
-    { njs_str("2.2250738585072014e-308/2"),
-      njs_str("0") },
-
-    /* Denormals. */
-    { njs_str("["
-              "1.8858070859709815e-308,"
-              "-5.06631661953108e-309,"
-              "6.22574126804e-313,"
-              "-4e-323,"
-              "].map(v=>v.toString(2))"),
-      njs_str("0,0,0,0") },
 };
 
 
@@ -23313,22 +23304,6 @@ typedef struct {
 } njs_test_suite_t;
 
 
-static njs_int_t
-njs_disabled_denormals_tests(njs_unit_test_t tests[], size_t num,
-    njs_str_t *name, njs_opts_t *opts, njs_stat_t *stat)
-{
-    njs_int_t  ret;
-
-    njs_mm_denormals(0);
-
-    ret = njs_unit_test(tests, num, name, opts, stat);
-
-    njs_mm_denormals(1);
-
-    return ret;
-}
-
-
 static njs_test_suite_t  njs_suites[] =
 {
     { njs_str("script"),
@@ -23348,17 +23323,6 @@ static njs_test_suite_t  njs_suites[] =
       njs_denormals_test,
       njs_nitems(njs_denormals_test),
       njs_unit_test },
-
-    {
-#if (NJS_HAVE_DENORMALS_CONTROL)
-        njs_str("disabled denormals"),
-#else
-        njs_str(""),
-#endif
-      { .repeat = 1, .unsafe = 1 },
-      njs_disabled_denormals_test,
-      njs_nitems(njs_disabled_denormals_test),
-      njs_disabled_denormals_tests },
 
     { njs_str("module"),
       { .repeat = 1, .module = 1, .unsafe = 1 },
@@ -23461,8 +23425,6 @@ main(int argc, char **argv)
     environ = (char **) restricted_environ;
 
     tzset();
-
-    njs_mm_denormals(1);
 
     njs_memzero(&stat, sizeof(njs_stat_t));
 

@@ -813,80 +813,52 @@ njs_lexer_string(njs_lexer_t *lexer, njs_lexer_token_t *token, u_char quote)
 static void
 njs_lexer_number(njs_lexer_t *lexer, njs_lexer_token_t *token)
 {
-    u_char        c;
+    int           flags;
     const u_char  *p;
 
-    c = lexer->start[-1];
-    p = lexer->start;
-
     token->text.start = lexer->start - 1;
+    p = token->text.start;
 
-    if (c == '0' && p != lexer->end) {
+    flags = JS_ATOD_ACCEPT_BIN_OCT | JS_ATOD_ACCEPT_UNDERSCORES;
 
-        /* Hexadecimal literal values. */
+    if (p[0] == '0' && (p + 1) < lexer->end) {
+        /* Legacy octal literal. */
 
-        if (*p == 'x' || *p == 'X') {
-            p++;
+        if (p[1] == '_' || (p[1] >= '0' && p[1] <= '9')) {
+            for (p++; p < lexer->end; p++) {
+                if (*p == '_' || (*p >= '0' && *p <= '9')) {
+                    continue;
+                }
 
-            if (p == lexer->end || njs_char_to_hex(*p) < 0) {
-                goto illegal_token;
+                break;
             }
 
-            token->number = njs_number_hex_parse(&p, lexer->end, 1);
-
-            goto done;
+            goto illegal_token;
         }
 
-        /* Octal literal values. */
-
-        if (*p == 'o' || *p == 'O') {
-            p++;
-
-            if (p == lexer->end || (u_char)(*p - '0') > 7) {
-                goto illegal_token;
-            }
-
-            token->number = njs_number_oct_parse(&p, lexer->end, 1);
-
-            if (p < lexer->end && (*p == '8' || *p == '9')) {
-                goto illegal_trailer;
-            }
-
-            goto done;
-        }
-
-        /* Binary literal values. */
-
-        if (*p == 'b' || *p == 'B') {
-            p++;
-
-            if (p == lexer->end || (u_char)(*p - '0') > 1) {
-                goto illegal_token;
-            }
-
-            token->number = njs_number_bin_parse(&p, lexer->end, 1);
-
-            if (p < lexer->end && (*p >= '2' && *p <= '9')) {
-                goto illegal_trailer;
-            }
-
-            goto done;
-        }
-
-        /* Legacy Octal literals are deprecated. */
-
-        if ((*p >= '0' && *p <= '9') || *p == '_') {
-            goto illegal_trailer;
+        if ((p[1] == 'x' || p[1] == 'X'
+                || p[1] == 'b' || p[1] == 'B'
+                || p[1] == 'o' || p[1] == 'O'))
+        {
+            flags |= JS_ATOD_INT_ONLY;
         }
     }
 
-    p--;
-    token->number = njs_number_dec_parse(&p, lexer->end, 1);
+    token->number = njs_atod((const char *) p, (const char **) &p, 0, flags);
 
-done:
+#define njs_continuation_char(c)                                              \
+     (njs_tokens[c] == NJS_TOKEN_LETTER || njs_tokens[c] == NJS_TOKEN_DIGIT)
 
-    if (p[-1] == '_') {
-        p--;
+    if (isnan(token->number) || (p < lexer->end && njs_continuation_char(*p))) {
+        while (p < lexer->end) {
+            if (!njs_continuation_char(*p)) {
+                break;
+            }
+
+            p++;
+        }
+
+        goto illegal_token;
     }
 
     lexer->start = (u_char *) p;
@@ -895,10 +867,6 @@ done:
     token->type = NJS_TOKEN_NUMBER;
 
     return;
-
-illegal_trailer:
-
-    p++;
 
 illegal_token:
 

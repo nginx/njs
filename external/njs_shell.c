@@ -412,8 +412,6 @@ njs_main(njs_opts_t *opts)
     njs_int_t     ret;
     njs_engine_t  *engine;
 
-    njs_mm_denormals(opts->denormals);
-
     if (opts->file == NULL) {
         if (opts->command.length != 0) {
             opts->file = (char *) "string";
@@ -637,12 +635,6 @@ njs_options_parse(njs_opts_t *opts, int argc, char **argv)
             return NJS_ERROR;
 
         case 'f':
-
-#if !(NJS_HAVE_DENORMALS_CONTROL)
-            njs_stderror("option \"-f\" is not supported\n");
-            return NJS_ERROR;
-#endif
-
             opts->denormals = 0;
             break;
 

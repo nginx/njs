@@ -57,11 +57,6 @@ typedef uintptr_t       njs_uint_t;
 #endif
 
 
-#if (NJS_HAVE_UNSIGNED_INT128)
-typedef unsigned __int128 njs_uint128_t;
-#endif
-
-
 #if (NJS_INT_T_SIZE == 8)
 #define NJS_INT_T_LEN        NJS_INT64_T_LEN
 #define NJS_INT_T_HEXLEN     NJS_INT64_T_HEXLEN

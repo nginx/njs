@@ -54,84 +54,6 @@ njs_key_to_index(const njs_value_t *value)
 
 
 double
-njs_number_dec_parse(const u_char **start, const u_char *end,
-    njs_bool_t literal)
-{
-    return njs_strtod(start, end, literal);
-}
-
-
-double
-njs_number_oct_parse(const u_char **start, const u_char *end,
-    njs_bool_t literal)
-{
-    u_char        c;
-    double        num;
-    const u_char  *p, *_;
-
-    p = *start;
-
-    num = 0;
-    _ = p - 1;
-
-    for (; p < end; p++) {
-        /* Values less than '0' become >= 208. */
-        c = *p - '0';
-
-        if (njs_slow_path(c > 7)) {
-            if (literal && *p == '_' && (p - _) > 1) {
-                _ = p;
-                continue;
-            }
-
-            break;
-        }
-
-        num = num * 8 + c;
-    }
-
-    *start = p;
-
-    return num;
-}
-
-
-double
-njs_number_bin_parse(const u_char **start, const u_char *end,
-    njs_bool_t literal)
-{
-    u_char        c;
-    double        num;
-    const u_char  *p, *_;
-
-    p = *start;
-
-    num = 0;
-    _ = p - 1;
-
-    for (; p < end; p++) {
-        /* Values less than '0' become >= 208. */
-        c = *p - '0';
-
-        if (njs_slow_path(c > 1)) {
-            if (literal && *p == '_' && (p - _) > 1) {
-                _ = p;
-                continue;
-            }
-
-            break;
-        }
-
-        num = num * 2 + c;
-    }
-
-    *start = p;
-
-    return num;
-}
-
-
-double
 njs_number_hex_parse(const u_char **start, const u_char *end,
     njs_bool_t literal)
 {
@@ -157,54 +79,6 @@ njs_number_hex_parse(const u_char **start, const u_char *end,
         }
 
         num = num * 16 + n;
-    }
-
-    *start = p;
-
-    return num;
-}
-
-
-static double
-njs_number_radix_parse(const u_char **start, const u_char *end, uint8_t radix)
-{
-    uint8_t       d;
-    double        num, n;
-    const u_char  *p;
-
-    static const int8_t  digits[256]
-        njs_aligned(32) =
-    {
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, -1, -1, -1, -1, -1, -1,
-        -1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
-        25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, -1, -1, -1, -1, -1,
-        -1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
-        25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    };
-
-    num = NAN;
-    n = 0;
-
-    for (p = *start; p < end; p++) {
-        d = digits[*p];
-
-        if (njs_slow_path(d >= radix)) {
-            break;
-        }
-
-        n = (n * radix) + d;
-        num = n;
     }
 
     *start = p;
@@ -553,13 +427,13 @@ static njs_int_t
 njs_number_prototype_to_fixed(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
 {
-    u_char       *p;
-    int64_t      frac;
-    double       number;
-    size_t       length, size;
-    njs_int_t    ret, point, prefix, postfix;
-    njs_value_t  *value;
-    u_char       buf[128], buf2[128];
+    double         number;
+    size_t         size;
+    int64_t        frac;
+    njs_int_t      ret;
+    njs_value_t    *value;
+    JSDTOATempMem  tmp_mem;
+    u_char         buf[128];
 
     /* 128 > 100 + 21 + njs_length(".-\0"). */
 
@@ -592,59 +466,10 @@ njs_number_prototype_to_fixed(njs_vm_t *vm, njs_value_t *args,
         return njs_number_to_string(vm, retval, value);
     }
 
-    point = 0;
-    length = njs_fixed_dtoa(number, (njs_int_t) frac, (char *) buf, &point);
+    size = njs_dtoa2((char *) buf, number, 10, (int) frac,
+                     JS_DTOA_FORMAT_FRAC, &tmp_mem);
 
-    prefix = 0;
-    postfix = 0;
-
-    if (point <= 0) {
-        prefix = -point + 1;
-        point = 1;
-    }
-
-    if (prefix + (njs_int_t) length < point + frac) {
-        postfix = point + frac - length - prefix;
-    }
-
-    size = prefix + length + postfix + !!(number < 0);
-
-    if (frac > 0) {
-        size += njs_length(".");
-    }
-
-    p = buf2;
-
-    while (--prefix >= 0) {
-        *p++ = '0';
-    }
-
-    if (length != 0) {
-        p = njs_cpymem(p, buf, length);
-    }
-
-    while (--postfix >= 0) {
-        *p++ = '0';
-    }
-
-    p = njs_string_alloc(vm, retval, size, size);
-    if (njs_slow_path(p == NULL)) {
-        return NJS_ERROR;
-    }
-
-    if (number < 0) {
-        *p++ = '-';
-    }
-
-    p = njs_cpymem(p, buf2, point);
-
-    if (frac > 0) {
-        *p++ = '.';
-
-        memcpy(p, &buf2[point], frac);
-    }
-
-    return NJS_OK;
+    return njs_string_new(vm, retval, buf, size, size);
 }
 
 
@@ -652,12 +477,13 @@ static njs_int_t
 njs_number_prototype_to_precision(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
 {
-    double       number;
-    size_t       size;
-    int64_t      precision;
-    njs_int_t    ret;
-    njs_value_t  *value;
-    u_char       buf[128];
+    double         number;
+    size_t         size;
+    int64_t        precision;
+    njs_int_t      ret;
+    njs_value_t    *value;
+    JSDTOATempMem  tmp_mem;
+    u_char         buf[128];
 
     /* 128 > 100 + 21 + njs_length(".-\0"). */
 
@@ -694,7 +520,8 @@ njs_number_prototype_to_precision(njs_vm_t *vm, njs_value_t *args,
         return NJS_ERROR;
     }
 
-    size = njs_dtoa_precision(number, (char *) buf, (size_t) precision);
+    size = njs_dtoa2((char *) buf, number, 10, (int) precision,
+                     JS_DTOA_FORMAT_FIXED, &tmp_mem);
 
     return njs_string_new(vm, retval, buf, size, size);
 }
@@ -704,12 +531,14 @@ static njs_int_t
 njs_number_prototype_to_exponential(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
 {
-    double       number;
-    size_t       size;
-    int64_t      frac;
-    njs_int_t    ret;
-    njs_value_t  *value, *value_frac;
-    u_char       buf[128];
+    int            digits, flags;
+    double         number;
+    size_t         size;
+    int64_t        frac;
+    njs_int_t      ret;
+    njs_value_t    *value, *value_frac;
+    JSDTOATempMem  tmp_mem;
+    u_char         buf[128];
 
     value = &args[0];
 
@@ -747,131 +576,51 @@ njs_number_prototype_to_exponential(njs_vm_t *vm, njs_value_t *args,
         frac = -1;
     }
 
-    size = njs_dtoa_exponential(number, (char *) buf, (njs_int_t) frac);
+    if (frac < 0) {
+        digits = 0;
+        flags = JS_DTOA_FORMAT_FREE;
+
+    } else {
+        digits = frac + 1;
+        flags = JS_DTOA_FORMAT_FIXED;
+    }
+
+    size = njs_dtoa2((char *) buf, number, 10, digits,
+                     flags | JS_DTOA_EXP_ENABLED, &tmp_mem);
 
     return njs_string_new(vm, retval, buf, size, size);
 }
 
 
 /*
- * The radix equal to 2 produces the longest  value for a number.
+ * njs_dtoa_max_len() caps radix conversions (format free, no exponent) at 1088
+ * characters plus the terminating null, so a fixed 1.1KB stack buffer is safe.
  */
-
-#define NJS_STRING_RADIX_INTERGRAL_LEN  (1 + 1024)
-#define NJS_STRING_RADIX_FRACTION_LEN   (1 + 1075)
-#define NJS_STRING_RADIX_LEN                                                  \
-    (NJS_STRING_RADIX_INTERGRAL_LEN + NJS_STRING_RADIX_FRACTION_LEN)
-
-
-njs_inline double
-njs_number_next_double(double n)
-{
-    njs_diyfp_t  v;
-
-    v = njs_d2diyfp(n);
-
-    if (signbit(n)) {
-        if (v.significand == 0) {
-            return 0.0;
-        }
-
-        v.significand--;
-
-    } else {
-        v.significand++;
-    }
-
-    return njs_diyfp2d(v);
-}
-
+#define NJS_NUMBER_RADIX_BUF_SIZE  1100
 
 static njs_int_t
 njs_number_to_string_radix(njs_vm_t *vm, njs_value_t *string,
     double number, uint32_t radix)
 {
-    int       digit;
-    char      ch;
-    double    n, remainder, integer, fraction, delta;
-    u_char    *p, *end;
-    uint32_t  size;
-    u_char    buf[NJS_STRING_RADIX_LEN];
+    int            len;
+    size_t         size;
+    u_char         buf[NJS_NUMBER_RADIX_BUF_SIZE];
+    njs_int_t      ret;
+    JSDTOATempMem  tmp_mem;
 
-    static const char  *digits = "0123456789abcdefghijklmnopqrstuvwxyz";
-
-    p = buf + NJS_STRING_RADIX_INTERGRAL_LEN;
-    end = p;
-
-    n = number;
-
-    if (n < 0) {
-        n = -n;
+    len = njs_dtoa_max_len(number, (int) radix, 0,
+                           JS_DTOA_FORMAT_FREE | JS_DTOA_EXP_DISABLED);
+    if (njs_slow_path((size_t) len + 1 > NJS_NUMBER_RADIX_BUF_SIZE)) {
+        njs_internal_error(vm, "radix buffer overflow");
+        return NJS_ERROR;
     }
 
-    integer = floor(n);
-    fraction = n - integer;
+    size = njs_dtoa2((char *) buf, number, (int) radix, 0,
+                     JS_DTOA_FORMAT_FREE | JS_DTOA_EXP_DISABLED, &tmp_mem);
 
-    delta = 0.5 * (njs_number_next_double(n) - n);
-    delta = njs_max(njs_number_next_double(0.0), delta);
+    ret = njs_string_new(vm, string, buf, (uint32_t) size, (uint32_t) size);
 
-    if (fraction >= delta && delta != 0) {
-        *p++ = '.';
-
-        do {
-            fraction *= radix;
-            delta *= radix;
-
-            digit = (int) fraction;
-            *p++ = digits[digit];
-
-            fraction -= digit;
-
-            if ((fraction > 0.5 || (fraction == 0.5 && (digit & 1)))
-                && (fraction + delta > 1))
-            {
-                while (p-- != buf) {
-                    if (p == buf + NJS_STRING_RADIX_INTERGRAL_LEN) {
-                        integer += 1;
-                        break;
-                    }
-
-                    ch = *p;
-                    digit = (ch > '9') ? ch - 'a' + 10 : ch - '0';
-
-                    if ((uint32_t) (digit + 1) < radix) {
-                        *p++ = digits[digit + 1];
-                        break;
-                    }
-                }
-
-                break;
-            }
-
-        } while (fraction >= delta);
-
-        end = p;
-    }
-
-    p = buf + NJS_STRING_RADIX_INTERGRAL_LEN;
-
-    while (njs_d2diyfp(integer / radix).exp > 0) {
-        integer /= radix;
-        *(--p) = '0';
-    }
-
-    do {
-        remainder = fmod(integer, radix);
-        *(--p) = digits[(int) remainder];
-        integer = (integer - remainder) / radix;
-
-    } while (integer > 0);
-
-    if (number < 0) {
-        *(--p) = '-';
-    }
-
-    size = (uint32_t) (end - p);
-
-    return njs_string_new(vm, string, p, size, size);
+    return ret;
 }
 
 
@@ -951,41 +700,17 @@ njs_number_parse_int(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     double             num;
     int32_t            radix;
     njs_int_t          ret;
-    njs_bool_t         minus, test_prefix;
     njs_value_t        *value, lvalue;
-    const u_char       *p, *end;
     njs_string_prop_t  string;
 
     num = NAN;
-
+    radix = 0;
     value = njs_lvalue_arg(&lvalue, args, nargs, 1);
 
     ret = njs_value_to_string(vm, value, value);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
-
-    (void) njs_string_trim(vm, value, &string, NJS_TRIM_START);
-
-    if (string.size == 0) {
-        goto done;
-    }
-
-    p = string.start;
-    end = p + string.size;
-
-    minus = 0;
-
-    if (p[0] == '-') {
-        p++;
-        minus = 1;
-
-    } else if (p[0] == '+') {
-        p++;
-    }
-
-    test_prefix = (end - p > 1);
-    radix = 0;
 
     if (nargs > 2) {
         ret = njs_value_to_int32(vm, njs_argument(args, 2), &radix);
@@ -997,25 +722,13 @@ njs_number_parse_int(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             if (radix < 2 || radix > 36) {
                 goto done;
             }
-
-            if (radix != 16) {
-                test_prefix = 0;
-            }
         }
     }
 
-    if (radix == 0) {
-        radix = 10;
-    }
+    (void) njs_string_trim(vm, value, &string, NJS_TRIM_START);
 
-    if (test_prefix && p[0] == '0' && (p[1] == 'x' || p[1] == 'X')) {
-        p += 2;
-        radix = 16;
-    }
-
-    num = njs_number_radix_parse(&p, end, radix);
-
-    num = minus ? -num : num;
+    num = njs_atod((char *) string.start, NULL, radix,
+                   JS_ATOD_INT_ONLY | JS_ATOD_ACCEPT_PREFIX_AFTER_SIGN);
 
 done:
 
@@ -1032,8 +745,6 @@ njs_number_parse_float(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     double             num;
     njs_int_t          ret;
     njs_value_t        *value, lvalue;
-    njs_bool_t         minus;
-    const u_char       *p, *start, *end;
     njs_string_prop_t  string;
 
     value = njs_lvalue_arg(&lvalue, args, nargs, 1);
@@ -1045,42 +756,9 @@ njs_number_parse_float(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     (void) njs_string_trim(vm, value, &string, NJS_TRIM_START);
 
-    p = string.start;
-    end = p + string.size;
+    num = njs_atod((char *) string.start, NULL, 10, 0);
 
-    minus = 0;
-
-    if (p == end) {
-        num = NAN;
-        goto done;
-    }
-
-    if (*p == '+') {
-        p++;
-
-    } else if (*p == '-') {
-        p++;
-        minus = 1;
-    }
-
-    start = p;
-    num = njs_number_dec_parse(&p, end, 0);
-
-    if (p == start) {
-        if (p + njs_length("Infinity") > end
-            || memcmp(p, "Infinity", njs_length("Infinity")) != 0)
-        {
-            num = NAN;
-            goto done;
-        }
-
-        num = INFINITY;
-        p += njs_length("Infinity");
-    }
-
-done:
-
-    njs_set_number(retval, minus ? -num : num);
+    njs_set_number(retval, num);
 
     return NJS_OK;
 }
