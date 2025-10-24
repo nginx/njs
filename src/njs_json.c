@@ -751,29 +751,16 @@ static const u_char *
 njs_json_parse_number(njs_json_parse_ctx_t *ctx, njs_value_t *value,
     const u_char *p)
 {
-    double        num;
-    njs_int_t     sign;
-    const u_char  *start;
+    double      num;
+    const char  *start, *end;
 
-    sign = 1;
+    start = (const char *) p;
+    num = njs_atod((const char *) p, &end, 10, 0);
 
-    if (*p == '-') {
-        if (p + 1 == ctx->end) {
-            goto error;
-        }
-
-        p++;
-        sign = -1;
+    if (end != start && !isnan(num)) {
+        njs_set_number(value, num);
+        return (const u_char *) end;
     }
-
-    start = p;
-    num = njs_number_dec_parse(&p, ctx->end, 0);
-    if (p != start) {
-        njs_set_number(value, sign * num);
-        return p;
-    }
-
-error:
 
     njs_json_parse_exception(ctx, "Unexpected number", p);
 
