@@ -3268,6 +3268,195 @@ ngx_js_preload_object(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
 
 static ngx_int_t
+ngx_js_build_proxy_auth_header(ngx_pool_t *pool, ngx_str_t *auth_header,
+    ngx_str_t *user, ngx_str_t *pass)
+{
+    u_char     *p;
+    size_t      len;
+    ngx_str_t   userpass, b64;
+
+    userpass.len = user->len + 1 + pass->len;
+    userpass.data = ngx_pnalloc(pool, userpass.len);
+    if (userpass.data == NULL) {
+        return NGX_ERROR;
+    }
+
+    p = ngx_cpymem(userpass.data, user->data, user->len);
+    *p++ = ':';
+    ngx_memcpy(p, pass->data, pass->len);
+
+    b64.len = ngx_base64_encoded_length(userpass.len);
+    b64.data = ngx_pnalloc(pool, b64.len);
+    if (b64.data == NULL) {
+        return NGX_ERROR;
+    }
+
+    ngx_encode_base64(&b64, &userpass);
+
+    len = sizeof("Proxy-Authorization: Basic \r\n") - 1 + b64.len;
+    p = ngx_pnalloc(pool, len);
+    if (p == NULL) {
+        return NGX_ERROR;
+    }
+
+    ngx_sprintf(p, "Proxy-Authorization: Basic %V\r\n", &b64);
+    auth_header->data = p;
+    auth_header->len = len;
+
+    return NGX_OK;
+}
+
+
+ngx_int_t
+ngx_js_parse_proxy_url(ngx_pool_t *pool, ngx_log_t *log, ngx_str_t *url,
+    ngx_url_t **url_out, ngx_str_t *auth_header_out)
+{
+    u_char     *p, *at, *colon, *host_start, *user_start, *pass_start;
+    u_char     *decoded_user, *decoded_pass, *decoded_end;
+    size_t      user_len, pass_len;
+    ngx_url_t  *u;
+    ngx_str_t   user, pass;
+
+    if (url->len == 0) {
+        *url_out = NULL;
+        ngx_str_null(auth_header_out);
+        return NGX_OK;
+    }
+
+    if (ngx_strncmp(url->data, "http://", sizeof("http://") - 1) != 0) {
+        ngx_log_error(NGX_LOG_ERR, log, 0,
+                      "js_fetch_proxy URL must use http:// scheme");
+        return NGX_ERROR;
+    }
+
+    host_start = url->data + (sizeof("http://") - 1);
+    at = ngx_strlchr(host_start, url->data + url->len, '@');
+
+    ngx_str_null(auth_header_out);
+
+    if (at != NULL) {
+        colon = NULL;
+
+        for (p = at - 1; p > host_start; p--) {
+            if (*p == ':') {
+                colon = p;
+                break;
+            }
+        }
+
+        if (colon == NULL) {
+            ngx_log_error(NGX_LOG_ERR, log, 0,
+                          "js_fetch_proxy URL credentials must be in "
+                          "user:password format");
+            return NGX_ERROR;
+        }
+
+        user_start = host_start;
+        user_len = colon - host_start;
+        pass_start = colon + 1;
+        pass_len = at - pass_start;
+
+        decoded_user = ngx_pnalloc(pool, 128);
+        if (decoded_user == NULL) {
+            return NGX_ERROR;
+        }
+
+        decoded_pass = ngx_pnalloc(pool, 128);
+        if (decoded_pass == NULL) {
+            return NGX_ERROR;
+        }
+
+        p = user_start;
+        decoded_end = decoded_user;
+        ngx_unescape_uri(&decoded_end, &p, user_len, NGX_UNESCAPE_URI);
+
+        user_len = decoded_end - decoded_user;
+        if (user_len == 0 || user_len > 127) {
+            ngx_log_error(NGX_LOG_ERR, log, 0,
+                          "js_fetch_proxy username invalid or too long "
+                          "(max 127 bytes after decoding)");
+            return NGX_ERROR;
+        }
+
+        p = pass_start;
+        decoded_end = decoded_pass;
+        ngx_unescape_uri(&decoded_end, &p, pass_len, NGX_UNESCAPE_URI);
+
+        pass_len = decoded_end - decoded_pass;
+        if (pass_len == 0 || pass_len > 127) {
+            ngx_log_error(NGX_LOG_ERR, log, 0,
+                          "js_fetch_proxy password invalid or too long "
+                          "(max 127 bytes after decoding)");
+            return NGX_ERROR;
+        }
+
+        user.data = decoded_user;
+        user.len = user_len;
+        pass.data = decoded_pass;
+        pass.len = pass_len;
+
+        if (ngx_js_build_proxy_auth_header(pool, auth_header_out,
+                                           &user, &pass)
+            != NGX_OK)
+        {
+            return NGX_ERROR;
+        }
+
+        host_start = at + 1;
+    }
+
+    u = ngx_pcalloc(pool, sizeof(ngx_url_t));
+    if (u == NULL) {
+        return NGX_ERROR;
+    }
+
+    u->url.data = host_start;
+    u->url.len = url->data + url->len - host_start;
+    u->default_port = 3128;
+    u->no_resolve = 1;
+
+    if (ngx_parse_url(pool, u) != NGX_OK) {
+        ngx_log_error(NGX_LOG_ERR, log, 0, "invalid proxy URL: %V", url);
+        return NGX_ERROR;
+    }
+
+    *url_out = u;
+
+    return NGX_OK;
+}
+
+
+char *
+ngx_js_fetch_proxy(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+{
+    ngx_str_t          *value;
+    ngx_js_loc_conf_t  *jscf;
+
+    jscf = conf;
+
+    value = cf->args->elts;
+
+    if (ngx_js_parse_proxy_url(cf->pool, cf->log, &value[1],
+                               &jscf->fetch_proxy_url,
+                               &jscf->fetch_proxy_auth_header)
+        != NGX_OK)
+    {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                           "invalid proxy URL: %V", &value[1]);
+        return NGX_CONF_ERROR;
+    }
+
+    if (jscf->fetch_proxy_url == NULL) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                           "proxy host is empty in URL: %V", &value[1]);
+        return NGX_CONF_ERROR;
+    }
+
+    return NGX_CONF_OK;
+}
+
+
+static ngx_int_t
 ngx_js_init_preload_vm(njs_vm_t *vm, ngx_js_loc_conf_t *conf)
 {
     u_char               *p, *start;
@@ -3946,6 +4135,7 @@ ngx_js_create_conf(ngx_conf_t *cf, size_t size)
      * set by ngx_pcalloc():
      *
      *     conf->reuse_queue = NULL;
+     *     conf->fetch_proxy_auth_header = { 0, NULL };
      */
 
     conf->paths = NGX_CONF_UNSET_PTR;
@@ -3963,6 +4153,8 @@ ngx_js_create_conf(ngx_conf_t *cf, size_t size)
     conf->fetch_keepalive_requests = NGX_CONF_UNSET_UINT;
     conf->fetch_keepalive_time = NGX_CONF_UNSET_MSEC;
     conf->fetch_keepalive_timeout = NGX_CONF_UNSET_MSEC;
+    conf->fetch_proxy_url = NGX_CONF_UNSET_PTR;
+    conf->eval_proxy_url = NGX_CONF_UNSET_PTR;
 
     return conf;
 }
@@ -4082,9 +4274,14 @@ ngx_js_merge_conf(ngx_conf_t *cf, void *parent, void *child,
                               prev->fetch_keepalive_time, 3600000);
     ngx_conf_merge_msec_value(conf->fetch_keepalive_timeout,
                               prev->fetch_keepalive_timeout, 60000);
-
     ngx_queue_init(&conf->fetch_keepalive_cache);
     ngx_queue_init(&conf->fetch_keepalive_free);
+
+    ngx_conf_merge_ptr_value(conf->fetch_proxy_url, prev->fetch_proxy_url,
+                             NULL);
+    ngx_conf_merge_ptr_value(conf->eval_proxy_url, prev->eval_proxy_url, NULL);
+    ngx_conf_merge_str_value(conf->fetch_proxy_auth_header,
+                             prev->fetch_proxy_auth_header, "");
 
     if (ngx_js_merge_vm(cf, (ngx_js_loc_conf_t *) conf,
                         (ngx_js_loc_conf_t *) prev,

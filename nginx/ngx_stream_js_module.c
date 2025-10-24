@@ -17,9 +17,11 @@ typedef struct ngx_stream_js_ctx_s  ngx_stream_js_ctx_t;
 typedef struct {
     NGX_JS_COMMON_LOC_CONF;
 
-    ngx_str_t              access;
-    ngx_str_t              preread;
-    ngx_str_t              filter;
+    ngx_stream_complex_value_t  fetch_proxy_cv;
+
+    ngx_str_t                   access;
+    ngx_str_t                   preread;
+    ngx_str_t                   filter;
 } ngx_stream_js_srv_conf_t;
 
 
@@ -222,6 +224,8 @@ static char *ngx_stream_js_merge_srv_conf(ngx_conf_t *cf, void *parent,
     void *child);
 static char *ngx_stream_js_shared_dict_zone(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
+static char *ngx_stream_js_fetch_proxy(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf);
 
 
 static ngx_conf_bitmask_t  ngx_stream_js_engines[] = {
@@ -422,6 +426,13 @@ static ngx_command_t  ngx_stream_js_commands[] = {
       NGX_STREAM_MAIN_CONF|NGX_CONF_1MORE,
       ngx_stream_js_shared_dict_zone,
       0,
+      0,
+      NULL },
+
+    { ngx_string("js_fetch_proxy"),
+      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_TAKE1,
+      ngx_stream_js_fetch_proxy,
+      NGX_STREAM_SRV_CONF_OFFSET,
       0,
       NULL },
 
@@ -3672,6 +3683,62 @@ ngx_stream_js_shared_dict_zone(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf)
 {
     return ngx_js_shared_dict_zone(cf, cmd, conf, &ngx_stream_js_module);
+}
+
+
+static ngx_int_t
+ngx_stream_js_eval_proxy_url(ngx_pool_t *pool, void *request,
+    void *module_conf, ngx_url_t **url_out, ngx_str_t *auth_out)
+{
+    ngx_str_t                   value;
+    ngx_stream_session_t       *s;
+    ngx_stream_js_srv_conf_t   *jscf;
+
+    s = request;
+    jscf = module_conf;
+
+    if (ngx_stream_complex_value(s, &jscf->fetch_proxy_cv, &value)
+        != NGX_OK)
+    {
+        return NGX_ERROR;
+    }
+
+    return ngx_js_parse_proxy_url(pool, s->connection->log, &value,
+                                  url_out, auth_out);
+}
+
+
+static char *
+ngx_stream_js_fetch_proxy(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+{
+    ngx_str_t                         *value;
+    ngx_uint_t                         n;
+    ngx_stream_js_srv_conf_t          *jscf;
+    ngx_stream_compile_complex_value_t ccv;
+
+    value = cf->args->elts;
+
+    n = ngx_stream_script_variables_count(&value[1]);
+
+    if (n) {
+        ngx_memzero(&ccv, sizeof(ngx_stream_compile_complex_value_t));
+
+        jscf = conf;
+
+        ccv.cf = cf;
+        ccv.value = &value[1];
+        ccv.complex_value = &jscf->fetch_proxy_cv;
+
+        if (ngx_stream_compile_complex_value(&ccv) != NGX_OK) {
+            return NGX_CONF_ERROR;
+        }
+
+        jscf->eval_proxy_url = ngx_stream_js_eval_proxy_url;
+
+        return NGX_CONF_OK;
+    }
+
+    return ngx_js_fetch_proxy(cf, cmd, conf);
 }
 
 

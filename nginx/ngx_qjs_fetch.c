@@ -232,19 +232,15 @@ JSValue
 ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
     JSValueConst *argv)
 {
-    int                  has_host;
     void                *external;
     JSValue              init, value, promise;
     ngx_int_t            rc;
     ngx_url_t            u;
-    ngx_str_t            method;
-    ngx_uint_t           i;
+    ngx_str_t           *resolve_host;
     ngx_pool_t          *pool;
     ngx_js_ctx_t        *ctx;
     ngx_js_http_t       *http;
     ngx_qjs_fetch_t     *fetch;
-    ngx_list_part_t     *part;
-    ngx_js_tb_elt_t     *h;
     ngx_connection_t    *c;
     ngx_js_request_t     request;
     ngx_resolver_ctx_t  *rs;
@@ -280,7 +276,7 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
                         ngx_qjs_external_max_response_buffer_size(cx, external);
 
 #if (NGX_SSL)
-    if (u.default_port == 443) {
+    if (ngx_js_https(&u)) {
         http->ssl = ngx_qjs_external_ssl(cx, external);
         http->ssl_verify = ngx_qjs_external_ssl_verify(cx, external);
     }
@@ -337,131 +333,45 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
     NJS_CHB_MP_INIT(&http->chain, ctx->engine->pool);
     NJS_CHB_MP_INIT(&http->response.chain, ctx->engine->pool);
 
-    njs_chb_append(&http->chain, request.method.data, request.method.len);
-    njs_chb_append_literal(&http->chain, " ");
+    resolve_host = NULL;
+    http->connect_port = http->port;
 
-    if (u.uri.len == 0 || u.uri.data[0] != '/') {
-        njs_chb_append_literal(&http->chain, "/");
-    }
-
-    njs_chb_append(&http->chain, u.uri.data, u.uri.len);
-    njs_chb_append_literal(&http->chain, " HTTP/1.1" CRLF);
-
-    has_host = 0;
-    part = &request.headers.header_list.part;
-    h = part->elts;
-
-    for (i = 0; /* void */; i++) {
-
-        if (i >= part->nelts) {
-            if (part->next == NULL) {
-                break;
+    if (ngx_js_conf_proxy(http->conf)) {
+        if (ngx_js_conf_dynamic_proxy(http->conf)) {
+            if (http->conf->eval_proxy_url(http->pool, external, http->conf,
+                                           &http->proxy.url, &http->proxy.auth)
+                != NGX_OK)
+            {
+                JS_ThrowInternalError(cx, "failed to evaluate proxy URL");
+                return JS_EXCEPTION;
             }
-
-            part = part->next;
-            h = part->elts;
-            i = 0;
-        }
-
-        if (h[i].hash == 0) {
-            continue;
-        }
-
-        if (h[i].key.len == 4
-            && ngx_strncasecmp(h[i].key.data, (u_char *) "Host", 4) == 0)
-        {
-            has_host = 1;
-            njs_chb_append_literal(&http->chain, "Host: ");
-            njs_chb_append(&http->chain, h[i].value.data, h[i].value.len);
-            njs_chb_append_literal(&http->chain, CRLF);
-            break;
-        }
-    }
-
-    if (!has_host) {
-        njs_chb_append_literal(&http->chain, "Host: ");
-        njs_chb_append(&http->chain, u.host.data, u.host.len);
-
-        if (!u.no_port) {
-            njs_chb_sprintf(&http->chain, 32, ":%d", u.port);
-        }
-
-        njs_chb_append_literal(&http->chain, CRLF);
-    }
-
-    part = &request.headers.header_list.part;
-    h = part->elts;
-
-    for (i = 0; /* void */; i++) {
-
-        if (i >= part->nelts) {
-            if (part->next == NULL) {
-                break;
-            }
-
-            part = part->next;
-            h = part->elts;
-            i = 0;
-        }
-
-        if (h[i].hash == 0) {
-            continue;
-        }
-
-        if (h[i].key.len == 4
-            && ngx_strncasecmp(h[i].key.data, (u_char *) "Host", 4) == 0)
-        {
-            continue;
-        }
-
-        if (h[i].key.len == 14
-            && ngx_strncasecmp(h[i].key.data, (u_char *) "Content-Length", 14)
-            == 0)
-        {
-            continue;
-        }
-
-        if (h[i].key.len == 10
-            && ngx_strncasecmp(h[i].key.data, (u_char *) "Connection", 10)
-               == 0)
-        {
-            continue;
-        }
-
-        njs_chb_append(&http->chain, h[i].key.data, h[i].key.len);
-        njs_chb_append_literal(&http->chain, ": ");
-        njs_chb_append(&http->chain, h[i].value.data, h[i].value.len);
-        njs_chb_append_literal(&http->chain, CRLF);
-    }
-
-    if (!http->keepalive) {
-        njs_chb_append_literal(&http->chain, "Connection: close" CRLF);
-    }
-
-    if (request.body.len != 0) {
-        njs_chb_sprintf(&http->chain, 32, "Content-Length: %uz" CRLF CRLF,
-                        request.body.len);
-        njs_chb_append(&http->chain, request.body.data, request.body.len);
-
-    } else {
-        method = request.method;
-
-        if ((method.len == 4
-            && (ngx_strncasecmp(method.data, (u_char *) "POST", 4) == 0))
-            || (method.len == 3
-                && ngx_strncasecmp(method.data, (u_char *) "PUT", 3) == 0))
-        {
-            njs_chb_append_literal(&http->chain, "Content-Length: 0" CRLF CRLF);
 
         } else {
-            njs_chb_append_literal(&http->chain, CRLF);
+            http->proxy.url = http->conf->fetch_proxy_url;
+            http->proxy.auth = http->conf->fetch_proxy_auth_header;
+        }
+
+        if (ngx_js_http_proxy(http) && http->proxy.url->addrs == NULL) {
+            resolve_host = &http->proxy.url->host;
+            http->connect_port = http->proxy.url->port;
         }
     }
 
-    if (u.addrs == NULL) {
+    if (!ngx_js_http_proxy(http) && u.addrs == NULL) {
+        resolve_host = &u.host;
+    }
+
+    ngx_js_fetch_build_request(http, &request, &u.uri, &u,
+                               ngx_js_http_proxy(http) && !ngx_js_https(&u));
+
+    if (resolve_host != NULL) {
+        ngx_log_debug0(NGX_LOG_DEBUG_EVENT, http->log, 0,
+                       "js http fetch: resolving");
+
         rs = ngx_js_http_resolve(http, ngx_qjs_external_resolver(cx, external),
-                                 &u.host, u.port,
+                               resolve_host,
                                ngx_qjs_external_resolver_timeout(cx, external));
+
         if (rs == NULL) {
             JS_FreeValue(cx, promise);
             return JS_ThrowOutOfMemory(cx);
@@ -476,8 +386,14 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
     }
 
     http->naddrs = 1;
-    ngx_memcpy(&http->addr, &u.addrs[0], sizeof(ngx_addr_t));
     http->addrs = &http->addr;
+
+    if (ngx_js_http_proxy(http)) {
+        ngx_memcpy(&http->addr, &http->proxy.url->addrs[0], sizeof(ngx_addr_t));
+
+    } else {
+        ngx_memcpy(&http->addr, &u.addrs[0], sizeof(ngx_addr_t));
+    }
 
     ngx_js_http_connect(http);
 
@@ -662,7 +578,7 @@ ngx_qjs_request_ctor(JSContext *cx, ngx_js_request_t *request,
     ngx_memzero(u, sizeof(ngx_url_t));
 
     u->url = request->url;
-    u->default_port = 80;
+    u->default_port = NGX_JS_HTTP_DEFAULT_PORT;
     u->uri_part = 1;
     u->no_resolve = 1;
 
@@ -678,7 +594,7 @@ ngx_qjs_request_ctor(JSContext *cx, ngx_js_request_t *request,
     {
         u->url.len -= 8;
         u->url.data += 8;
-        u->default_port = 443;
+        u->default_port = NGX_JS_HTTPS_DEFAULT_PORT;
 #endif
 
     } else {
@@ -1212,6 +1128,12 @@ ngx_qjs_fetch_alloc(JSContext *cx, ngx_pool_t *pool, ngx_log_t *log,
     if (fetch == NULL) {
         return NULL;
     }
+
+    /*
+     * set by ngx_pcalloc():
+     *
+     * fetch->http.proxy.state = HTTP_STATE_DIRECT;
+     */
 
     http = &fetch->http;
 
