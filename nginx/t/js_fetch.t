@@ -60,6 +60,10 @@ http {
             js_content test.broken_response;
         }
 
+        location /broken_catch {
+            js_content test.broken_catch;
+        }
+
         location /body {
             js_content test.body;
         }
@@ -232,6 +236,38 @@ $t->write_file('test.js', <<EOF);
         ];
 
         return process_errors(r, tests);
+    }
+
+    function process_errors_catch(r, tests) {
+        var results = [];
+
+        var sync_catch = 'sync';
+
+        tests.forEach(args => {
+            ngx.fetch.apply(r, args)
+            .then(reply => {
+                r.return(400, '["unexpected then"]');
+            })
+            .catch(e => {
+                results.push(sync_catch);
+
+                if (results.length == tests.length) {
+                    r.return(200, JSON.stringify(results));
+                }
+            })
+        })
+
+        sync_catch = 'async';
+    }
+
+    function broken_catch(r) {
+        var tests = [
+            ['http://127.0.0.1:1/loc'],
+            ['http://127.0.0.1:80800/loc'],
+            [Symbol.toStringTag],
+        ];
+
+        return process_errors_catch(r, tests);
     }
 
     function chain(r) {
@@ -428,15 +464,15 @@ $t->write_file('test.js', <<EOF);
         r.return(c, `\${v.request_method}:\${bar}:\${body}`);
     }
 
-     export default {njs: test_njs, body, broken, broken_response, body_special,
-                     chain, chunked_ok, chunked_fail, header, header_iter,
-                     host_header, multi, loc, property, body_content_length,
-                     user_agent_header };
+     export default {njs: test_njs, body, broken, broken_response, broken_catch,
+                     body_special,chain, chunked_ok, chunked_fail, header,
+                     header_iter, host_header, multi, loc, property,
+                     body_content_length, user_agent_header };
 EOF
 
 $t->try_run('no njs.fetch');
 
-$t->plan(40);
+$t->plan(41);
 
 $t->run_daemon(\&http_daemon, port(8082));
 $t->waitforsocket('127.0.0.1:' . port(8082));
@@ -495,6 +531,8 @@ is(get_json('/multi'),
 like(http_get('/multi?throw=1'), qr/500/s, 'fetch destructor');
 like(http_get('/broken'), qr/200/s, 'fetch broken');
 like(http_get('/broken_response'), qr/200/s, 'fetch broken response');
+like(http_get('/broken_catch'), qr/\["async","async","async"]$/s,
+        'fetch broken catch');
 like(http_get('/chunked_ok'), qr/200/s, 'fetch chunked ok');
 like(http_get('/chunked_fail'), qr/200/s, 'fetch chunked fail');
 like(http_get('/chain'), qr/200 OK.*SUCCESS$/s, 'fetch chain');

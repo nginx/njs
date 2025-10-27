@@ -668,13 +668,13 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 fail:
 
-    njs_vm_exception_get(vm, njs_value_arg(&lvalue));
+    ngx_log_debug2(NGX_LOG_DEBUG_EVENT, http->log, 0,
+                   "js http done fetch:%p rc:%d", fetch, NJS_ERROR);
 
-    ngx_js_fetch_done(fetch, &lvalue, NJS_ERROR);
+    ngx_js_del_event(ngx_external_ctx(vm,  njs_vm_external_ptr(vm)),
+                     fetch->event);
 
-    njs_value_assign(retval, njs_value_arg(&fetch->promise));
-
-    return NJS_OK;
+    return ngx_js_fetch_promissified_result(vm, NULL, NJS_ERROR, retval);
 }
 
 
