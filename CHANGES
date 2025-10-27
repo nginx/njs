@@ -1,3 +1,15 @@
+Changes with njs 0.9.4                                       28 Oct 2025
+
+    nginx modules:
+
+    *) Feature: added HTTP forward proxy support for ngx.fetch() API.
+
+    Core:
+
+    *) Bugfix: fixed r.subrequest() to a location with JS handler
+       for QuickJS. The bug became visible after
+       bellard/quickjs@42eb2795.
+
 Changes with njs 0.9.3                                       07 Oct 2025
 
     nginx modules:
