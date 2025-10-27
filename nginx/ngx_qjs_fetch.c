@@ -401,11 +401,14 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
 
 fail:
 
-    fetch->response_value = JS_GetException(cx);
+    ngx_log_debug2(NGX_LOG_DEBUG_EVENT, (&fetch->http)->log, 0,
+                   "js http done fetch:%p rc:%d", fetch, NGX_ERROR);
 
-    ngx_qjs_fetch_done(fetch, fetch->response_value, NGX_ERROR);
+    ngx_js_del_event(ngx_qjs_external_ctx(cx, external), fetch->event);
 
-    return promise;
+    JS_FreeValue(cx, promise);
+
+    return qjs_promise_result(cx, JS_EXCEPTION);
 }
 
 
