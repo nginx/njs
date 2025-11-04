@@ -68,7 +68,7 @@ function test(r) {
 export default {njs: test_njs, test};
 EOF
 
-$t->try_run('no qjs engine available')->plan(3);
+$t->try_run('no qjs engine available')->plan(2);
 
 ###############################################################################
 
@@ -82,14 +82,5 @@ like($njs_response, qr/HTTP\/1\.[01] 500|Internal Server Error/,
 my $pending_response = http_get('/pending_no_events');
 like($pending_response, qr/HTTP\/1\.[01] 500|Internal Server Error/,
     'pending promise with no waiting events causes error');
-
-$t->stop();
-
-# Check error log for specific error messages
-my $error_log = $t->read_file('error.log');
-
-# Check for waiting events error message from our ngx_qjs_await() improvements
-ok(index($error_log, 'js promise pending, no jobs, no waiting_events') > 0,
-   'waiting events error message logged');
 
 ###############################################################################

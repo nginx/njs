@@ -701,12 +701,6 @@ ngx_njs_await(ngx_js_ctx_t *ctx, njs_opaque_value_t *retval)
         } else if (state == NJS_PROMISE_REJECTED) {
             njs_vm_throw(vm, njs_promise_result(val));
 
-        } else if (state == NJS_PROMISE_PENDING &&
-                   njs_rbtree_is_empty(&ctx->waiting_events))
-        {
-            ngx_log_error(NGX_LOG_ERR, ctx->log, 0,
-                          "js promise pending, no jobs, no waiting_events");
-            return NGX_ERROR;
         }
     }
     return NGX_OK;
@@ -922,12 +916,6 @@ ngx_qjs_await(ngx_js_ctx_t *ctx, JSValue *obj)
             JSValue rejection = JS_PromiseResult(cx, *obj);
             JS_FreeValue(cx, *obj);
             *obj = JS_Throw(cx, rejection);
-        } else if (state == JS_PROMISE_PENDING &&
-                   njs_rbtree_is_empty(&ctx->waiting_events))
-        {
-            ngx_log_error(NGX_LOG_ERR, ctx->log, 0,
-                          "js promise pending, no jobs, no waiting_events");
-            return NGX_ERROR;
         }
     }
     return NGX_OK;

@@ -85,7 +85,7 @@ $t->write_file('test.js', <<'EOF');
 
 EOF
 
-$t->try_run('no njs available')->plan(5);
+$t->try_run('no njs available')->plan(4);
 
 ###############################################################################
 
@@ -106,10 +106,6 @@ $t->stop();
 
 # Check error log for the specific pending promise error message
 my $error_log = $t->read_file('error.log');
-
-# Now that we use ngx_log_error, the specific error message should appear in the log
-ok(index($error_log, 'js promise pending, no jobs, no waiting_events') > 0,
-   'pending promise error message logged');
 
 # Should have no error for promises with waiting events
 unlike($error_log, qr/js exception.*timeout resolved/,
