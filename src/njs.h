@@ -34,6 +34,7 @@ typedef struct njs_function_s         njs_function_t;
 typedef struct njs_vm_shared_s        njs_vm_shared_t;
 typedef struct njs_object_init_s      njs_object_init_t;
 typedef struct njs_object_prop_s      njs_object_prop_t;
+typedef struct njs_promise_data_s     njs_promise_data_t;
 typedef struct njs_object_prop_init_s njs_object_prop_init_t;
 typedef struct njs_object_type_init_s njs_object_type_init_t;
 typedef struct njs_external_s         njs_external_t;
@@ -135,6 +136,13 @@ typedef enum {
     NJS_SYMBOL_UNSCOPABLES,
     NJS_SYMBOL_KNOWN_MAX,
 } njs_wellknown_symbol_t;
+
+
+typedef enum {
+    NJS_PROMISE_PENDING = 0,
+    NJS_PROMISE_FULFILL,
+    NJS_PROMISE_REJECTED
+} njs_promise_type_t;
 
 
 typedef enum {
@@ -505,6 +513,9 @@ NJS_EXPORT njs_int_t njs_value_is_array(const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_value_is_function(const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_value_is_buffer(const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_value_is_data_view(const njs_value_t *value);
+NJS_EXPORT njs_int_t njs_value_is_promise(const njs_value_t *value);
+NJS_EXPORT njs_promise_type_t njs_promise_state(const njs_value_t *value);
+NJS_EXPORT njs_value_t *njs_promise_result(const njs_value_t *value);
 
 NJS_EXPORT njs_int_t njs_vm_object_alloc(njs_vm_t *vm, njs_value_t *retval,
     ...);
