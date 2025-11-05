@@ -827,10 +827,18 @@ static void
 ngx_engine_njs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
     ngx_js_loc_conf_t *conf)
 {
+    njs_int_t           ret;
     ngx_js_event_t     *event;
     njs_rbtree_node_t  *node;
 
     if (ctx != NULL) {
+        ret = njs_vm_call_exit_hook(e->u.njs.vm);
+        if (ret != NJS_OK) {
+            ngx_js_log_exception(e->u.njs.vm, ctx->log, "exit hook exception");
+        }
+
+        (void) ngx_njs_execute_pending_jobs(e->u.njs.vm, ctx->log);
+
         node = njs_rbtree_min(&ctx->waiting_events);
 
         while (njs_rbtree_is_there_successor(&ctx->waiting_events, node)) {
@@ -1197,6 +1205,8 @@ ngx_engine_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
         if (JS_IsException(ret)) {
             ngx_qjs_log_exception(e, ctx->log, "exit hook exception");
         }
+
+        (void) ngx_qjs_execute_pending_jobs(cx, ctx->log);
 
         node = njs_rbtree_min(&ctx->waiting_events);
 
