@@ -191,13 +191,20 @@ njs_vm_ctor_push(njs_vm_t *vm)
 }
 
 
+njs_int_t
+njs_vm_call_exit_hook(njs_vm_t *vm)
+{
+    if (vm->hooks[NJS_HOOK_EXIT] != NULL) {
+        return njs_vm_call(vm, vm->hooks[NJS_HOOK_EXIT], NULL, 0);
+    }
+
+    return NJS_OK;
+}
+
+
 void
 njs_vm_destroy(njs_vm_t *vm)
 {
-    if (vm->hooks[NJS_HOOK_EXIT] != NULL) {
-        (void) njs_vm_call(vm, vm->hooks[NJS_HOOK_EXIT], NULL, 0);
-    }
-
     njs_mp_destroy(vm->mem_pool);
 }
 

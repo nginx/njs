@@ -1366,6 +1366,17 @@ njs_engine_njs_init(njs_engine_t *engine, njs_opts_t *opts)
 static njs_int_t
 njs_engine_njs_destroy(njs_engine_t *engine)
 {
+    njs_int_t  ret;
+
+    (void) njs_vm_call_exit_hook(engine->u.njs.vm);
+
+    for ( ;; ) {
+        ret = njs_vm_execute_pending_job(engine->u.njs.vm);
+        if (ret == NJS_OK) {
+            break;
+        }
+    }
+
     njs_vm_destroy(engine->u.njs.vm);
     njs_mp_destroy(engine->pool);
 
@@ -2697,13 +2708,22 @@ njs_engine_qjs_destroy(njs_engine_t *engine)
 {
     uint32_t                i;
     njs_ev_t                *ev;
+    njs_int_t               ret;
+    JSContext               *cx;
     njs_queue_t             *events;
     njs_console_t           *console;
     njs_262agent_t          *agent;
     njs_queue_link_t        *link;
     njs_rejected_promise_t  *rejected_promise;
 
-    qjs_call_exit_hook(engine->u.qjs.ctx);
+    (void) qjs_call_exit_hook(engine->u.qjs.ctx);
+
+    for ( ;; ) {
+        ret = JS_ExecutePendingJob(JS_GetRuntime(engine->u.qjs.ctx), &cx);
+        if (ret == 0) {
+            break;
+        }
+    }
 
     console = JS_GetRuntimeOpaque(engine->u.qjs.rt);
 
