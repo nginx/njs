@@ -15108,6 +15108,83 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Object.prototype.hasOwnProperty('hasOwnProperty')"),
       njs_str("true") },
 
+    { njs_str("var o = {a:1}; Object.hasOwn(o, 'a')"),
+      njs_str("true") },
+
+    { njs_str("var o = Object.create({a:2}); Object.hasOwn(o, 'a')"),
+      njs_str("false") },
+
+    { njs_str("var o = {a:1}; Object.hasOwn(o, 'b')"),
+      njs_str("false") },
+
+    { njs_str("var o = Object.create(null); o.a = 1; Object.hasOwn(o, 'a')"),
+      njs_str("true") },
+
+    { njs_str("var o = Object.create(null); Object.hasOwn(o, 'hasOwnProperty')"),
+      njs_str("false") },
+
+    { njs_str("var o = {hasOwnProperty: 1}; Object.hasOwn(o, 'hasOwnProperty')"),
+      njs_str("true") },
+
+    { njs_str("var o = {a:1}; o.hasOwnProperty = function(){return false}; "
+              "Object.hasOwn(o, 'a')"),
+      njs_str("true") },
+
+    { njs_str("Object.hasOwn(null, 'a')"),
+      njs_str("TypeError: cannot convert null argument to object") },
+
+    { njs_str("Object.hasOwn(undefined, 'a')"),
+      njs_str("TypeError: cannot convert undefined argument to object") },
+
+    { njs_str("Object.hasOwn(1, 'toString')"),
+      njs_str("true") },
+
+    { njs_str("Object.hasOwn('abc', '0')"),
+      njs_str("true") },
+
+    { njs_str("Object.hasOwn('abc', '3')"),
+      njs_str("false") },
+
+    { njs_str("Object.hasOwn('abc', 'length')"),
+      njs_str("true") },
+
+    { njs_str("Object.hasOwn([1,2], '0')"),
+      njs_str("true") },
+
+    { njs_str("Object.hasOwn([,2], '0')"),
+      njs_str("false") },
+
+    { njs_str("Object.hasOwn([,2], '1')"),
+      njs_str("true") },
+
+    { njs_str("Object.hasOwn([], 'length')"),
+      njs_str("true") },
+
+    { njs_str("var s = Symbol('test'); var o = {}; o[s] = 1; Object.hasOwn(o, s)"),
+      njs_str("true") },
+
+    { njs_str("var s1 = Symbol('test'); var s2 = Symbol('test'); "
+              "var o = {}; o[s1] = 1; Object.hasOwn(o, s2)"),
+      njs_str("false") },
+
+    { njs_str("Object.hasOwn({}, Symbol.iterator)"),
+      njs_str("false") },
+
+    { njs_str("Object.hasOwn()"),
+      njs_str("TypeError: cannot convert ") },
+
+    { njs_str("Object.hasOwn({})"),
+      njs_str("false") },
+
+    { njs_str("var o = {}; Object.hasOwn(o)"),
+      njs_str("false") },
+
+    { njs_str("Object.hasOwn.length"),
+      njs_str("2") },
+
+    { njs_str("Object.hasOwn.name"),
+      njs_str("hasOwn") },
+
     { njs_str("var o = {};"
                  "Object.defineProperty(o, 'a', {get:undefined, set:undefined}).a"),
       njs_str("undefined") },
