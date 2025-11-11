@@ -186,7 +186,8 @@ njs_value_to_key2(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value,
 
         } else {
             if (convert) {
-                ret = njs_value_to_primitive(vm, &primitive, value, 1);
+                ret = njs_value_to_primitive(vm, &primitive, value,
+                                             NJS_HINT_STRING);
 
             } else {
                 ret = njs_object_to_string(vm, value, &primitive);

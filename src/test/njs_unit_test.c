@@ -13727,6 +13727,36 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Symbol.prototype.toString()"),
       njs_str("TypeError: unexpected value type:object") },
 
+    { njs_str("Symbol.prototype[Symbol.toPrimitive].length"),
+      njs_str("1") },
+
+    { njs_str("Symbol.prototype[Symbol.toPrimitive].name"),
+      njs_str("[Symbol.toPrimitive]") },
+
+    { njs_str("Symbol.prototype[Symbol.toPrimitive].call(undefined)"),
+      njs_str("TypeError: unexpected value type") },
+
+    { njs_str("Symbol.prototype[Symbol.toPrimitive].call(null)"),
+      njs_str("TypeError: unexpected value type") },
+
+    { njs_str("Symbol.prototype[Symbol.toPrimitive].call(86)"),
+      njs_str("TypeError: unexpected value type") },
+
+    { njs_str("Symbol.prototype[Symbol.toPrimitive].call('')"),
+      njs_str("TypeError: unexpected value type") },
+
+    { njs_str("Symbol.prototype[Symbol.toPrimitive].call(true)"),
+      njs_str("TypeError: unexpected value type") },
+
+    { njs_str("Symbol.prototype[Symbol.toPrimitive].call({})"),
+      njs_str("TypeError: unexpected value type") },
+
+    { njs_str("Object(Symbol.toPrimitive)[Symbol.toPrimitive]() === Symbol.toPrimitive"),
+      njs_str("true") },
+
+    { njs_str("Symbol.toPrimitive[Symbol.toPrimitive]() === Symbol.toPrimitive"),
+      njs_str("true") },
+
     { njs_str("new Symbol()"),
       njs_str("TypeError: Symbol is not a constructor") },
 
@@ -16580,13 +16610,13 @@ static njs_unit_test_t  njs_test[] =
       njs_str("-62198755200000") },
 
     { njs_str("var d = new Date(); d == Date.parse(d.toISOString())"),
-      njs_str("true") },
+      njs_str("false") },
 
     { njs_str("var s = Date(); s === Date(Date.parse(s))"),
       njs_str("true") },
 
     { njs_str("var n = Date.now(); n == new Date(n)"),
-      njs_str("true") },
+      njs_str("false") },
 
     { njs_str("var d = new Date(2011,0); d.getFullYear()"),
       njs_str("2011") },
@@ -16881,6 +16911,115 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("Date.constructor === Function"),
       njs_str("true") },
+
+    { njs_str("var y = Object.defineProperty({}, Symbol.toPrimitive, {"
+              "    get: function() {"
+              "        throw new Error('expected');"
+              "    }"
+              "});"
+              "new Date(y);"),
+      njs_str("Error: expected") },
+
+    { njs_str("var y = {};"
+              "y[Symbol.toPrimitive] = function() {"
+              "     throw new Error('expected');"
+              "};"
+              "new Date(y);"),
+      njs_str("Error: expected") },
+
+    { njs_str("var y = {};"
+              "var callCount = 0;"
+              "var thisVal, args;"
+              "y[Symbol.toPrimitive] = function() {"
+              "    callCount += 1;"
+              "    thisVal = this;"
+              "    args = arguments;"
+              "};"
+              "new Date(y);"
+              "callCount === 1 && thisVal === y && args.length === 1 && args[0] === 'default'"),
+      njs_str("true") },
+
+    { njs_str("var y = {};"
+              "var retVal;"
+              "y[Symbol.toPrimitive] = function() {"
+              "    return retVal;"
+              "};"
+              "retVal = {};"
+              "new Date(y);"),
+      njs_str("TypeError") },
+
+    { njs_str("var badToPrimitive = {};"
+              "badToPrimitive[Symbol.toPrimitive] = function() {"
+              "    throw new Error('expected');"
+              "};"
+              "new Date(badToPrimitive);"),
+      njs_str("Error: expected") },
+
+    { njs_str("var spyToPrimitive = {};"
+              "var callCount = 0;"
+              "var thisValue, args;"
+              "spyToPrimitive[Symbol.toPrimitive] = function() {"
+              "    thisValue = this;"
+              "    args = arguments;"
+              "    callCount += 1;"
+              "};"
+              "new Date(spyToPrimitive);"
+              "callCount === 1 && thisValue === spyToPrimitive && args.length === 1 && args[0] === 'default';"),
+      njs_str("true") },
+
+    { njs_str("var poisonedObject = {};"
+              "var poisonedDate = new Date();"
+              "Object.defineProperty(poisonedObject, Symbol.toPrimitive, {"
+              "    get: function() {"
+              "        throw new Error('expected');"
+              "    }"
+              "});"
+              "Object.defineProperty(poisonedDate, Symbol.toPrimitive, {"
+              "    get: function() {"
+              "        throw new Error('unexpected');"
+              "    }"
+              "});"
+              "Date(poisonedObject);"
+              "new Date(poisonedDate);"
+              "new Date(poisonedObject);"),
+      njs_str("Error: expected") },
+
+    { njs_str("var faultyToPrimitive = {};"
+              "var returnValue;"
+              "faultyToPrimitive[Symbol.toPrimitive] = function() {"
+              "    return returnValue;"
+              "};"
+              "returnValue = {};"
+              "new Date(faultyToPrimitive);"),
+      njs_str("TypeError") },
+
+    { njs_str("var stringToPrimitive = {};"
+              "stringToPrimitive[Symbol.toPrimitive] = function() {"
+              "    return '2016-06-05T18:40:00.000Z';"
+              "};"
+              "new Date(stringToPrimitive).getTime() === 1465152000000"),
+      njs_str("true") },
+
+    { njs_str("Date.prototype[Symbol.toPrimitive].length === 1"),
+      njs_str("true") },
+
+    { njs_str("Date.prototype[Symbol.toPrimitive].name"),
+      njs_str("[Symbol.toPrimitive]") },
+
+    { njs_str("Date.prototype[Symbol.toPrimitive].call(undefined, 'string')"),
+      njs_str("TypeError: cannot convert") },
+
+    { njs_str("Date.prototype[Symbol.toPrimitive].call(null, 'string')"),
+      njs_str("TypeError: cannot conver") },
+
+    { njs_str("Date.prototype[Symbol.toPrimitive].call(86, 'string')"),
+      njs_str("TypeError: cannot convert") },
+
+    { njs_str("Date.prototype[Symbol.toPrimitive].call('', 'string')"),
+      njs_str("TypeError: cannot convert") },
+
+    { njs_str("Date.prototype[Symbol.toPrimitive].call(true, 'string')"),
+      njs_str("TypeError: cannot convert") },
 
     /* eval(). */
 

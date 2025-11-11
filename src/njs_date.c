@@ -411,7 +411,8 @@ njs_date_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     } else if (nargs == 2) {
         if (njs_is_object(&args[1])) {
             if (!njs_is_date(&args[1])) {
-                ret = njs_value_to_primitive(vm, &args[1], &args[1], 0);
+                ret = njs_value_to_primitive(vm, &args[1], &args[1],
+                                             NJS_HINT_NONE);
                 if (njs_slow_path(ret != NJS_OK)) {
                     return ret;
                 }
@@ -1382,6 +1383,65 @@ njs_date_prototype_set_time(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
+njs_date_prototype_to_primitive(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
+{
+    njs_int_t   ret;
+    njs_uint_t  hint;
+
+    if (njs_slow_path(!njs_is_date(&args[0]))) {
+        njs_type_error(vm, "cannot convert %s to date",
+                       njs_type_string(args[0].type));
+
+        return NJS_ERROR;
+    }
+
+    if (njs_slow_path(nargs <= 1)) {
+        goto error;
+    }
+
+    if (njs_slow_path(!njs_is_string(&args[1]))) {
+        ret = njs_value_to_string(vm, &args[1], &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+    }
+
+    ret = njs_atom_atomize_key(vm, &args[1]);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    switch (args[1].atom_id) {
+    case NJS_ATOM_STRING_number:
+        hint = NJS_HINT_NUMBER;
+        break;
+
+    case NJS_ATOM_STRING_string:
+    case NJS_ATOM_STRING_default:
+        hint = NJS_HINT_STRING;
+        break;
+
+    default:
+error:
+        njs_type_error(vm, "invalid hint");
+        return NJS_ERROR;
+
+    }
+
+    ret = njs_value_to_primitive(vm, &args[0], &args[0],
+                                 hint | NJS_HINT_FORCE_ORDINARY);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    njs_value_assign(retval, &args[0]);
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
 njs_date_prototype_set_fields(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t magic, njs_value_t *retval)
 {
@@ -1643,6 +1703,12 @@ static const njs_object_prop_init_t  njs_date_prototype_properties[] =
     NJS_DECLARE_PROP_NATIVE(STRING_setUTCFullYear,
                             njs_date_prototype_set_fields, 3,
                             njs_date_magic2(NJS_DATE_YR, 3, 0)),
+
+    /* NJS_DECLARE_PROP_NATIVE, but not writable */
+    NJS_DECLARE_PROP_VALUE(SYMBOL_toPrimitive,
+                           njs_native_function2(njs_date_prototype_to_primitive,
+                                                1, 0),
+                           NJS_OBJECT_PROP_VALUE_C),
 };
 
 

@@ -15,7 +15,7 @@ njs_value_to_number(njs_vm_t *vm, njs_value_t *value, double *dst)
     njs_value_t  primitive;
 
     if (njs_slow_path(!njs_is_primitive(value))) {
-        ret = njs_value_to_primitive(vm, &primitive, value, 0);
+        ret = njs_value_to_primitive(vm, &primitive, value, NJS_HINT_NUMBER);
         if (njs_slow_path(ret != NJS_OK)) {
             return NJS_ERROR;
         }
@@ -172,7 +172,8 @@ njs_value_to_chain(njs_vm_t *vm, njs_chb_t *chain, njs_value_t *value)
             value = njs_object_value(value);
 
         } else {
-            ret = njs_value_to_primitive(vm, &primitive, value, 1);
+            ret = njs_value_to_primitive(vm, &primitive, value,
+                                         NJS_HINT_STRING);
             if (njs_slow_path(ret != NJS_OK)) {
                 return ret;
             }

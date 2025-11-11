@@ -310,6 +310,12 @@ static const njs_object_prop_init_t  njs_symbol_prototype_properties[] =
     NJS_DECLARE_PROP_NATIVE(STRING_valueOf, njs_symbol_prototype_value_of,
                             0, 0),
 
+    /* NJS_DECLARE_PROP_NATIVE, but not writable */
+    NJS_DECLARE_PROP_VALUE(SYMBOL_toPrimitive,
+                           njs_native_function2(njs_symbol_prototype_value_of,
+                                                1, 0),
+                           NJS_OBJECT_PROP_VALUE_C),
+
     NJS_DECLARE_PROP_NATIVE(STRING_toString,
                             njs_symbol_prototype_to_string, 0, 0),
 

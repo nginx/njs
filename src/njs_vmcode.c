@@ -88,7 +88,6 @@ njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc, njs_value_t *rval,
     int32_t                      i32;
     uint32_t                     u32;
     njs_str_t                    string;
-    njs_uint_t                   hint;
     njs_bool_t                   valid, lambda_call;
     njs_value_t                  *retval, *value1, *value2;
     njs_value_t                  *src, *s1, *s2, dst;
@@ -461,7 +460,8 @@ NEXT_LBL;
         njs_vmcode_operand(vm, vmcode->operand2, value1);
 
         if (njs_slow_path(!njs_is_primitive(value1))) {
-            ret = njs_value_to_primitive(vm, &primitive1, value1, 0);
+            ret = njs_value_to_primitive(vm, &primitive1, value1,
+                                         NJS_HINT_NUMBER);
             if (ret != NJS_OK) {
                 goto error;
             }
@@ -470,7 +470,8 @@ NEXT_LBL;
         }
 
         if (njs_slow_path(!njs_is_primitive(value2))) {
-            ret = njs_value_to_primitive(vm, &primitive2, value2, 0);
+            ret = njs_value_to_primitive(vm, &primitive2, value2,
+                                         NJS_HINT_NUMBER);
             if (ret != NJS_OK) {
                 goto error;
             }
@@ -500,7 +501,8 @@ NEXT_LBL;
         njs_vmcode_operand(vm, vmcode->operand2, value1);
 
         if (njs_slow_path(!njs_is_primitive(value1))) {
-            ret = njs_value_to_primitive(vm, &primitive1, value1, 0);
+            ret = njs_value_to_primitive(vm, &primitive1, value1,
+                                         NJS_HINT_NUMBER);
             if (ret != NJS_OK) {
                 goto error;
             }
@@ -509,7 +511,8 @@ NEXT_LBL;
         }
 
         if (njs_slow_path(!njs_is_primitive(value2))) {
-            ret = njs_value_to_primitive(vm, &primitive2, value2, 0);
+            ret = njs_value_to_primitive(vm, &primitive2, value2,
+                                         NJS_HINT_NUMBER);
             if (ret != NJS_OK) {
                 goto error;
             }
@@ -539,7 +542,8 @@ NEXT_LBL;
         njs_vmcode_operand(vm, vmcode->operand2, value1);
 
         if (njs_slow_path(!njs_is_primitive(value1))) {
-            ret = njs_value_to_primitive(vm, &primitive1, value1, 0);
+            ret = njs_value_to_primitive(vm, &primitive1, value1,
+                                         NJS_HINT_NUMBER);
             if (ret != NJS_OK) {
                 goto error;
             }
@@ -548,7 +552,8 @@ NEXT_LBL;
         }
 
         if (njs_slow_path(!njs_is_primitive(value2))) {
-            ret = njs_value_to_primitive(vm, &primitive2, value2, 0);
+            ret = njs_value_to_primitive(vm, &primitive2, value2,
+                                         NJS_HINT_NUMBER);
             if (ret != NJS_OK) {
                 goto error;
             }
@@ -578,7 +583,8 @@ NEXT_LBL;
         njs_vmcode_operand(vm, vmcode->operand2, value1);
 
         if (njs_slow_path(!njs_is_primitive(value1))) {
-            ret = njs_value_to_primitive(vm, &primitive1, value1, 0);
+            ret = njs_value_to_primitive(vm, &primitive1, value1,
+                                         NJS_HINT_NUMBER);
             if (ret != NJS_OK) {
                 goto error;
             }
@@ -587,7 +593,8 @@ NEXT_LBL;
         }
 
         if (njs_slow_path(!njs_is_primitive(value2))) {
-            ret = njs_value_to_primitive(vm, &primitive2, value2, 0);
+            ret = njs_value_to_primitive(vm, &primitive2, value2,
+                                         NJS_HINT_NUMBER);
             if (ret != NJS_OK) {
                 goto error;
             }
@@ -617,8 +624,8 @@ NEXT_LBL;
         njs_vmcode_operand(vm, vmcode->operand2, value1);
 
         if (njs_slow_path(!njs_is_primitive(value1))) {
-            hint = njs_is_date(value1);
-            ret = njs_value_to_primitive(vm, &primitive1, value1, hint);
+            ret = njs_value_to_primitive(vm, &primitive1, value1,
+                                         NJS_HINT_NONE);
             if (ret != NJS_OK) {
                 goto error;
             }
@@ -627,8 +634,8 @@ NEXT_LBL;
         }
 
         if (njs_slow_path(!njs_is_primitive(value2))) {
-            hint =  njs_is_date(value2);
-            ret = njs_value_to_primitive(vm, &primitive2, value2, hint);
+            ret = njs_value_to_primitive(vm, &primitive2, value2,
+                                         NJS_HINT_NONE);
             if (ret != NJS_OK) {
                 goto error;
             }
@@ -2478,7 +2485,7 @@ again:
 
     /* "hv" is an object and "lv" is either a string or a symbol or a numeric. */
 
-    ret = njs_value_to_primitive(vm, &primitive, hv, 0);
+    ret = njs_value_to_primitive(vm, &primitive, hv, NJS_HINT_NONE);
     if (ret != NJS_OK) {
         return ret;
     }
