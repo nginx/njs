@@ -30,24 +30,25 @@ const njs_value_t  njs_value_zero =         njs_value(NJS_NUMBER, 0, 0.0);
 const njs_value_t  njs_value_nan =          njs_value(NJS_NUMBER, 0, NAN);
 const njs_value_t  njs_value_invalid =      njs_value(NJS_INVALID, 0, 0.0);
 
-/*
- * A hint value is 0 for numbers and 1 for strings.  The value chooses
- * method calls order specified by ECMAScript 5.1: "valueOf", "toString"
- * for numbers and "toString", "valueOf" for strings.
- */
 
 njs_int_t
 njs_value_to_primitive(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value,
     njs_uint_t hint)
 {
     njs_int_t            ret;
-    njs_uint_t           tries;
-    njs_value_t          method, retval;
+    njs_uint_t           tries, force_ordinary;
+    njs_value_t          method, retval, arguments[2];
     njs_flathsh_query_t  fhq;
 
     static const uint32_t atoms[] = {
         NJS_ATOM_STRING_valueOf,
         NJS_ATOM_STRING_toString,
+    };
+
+    static const njs_uint_t atom_by_hint[] = {
+        NJS_ATOM_STRING_number,
+        NJS_ATOM_STRING_string,
+        NJS_ATOM_STRING_default,
     };
 
     if (njs_is_primitive(value)) {
@@ -58,16 +59,57 @@ njs_value_to_primitive(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value,
     tries = 0;
     fhq.proto = &njs_object_hash_proto;
 
+    if (!njs_is_object(value)) {
+        goto error;
+    }
+
+    force_ordinary = hint & NJS_HINT_FORCE_ORDINARY;
+    hint &= ~NJS_HINT_FORCE_ORDINARY;
+
+    if (force_ordinary) {
+        goto ordinary;
+    }
+
+    fhq.key_hash = NJS_ATOM_SYMBOL_toPrimitive;
+
+    ret = njs_object_property(vm, njs_object(value), &fhq, &method);
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        return ret;
+    }
+
+    if (njs_is_function(&method)) {
+        arguments[0] = *value;
+
+        njs_atom_to_value(vm, &arguments[1], atom_by_hint[hint]);
+
+        ret = njs_function_apply(vm, njs_function(&method), arguments, 2,
+                                 &retval);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
+
+        if (njs_is_primitive(&retval)) {
+            goto done;
+        }
+
+        goto error;
+    }
+
+ordinary:
+
+    if (hint != NJS_HINT_STRING) {
+        hint = NJS_HINT_NUMBER;
+    }
+
     for ( ;; ) {
         ret = NJS_ERROR;
 
-        if (njs_is_object(value) && tries < 2) {
+        if (tries < 2) {
             hint ^= tries++;
 
             fhq.key_hash = atoms[hint];
 
             ret = njs_object_property(vm, njs_object(value), &fhq, &method);
-
             if (njs_slow_path(ret == NJS_ERROR)) {
                 return ret;
             }
@@ -75,24 +117,27 @@ njs_value_to_primitive(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value,
             if (njs_is_function(&method)) {
                 ret = njs_function_apply(vm, njs_function(&method), value, 1,
                                          &retval);
-
                 if (njs_slow_path(ret != NJS_OK)) {
                     return ret;
                 }
 
                 if (njs_is_primitive(&retval)) {
-                    break;
+                    goto done;
                 }
             }
 
             /* Try the second method. */
             continue;
-         }
+        }
+
+error:
 
         njs_type_error(vm, "Cannot convert object to primitive value");
 
-        return ret;
+        return NJS_ERROR;
     }
+
+done:
 
     *dst = retval;
 

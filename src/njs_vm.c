@@ -1560,7 +1560,8 @@ njs_value_to_string(njs_vm_t *vm, njs_value_t *dst, njs_value_t *value)
             value = njs_object_value(value);
 
         } else {
-            ret = njs_value_to_primitive(vm, &primitive, value, 1);
+            ret = njs_value_to_primitive(vm, &primitive, value,
+                                         NJS_HINT_STRING);
             if (njs_slow_path(ret != NJS_OK)) {
                 return ret;
             }

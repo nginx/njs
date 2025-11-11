@@ -940,6 +940,11 @@ njs_set_object_value(njs_value_t *value, njs_object_value_t *object_value)
 #define njs_set_invalid(value)                                                \
     (value)->type = NJS_INVALID
 
+#define NJS_HINT_NUMBER  0
+#define NJS_HINT_STRING  1
+#define NJS_HINT_NONE    2
+#define NJS_HINT_FORCE_ORDINARY (1 << 3)
+
 njs_int_t njs_value_to_primitive(njs_vm_t *vm, njs_value_t *dst,
     njs_value_t *value, njs_uint_t hint);
 njs_array_t *njs_value_enumerate(njs_vm_t *vm, njs_value_t *value,
