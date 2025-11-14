@@ -5735,6 +5735,7 @@ njs_parser_iteration_statement_for_map(njs_parser_t *parser,
         goto expression_after;
 
     case NJS_TOKEN_AWAIT:
+    case NJS_TOKEN_FUNCTION:
         njs_parser_next(parser, njs_parser_expression);
 
         goto expression_after;
