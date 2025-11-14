@@ -1407,9 +1407,11 @@ njs_date_prototype_to_primitive(njs_vm_t *vm, njs_value_t *args,
         }
     }
 
-    ret = njs_atom_atomize_key(vm, &args[1]);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
+    if (args[1].atom_id == NJS_ATOM_STRING_unknown) {
+        ret = njs_atom_atomize_key(vm, &args[1]);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
     }
 
     switch (args[1].atom_id) {
