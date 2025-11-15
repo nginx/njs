@@ -7825,6 +7825,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'\\ud83d\\udc4d'.length"),
       njs_str("1") },
 
+    { njs_str("'\\u00A0aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'.length"),
+      njs_str("35") },
+
     { njs_str("'\\ud83d abc \\udc4d'"),
       njs_str("� abc �") },
 
