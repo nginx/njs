@@ -147,6 +147,7 @@ njs_string_new(njs_vm_t *vm, njs_value_t *value, const u_char *start,
 }
 
 
+/* Underlying string data is zero-terminated. */
 u_char *
 njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint64_t size,
     uint64_t length)
@@ -172,7 +173,7 @@ njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint64_t size,
         total = size;
     }
 
-    string = njs_mp_alloc(vm->mem_pool, sizeof(njs_string_t) + total);
+    string = njs_mp_alloc(vm->mem_pool, sizeof(njs_string_t) + total + 1);
 
     if (njs_fast_path(string != NULL)) {
         value->string.data = string;
@@ -180,6 +181,8 @@ njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint64_t size,
         string->start = (u_char *) string + sizeof(njs_string_t);
         string->size = size;
         string->length = length;
+
+        string->start[size] = '\0';
 
         if (map_offset != 0) {
             map = (uint32_t *) (string->start + map_offset);

@@ -199,7 +199,7 @@ njs_scope_value_index(njs_vm_t *vm, const njs_value_t *src, njs_uint_t runtime,
                        + njs_string_map_size(length);
             }
 
-            value_size += sizeof(njs_string_t) + size;
+            value_size += sizeof(njs_string_t) + size + 1;
         }
 
         value_size += sizeof(njs_index_t);
@@ -220,6 +220,8 @@ njs_scope_value_index(njs_vm_t *vm, const njs_value_t *src, njs_uint_t runtime,
             string->start = (u_char *) string + sizeof(njs_string_t);
             string->length = src->string.data->length;
             string->size = src->string.data->size;
+
+            string->start[size] = '\0';
 
             memcpy(string->start, start, size);
         }
