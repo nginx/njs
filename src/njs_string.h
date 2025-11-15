@@ -37,7 +37,7 @@
 #define njs_string_map_offset(size)  njs_align_size((size), sizeof(uint32_t))
 
 #define njs_string_map_start(p)                                               \
-    ((uint32_t *) njs_align_ptr((p), sizeof(uint32_t)))
+    ((uint32_t *) njs_align_ptr((u_char *) (p) + 1, sizeof(uint32_t)))
 
 #define njs_string_map_size(length)                                           \
     (((length - 1) / NJS_STRING_MAP_STRIDE) * sizeof(uint32_t))

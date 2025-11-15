@@ -517,6 +517,7 @@ typedef struct {
         njs_assert((value)->string.data != NULL);                             \
         (str)->length = (value)->string.data->size;                           \
         (str)->start = (u_char *) (value)->string.data->start;                \
+        njs_assert((str)->start[(str)->length] == '\0');                      \
     } while (0)
 
 

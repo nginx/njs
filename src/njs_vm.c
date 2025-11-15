@@ -1520,31 +1520,12 @@ njs_vm_value_to_string(njs_vm_t *vm, njs_str_t *dst, njs_value_t *src)
 }
 
 
-/*
- * If string value is null-terminated the corresponding C string
- * is returned as is, otherwise the new copy is allocated with
- * the terminating zero byte.
- */
 const char *
 njs_vm_value_to_c_string(njs_vm_t *vm, njs_value_t *value)
 {
-    u_char  *p, *data;
-    size_t  size;
-
     njs_assert(njs_is_string(value));
 
-    size = value->string.data->size;
-
-    data = njs_mp_alloc(vm->mem_pool, size + njs_length("\0"));
-    if (njs_slow_path(data == NULL)) {
-        njs_memory_error(vm);
-        return NULL;
-    }
-
-    p = njs_cpymem(data, value->string.data->start, size);
-    *p++ = '\0';
-
-    return (const char *) data;
+    return (const char *) value->string.data->start;
 }
 
 
