@@ -209,24 +209,6 @@ njs_unsafe_cast_double_to_int64(double num)
 }
 
 
-#if (NJS_HAVE_DENORMALS_CONTROL)
-#include <xmmintrin.h>
-
-/*
- * 0x8000 Flush to zero
- * 0x0040 Denormals are zeros
- */
-
-#define NJS_MM_DENORMALS_MASK 0x8040
-
-#define njs_mm_denormals(on)                                                  \
-    _mm_setcsr((_mm_getcsr() & ~NJS_MM_DENORMALS_MASK) | (!(on) ? 0x8040: 0x0))
-#else
-
-#define njs_mm_denormals(on)
-#endif
-
-
 #ifndef NJS_MAX_ALIGNMENT
 
 #if (NJS_SOLARIS)

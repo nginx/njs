@@ -8,18 +8,28 @@
 #define _NJS_NUMBER_H_INCLUDED_
 
 
+typedef union {
+    double      d;
+    uint64_t    u64;
+} njs_diyfp_conv_t;
+
+
 #define NJS_MAX_LENGTH      (0x1fffffffffffffLL)
 #define NJS_INT64_DBL_MIN   (-9.223372036854776e+18) /* closest to INT64_MIN */
 #define NJS_INT64_DBL_MAX   (9.223372036854776e+18) /* closest to INT64_MAX */
+#define njs_uint64(h, l)            (((uint64_t) (h) << 32) + (l))
 
+#define NJS_DBL_SIGNIFICAND_SIZE    52
+#define NJS_DBL_EXPONENT_OFFSET     ((int64_t) 0x3ff)
+#define NJS_DBL_EXPONENT_BIAS       (NJS_DBL_EXPONENT_OFFSET                  \
+                                     + NJS_DBL_SIGNIFICAND_SIZE)
+
+#define NJS_DBL_SIGNIFICAND_MASK    njs_uint64(0x000FFFFF, 0xFFFFFFFF)
+#define NJS_DBL_HIDDEN_BIT          njs_uint64(0x00100000, 0x00000000)
+#define NJS_DBL_EXPONENT_MASK       njs_uint64(0x7FF00000, 0x00000000)
+#define NJS_DBL_SIGN_MASK           njs_uint64(0x80000000, 0x00000000)
 
 double njs_key_to_index(const njs_value_t *value);
-double njs_number_dec_parse(const u_char **start, const u_char *end,
-    njs_bool_t literal);
-double njs_number_oct_parse(const u_char **start, const u_char *end,
-    njs_bool_t literal);
-double njs_number_bin_parse(const u_char **start, const u_char *end,
-    njs_bool_t literal);
 double njs_number_hex_parse(const u_char **start, const u_char *end,
     njs_bool_t literal);
 njs_int_t njs_number_to_string(njs_vm_t *vm, njs_value_t *string,
@@ -187,7 +197,7 @@ njs_uint32_to_string(njs_vm_t *vm, njs_value_t *value, uint32_t u32)
         return NJS_ERROR;
     }
 
-    size = njs_sprintf(p, p + 10, "%uD", u32) - p;
+    size = njs_u32toa((char *) p, u32);
     value->string.data->length = size;
     value->string.data->size = size;
 
