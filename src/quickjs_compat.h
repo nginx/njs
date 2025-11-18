@@ -22,3 +22,7 @@
 #ifndef JS_BOOL
     #define JS_BOOL bool
 #endif
+
+#ifdef QUICKJS_NG
+    #define JS_IsError(cx, val) JS_IsError(val)
+#endif
