@@ -26,6 +26,10 @@ NJS_QUICKJS_INC=
 NJS_QUICKJS_DEFAULT_INCS="$ngx_addon_dir/../src $ngx_addon_dir/../build"
 NJS_HAVE_QUICKJS=
 
+# Alternative pkg-config binary can be supplied by setting the PKG_CONFIG
+# environment variable.
+: "${PKG_CONFIG:=pkg-config}"
+
 if [ $NJS_QUICKJS != NO ]; then
 
     ngx_feature="QuickJS library -lquickjs.lto"
@@ -70,6 +74,21 @@ if [ $NJS_QUICKJS != NO ]; then
 
         . auto/feature
     fi
+
+    if [ $ngx_found = no ]; then
+        ngx_feature="QuickJS-NG library via pkg-config"
+
+        flags="$("${PKG_CONFIG}" --cflags-only-I quickjs-ng)"
+        # Trim the -I prefix from includes.
+        pkg_config_includes="$(printf "%s\n" "$flags" | sed 's|-I||g')"
+        pkg_config_libs="$("${PKG_CONFIG}" --libs quickjs-ng)"
+
+        ngx_feature_path="$NJS_QUICKJS_DEFAULT_INCS ${pkg_config_includes}"
+        ngx_feature_libs="-lm -ldl -lpthread ${pkg_config_libs}"
+
+        . auto/feature
+    fi
+
 
     if [ $ngx_found = yes ]; then
 
