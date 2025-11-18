@@ -254,6 +254,10 @@ let fill_tsuite = {
     name: "buf.fill() tests",
     skip: () => (!has_buffer()),
     T: async (params) => {
+        if (params.detach_value) {
+            detach(params.value.buffer);
+        }
+
         let r = params.buf.fill(params.value, params.offset, params.end);
 
         if (r.toString() !== params.expected) {
@@ -274,6 +278,8 @@ let fill_tsuite = {
           exception: 'TypeError: "utf-128" encoding is not supported' },
         { buf: Buffer.from('abc'), value: 'ABCD', offset: 1, expected: 'aAB' },
         { buf: Buffer.from('abc'), value: Buffer.from('def'), expected: 'def' },
+        { buf: Buffer.from('abc'), value: Buffer.from('def'), detach_value: true,
+          exception: 'TypeError: detached buffer' },
         { buf: Buffer.from('def'),
           value: Buffer.from(new Uint8Array([0x60, 0x61, 0x62, 0x63]).buffer, 1),
           expected: 'abc' },

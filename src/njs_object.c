@@ -661,6 +661,11 @@ njs_object_enumerate_typed_array(njs_vm_t *vm, const njs_typed_array_t *array,
     njs_value_t  *item;
     njs_array_t  *entry;
 
+    if (njs_slow_path(njs_is_detached_buffer(array->buffer))) {
+        njs_type_error(vm, "detached buffer");
+        return NJS_ERROR;
+    }
+
     length = njs_typed_array_length(array);
 
     ret = njs_array_expand(vm, items, 0, length);

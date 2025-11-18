@@ -1790,7 +1790,12 @@ njs_dump_terminal(njs_json_stringify_t *stringify, njs_chb_t *chain,
 
         njs_chb_append_literal(chain, "[");
 
-        njs_typed_array_to_chain(stringify->vm, chain, array, NULL);
+        if (!njs_is_detached_buffer(array->buffer)) {
+            njs_typed_array_to_chain(stringify->vm, chain, array, NULL);
+
+        } else {
+            njs_chb_append_literal(chain, "<detached buffer>");
+        }
 
         njs_chb_append_literal(chain, "]");
 

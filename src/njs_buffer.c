@@ -568,21 +568,25 @@ njs_buffer_byte_length(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 {
     size_t                       size;
     njs_value_t                  *value;
+    njs_typed_array_t            *array;
     const njs_buffer_encoding_t  *encoding;
 
     value = njs_arg(args, nargs, 1);
 
     switch (value->type) {
     case NJS_TYPED_ARRAY:
-        njs_set_number(retval, njs_typed_array(value)->byte_length);
+    case NJS_DATA_VIEW:
+        array = njs_typed_array(value);
+        if (njs_slow_path(njs_is_detached_buffer(array->buffer))) {
+            njs_set_number(retval, 0);
+            return NJS_OK;
+        }
+
+        njs_set_number(retval, array->byte_length);
         return NJS_OK;
 
     case NJS_ARRAY_BUFFER:
         njs_set_number(retval, njs_array_buffer(value)->size);
-        return NJS_OK;
-
-    case NJS_DATA_VIEW:
-        njs_set_number(retval, njs_data_view(value)->byte_length);
         return NJS_OK;
 
     case NJS_STRING:
@@ -681,6 +685,11 @@ njs_buffer_array_range(njs_vm_t *vm, njs_typed_array_t *array,
 
     num_start = 0;
 
+    if (njs_slow_path(njs_is_detached_buffer(array->buffer))) {
+        njs_type_error(vm, "detached buffer");
+        return NJS_ERROR;
+    }
+
     if (njs_is_defined(start)) {
         ret = njs_value_to_index(vm, njs_value_arg(start), &num_start);
         if (njs_slow_path(ret != NJS_OK)) {
@@ -712,11 +721,6 @@ njs_buffer_array_range(njs_vm_t *vm, njs_typed_array_t *array,
     }
 
     buffer = njs_typed_array_buffer(array);
-    if (njs_slow_path(njs_is_detached_buffer(buffer))) {
-        njs_type_error(vm, "detached buffer");
-        return NJS_ERROR;
-    }
-
     *out_start = &buffer->u.u8[array->offset + num_start];
     *out_end = &buffer->u.u8[array->offset + num_end];
 
@@ -1913,6 +1917,11 @@ njs_buffer_fill_typed_array(njs_vm_t *vm, const njs_value_t *value,
     buffer = njs_typed_array_buffer(array);
 
     arr_from = njs_typed_array(value);
+    if (njs_slow_path(njs_is_detached_buffer(arr_from->buffer))) {
+        njs_type_error(vm, "detached buffer");
+        return NJS_ERROR;
+    }
+
     byte_length = arr_from->byte_length;
     from = &njs_typed_array_buffer(arr_from)->u.u8[arr_from->offset];
 

@@ -199,6 +199,11 @@ njs_text_encoder_encode_into(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     end = start + str.length;
 
     array = njs_typed_array(dest);
+    if (njs_slow_path(njs_is_detached_buffer(array->buffer))) {
+        njs_type_error(vm, "detached buffer");
+        return NJS_ERROR;
+    }
+
     to = njs_typed_array_start(array);
     to_end = to + array->byte_length;
 
@@ -512,12 +517,20 @@ njs_text_decoder_decode(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
         if (njs_is_typed_array(value)) {
             array = njs_typed_array(value);
+            if (njs_slow_path(njs_is_detached_buffer(array->buffer))) {
+                njs_type_error(vm, "detached buffer");
+                return NJS_ERROR;
+            }
 
             start = njs_typed_array_start(array);
             end = start + array->byte_length;
 
         } else if (njs_is_array_buffer(value)) {
             buffer = njs_array_buffer(value);
+            if (njs_slow_path(njs_is_detached_buffer(buffer))) {
+                njs_type_error(vm, "detached buffer");
+                return NJS_ERROR;
+            }
 
             start = buffer->u.u8;
             end = start + buffer->size;

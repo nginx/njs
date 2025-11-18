@@ -95,3 +95,10 @@ function merge(to, from) {
     return r;
 }
 
+function detach(ab) {
+    $262.detachArrayBuffer(ab);
+}
+
+function is_detach_available() {
+    return (typeof $262 !== 'undefined' && typeof $262.detachArrayBuffer === 'function');
+}

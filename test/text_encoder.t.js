@@ -67,8 +67,38 @@ let encodeinto_tsuite = {
     ],
 };
 
+let detached_tsuite = {
+    name: "TextEncoder() with detached buffer tests",
+    skip: () => (!is_detach_available()),
+
+    T: async (params) => {
+        let td = new TextEncoder();
+        let uint8 = new Uint8Array(10);
+
+        detach(uint8.buffer);
+
+        try {
+            td.encodeInto("test", uint8);
+
+        } catch (e) {
+            if (e.toString().startsWith('TypeError:')) {
+                return 'SUCCESS';
+            } else {
+                throw e;
+            }
+        }
+
+        throw Error('Expected TypeError not thrown');
+    },
+
+    tests: [
+        { },
+    ],
+};
+
 run([
     encode_tsuite,
     encodeinto_tsuite,
+    detached_tsuite,
 ])
 .then($DONE, $DONE);
