@@ -2070,6 +2070,8 @@ njs_typed_array_to_chain(njs_vm_t *vm, njs_chb_t *chain,
     uint32_t           i;
     njs_string_prop_t  separator;
 
+    njs_assert(!njs_is_detached_buffer(array->buffer));
+
     if (sep != NULL && njs_is_string(sep)) {
         (void) njs_string_prop(vm, &separator, sep);
 

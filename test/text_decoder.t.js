@@ -133,10 +133,40 @@ let ignoreBOM_tsuite = {
     ],
 };
 
+let detached_tsuite = {
+    name: "TextDecoder() detached buffer test",
+    skip: () => !is_detach_available(),
+
+    T: async (params) => {
+        let td = new TextDecoder('utf-8');
+        let uint8 = new Uint8Array([0]);
+
+        detach(uint8.buffer);
+
+        try {
+            td.decode(uint8);
+
+        } catch (e) {
+            if (e.toString().startsWith('TypeError:')) {
+                return 'SUCCESS';
+            } else {
+                throw e;
+            }
+        }
+
+        throw Error('Expected TypeError not thrown');
+    },
+
+    tests: [
+        { },
+    ],
+};
+
 
 run([
     stream_tsuite,
     fatal_tsuite,
     ignoreBOM_tsuite,
+    detached_tsuite,
 ])
 .then($DONE, $DONE);
