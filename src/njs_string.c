@@ -227,6 +227,7 @@ njs_string_truncate(njs_value_t *value, uint32_t size, uint32_t length)
 {
     value->string.data->size = size;
     value->string.data->length = length;
+    value->string.data->start[size] = '\0';
 }
 
 
