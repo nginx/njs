@@ -150,6 +150,12 @@ static inline JS_BOOL JS_IsNullOrUndefined(JSValueConst v)
 #define qjs_is_array(cx, a) JS_IsArray(cx, a)
 #endif
 
+#ifdef NJS_HAVE_QUICKJS_IS_ERROR_SINGLE_ARG
+#define qjs_is_error(cx, a) JS_IsError(a)
+#else
+#define qjs_is_error(cx, a) JS_IsError(cx, a)
+#endif
+
 extern qjs_module_t              *qjs_modules[];
 
 #endif /* _QJS_H_INCLUDED_ */
