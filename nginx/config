@@ -87,21 +87,6 @@ if [ $NJS_QUICKJS != NO ]; then
             exit 1;
         fi
 
-        ngx_feature="QuickJS JS_NewTypedArray()"
-        ngx_feature_name=NJS_HAVE_QUICKJS_NEW_TYPED_ARRAY
-        ngx_feature_test="JSValue argv;
-                         (void) JS_NewTypedArray(NULL, 1, &argv,
-                                                 JS_TYPED_ARRAY_UINT8);
-                          return 0;"
-
-        . auto/feature
-
-        ngx_feature="QuickJS JS_IsSameValue()"
-        ngx_feature_name=NJS_HAVE_QUICKJS_IS_SAME_VALUE
-        ngx_feature_test="(void) JS_IsSameValue(NULL, JS_UNDEFINED, JS_UNDEFINED);"
-
-        . auto/feature
-
         NJS_HAVE_QUICKJS=YES
         NJS_QUICKJS_LIB="$ngx_feature_libs"
         NJS_QUICKJS_INC=`echo "$ngx_feature_path" | sed -e "s|^$NJS_QUICKJS_DEFAULT_INCS||"`
