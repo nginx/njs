@@ -1960,7 +1960,7 @@ njs_qjs_dump_error2(JSContext *ctx, JSValueConst exception)
     _Bool    is_error;
     JSValue  val;
 
-    is_error = JS_IsError(ctx, exception);
+    is_error = qjs_is_error(ctx, exception);
 
     njs_qjs_dump_obj(ctx, stderr, exception, "Thrown:\n", "");
 

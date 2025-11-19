@@ -2696,7 +2696,7 @@ qjs_fs_result(JSContext *cx, JSValue result, int calltype, JSValue callback)
 
     switch (calltype) {
     case QJS_FS_DIRECT:
-        if (JS_IsError(cx, result)) {
+        if (qjs_is_error(cx, result)) {
             JS_Throw(cx, result);
             return JS_EXCEPTION;
         }
@@ -2704,7 +2704,7 @@ qjs_fs_result(JSContext *cx, JSValue result, int calltype, JSValue callback)
         return result;
 
     case QJS_FS_PROMISE:
-        if (JS_IsError(cx, result)) {
+        if (qjs_is_error(cx, result)) {
             JS_Throw(cx, result);
             return qjs_promise_result(cx, JS_EXCEPTION);
         }
@@ -2712,7 +2712,7 @@ qjs_fs_result(JSContext *cx, JSValue result, int calltype, JSValue callback)
         return qjs_promise_result(cx, result);
 
     case QJS_FS_CALLBACK:
-        if (JS_IsError(cx, result)) {
+        if (qjs_is_error(cx, result)) {
             arguments[0] = result;
             arguments[1] = JS_UNDEFINED;
 

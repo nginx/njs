@@ -136,6 +136,24 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
 
         . auto/feature
 
+        njs_feature="QuickJS JS_IsError()"
+        njs_feature_name=NJS_HAVE_QUICKJS_IS_ERROR_SINGLE_ARG
+        njs_feature_test="#include <quickjs_compat.h>
+
+                          int main() {
+                              JSRuntime *rt;
+                              JSContext *ctx;
+
+                              rt = JS_NewRuntime();
+                              ctx = JS_NewContext(rt);
+                              (void) JS_IsError(JS_UNDEFINED);
+                              JS_FreeContext(ctx);
+                              JS_FreeRuntime(rt);
+                              return 0;
+                         }"
+
+        . auto/feature
+
         njs_feature="QuickJS JS_AddIntrinsicBigInt()"
         njs_feature_name=NJS_HAVE_QUICKJS_ADD_INTRINSIC_BIG_INT
         njs_feature_test="#include <quickjs_compat.h>
