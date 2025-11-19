@@ -64,6 +64,21 @@ if [ $NJS_QUICKJS != NO ]; then
     fi
 
     if [ $ngx_found = no ]; then
+        if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists quickjs-ng; then
+
+            # pkg-config
+
+            ngx_feature="QuickJS-NG library via pkg-config"
+
+            ngx_feature_path="$NJS_QUICKJS_DEFAULT_INCS"
+            ngx_feature_path="$ngx_feature_path $(pkg-config quickjs-ng --cflags-only-I | sed -e 's/-I//g')"
+            ngx_feature_libs=$(pkg-config quickjs-ng --libs)
+
+            . auto/feature
+        fi
+    fi
+
+    if [ $ngx_found = no ]; then
         ngx_feature="QuickJS-NG library -lqjs"
         ngx_feature_path="$NJS_QUICKJS_DEFAULT_INCS"
         ngx_feature_libs="-lqjs -lm -ldl -lpthread"
