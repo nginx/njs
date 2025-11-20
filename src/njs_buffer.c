@@ -976,25 +976,6 @@ njs_buffer_is_encoding(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
-njs_buffer_prototype_length(njs_vm_t *vm, njs_object_prop_t *prop,
-    uint32_t unused, njs_value_t *value, njs_value_t *setval,
-    njs_value_t *retval)
-{
-    njs_typed_array_t  *array;
-
-    array = njs_buffer_slot_internal(vm, value);
-    if (njs_slow_path(array == NULL)) {
-        njs_set_undefined(retval);
-        return NJS_DECLINED;
-    }
-
-    njs_set_number(retval, array->byte_length);
-
-    return NJS_OK;
-}
-
-
-static njs_int_t
 njs_buffer_prototype_read_int(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t magic, njs_value_t *retval)
 {
@@ -2480,9 +2461,6 @@ static const njs_object_prop_init_t  njs_buffer_prototype_properties[] =
     NJS_DECLARE_PROP_HANDLER(STRING_constructor,
                              njs_object_prototype_create_constructor, 0,
                              NJS_OBJECT_PROP_VALUE_CW),
-
-    NJS_DECLARE_PROP_HANDLER(STRING_length, njs_buffer_prototype_length, 0,
-                             0),
 
     NJS_DECLARE_PROP_NATIVE(STRING_readInt8, njs_buffer_prototype_read_int,
                             1, njs_buffer_magic(1, 1, 1)),
