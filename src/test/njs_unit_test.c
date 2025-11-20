@@ -21574,9 +21574,9 @@ static njs_unit_test_t  njs_backtraces_test[] =
 
     { njs_str("var ab = new ArrayBuffer(1);"
               "$262.detachArrayBuffer(ab);"
-              "ab.byteLength"),
+              "ab.slice(0)"),
       njs_str("TypeError: detached buffer\n"
-              "    at ArrayBuffer.prototype.byteLength (native)\n"
+              "    at ArrayBuffer.prototype.slice (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("Object.prototype()"),
