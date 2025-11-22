@@ -792,8 +792,8 @@ njs_xml_node_ext_attrs(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
         return NJS_DECLINED;
     }
 
-    return njs_vm_external_create(vm, retval, njs_xml_attr_proto_id,
-                                  current->properties, 0);
+    return njs_vm_external_create(vm, retval, njs_xml_attr_proto_id, current,
+                                  0);
 }
 
 
@@ -1846,7 +1846,8 @@ error:
 static njs_int_t
 njs_xml_attr_ext_prop_keys(njs_vm_t *vm, njs_value_t *value, njs_value_t *keys)
 {
-    xmlAttr      *node, *current;
+    xmlAttr      *node;
+    xmlNode      *current;
     njs_int_t    ret;
     njs_value_t  *push;
 
@@ -1861,7 +1862,7 @@ njs_xml_attr_ext_prop_keys(njs_vm_t *vm, njs_value_t *value, njs_value_t *keys)
         return NJS_ERROR;
     }
 
-    for (node = current; node != NULL; node = node->next) {
+    for (node = current->properties; node != NULL; node = node->next) {
         if (node->type != XML_ATTRIBUTE_NODE) {
             continue;
         }
@@ -1888,7 +1889,8 @@ njs_xml_attr_ext_prop_handler(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *retval)
 {
     size_t     size;
-    xmlAttr    *node, *current;
+    xmlAttr    *node;
+    xmlNode    *current;
     njs_int_t  ret;
     njs_str_t  name;
 
@@ -1904,7 +1906,7 @@ njs_xml_attr_ext_prop_handler(njs_vm_t *vm, njs_object_prop_t *prop,
         return NJS_DECLINED;
     }
 
-    for (node = current; node != NULL; node = node->next) {
+    for (node = current->properties; node != NULL; node = node->next) {
         if (node->type != XML_ATTRIBUTE_NODE) {
             continue;
         }
@@ -1920,6 +1922,8 @@ njs_xml_attr_ext_prop_handler(njs_vm_t *vm, njs_object_prop_t *prop,
         return njs_vm_value_string_create(vm, retval, node->children->content,
                                           njs_strlen(node->children->content));
     }
+
+    njs_value_undefined_set(retval);
 
     return NJS_OK;
 }

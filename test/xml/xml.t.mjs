@@ -276,6 +276,19 @@ let modify_tsuite = {
           },
           expected: `<to>Tove</to>` },
         { get: (doc) => {
+            let attrs = doc.note.to.$attrs;
+            doc.note.to.removeAllAttributes();
+            return attrs.a;
+          },
+          expected: undefined },
+        { get: (doc) => {
+            let to = doc.note.to;
+            let attrs = doc.note.to.$attrs;
+            to.removeAllAttributes();
+            return attrs.a;
+          },
+          expected: undefined },
+        { get: (doc) => {
             delete doc.note.to.$attr$a;
             return xml.serializeToString(doc.note.to);
           },
