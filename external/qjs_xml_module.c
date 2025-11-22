@@ -27,7 +27,7 @@ typedef struct {
 
 
 typedef struct {
-    xmlAttr        *attr;
+    xmlNode        *node;
     qjs_xml_doc_t  *doc;
 } qjs_xml_attr_t;
 
@@ -93,7 +93,7 @@ static void qjs_xml_node_finalizer(JSRuntime *rt, JSValue val);
 static xmlNode *qjs_xml_node(JSContext *cx, JSValueConst val, xmlDoc **doc);
 
 static JSValue qjs_xml_attr_make(JSContext *cx, qjs_xml_doc_t *doc,
-    xmlAttr *attr);
+    xmlNode *node);
 static int qjs_xml_attr_get_own_property(JSContext *cx,
     JSPropertyDescriptor *pdesc, JSValueConst obj, JSAtom prop);
 static int qjs_xml_attr_get_own_property_names(JSContext *cx,
@@ -955,8 +955,7 @@ qjs_xml_node_get_own_property(JSContext *cx, JSPropertyDescriptor *pdesc,
                 pdesc->flags = JS_PROP_ENUMERABLE;
                 pdesc->getter = JS_UNDEFINED;
                 pdesc->setter = JS_UNDEFINED;
-                pdesc->value  = qjs_xml_attr_make(cx, current->doc,
-                                                   node->properties);
+                pdesc->value  = qjs_xml_attr_make(cx, current->doc, node);
                 if (JS_IsException(pdesc->value)) {
                     return -1;
                 }
@@ -1573,7 +1572,7 @@ qjs_xml_node(JSContext *cx, JSValueConst val, xmlDoc **doc)
 
 
 static JSValue
-qjs_xml_attr_make(JSContext *cx, qjs_xml_doc_t *doc, xmlAttr *attr)
+qjs_xml_attr_make(JSContext *cx, qjs_xml_doc_t *doc, xmlNode *node)
 {
     JSValue         ret;
     qjs_xml_attr_t  *current;
@@ -1584,7 +1583,7 @@ qjs_xml_attr_make(JSContext *cx, qjs_xml_doc_t *doc, xmlAttr *attr)
         return JS_EXCEPTION;
     }
 
-    current->attr = attr;
+    current->node = node;
     current->doc = doc;
     doc->ref_count++;
 
@@ -1623,7 +1622,7 @@ qjs_xml_attr_get_own_property(JSContext *cx, JSPropertyDescriptor *pdesc,
 
     name.length = njs_strlen(name.start);
 
-    for (attr = current->attr; attr != NULL; attr = attr->next) {
+    for (attr = current->node->properties; attr != NULL; attr = attr->next) {
         if (attr->type != XML_ATTRIBUTE_NODE) {
             continue;
         }
@@ -1685,7 +1684,7 @@ qjs_xml_attr_get_own_property_names(JSContext *cx, JSPropertyEnum **ptab,
         return -1;
     }
 
-    for (attr = current->attr; attr != NULL; attr = attr->next) {
+    for (attr = current->node->properties; attr != NULL; attr = attr->next) {
         if (attr->type != XML_ATTRIBUTE_NODE) {
             continue;
         }
