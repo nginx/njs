@@ -2032,6 +2032,8 @@ qjs_xml_replace_node(JSContext *cx, qjs_xml_node_t *node, xmlNode *current)
         xmlUnlinkNode(old);
     }
 
+    node->node = current;
+
     old->next = node->doc->free;
     node->doc->free = old;
 }

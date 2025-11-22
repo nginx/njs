@@ -96,11 +96,11 @@ static njs_int_t njs_xml_node_ext_text(njs_vm_t *vm, njs_object_prop_t *prop,
 
 static njs_int_t njs_xml_node_attr_handler(njs_vm_t *vm, xmlNode *current,
     njs_str_t *name, njs_value_t *setval, njs_value_t *retval);
-static njs_int_t njs_xml_node_tag_remove(njs_vm_t *vm, xmlNode *current,
+static njs_int_t njs_xml_node_tag_remove(njs_vm_t *vm, njs_value_t *value,
     njs_str_t *name);
-static njs_int_t njs_xml_node_tag_handler(njs_vm_t *vm, xmlNode *current,
+static njs_int_t njs_xml_node_tag_handler(njs_vm_t *vm, njs_value_t *value,
     njs_str_t *name, njs_value_t *setval, njs_value_t *retval);
-static njs_int_t njs_xml_node_tags_handler(njs_vm_t *vm, xmlNode *current,
+static njs_int_t njs_xml_node_tags_handler(njs_vm_t *vm, njs_value_t *value,
     njs_str_t *name, njs_value_t *setval, njs_value_t *retval);
 
 static xmlNode *njs_xml_external_node(njs_vm_t *vm, njs_value_t *value);
@@ -110,7 +110,7 @@ static const u_char *njs_xml_value_to_c_string(njs_vm_t *vm, njs_value_t *value,
     u_char *dst, size_t size);
 static njs_int_t njs_xml_encode_special_chars(njs_vm_t *vm, njs_str_t *src,
     njs_str_t *out);
-static njs_int_t njs_xml_replace_node(njs_vm_t *vm, xmlNode *old,
+static njs_int_t njs_xml_replace_node(njs_vm_t *vm, njs_value_t *value,
     xmlNode *current);
 static void njs_xml_node_cleanup(void *data);
 static void njs_xml_doc_cleanup(void *data);
@@ -706,7 +706,7 @@ njs_xml_node_ext_prop_handler(njs_vm_t *vm, njs_object_prop_t *prop,
             name.length -= njs_length("$tag$");
             name.start += njs_length("$tag$");
 
-            return njs_xml_node_tag_handler(vm, current, &name, setval, retval);
+            return njs_xml_node_tag_handler(vm, value, &name, setval, retval);
         }
 
         if (name.length >= njs_length("$tags$")
@@ -715,12 +715,11 @@ njs_xml_node_ext_prop_handler(njs_vm_t *vm, njs_object_prop_t *prop,
             name.length -= njs_length("$tags$");
             name.start += njs_length("$tags$");
 
-            return njs_xml_node_tags_handler(vm, current, &name, setval,
-                                             retval);
+            return njs_xml_node_tags_handler(vm, value, &name, setval, retval);
         }
     }
 
-    return njs_xml_node_tag_handler(vm, current, &name, setval, retval);
+    return njs_xml_node_tag_handler(vm, value, &name, setval, retval);
 }
 
 
@@ -770,7 +769,7 @@ njs_xml_node_ext_add_child(njs_vm_t *vm, njs_value_t *args,
 
     njs_value_undefined_set(retval);
 
-    return njs_xml_replace_node(vm, current, copy);
+    return njs_xml_replace_node(vm, njs_argument(args, 0), copy);
 
 error:
 
@@ -909,7 +908,7 @@ njs_xml_node_ext_remove_children(njs_vm_t *vm, njs_value_t *args,
 
         njs_value_string_get(vm, selector, &name);
 
-        return njs_xml_node_tag_remove(vm, current, &name);
+        return njs_xml_node_tag_remove(vm, njs_argument(args, 0), &name);
     }
 
     /* all. */
@@ -925,7 +924,7 @@ njs_xml_node_ext_remove_children(njs_vm_t *vm, njs_value_t *args,
         copy->children = NULL;
     }
 
-    return njs_xml_replace_node(vm, current, copy);
+    return njs_xml_replace_node(vm, njs_argument(args, 0), copy);
 }
 
 
@@ -990,7 +989,7 @@ njs_xml_node_ext_tags(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
     name.start = NULL;
     name.length = 0;
 
-    return njs_xml_node_tags_handler(vm, current, &name, setval, retval);
+    return njs_xml_node_tags_handler(vm, value, &name, setval, retval);
 }
 
 
@@ -1051,7 +1050,7 @@ njs_xml_node_ext_text(njs_vm_t *vm, njs_object_prop_t *unused, uint32_t unused1,
         njs_value_undefined_set(retval);
     }
 
-    return njs_xml_replace_node(vm, current, copy);
+    return njs_xml_replace_node(vm, value, copy);
 }
 
 
@@ -1143,11 +1142,12 @@ njs_xml_node_attr_handler(njs_vm_t *vm, xmlNode *current, njs_str_t *name,
 
 
 static njs_int_t
-njs_xml_node_tag_remove(njs_vm_t *vm, xmlNode *current, njs_str_t *name)
+njs_xml_node_tag_remove(njs_vm_t *vm, njs_value_t *value, njs_str_t *name)
 {
     size_t     size;
-    xmlNode    *node, *next, *copy;
-    njs_int_t  ret;
+    xmlNode    *current, *node, *next, *copy;
+
+    current = njs_vm_external(vm, njs_xml_node_proto_id, value);
 
     copy = xmlDocCopyNode(current, current->doc, 1);
     if (njs_slow_path(copy == NULL)) {
@@ -1170,23 +1170,22 @@ njs_xml_node_tag_remove(njs_vm_t *vm, xmlNode *current, njs_str_t *name)
             continue;
         }
 
-        ret = njs_xml_replace_node(vm, node, NULL);
-        if (njs_slow_path(ret != NJS_OK)) {
-            xmlFreeNode(copy);
-            return NJS_ERROR;
-        }
+        xmlUnlinkNode(node);
+        xmlFreeNode(node);
     }
 
-    return njs_xml_replace_node(vm, current, copy);
+    return njs_xml_replace_node(vm, value, copy);
 }
 
 
 static njs_int_t
-njs_xml_node_tag_handler(njs_vm_t *vm, xmlNode *current, njs_str_t *name,
+njs_xml_node_tag_handler(njs_vm_t *vm, njs_value_t *value, njs_str_t *name,
     njs_value_t *setval, njs_value_t *retval)
 {
     size_t   size;
-    xmlNode  *node;
+    xmlNode  *current, *node;
+
+    current = njs_vm_external(vm, njs_xml_node_proto_id, value);
 
     if (retval != NULL && setval == NULL) {
 
@@ -1223,20 +1222,22 @@ njs_xml_node_tag_handler(njs_vm_t *vm, xmlNode *current, njs_str_t *name,
 
     /* delete. */
 
-    return njs_xml_node_tag_remove(vm, current, name);
+    return njs_xml_node_tag_remove(vm, value, name);
 }
 
 
 static njs_int_t
-njs_xml_node_tags_handler(njs_vm_t *vm, xmlNode *current, njs_str_t *name,
+njs_xml_node_tags_handler(njs_vm_t *vm, njs_value_t *value, njs_str_t *name,
     njs_value_t *setval, njs_value_t *retval)
 {
     size_t       size;
     int64_t      i, length;
-    xmlNode      *node, *rnode, *copy;
+    xmlNode      *current, *node, *rnode, *copy;
     njs_int_t    ret;
     njs_value_t  *push;
     njs_opaque_value_t  *start;
+
+    current = njs_vm_external(vm, njs_xml_node_proto_id, value);
 
     if (retval != NULL && setval == NULL) {
 
@@ -1294,7 +1295,7 @@ njs_xml_node_tags_handler(njs_vm_t *vm, xmlNode *current, njs_str_t *name,
 
     if (retval == NULL) {
         /* delete. */
-        return njs_xml_replace_node(vm, current, copy);
+        return njs_xml_replace_node(vm, value, copy);
     }
 
     if (!njs_value_is_array(setval)) {
@@ -1338,7 +1339,7 @@ njs_xml_node_tags_handler(njs_vm_t *vm, xmlNode *current, njs_str_t *name,
 
     njs_value_undefined_set(retval);
 
-    return njs_xml_replace_node(vm, current, copy);
+    return njs_xml_replace_node(vm, value, copy);
 
 error:
 
@@ -1512,9 +1513,12 @@ njs_xml_encode_special_chars(njs_vm_t *vm, njs_str_t *src, njs_str_t *out)
 
 
 static njs_int_t
-njs_xml_replace_node(njs_vm_t *vm, xmlNode *old, xmlNode *current)
+njs_xml_replace_node(njs_vm_t *vm, njs_value_t *value, xmlNode *current)
 {
-    njs_mp_cleanup_t  *cln;
+    xmlNode          *old;
+    njs_mp_cleanup_t *cln;
+
+    old = njs_vm_external(vm, njs_xml_node_proto_id, value);
 
     if (current != NULL) {
         old = xmlReplaceNode(old, current);
@@ -1522,6 +1526,8 @@ njs_xml_replace_node(njs_vm_t *vm, xmlNode *old, xmlNode *current)
     } else {
         xmlUnlinkNode(old);
     }
+
+    njs_value_external_set(value, current);
 
     cln = njs_mp_cleanup_add(njs_vm_memory_pool(vm), 0);
     if (njs_slow_path(cln == NULL)) {
