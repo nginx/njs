@@ -7,7 +7,7 @@ echo
 echo "NJS configuration summary:"
 echo
 echo " + using CC: \"$CC\""
-echo " + using CFLAGS: \"$NJS_CFLAGS $NJS_CC_OPT $CFLAGS\""
+echo " + using CFLAGS: \"$NJS_CC_OPT ${CFLAGS:-$NJS_CFLAGS}\""
 echo
 
 if [ $NJS_HAVE_PCRE = YES ]; then
