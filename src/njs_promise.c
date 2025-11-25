@@ -876,6 +876,10 @@ njs_promise_perform_then(njs_vm_t *vm, njs_value_t *value,
     } else {
         function = njs_promise_create_function(vm,
                                                sizeof(njs_promise_context_t));
+        if (njs_slow_path(function == NULL)) {
+            return NJS_ERROR;
+        }
+
         function->u.native = njs_promise_reaction_job;
 
         if (data->state == NJS_PROMISE_REJECTED) {
@@ -967,6 +971,10 @@ njs_promise_prototype_finally(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     finally = njs_arg(args, nargs, 1);
 
     function = njs_promise_create_function(vm, sizeof(njs_promise_context_t));
+    if (njs_slow_path(function == NULL)) {
+        return NJS_ERROR;
+    }
+
     function->u.native = njs_promise_constructor;
 
     njs_set_function(&constructor, function);
