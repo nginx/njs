@@ -16,6 +16,8 @@ default: "$NJS_ADDRESS_SANITIZER"
   --cc=FILE                 sets C compiler filename, default: "$CC"
   --cc-opt=OPTIONS          sets additional C compiler options, \
 default: "$NJS_CC_OPT"
+  --pic=OPTION              sets position independent code flag, \
+default: "$NJS_PIC"
   --debug=YES               enables additional runtime checks, \
 default: "$NJS_DEBUG"
   --debug-memory=YES        enables memory alloc debug, \
