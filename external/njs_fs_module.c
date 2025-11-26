@@ -2950,28 +2950,27 @@ njs_fs_make_path(njs_vm_t *vm, char *path, mode_t md, njs_bool_t recursive,
         ret = mkdir(path, md);
         err = errno;
 
-        switch (ret) {
-        case 0:
-            break;
+        if (ret != 0) {
+            switch (err) {
+            case EACCES:
+            case ENOTDIR:
+            case EPERM:
+                goto failed;
 
-        case EACCES:
-        case ENOTDIR:
-        case EPERM:
-            goto failed;
+            case EEXIST:
+            default:
+                ret = stat(path, &sb);
+                if (ret == 0) {
+                    if (!S_ISDIR(sb.st_mode)) {
+                        err = ENOTDIR;
+                        goto failed;
+                    }
 
-        case EEXIST:
-        default:
-            ret = stat(path, &sb);
-            if (ret == 0) {
-                if (!S_ISDIR(sb.st_mode)) {
-                    err = ENOTDIR;
-                    goto failed;
+                    break;
                 }
 
-                break;
+                goto failed;
             }
-
-            goto failed;
         }
 
         if (p == end) {
