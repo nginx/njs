@@ -518,7 +518,7 @@ qjs_fs_make_path(JSContext *cx, char *path, mode_t md, int recursive)
             case EACCES:
             case ENOTDIR:
             case EPERM:
-                goto failed;
+                goto failed_restore;
 
             case EEXIST:
             default:
@@ -526,13 +526,13 @@ qjs_fs_make_path(JSContext *cx, char *path, mode_t md, int recursive)
                 if (ret == 0) {
                     if (!S_ISDIR(sb.st_mode)) {
                         err = ENOTDIR;
-                        goto failed;
+                        goto failed_restore;
                     }
 
                     break;
                 }
 
-                goto failed;
+                goto failed_restore;
             }
         }
 
@@ -545,6 +545,12 @@ qjs_fs_make_path(JSContext *cx, char *path, mode_t md, int recursive)
     }
 
     return JS_UNDEFINED;
+
+failed_restore:
+
+    if (p != end) {
+        path[p - path] = '/';
+    }
 
 failed:
 
