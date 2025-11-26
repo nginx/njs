@@ -2955,7 +2955,7 @@ njs_fs_make_path(njs_vm_t *vm, char *path, mode_t md, njs_bool_t recursive,
             case EACCES:
             case ENOTDIR:
             case EPERM:
-                goto failed;
+                goto failed_restore;
 
             case EEXIST:
             default:
@@ -2963,13 +2963,13 @@ njs_fs_make_path(njs_vm_t *vm, char *path, mode_t md, njs_bool_t recursive,
                 if (ret == 0) {
                     if (!S_ISDIR(sb.st_mode)) {
                         err = ENOTDIR;
-                        goto failed;
+                        goto failed_restore;
                     }
 
                     break;
                 }
 
-                goto failed;
+                goto failed_restore;
             }
         }
 
@@ -2982,6 +2982,12 @@ njs_fs_make_path(njs_vm_t *vm, char *path, mode_t md, njs_bool_t recursive,
     }
 
     return NJS_OK;
+
+failed_restore:
+
+    if (p != end) {
+        path[p - path] = '/';
+    }
 
 failed:
 
