@@ -3,8 +3,9 @@
 # Copyright (C) NGINX, Inc.
 
 
-NJS_CC_OPT=${NJS_CC_OPT:--O}
-NJS_LD_OPT=${NJS_CC_OPT:--O}
+NJS_CC_OPT=
+NJS_LD_OPT=
+NJS_PIC=-fPIC
 
 NJS_DEBUG=NO
 NJS_DEBUG_MEMORY=NO
@@ -39,6 +40,8 @@ do
         --cc-opt=*)                      NJS_CC_OPT="$value"                 ;;
         --ld-opt=*)                      NJS_LD_OPT="$value"                 ;;
         --ar=*)                          AR="$value"                         ;;
+
+        --pic=*)                         NJS_PIC="$value"                    ;;
 
         --build-dir=*)                   NJS_BUILD_DIR="$value"              ;;
 

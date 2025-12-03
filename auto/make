@@ -89,7 +89,8 @@ cat << END > $NJS_MAKEFILE
 NJS_CC = ${CC}
 NJS_STATIC_LINK = ${AR} -r -c
 NJS_LINK = ${CC} ${NJS_LD_OPT}
-NJS_CFLAGS = ${NJS_CFLAGS} ${NJS_CC_OPT} ${CFLAGS}
+NJS_PIC = ${NJS_PIC}
+CFLAGS = ${NJS_CC_OPT} ${CFLAGS:-${NJS_CFLAGS}}
 NJS_LIB_AUX_CFLAGS = ${NJS_LIB_AUX_CFLAGS}
 
 NJS_VER = $(grep NJS_VERSION src/njs.h | sed -e 's#.*"\(.*\)".*#\1#')
@@ -132,7 +133,7 @@ do
     cat << END >> $NJS_MAKEFILE
 
 $NJS_BUILD_DIR/$njs_obj: $njs_src
-	\$(NJS_CC) -c \$(NJS_LIB_INCS) \$(NJS_CFLAGS) \\
+	\$(NJS_CC) -c \$(NJS_LIB_INCS) \$(NJS_PIC) \$(CFLAGS) \\
 		\$(NJS_LIB_AUX_CFLAGS) \\
 		-o $NJS_BUILD_DIR/$njs_obj \\
 		$njs_dep_flags \\
@@ -154,7 +155,7 @@ do
     cat << END >> $NJS_MAKEFILE
 
 $NJS_BUILD_DIR/$njs_obj: $njs_src
-	\$(NJS_CC) -c \$(NJS_LIB_INCS) \$(NJS_CFLAGS) \\
+	\$(NJS_CC) -c \$(NJS_LIB_INCS) \$(NJS_PIC) \$(CFLAGS) \\
 		\$(NJS_LIB_AUX_CFLAGS) \\
 		-o $NJS_BUILD_DIR/$njs_obj \\
 		$njs_dep_flags \\
@@ -175,7 +176,7 @@ $NJS_BUILD_DIR/njs: \\
 	$NJS_BUILD_DIR/libnjs.a $QJS_LIB \\
 	external/njs_shell.c
 	\$(NJS_LINK) -o $NJS_BUILD_DIR/njs \$(NJS_LIB_INCS) \\
-		\$(NJS_CFLAGS) \$(NJS_LIB_AUX_CFLAGS)\\
+		\$(CFLAGS) \$(NJS_LIB_AUX_CFLAGS)\\
 		external/njs_shell.c \\
 		$NJS_BUILD_DIR/libnjs.a $QJS_LIB \\
 		$NJS_LD_OPT -lm $NJS_LIBS $NJS_LIB_AUX_LIBS $NJS_READLINE_LIB
@@ -220,7 +221,7 @@ do
 $NJS_BUILD_DIR/$njs_bin: $njs_src \\
 	$NJS_BUILD_DIR/libnjs.a
 	\$(NJS_LINK) -o $NJS_BUILD_DIR/$njs_bin \$(NJS_LIB_INCS) \\
-		\$(NJS_CFLAGS) $njs_dep_flags \\
+		\$(CFLAGS) $njs_dep_flags \\
 		$njs_src $NJS_BUILD_DIR/libnjs.a \\
 		$njs_dep_post -lm $NJS_LD_OPT
 
@@ -244,7 +245,7 @@ cat << END >> $NJS_MAKEFILE
 
 $NJS_BUILD_DIR/$njs_externals_obj: \\
     $njs_src
-	\$(NJS_CC) -c \$(NJS_LIB_INCS) \$(NJS_CFLAGS) \\
+	\$(NJS_CC) -c \$(NJS_LIB_INCS) \$(CFLAGS) \\
 		\$(NJS_LIB_AUX_CFLAGS) \\
 		-o $NJS_BUILD_DIR/$njs_externals_obj \\
 		$njs_dep_flags \\
@@ -268,7 +269,7 @@ $NJS_BUILD_DIR/$njs_bin: $njs_src \\
 	$NJS_BUILD_DIR/libnjs.a \\
 	$NJS_BUILD_DIR/$njs_externals_obj
 	\$(NJS_LINK) -o $NJS_BUILD_DIR/$njs_bin \$(NJS_LIB_INCS) \\
-		\$(NJS_CFLAGS) \$(NJS_LIB_AUX_CFLAGS) \\
+		\$(CFLAGS) \$(NJS_LIB_AUX_CFLAGS) \\
 		$njs_dep_flags \\
 		$NJS_BUILD_DIR/$njs_externals_obj \\
 		$njs_src $NJS_BUILD_DIR/libnjs.a \\
