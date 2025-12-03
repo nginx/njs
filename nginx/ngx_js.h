@@ -292,6 +292,7 @@ struct ngx_engine_s {
     const char                 *name;
     njs_mp_t                   *pool;
     njs_arr_t                  *precompiled;
+    njs_arr_t                  *native_modules;
 };
 
 
