@@ -86,6 +86,11 @@ typedef ngx_js_ctx_t *(*ngx_js_external_ctx_pt)(njs_external_ptr_t e);
 
 
 typedef struct {
+    ngx_array_t          *native_modules;
+} ngx_js_core_conf_t;
+
+
+typedef struct {
     ngx_str_t              name;
     ngx_str_t              path;
     u_char                *file;
@@ -245,6 +250,7 @@ typedef struct ngx_engine_opts_s {
     } u;
 
     njs_str_t                   file;
+    ngx_js_core_conf_t         *core_conf;
     ngx_js_loc_conf_t          *conf;
     ngx_engine_t             *(*clone)(ngx_js_ctx_t *ctx,
                                         ngx_js_loc_conf_t *cf, njs_int_t pr_id,
@@ -292,6 +298,8 @@ struct ngx_engine_s {
     const char                 *name;
     njs_mp_t                   *pool;
     njs_arr_t                  *precompiled;
+    njs_arr_t                  *native_modules;
+    ngx_js_core_conf_t         *core_conf;
 };
 
 
@@ -454,6 +462,11 @@ char * ngx_js_merge_conf(ngx_conf_t *cf, void *parent, void *child,
    ngx_int_t (*init_vm)(ngx_conf_t *cf, ngx_js_loc_conf_t *conf));
 char *ngx_js_shared_dict_zone(ngx_conf_t *cf, ngx_command_t *cmd, void *conf,
     void *tag);
+
+void *ngx_js_core_create_conf(ngx_cycle_t *cycle);
+char *ngx_js_core_load_native_module(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf);
+void ngx_js_native_module_cleanup(void *data);
 
 njs_int_t ngx_js_ext_string(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
