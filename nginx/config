@@ -157,7 +157,7 @@ fi
 
 if [ $HTTP != NO ]; then
     ngx_module_type=HTTP_AUX_FILTER
-    ngx_module_name=ngx_http_js_module
+    ngx_module_name="ngx_http_js_module ngx_http_js_core_module"
     ngx_module_incs="$ngx_addon_dir/../src $ngx_addon_dir/../build \
                      $NJS_QUICKJS_INC"
     ngx_module_deps="$NJS_ENGINE_DEP $NJS_DEPS $QJS_DEPS"
@@ -174,7 +174,7 @@ fi
 
 if [ $STREAM != NO ]; then
     ngx_module_type=STREAM
-    ngx_module_name=ngx_stream_js_module
+    ngx_module_name="ngx_stream_js_module ngx_stream_js_core_module"
     ngx_module_incs="$ngx_addon_dir/../src $ngx_addon_dir/../build \
                      $NJS_QUICKJS_INC"
     ngx_module_deps="$NJS_ENGINE_DEP $NJS_DEPS $QJS_DEPS"
