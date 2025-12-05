@@ -52,6 +52,7 @@ events {
 http {
     %%TEST_GLOBALS_HTTP%%
 
+    js_import_native_modules on;
     js_import main from test.js;
 
     server {

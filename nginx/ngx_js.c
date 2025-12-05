@@ -2160,6 +2160,14 @@ ngx_qjs_module_loader(JSContext *cx, const char *module_name, void *opaque)
 
     if (name_len > 3 && strcmp(&info.path[name_len - 3], ".so") == 0) {
         (void) close(info.fd);
+
+        if (!conf->import_native_modules) {
+            JS_ThrowReferenceError(cx, "native module import is disabled, "
+                                   "set \"js_import_native_modules on;\" to "
+                                   "enable");
+            return NULL;
+        }
+
         return ngx_qjs_native_module_loader(cx, &info, conf, module_name);
     }
 
@@ -3712,6 +3720,9 @@ ngx_js_merge_conftime_loc_conf(ngx_js_loc_conf_t *conf,
     ngx_js_loc_conf_t *prev)
 {
     ngx_conf_merge_uint_value(conf->type, prev->type, NGX_ENGINE_NJS);
+    ngx_conf_merge_value(conf->import_native_modules,
+                         prev->import_native_modules, 0);
+
 }
 
 
@@ -4325,6 +4336,7 @@ ngx_js_create_conf(ngx_conf_t *cf, size_t size)
     conf->type = NGX_CONF_UNSET_UINT;
     conf->imports = NGX_CONF_UNSET_PTR;
     conf->preload_objects = NGX_CONF_UNSET_PTR;
+    conf->import_native_modules = NGX_CONF_UNSET;
 
     conf->reuse = NGX_CONF_UNSET_SIZE;
     conf->reuse_max_size = NGX_CONF_UNSET_SIZE;

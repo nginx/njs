@@ -299,6 +299,13 @@ static ngx_command_t  ngx_stream_js_commands[] = {
       offsetof(ngx_stream_js_srv_conf_t, paths),
       NULL },
 
+    { ngx_string("js_import_native_modules"),
+      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_FLAG,
+      ngx_conf_set_flag_slot,
+      NGX_STREAM_SRV_CONF_OFFSET,
+      offsetof(ngx_stream_js_srv_conf_t, import_native_modules),
+      NULL },
+
     { ngx_string("js_set"),
       NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF|NGX_CONF_TAKE23,
       ngx_stream_js_set,
