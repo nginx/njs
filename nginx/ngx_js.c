@@ -3597,6 +3597,17 @@ ngx_js_init_preload_vm(njs_vm_t *vm, ngx_js_loc_conf_t *conf)
 }
 
 
+/*
+ * Merge configuration values used at configuration time.
+ */
+static void
+ngx_js_merge_conftime_loc_conf(ngx_js_loc_conf_t *conf,
+    ngx_js_loc_conf_t *prev)
+{
+    ngx_conf_merge_uint_value(conf->type, prev->type, NGX_ENGINE_NJS);
+}
+
+
 ngx_int_t
 ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
     ngx_js_loc_conf_t *prev,
@@ -3612,6 +3623,9 @@ ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
          * special handling to preserve conf->engine
          * in the "http" or "stream" section to inherit it to all servers
          */
+
+        ngx_js_merge_conftime_loc_conf(prev, conf);
+
         if (init_vm(cf, (ngx_js_loc_conf_t *) prev) != NGX_OK) {
             return NGX_ERROR;
         }
@@ -4316,10 +4330,7 @@ ngx_js_merge_conf(ngx_conf_t *cf, void *parent, void *child,
     ngx_js_loc_conf_t *prev = parent;
     ngx_js_loc_conf_t *conf = child;
 
-    ngx_conf_merge_uint_value(conf->type, prev->type, NGX_ENGINE_NJS);
-    if (prev->type == NGX_CONF_UNSET_UINT) {
-        prev->type = NGX_ENGINE_NJS;
-    }
+    ngx_js_merge_conftime_loc_conf(conf, prev);
 
     ngx_conf_merge_msec_value(conf->timeout, prev->timeout, 60000);
     ngx_conf_merge_size_value(conf->reuse, prev->reuse, 128);
