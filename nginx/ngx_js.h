@@ -129,6 +129,7 @@ typedef struct {
     ngx_str_t              cwd;                                               \
     ngx_array_t           *imports;                                           \
     ngx_array_t           *paths;                                             \
+    ngx_flag_t             import_native_modules;                             \
                                                                               \
     ngx_array_t           *preload_objects;                                   \
                                                                               \
@@ -292,6 +293,7 @@ struct ngx_engine_s {
     const char                 *name;
     njs_mp_t                   *pool;
     njs_arr_t                  *precompiled;
+    njs_arr_t                  *native_modules;
 };
 
 

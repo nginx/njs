@@ -467,6 +467,13 @@ static ngx_command_t  ngx_http_js_commands[] = {
       offsetof(ngx_http_js_loc_conf_t, paths),
       NULL },
 
+    { ngx_string("js_import_native_modules"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_FLAG,
+      ngx_conf_set_flag_slot,
+      NGX_HTTP_LOC_CONF_OFFSET,
+      offsetof(ngx_http_js_loc_conf_t, import_native_modules),
+      NULL },
+
     { ngx_string("js_set"),
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE23,
       ngx_http_js_set,

@@ -9,6 +9,7 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include <math.h>
+#include <dlfcn.h>
 #include "ngx_js.h"
 #include "ngx_js_http.h"
 
@@ -98,6 +99,8 @@ static void ngx_qjs_console_finalizer(JSRuntime *rt, JSValue val);
 
 static JSModuleDef *ngx_qjs_module_loader(JSContext *ctx,
     const char *module_name, void *opaque);
+static JSModuleDef *ngx_qjs_native_module_loader(JSContext *cx,
+    njs_module_info_t *info, ngx_js_loc_conf_t *conf, const char *module_name);
 static int ngx_qjs_unhandled_rejection(ngx_js_ctx_t *ctx);
 static void ngx_qjs_rejection_tracker(JSContext *ctx, JSValueConst promise,
     JSValueConst reason, JS_BOOL is_handled, void *opaque);
@@ -1005,6 +1008,7 @@ ngx_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
     ngx_int_t             rc;
     JSRuntime            *rt;
     JSContext            *cx;
+    qjs_module_t         *mod;
     ngx_engine_t         *engine;
     ngx_js_code_entry_t  *pc;
 
@@ -1049,6 +1053,19 @@ ngx_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
     JS_SetContextOpaque(cx, external);
 
     JS_SetHostPromiseRejectionTracker(rt, ngx_qjs_rejection_tracker, ctx);
+
+    if (engine->native_modules != NULL) {
+        mod = engine->native_modules->start;
+        length = engine->native_modules->items;
+
+        for (i = 0; i < length; i++) {
+            if (mod[i].init(cx, mod[i].name) == NULL) {
+                ngx_log_error(NGX_LOG_ERR, ctx->log, 0,
+                              "js native module init failed: %s", mod[i].name);
+                goto destroy;
+            }
+        }
+    }
 
     rv = JS_UNDEFINED;
     pc = engine->precompiled->start;
@@ -2026,9 +2043,92 @@ not_found:
 }
 
 
+static void
+ngx_qjs_native_module_cleanup(void *handle)
+{
+    dlclose(handle);
+}
+
+
+static JSModuleDef *
+ngx_qjs_native_module_loader(JSContext *cx, njs_module_info_t *info,
+    ngx_js_loc_conf_t *conf, const char *module_name)
+{
+    void                  *handle;
+    char                  *name;
+    JSModuleDef           *m;
+    qjs_module_t          *mod;
+    njs_mp_cleanup_t      *cln;
+    qjs_addon_init_pt      init;
+
+    handle = dlopen(info->path, RTLD_NOW | RTLD_LOCAL);
+    if (handle == NULL) {
+        JS_ThrowReferenceError(cx, "could not load native module '%s': %s",
+                               info->path, dlerror());
+        return NULL;
+    }
+
+    init = dlsym(handle, "js_init_module");
+    if (init == NULL) {
+        JS_ThrowReferenceError(cx, "could not load native module '%s': "
+                               "\"js_init_module\" not found", info->path);
+        goto error;
+    }
+
+    m = init(cx, module_name);
+    if (m == NULL) {
+        goto error;
+    }
+
+    if (conf->engine->native_modules == NULL) {
+        conf->engine->native_modules = njs_arr_create(conf->engine->pool, 4,
+                                                      sizeof(qjs_module_t));
+        if (conf->engine->native_modules == NULL) {
+            JS_ThrowOutOfMemory(cx);
+            goto error;
+        }
+    }
+
+    mod = njs_arr_add(conf->engine->native_modules);
+    if (mod == NULL) {
+        JS_ThrowOutOfMemory(cx);
+        goto error;
+    }
+
+    name = njs_mp_alloc(conf->engine->pool, njs_strlen(module_name) + 1);
+    if (name == NULL) {
+        JS_ThrowOutOfMemory(cx);
+        goto error;
+    }
+
+    strcpy(name, module_name);
+
+    mod->name = name;
+    mod->init = init;
+
+    cln = njs_mp_cleanup_add(conf->engine->pool, 0);
+    if (cln == NULL) {
+        JS_ThrowOutOfMemory(cx);
+        goto error;
+    }
+
+    cln->handler = ngx_qjs_native_module_cleanup;
+    cln->data = handle;
+
+    return m;
+
+error:
+
+    dlclose(handle);
+
+    return NULL;
+}
+
+
 static JSModuleDef *
 ngx_qjs_module_loader(JSContext *cx, const char *module_name, void *opaque)
 {
+    size_t                name_len;
     JSValue               func_val;
     njs_int_t             ret;
     njs_str_t             text;
@@ -2054,6 +2154,21 @@ ngx_qjs_module_loader(JSContext *cx, const char *module_name, void *opaque)
         }
 
         return NULL;
+    }
+
+    name_len = njs_strlen(info.path);
+
+    if (name_len > 3 && strcmp(&info.path[name_len - 3], ".so") == 0) {
+        (void) close(info.fd);
+
+        if (!conf->import_native_modules) {
+            JS_ThrowReferenceError(cx, "native module import is disabled, "
+                                   "set \"js_import_native_modules on;\" to "
+                                   "enable");
+            return NULL;
+        }
+
+        return ngx_qjs_native_module_loader(cx, &info, conf, module_name);
     }
 
     ret = ngx_js_module_read(conf->engine->pool, info.fd, &text);
@@ -3597,6 +3712,20 @@ ngx_js_init_preload_vm(njs_vm_t *vm, ngx_js_loc_conf_t *conf)
 }
 
 
+/*
+ * Merge configuration values used at configuration time.
+ */
+static void
+ngx_js_merge_conftime_loc_conf(ngx_js_loc_conf_t *conf,
+    ngx_js_loc_conf_t *prev)
+{
+    ngx_conf_merge_uint_value(conf->type, prev->type, NGX_ENGINE_NJS);
+    ngx_conf_merge_value(conf->import_native_modules,
+                         prev->import_native_modules, 0);
+
+}
+
+
 ngx_int_t
 ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
     ngx_js_loc_conf_t *prev,
@@ -3612,6 +3741,9 @@ ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
          * special handling to preserve conf->engine
          * in the "http" or "stream" section to inherit it to all servers
          */
+
+        ngx_js_merge_conftime_loc_conf(prev, conf);
+
         if (init_vm(cf, (ngx_js_loc_conf_t *) prev) != NGX_OK) {
             return NGX_ERROR;
         }
@@ -4204,6 +4336,7 @@ ngx_js_create_conf(ngx_conf_t *cf, size_t size)
     conf->type = NGX_CONF_UNSET_UINT;
     conf->imports = NGX_CONF_UNSET_PTR;
     conf->preload_objects = NGX_CONF_UNSET_PTR;
+    conf->import_native_modules = NGX_CONF_UNSET;
 
     conf->reuse = NGX_CONF_UNSET_SIZE;
     conf->reuse_max_size = NGX_CONF_UNSET_SIZE;
@@ -4316,10 +4449,7 @@ ngx_js_merge_conf(ngx_conf_t *cf, void *parent, void *child,
     ngx_js_loc_conf_t *prev = parent;
     ngx_js_loc_conf_t *conf = child;
 
-    ngx_conf_merge_uint_value(conf->type, prev->type, NGX_ENGINE_NJS);
-    if (prev->type == NGX_CONF_UNSET_UINT) {
-        prev->type = NGX_ENGINE_NJS;
-    }
+    ngx_js_merge_conftime_loc_conf(conf, prev);
 
     ngx_conf_merge_msec_value(conf->timeout, prev->timeout, 60000);
     ngx_conf_merge_size_value(conf->reuse, prev->reuse, 128);
