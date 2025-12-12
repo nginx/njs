@@ -58,6 +58,24 @@ http {
 
             proxy_pass http://127.0.0.1:8081/source;
         }
+
+        location /type_check_true {
+            if ($arg_check) {
+                set $dummy 1;
+            }
+
+            js_body_filter test.type_check;
+            proxy_pass http://127.0.0.1:8081/backend;
+        }
+
+        location /type_check_false {
+            if ($arg_nonexistent = dummy) {
+                set $dummy 1;
+            }
+
+            js_body_filter test.type_check;
+            proxy_pass http://127.0.0.1:8081/backend;
+        }
     }
 
     server {
@@ -67,6 +85,10 @@ http {
         location /source {
             postpone_output 1;
             js_content test.source;
+        }
+
+        location /backend {
+            return 200 'payload';
         }
     }
 }
@@ -113,15 +135,27 @@ $t->write_file('test.js', <<EOF);
         r.done();
     }
 
-    export default {njs: test_njs, append, prepend, source};
+    function type_check(r, data, flags) {
+        if (flags.last) {
+            return r.sendBuffer(data, flags);
+        }
+
+        r.sendBuffer(data.constructor.name + ": " + data, flags);
+    }
+
+    export default {njs: test_njs, append, prepend, source, type_check};
 
 EOF
 
-$t->try_run('no njs body filter')->plan(2);
+$t->try_run('no njs body filter')->plan(4);
 
 ###############################################################################
 
 like(http_get('/filter?name=append'), qr/AAABBCDDDDXXX/, 'append');
 like(http_get('/filter?name=prepend'), qr/XXXAAABBCDDDD/, 'prepend');
+like(http_get('/type_check_true?check=1'), qr/String: payload/,
+    'type check with if block true');
+like(http_get('/type_check_false'), qr/String: payload/,
+    'type check with if block false');
 
 ###############################################################################

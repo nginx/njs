@@ -8260,6 +8260,8 @@ ngx_http_js_create_loc_conf(ngx_conf_t *cf)
     conf->ssl_verify = NGX_CONF_UNSET;
     conf->ssl_verify_depth = NGX_CONF_UNSET;
 #endif
+    conf->buffer_type = NGX_CONF_UNSET_UINT;
+
     return conf;
 }
 
