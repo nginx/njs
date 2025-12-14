@@ -24,7 +24,7 @@ type CipherAlgorithm =
     | RsaOaepParams
     | AesCtrParams
     | AesCbcParams
-    | AesCbcParams;
+    | AesGcmParams;
 
 type HashVariants = "SHA-256" | "SHA-384" | "SHA-512" | "SHA-1";
 
@@ -97,7 +97,7 @@ interface   Pbkdf2Params {
     name: "PBKDF2";
     hash: HashVariants;
     salt: NjsStringOrBuffer;
-    interations: number;
+    iterations: number;
 }
 
 interface   EcdhParams {
