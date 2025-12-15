@@ -9,6 +9,7 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include <math.h>
+#include <dlfcn.h>
 #include "ngx_js.h"
 #include "ngx_js_http.h"
 
@@ -541,6 +542,8 @@ ngx_create_engine(ngx_engine_opts_t *opts)
         engine->string = ngx_engine_qjs_string;
         engine->destroy = opts->destroy ? opts->destroy
                                         : ngx_engine_qjs_destroy;
+
+        engine->core_conf = opts->core_conf;
         break;
 #endif
 
@@ -1005,6 +1008,7 @@ ngx_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
     ngx_int_t             rc;
     JSRuntime            *rt;
     JSContext            *cx;
+    qjs_module_t         *mod;
     ngx_engine_t         *engine;
     ngx_js_code_entry_t  *pc;
 
@@ -1049,6 +1053,19 @@ ngx_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
     JS_SetContextOpaque(cx, external);
 
     JS_SetHostPromiseRejectionTracker(rt, ngx_qjs_rejection_tracker, ctx);
+
+    if (engine->native_modules != NULL) {
+        mod = engine->native_modules->start;
+        length = engine->native_modules->items;
+
+        for (i = 0; i < length; i++) {
+            if (mod[i].init(cx, mod[i].name) == NULL) {
+                ngx_log_error(NGX_LOG_ERR, ctx->log, 0,
+                              "js native module init failed: %s", mod[i].name);
+                goto destroy;
+            }
+        }
+    }
 
     rv = JS_UNDEFINED;
     pc = engine->precompiled->start;
@@ -2027,6 +2044,55 @@ not_found:
 
 
 static JSModuleDef *
+ngx_qjs_native_module_lookup(JSContext *cx, const char *module_name,
+    ngx_js_loc_conf_t *conf)
+{
+    ngx_uint_t           i;
+    JSModuleDef         *m;
+    qjs_module_t        *mod, *modules;
+    ngx_js_core_conf_t  *jccf;
+
+    jccf = conf->engine->core_conf;
+    if (jccf == NULL || jccf->native_modules == NULL) {
+        return NULL;
+    }
+
+    modules = jccf->native_modules->elts;
+
+    for (i = 0; i < jccf->native_modules->nelts; i++) {
+        if (ngx_strcmp(modules[i].name, module_name) == 0) {
+            m = modules[i].init(cx, module_name);
+            if (m == NULL) {
+                return NULL;
+            }
+
+            if (conf->engine->native_modules == NULL) {
+                conf->engine->native_modules = njs_arr_create(
+                                                   conf->engine->pool, 4,
+                                                   sizeof(qjs_module_t));
+                if (conf->engine->native_modules == NULL) {
+                    JS_ThrowOutOfMemory(cx);
+                    return NULL;
+                }
+            }
+
+            mod = njs_arr_add(conf->engine->native_modules);
+            if (mod == NULL) {
+                JS_ThrowOutOfMemory(cx);
+                return NULL;
+            }
+
+            *mod = modules[i];
+
+            return m;
+        }
+    }
+
+    return NULL;
+}
+
+
+static JSModuleDef *
 ngx_qjs_module_loader(JSContext *cx, const char *module_name, void *opaque)
 {
     JSValue               func_val;
@@ -2038,6 +2104,11 @@ ngx_qjs_module_loader(JSContext *cx, const char *module_name, void *opaque)
     ngx_js_code_entry_t  *pc;
 
     conf = opaque;
+
+    m = ngx_qjs_native_module_lookup(cx, module_name, conf);
+    if (m != NULL) {
+        return m;
+    }
 
     njs_memzero(&info, sizeof(njs_module_info_t));
 
@@ -3597,6 +3668,17 @@ ngx_js_init_preload_vm(njs_vm_t *vm, ngx_js_loc_conf_t *conf)
 }
 
 
+/*
+ * Merge configuration values used at configuration time.
+ */
+static void
+ngx_js_merge_conftime_loc_conf(ngx_js_loc_conf_t *conf,
+    ngx_js_loc_conf_t *prev)
+{
+    ngx_conf_merge_uint_value(conf->type, prev->type, NGX_ENGINE_NJS);
+}
+
+
 ngx_int_t
 ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
     ngx_js_loc_conf_t *prev,
@@ -3612,6 +3694,9 @@ ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
          * special handling to preserve conf->engine
          * in the "http" or "stream" section to inherit it to all servers
          */
+
+        ngx_js_merge_conftime_loc_conf(prev, conf);
+
         if (init_vm(cf, (ngx_js_loc_conf_t *) prev) != NGX_OK) {
             return NGX_ERROR;
         }
@@ -4316,10 +4401,7 @@ ngx_js_merge_conf(ngx_conf_t *cf, void *parent, void *child,
     ngx_js_loc_conf_t *prev = parent;
     ngx_js_loc_conf_t *conf = child;
 
-    ngx_conf_merge_uint_value(conf->type, prev->type, NGX_ENGINE_NJS);
-    if (prev->type == NGX_CONF_UNSET_UINT) {
-        prev->type = NGX_ENGINE_NJS;
-    }
+    ngx_js_merge_conftime_loc_conf(conf, prev);
 
     ngx_conf_merge_msec_value(conf->timeout, prev->timeout, 60000);
     ngx_conf_merge_size_value(conf->reuse, prev->reuse, 128);
@@ -4376,6 +4458,144 @@ ngx_js_merge_conf(ngx_conf_t *cf, void *parent, void *child,
     return ngx_js_set_ssl(cf, conf);
 #else
     return NGX_CONF_OK;
+#endif
+}
+
+
+void *
+ngx_js_core_create_conf(ngx_cycle_t *cycle)
+{
+    ngx_js_core_conf_t  *jccf;
+
+    jccf = ngx_pcalloc(cycle->pool, sizeof(ngx_js_core_conf_t));
+    if (jccf == NULL) {
+        return NULL;
+    }
+
+    /*
+     * set by ngx_pcalloc():
+     *
+     *     jccf->native_modules = NULL;
+     */
+
+    return jccf;
+}
+
+
+void
+ngx_js_native_module_cleanup(void *data)
+{
+    void  *handle = data;
+
+    if (dlclose(handle) != 0) {
+        ngx_log_error(NGX_LOG_ALERT, ngx_cycle->log, 0,
+                      "dlclose() failed: %s", dlerror());
+    }
+}
+
+
+char *
+ngx_js_core_load_native_module(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+{
+#if (NJS_HAVE_QUICKJS)
+    void                *handle;
+    u_char              *p;
+    ngx_str_t           *value, file, name;
+    qjs_module_t        *module;
+    qjs_addon_init_pt    init;
+    ngx_pool_cleanup_t  *cln;
+
+    ngx_js_core_conf_t  *jccf = conf;
+
+    if (cf->cycle->modules_used) {
+        return "is specified too late";
+    }
+
+    value = cf->args->elts;
+    file = value[1];
+
+    if (ngx_conf_full_name(cf->cycle, &file, 0) != NGX_OK) {
+        return NGX_CONF_ERROR;
+    }
+
+    if (cf->args->nelts == 4) {
+        if (ngx_strcmp(value[2].data, "as") != 0) {
+            ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                               "invalid parameter \"%V\", expected \"as\"",
+                               &value[2]);
+            return NGX_CONF_ERROR;
+        }
+
+        name = value[3];
+
+    } else {
+        name = file;
+
+        for (p = file.data + file.len - 1; p >= file.data; p--) {
+            if (*p == '/') {
+                name.data = p + 1;
+                name.len = file.data + file.len - name.data;
+                break;
+            }
+        }
+    }
+
+    handle = dlopen((char *) file.data, RTLD_NOW | RTLD_LOCAL);
+    if (handle == NULL) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                           "dlopen(\"%V\") failed: %s", &file, dlerror());
+        return NGX_CONF_ERROR;
+    }
+
+    cln = ngx_pool_cleanup_add(cf->cycle->pool, 0);
+    if (cln == NULL) {
+        dlclose(handle);
+        return NGX_CONF_ERROR;
+    }
+
+    cln->handler = ngx_js_native_module_cleanup;
+    cln->data = handle;
+
+    init = dlsym(handle, "js_init_module");
+    if (init == NULL) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                           "dlsym(\"%V\", \"js_init_module\") failed: %s",
+                           &file, dlerror());
+        return NGX_CONF_ERROR;
+    }
+
+    if (jccf->native_modules == NULL) {
+        jccf->native_modules = ngx_array_create(cf->cycle->pool, 4,
+                                                sizeof(qjs_module_t));
+        if (jccf->native_modules == NULL) {
+            return NGX_CONF_ERROR;
+        }
+    }
+
+    module = ngx_array_push(jccf->native_modules);
+    if (module == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    p = ngx_palloc(cf->cycle->pool, name.len + 1);
+    if (p == NULL) {
+        return NGX_CONF_ERROR;
+    }
+
+    ngx_memcpy(p, name.data, name.len);
+    p[name.len] = '\0';
+
+    module->name = (const char *) p;
+    module->init = init;
+
+    return NGX_CONF_OK;
+
+#else
+
+    ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
+                       "\"load_js_native_module\" requires QuickJS support");
+    return NGX_CONF_ERROR;
+
 #endif
 }
 
