@@ -350,6 +350,9 @@ njs_type_string(njs_value_type_t type)
     case NJS_ARRAY_BUFFER:
         return "array buffer";
 
+    case NJS_SHARED_ARRAY_BUFFER:
+        return "shared array buffer";
+
     case NJS_TYPED_ARRAY:
         return "typed array";
 
@@ -577,6 +580,20 @@ njs_value_is_buffer(const njs_value_t *value)
 
 
 njs_int_t
+njs_value_is_array_buffer(const njs_value_t *value)
+{
+    return njs_is_array_buffer(value);
+}
+
+
+njs_int_t
+njs_value_is_shared_array_buffer(const njs_value_t *value)
+{
+    return njs_is_shared_array_buffer(value);
+}
+
+
+njs_int_t
 njs_value_is_data_view(const njs_value_t *value)
 {
     return njs_is_data_view(value);
@@ -638,6 +655,7 @@ njs_property_query(njs_vm_t *vm, njs_property_query_t *pq, njs_value_t *value,
     case NJS_ARRAY:
     case NJS_FUNCTION:
     case NJS_ARRAY_BUFFER:
+    case NJS_SHARED_ARRAY_BUFFER:
     case NJS_DATA_VIEW:
     case NJS_TYPED_ARRAY:
     case NJS_REGEXP:

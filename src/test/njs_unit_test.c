@@ -7,10 +7,12 @@
 #include <njs.h>
 #include <njs_unix.h>
 #include <njs_utils.h>
+#include <njs_assert.h>
 #include <njs_queue.h>
 #include <njs_string.h>
 
 #include <time.h>
+#include <sys/mman.h>
 
 #ifndef NJS_HAVE_PCRE2
 #include <pcre.h>
@@ -6289,6 +6291,41 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("var a = new ArrayBuffer(10); a.slice(0,-1).byteLength"),
       njs_str("9") },
+
+    { njs_str("var ab = new ArrayBuffer(16); ab.resizable"),
+      njs_str("false") },
+
+    { njs_str("var ab = new ArrayBuffer(16); ab.maxByteLength"),
+      njs_str("16") },
+
+    { njs_str("var ab = new ArrayBuffer(16); ab.maxByteLength === ab.byteLength"),
+      njs_str("true") },
+
+    { njs_str("var ab = new ArrayBuffer(0); ab.resizable"),
+      njs_str("false") },
+
+    { njs_str("var ab = new ArrayBuffer(0); ab.maxByteLength"),
+      njs_str("0") },
+
+    { njs_str("var ab = new ArrayBuffer(16); var msg; "
+              "try { ab.resize(32); } catch(e) { msg = e.message } msg"),
+      njs_str("ArrayBuffer is not resizable") },
+
+    { njs_str("var ab = new ArrayBuffer(16); var msg; "
+              "try { ab.resize(8); } catch(e) { msg = e.message } msg"),
+      njs_str("ArrayBuffer is not resizable") },
+
+    { njs_str("var ab = new ArrayBuffer(16); var sab = new SharedArrayBuffer(16); var msg; "
+              "try { ArrayBuffer.prototype.resize.call(sab, 32); } catch(e) { msg = e.message } msg"),
+      njs_str("Method ArrayBuffer.prototype.resize called on incompatible receiver") },
+
+    { njs_str("var get = Object.getOwnPropertyDescriptor(ArrayBuffer.prototype, 'resizable').get; "
+              "get.call([])"),
+      njs_str("TypeError: Method ArrayBuffer.prototype.resizable called on incompatible receiver") },
+
+    { njs_str("var get = Object.getOwnPropertyDescriptor(ArrayBuffer.prototype, 'maxByteLength').get; "
+              "get.call([])"),
+      njs_str("TypeError: Method ArrayBuffer.prototype.byteLength called on incompatible receiver") },
 
     { njs_str(NJS_TYPED_ARRAY_LIST
               ".map(v=>{var buffer = new ArrayBuffer(8); var view = new v(buffer);"
@@ -21721,6 +21758,140 @@ static njs_unit_test_t  njs_backtraces_test[] =
 };
 
 
+static njs_unit_test_t  njs_shared_array_buffer_test[] =
+{
+    { njs_str("SharedArrayBuffer()"),
+      njs_str("TypeError: Constructor SharedArrayBuffer requires 'new'") },
+
+    { njs_str("new SharedArrayBuffer()"),
+      njs_str("[object SharedArrayBuffer]") },
+
+    { njs_str("SharedArrayBuffer.prototype.constructor.name === 'SharedArrayBuffer'"),
+      njs_str("true") },
+
+    { njs_str("SharedArrayBuffer.name"),
+      njs_str("SharedArrayBuffer") },
+
+    { njs_str("SharedArrayBuffer.prototype[Symbol.toStringTag]"),
+      njs_str("SharedArrayBuffer") },
+
+    { njs_str("var sab = new SharedArrayBuffer(); sab.byteLength"),
+      njs_str("0") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); sab.byteLength"),
+      njs_str("16") },
+
+    { njs_str("var sab = new SharedArrayBuffer(100); sab.byteLength"),
+      njs_str("100") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); "
+              "var view = new Uint8Array(sab); "
+              "view[0] = 42; view[0]"),
+      njs_str("42") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); "
+              "var view = new Uint8Array(sab, 4, 8); "
+              "view.byteLength"),
+      njs_str("8") },
+
+    { njs_str("var sab = new SharedArrayBuffer(100); "
+              "var slice = sab.slice(10, 20); "
+              "slice.byteLength"),
+      njs_str("10") },
+
+    { njs_str("var sab = new SharedArrayBuffer(100); "
+              "var slice = sab.slice(10, 20); "
+              "slice.constructor.name"),
+      njs_str("SharedArrayBuffer") },
+
+    { njs_str("var sab = new SharedArrayBuffer(100); "
+              "var dv = new DataView(sab); "
+              "var sab2 = sab.slice(0, 16); "
+              "dv.setUint8(10, 99); "
+              "var dv2 = new DataView(sab2); "
+              "dv2.getUint8(10)"),
+      njs_str("0") },
+
+    { njs_str("var sab = new SharedArrayBuffer(100); "
+              "var dv = new DataView(sab); "
+              "dv.setUint8(10, 99); "
+              "var sab2 = sab.slice(0, 16); "
+              "var dv2 = new DataView(sab2); "
+              "dv2.getUint8(10)"),
+      njs_str("99") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); "
+              "var dv = new DataView(sab); "
+              "dv.setUint8(0, 99); "
+              "dv.getUint8(0)"),
+      njs_str("99") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); "
+              "var view1 = new Uint8Array(sab); "
+              "var view2 = new Uint8Array(sab); "
+              "view1[0] = 123; "
+              "view2[0]"),
+      njs_str("123") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); sab.growable"),
+      njs_str("false") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); sab.maxByteLength"),
+      njs_str("16") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); sab.maxByteLength === sab.byteLength"),
+      njs_str("true") },
+
+    { njs_str("var sab = new SharedArrayBuffer(0); sab.growable"),
+      njs_str("false") },
+
+    { njs_str("var sab = new SharedArrayBuffer(0); sab.maxByteLength"),
+      njs_str("0") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); var msg; "
+              "try { sab.grow(32); } catch(e) { msg = e.message } msg"),
+      njs_str("SharedArrayBuffer is not growable") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); var msg; "
+              "try { sab.grow(8); } catch(e) { msg = e.message } msg"),
+      njs_str("SharedArrayBuffer is not growable") },
+
+    { njs_str("var ab = new ArrayBuffer(16); var sab = new SharedArrayBuffer(16); var msg; "
+              "try { SharedArrayBuffer.prototype.grow.call(ab, 32); } catch(e) { msg = e.message } msg"),
+      njs_str("Method SharedArrayBuffer.prototype.grow called on incompatible receiver") },
+
+    { njs_str("var get = Object.getOwnPropertyDescriptor(SharedArrayBuffer.prototype, 'growable').get; "
+              "get.call([])"),
+      njs_str("TypeError: Method SharedArrayBuffer.prototype.growable called on incompatible receiver") },
+
+    { njs_str("var get = Object.getOwnPropertyDescriptor(SharedArrayBuffer.prototype, 'maxByteLength').get; "
+              "get.call([])"),
+      njs_str("TypeError: Method SharedArrayBuffer.prototype.byteLength called on incompatible receiver") },
+
+    { njs_str("typeof $262"),
+      njs_str("object") },
+
+    { njs_str("var sab1 = new SharedArrayBuffer(16); "
+              "var view1 = new Uint8Array(sab1); "
+              "view1[0] = 42; "
+              "var r = $r.create('/test'); "
+              "var sab2 = r.wrapSAB(sab1); "
+              "var view2 = new Uint8Array(sab2); "
+              "view2[0]"),
+      njs_str("42") },
+
+    { njs_str("var sab1 = new SharedArrayBuffer(16); "
+              "var view1 = new Uint8Array(sab1); "
+              "var r = $r.create('/test'); "
+              "var sab2 = r.wrapSAB(sab1); "
+              "var view2 = new Uint8Array(sab2); "
+              "view2[5] = 99; "
+              "view1[5]"),
+      njs_str("99") },
+
+};
+
+
 typedef struct {
     njs_bool_t  disassemble;
     njs_str_t   filter;
@@ -21734,6 +21905,7 @@ typedef struct {
     njs_bool_t  handler;
     njs_bool_t  async;
     njs_bool_t  preload;
+    njs_bool_t  sab_funcs;
     unsigned    seed;
 } njs_opts_t;
 
@@ -21764,7 +21936,16 @@ typedef struct {
     njs_external_state_t  *states;
     njs_uint_t            size;
     njs_uint_t            current;
+    njs_queue_t           sab_allocs;
 } njs_runtime_t;
+
+
+typedef struct {
+    njs_queue_link_t  link;
+    void              *ptr;
+    size_t            size;
+    uint32_t          refcount;
+} njs_sab_alloc_entry_t;
 
 
 static void
@@ -21835,16 +22016,12 @@ njs_external_retval(njs_external_state_t *state, njs_int_t ret, njs_str_t *s)
 
 
 static njs_runtime_t *
-njs_runtime_init(njs_vm_t *vm, njs_opts_t *opts)
+njs_runtime_init(njs_runtime_t *rt, njs_vm_t *vm, njs_opts_t *opts)
 {
-    njs_int_t      ret;
-    njs_uint_t     i;
-    njs_runtime_t  *rt;
+    njs_int_t   ret;
+    njs_uint_t  i;
 
-    rt = njs_mp_alloc(njs_vm_memory_pool(vm), sizeof(njs_runtime_t));
-    if (rt == NULL) {
-        return NULL;
-    }
+    njs_queue_init(&rt->sab_allocs);
 
     rt->size = opts->repeat;
     rt->states = njs_mp_alloc(njs_vm_memory_pool(vm),
@@ -21895,6 +22072,8 @@ static void
 njs_runtime_destroy(njs_runtime_t *rt)
 {
     njs_uint_t  i;
+
+    njs_assert(njs_queue_is_empty(&rt->sab_allocs));
 
     for (i = 0; i < rt->size; i++) {
         if (rt->states[i].vm != NULL) {
@@ -22024,6 +22203,98 @@ njs_module_t *njs_unit_test_addon_external_modules[] = {
 };
 
 
+static void *
+njs_sab_mmap_alloc(void *opaque, size_t size)
+{
+    void                   *ptr;
+    njs_runtime_t          *rt;
+    njs_sab_alloc_entry_t  *entry;
+
+    rt = opaque;
+
+    if (size == 0) {
+        size = 1;
+    }
+
+    ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS,
+               -1, 0);
+    if (ptr == MAP_FAILED) {
+        return NULL;
+    }
+
+    entry = malloc(sizeof(njs_sab_alloc_entry_t));
+    if (entry == NULL) {
+        munmap(ptr, size);
+        return NULL;
+    }
+
+    entry->ptr = ptr;
+    entry->size = size;
+    entry->refcount = 1;
+
+    njs_queue_insert_tail(&rt->sab_allocs, &entry->link);
+
+    return ptr;
+}
+
+
+static void
+njs_sab_mmap_free(void *opaque, void *ptr)
+{
+    njs_runtime_t          *rt;
+    njs_queue_link_t       *lnk;
+    njs_sab_alloc_entry_t  *entry;
+
+    rt = opaque;
+
+    for (lnk = njs_queue_first(&rt->sab_allocs);
+         lnk != njs_queue_tail(&rt->sab_allocs);
+         lnk = njs_queue_next(lnk))
+    {
+        entry = njs_queue_link_data(lnk, njs_sab_alloc_entry_t, link);
+
+        if (entry->ptr == ptr) {
+            entry->refcount--;
+
+            if (entry->refcount == 0) {
+                munmap(entry->ptr, entry->size);
+                njs_queue_remove(&entry->link);
+                free(entry);
+            }
+
+            return;
+        }
+    }
+
+    njs_assert_msg(0, "SharedArrayBuffer free of unknown pointer");
+}
+
+
+static void
+njs_sab_mmap_dup(void *opaque, void *ptr)
+{
+    njs_runtime_t          *rt;
+    njs_queue_link_t       *lnk;
+    njs_sab_alloc_entry_t  *entry;
+
+    rt = opaque;
+
+    for (lnk = njs_queue_first(&rt->sab_allocs);
+         lnk != njs_queue_tail(&rt->sab_allocs);
+         lnk = njs_queue_next(lnk))
+    {
+        entry = njs_queue_link_data(lnk, njs_sab_alloc_entry_t, link);
+
+        if (entry->ptr == ptr) {
+            entry->refcount++;
+            return;
+        }
+    }
+
+    njs_assert_msg(0, "SharedArrayBuffer dup of unknown pointer");
+}
+
+
 static njs_int_t
 njs_unit_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
     njs_opts_t *opts, njs_stat_t *stat)
@@ -22039,6 +22310,7 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
     njs_runtime_t         *rt;
     njs_opaque_value_t    retval;
     njs_external_state_t  *state;
+    njs_sab_functions_t   sab_funcs;
 
     njs_str_t preload = njs_str(
         "globalThis.preload = JSON.parse("
@@ -22114,7 +22386,22 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
                 njs_disassembler(vm);
             }
 
-            rt = njs_runtime_init(vm, opts);
+            rt = njs_mp_alloc(njs_vm_memory_pool(vm), sizeof(njs_runtime_t));
+            if (rt == NULL) {
+                njs_stderror("njs_mp_alloc() failed\n");
+                goto done;
+            }
+
+            if (opts->sab_funcs) {
+                sab_funcs.sab_alloc = njs_sab_mmap_alloc;
+                sab_funcs.sab_free = njs_sab_mmap_free;
+                sab_funcs.sab_dup = njs_sab_mmap_dup;
+                sab_funcs.sab_opaque = rt;
+
+                njs_vm_set_sab_functions(vm, &sab_funcs);
+            }
+
+            rt = njs_runtime_init(rt, vm, opts);
             if (rt == NULL) {
                 njs_stderror("njs_runtime_init() failed\n");
                 goto done;
@@ -23369,6 +23656,18 @@ static njs_test_suite_t  njs_suites[] =
       { .backtrace = 1, .externals = 1, .repeat = 1, .unsafe = 1 },
       njs_backtraces_test,
       njs_nitems(njs_backtraces_test),
+      njs_unit_test },
+
+    { njs_str("sab_funcs"),
+      { .repeat = 1, .unsafe = 1, .externals = 1, .sab_funcs = 1 },
+      njs_shared_array_buffer_test,
+      njs_nitems(njs_shared_array_buffer_test),
+      njs_unit_test },
+
+    { njs_str("no sab_funcs"),
+      { .repeat = 1, .unsafe = 1, .externals = 1 },
+      njs_shared_array_buffer_test,
+      njs_nitems(njs_shared_array_buffer_test),
       njs_unit_test },
 
     { njs_str("timezone"),

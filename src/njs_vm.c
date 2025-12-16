@@ -28,6 +28,13 @@ njs_vm_opt_init(njs_vm_opt_t *options)
 }
 
 
+void
+njs_vm_set_sab_functions(njs_vm_t *vm, const njs_sab_functions_t *functions)
+{
+    vm->sab_funcs = *functions;
+}
+
+
 njs_vm_t *
 njs_vm_create(njs_vm_opt_t *options)
 {
@@ -987,26 +994,6 @@ njs_value_string_get(njs_vm_t *vm, njs_value_t *value, njs_str_t *dst)
 
 
 njs_int_t
-njs_vm_value_array_buffer_set(njs_vm_t *vm, njs_value_t *value,
-    const u_char *start, uint32_t size)
-{
-    njs_array_buffer_t  *array;
-
-    array = njs_array_buffer_alloc(vm, 0, 0);
-    if (njs_slow_path(array == NULL)) {
-        return NJS_ERROR;
-    }
-
-    array->u.data = (u_char *) start;
-    array->size = size;
-
-    njs_set_array_buffer(value, array);
-
-    return NJS_OK;
-}
-
-
-njs_int_t
 njs_vm_value_buffer_set(njs_vm_t *vm, njs_value_t *value, const u_char *start,
     uint32_t size)
 {
@@ -1575,8 +1562,11 @@ njs_vm_value_to_bytes(njs_vm_t *vm, njs_str_t *dst, njs_value_t *src)
     case NJS_TYPED_ARRAY:
     case NJS_DATA_VIEW:
     case NJS_ARRAY_BUFFER:
+    case NJS_SHARED_ARRAY_BUFFER:
 
-        if (value.type != NJS_ARRAY_BUFFER) {
+        if (value.type != NJS_ARRAY_BUFFER
+            && value.type != NJS_SHARED_ARRAY_BUFFER)
+        {
             array = njs_typed_array(&value);
             buffer = njs_typed_array_buffer(array);
             offset = array->offset;
