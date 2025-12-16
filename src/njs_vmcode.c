@@ -2366,6 +2366,7 @@ njs_vmcode_typeof(njs_vm_t *vm, njs_value_t *value, njs_value_t *retval)
         NJS_ATOM_STRING_object,
         NJS_ATOM_STRING_object,
         NJS_ATOM_STRING_object,
+        NJS_ATOM_STRING_object,
     };
 
     njs_atom_to_value(vm, retval, types[value->type]);

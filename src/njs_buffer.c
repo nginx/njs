@@ -167,6 +167,7 @@ njs_buffer_set(njs_vm_t *vm, njs_value_t *value, const u_char *start,
     buffer->object.fast_array = 0;
     buffer->u.data = (void *) start;
     buffer->size = size;
+    buffer->shared = 0;
 
     proto = njs_vm_proto(vm, NJS_OBJ_TYPE_BUFFER);
 
@@ -297,6 +298,7 @@ next:
         return njs_buffer_from_typed_array(vm, value, retval);
 
     case NJS_ARRAY_BUFFER:
+    case NJS_SHARED_ARRAY_BUFFER:
         return njs_buffer_from_array_buffer(vm, value, njs_arg(args, nargs, 2),
                                             njs_arg(args, nargs, 3), retval);
 
@@ -586,6 +588,7 @@ njs_buffer_byte_length(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_OK;
 
     case NJS_ARRAY_BUFFER:
+    case NJS_SHARED_ARRAY_BUFFER:
         njs_set_number(retval, njs_array_buffer(value)->size);
         return NJS_OK;
 
@@ -647,28 +650,45 @@ njs_buffer_slot(njs_vm_t *vm, njs_value_t *value, const char *name)
 njs_int_t
 njs_value_buffer_get(njs_vm_t *vm, njs_value_t *value, njs_str_t *dst)
 {
+    size_t               offset, length;
     njs_typed_array_t   *array;
     njs_array_buffer_t  *array_buffer;
 
     if (njs_slow_path(!(njs_is_typed_array(value)
+                        || njs_is_array_buffer(value)
                         || njs_is_data_view(value))))
     {
-        njs_type_error(vm, "first argument must be a Buffer or DataView");
+        njs_type_error(vm, "first argument must be a Buffer, DataView or "
+                       "ArrayBuffer");
         return NJS_ERROR;
     }
 
-    array = njs_typed_array(value);
-    if (njs_slow_path(array == NULL)) {
-        return NJS_ERROR;
+    if (njs_is_typed_array(value) || njs_is_data_view(value)) {
+        array = njs_typed_array(value);
+        if (njs_slow_path(array == NULL)) {
+            return NJS_ERROR;
+        }
+
+        array_buffer = njs_typed_array_writable(vm, array);
+        if (njs_slow_path(array_buffer == NULL)) {
+            return NJS_ERROR;
+        }
+
+        offset = array->offset;
+        length = array->byte_length;
+
+    } else {
+        array_buffer = njs_array_buffer(value);
+        if (njs_array_buffer_writable(vm, array_buffer) != NJS_OK) {
+            return NJS_ERROR;
+        }
+
+        offset = 0;
+        length = array_buffer->size;
     }
 
-    array_buffer = njs_typed_array_writable(vm, array);
-    if (njs_slow_path(array_buffer == NULL)) {
-        return NJS_ERROR;
-    }
-
-    dst->length = array->byte_length;
-    dst->start = &array_buffer->u.u8[array->offset];
+    dst->length = length;
+    dst->start = &array_buffer->u.u8[offset];
 
     return NJS_OK;
 }
