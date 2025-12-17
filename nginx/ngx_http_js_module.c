@@ -608,6 +608,42 @@ static ngx_command_t  ngx_http_js_commands[] = {
 };
 
 
+static ngx_command_t  ngx_js_core_commands[] = {
+
+    { ngx_string("js_load_http_native_module"),
+      NGX_MAIN_CONF|NGX_DIRECT_CONF|NGX_CONF_TAKE13,
+      ngx_js_core_load_native_module,
+      0,
+      0,
+      NULL },
+
+      ngx_null_command
+};
+
+
+static ngx_core_module_t  ngx_js_core_module_ctx = {
+    ngx_string("ngx_http_js_core"),
+    ngx_js_core_create_conf,
+    NULL
+};
+
+
+ngx_module_t  ngx_http_js_core_module = {
+    NGX_MODULE_V1,
+    &ngx_js_core_module_ctx,           /* module context */
+    ngx_js_core_commands,              /* module directives */
+    NGX_CORE_MODULE,                   /* module type */
+    NULL,                              /* init master */
+    NULL,                              /* init module */
+    NULL,                              /* init process */
+    NULL,                              /* init thread */
+    NULL,                              /* exit thread */
+    NULL,                              /* exit process */
+    NULL,                              /* exit master */
+    NGX_MODULE_V1_PADDING
+};
+
+
 static ngx_http_module_t  ngx_http_js_module_ctx = {
     NULL,                          /* preconfiguration */
     ngx_http_js_init,              /* postconfiguration */
@@ -7760,6 +7796,9 @@ ngx_http_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf)
         options.u.qjs.metas = ngx_http_js_uptr;
         options.u.qjs.addons = njs_http_qjs_addon_modules;
         options.clone = ngx_engine_qjs_clone;
+
+        options.core_conf = (ngx_js_core_conf_t *)
+                    ngx_get_conf(cf->cycle->conf_ctx, ngx_http_js_core_module);
     }
 #endif
 

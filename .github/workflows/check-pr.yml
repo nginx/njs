@@ -68,6 +68,7 @@ jobs:
       - name: Configure and make njs
         run: |
           ./configure \
+                    --debug=YES \
                     --cc-opt="$CC_OPT" \
                     --ld-opt="$LD_OPT" \
           || cat build/autoconf.err
@@ -81,6 +82,7 @@ jobs:
       - name: Configure and make njs, 32-bit
         run: |
           ./configure \
+                    --debug=YES \
                     --cc-opt="$CC_OPT -m32" \
                     --ld-opt="$LD_OPT" \
           || cat build/autoconf.err
@@ -94,6 +96,7 @@ jobs:
       - name: Configure and make njs with quickjs
         run: |
           ./configure \
+                    --debug=YES \
                     --with-quickjs \
                     --cc-opt="$CC_OPT -Iquickjs" \
                     --ld-opt="$LD_OPT -Lquickjs" \
@@ -108,6 +111,7 @@ jobs:
       - name: Configure and make njs with quickjs-ng
         run: |
           ./configure \
+                    --debug=YES \
                     --with-quickjs \
                     --cc-opt="$CC_OPT" \
                     --ld-opt="$LD_OPT" \
