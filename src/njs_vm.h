@@ -96,6 +96,7 @@ enum njs_object_e {
     NJS_OBJECT_NJS,
     NJS_OBJECT_PROCESS,
     NJS_OBJECT_MATH,
+    NJS_OBJECT_ATOMICS,
     NJS_OBJECT_JSON,
     NJS_OBJECT_MAX
 };

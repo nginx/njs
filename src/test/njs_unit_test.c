@@ -21892,6 +21892,196 @@ static njs_unit_test_t  njs_shared_array_buffer_test[] =
 };
 
 
+static njs_unit_test_t  njs_atomics_test[] =
+{
+    { njs_str("typeof Atomics"),
+      njs_str("object") },
+
+    { njs_str("Atomics.toString()"),
+      njs_str("[object Atomics]") },
+
+    { njs_str("Atomics[Symbol.toStringTag]"),
+      njs_str("Atomics") },
+
+    { njs_str("Atomics.isLockFree(1)"),
+      njs_str("true") },
+
+    { njs_str("Atomics.isLockFree(2)"),
+      njs_str("true") },
+
+    { njs_str("Atomics.isLockFree(4)"),
+      njs_str("true") },
+
+    { njs_str("Atomics.isLockFree(8)"),
+      njs_str("true") },
+
+    { njs_str("Atomics.isLockFree(3)"),
+      njs_str("false") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); "
+              "var ta = new Int32Array(sab); "
+              "ta[0] = 10; "
+              "Atomics.add(ta, 0, 5)"),
+      njs_str("10") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); "
+              "var ta = new Int32Array(sab); "
+              "ta[0] = 10; "
+              "Atomics.add(ta, 0, 5); "
+              "ta[0]"),
+      njs_str("15") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); "
+              "var ta = new Uint8Array(sab); "
+              "ta[0] = 200; "
+              "Atomics.add(ta, 0, 100)"),
+      njs_str("200") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); "
+              "var ta = new Uint8Array(sab); "
+              "ta[0] = 200; "
+              "Atomics.add(ta, 0, 100); "
+              "ta[0]"),
+      njs_str("44") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); "
+              "var ta = new Int32Array(sab); "
+              "ta[0] = 100; "
+              "Atomics.sub(ta, 0, 30)"),
+      njs_str("100") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); "
+              "var ta = new Int32Array(sab); "
+              "ta[0] = 100; "
+              "Atomics.sub(ta, 0, 30); "
+              "ta[0]"),
+      njs_str("70") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); "
+              "var ta = new Int32Array(sab); "
+              "ta[0] = 15; "
+              "Atomics.and(ta, 0, 7)"),
+      njs_str("15") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); "
+              "var ta = new Int32Array(sab); "
+              "ta[0] = 15; "
+              "Atomics.and(ta, 0, 7); "
+              "ta[0]"),
+      njs_str("7") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); "
+              "var ta = new Int32Array(sab); "
+              "ta[0] = 5; "
+              "Atomics.or(ta, 0, 10)"),
+      njs_str("5") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); "
+              "var ta = new Int32Array(sab); "
+              "ta[0] = 5; "
+              "Atomics.or(ta, 0, 10); "
+              "ta[0]"),
+      njs_str("15") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); "
+              "var ta = new Int32Array(sab); "
+              "ta[0] = 15; "
+              "Atomics.xor(ta, 0, 10)"),
+      njs_str("15") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); "
+              "var ta = new Int32Array(sab); "
+              "ta[0] = 15; "
+              "Atomics.xor(ta, 0, 10); "
+              "ta[0]"),
+      njs_str("5") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); "
+              "var ta = new Int32Array(sab); "
+              "ta[0] = 10; "
+              "Atomics.exchange(ta, 0, 42)"),
+      njs_str("10") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); "
+              "var ta = new Int32Array(sab); "
+              "ta[0] = 10; "
+              "Atomics.exchange(ta, 0, 42); "
+              "ta[0]"),
+      njs_str("42") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); "
+              "var ta = new Int32Array(sab); "
+              "ta[0] = 42; "
+              "Atomics.compareExchange(ta, 0, 42, 100)"),
+      njs_str("42") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); "
+              "var ta = new Int32Array(sab); "
+              "ta[0] = 42; "
+              "Atomics.compareExchange(ta, 0, 42, 100); "
+              "ta[0]"),
+      njs_str("100") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); "
+              "var ta = new Int32Array(sab); "
+              "ta[0] = 42; "
+              "Atomics.compareExchange(ta, 0, 99, 100)"),
+      njs_str("42") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); "
+              "var ta = new Int32Array(sab); "
+              "ta[0] = 42; "
+              "Atomics.compareExchange(ta, 0, 99, 100); "
+              "ta[0]"),
+      njs_str("42") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); "
+              "var ta = new Int32Array(sab); "
+              "ta[0] = 42; "
+              "Atomics.load(ta, 0)"),
+      njs_str("42") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); "
+              "var ta = new Int32Array(sab); "
+              "Atomics.store(ta, 0, 42); "
+              "ta[0]"),
+      njs_str("42") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); "
+              "var ta = new Int16Array(sab); "
+              "ta[0] = 1000; "
+              "Atomics.add(ta, 0, 500); "
+              "ta[0]"),
+      njs_str("1500") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); "
+              "var ta = new Uint16Array(sab); "
+              "ta[0] = 60000; "
+              "Atomics.add(ta, 0, 10000); "
+              "ta[0]"),
+      njs_str("4464") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); "
+              "var ta = new Int16Array(sab); "
+              "ta[0] = 100; "
+              "Atomics.compareExchange(ta, 0, 100, 200); "
+              "ta[0]"),
+      njs_str("200") },
+
+    { njs_str("Atomics.add(new Float32Array(16), 0, 1)"),
+      njs_str("TypeError: integer TypedArray expected") },
+
+    { njs_str("Atomics.add({}, 0, 1)"),
+      njs_str("TypeError: integer TypedArray expected") },
+
+    { njs_str("var sab = new SharedArrayBuffer(16); "
+              "var ta = new Int32Array(sab); "
+              "Atomics.add(ta, 100, 1)"),
+      njs_str("RangeError: out-of-bound access") },
+
+};
+
+
 typedef struct {
     njs_bool_t  disassemble;
     njs_str_t   filter;
@@ -23668,6 +23858,12 @@ static njs_test_suite_t  njs_suites[] =
       { .repeat = 1, .unsafe = 1, .externals = 1 },
       njs_shared_array_buffer_test,
       njs_nitems(njs_shared_array_buffer_test),
+      njs_unit_test },
+
+    { njs_str("atomics"),
+      { .repeat = 1, .unsafe = 1 },
+      njs_atomics_test,
+      njs_nitems(njs_atomics_test),
       njs_unit_test },
 
     { njs_str("timezone"),

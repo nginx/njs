@@ -40,6 +40,7 @@ NJS_LIB_SRCS=" \
    src/njs_date.c \
    src/njs_error.c \
    src/njs_math.c \
+   src/njs_atomics.c \
    src/njs_array_buffer.c \
    src/njs_typed_array.c \
    src/njs_promise.c \
