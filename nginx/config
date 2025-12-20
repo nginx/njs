@@ -8,12 +8,14 @@ NJS_QUICKJS=${NJS_QUICKJS:-YES}
 NJS_DEPS="$ngx_addon_dir/ngx_js.h \
     $ngx_addon_dir/ngx_js_http.h \
     $ngx_addon_dir/ngx_js_fetch.h \
-    $ngx_addon_dir/ngx_js_shared_dict.h"
+    $ngx_addon_dir/ngx_js_shared_dict.h \
+    $ngx_addon_dir/ngx_js_shared_array.h"
 NJS_SRCS="$ngx_addon_dir/ngx_js.c \
     $ngx_addon_dir/ngx_js_http.c \
     $ngx_addon_dir/ngx_js_fetch.c \
     $ngx_addon_dir/ngx_js_regex.c \
-    $ngx_addon_dir/ngx_js_shared_dict.c"
+    $ngx_addon_dir/ngx_js_shared_dict.c \
+    $ngx_addon_dir/ngx_js_shared_array.c"
 
 QJS_DEPS=""
 QJS_SRCS=""
