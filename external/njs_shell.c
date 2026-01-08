@@ -14,6 +14,7 @@
 #if (NJS_HAVE_QUICKJS)
 #include <qjs.h>
 #include <pthread.h>
+#include <dlfcn.h>
 #endif
 
 #if (!defined NJS_FUZZER_TARGET && defined NJS_HAVE_READLINE)
@@ -2558,6 +2559,71 @@ njs_qjs_rejection_tracker(JSContext *ctx, JSValueConst promise,
 }
 
 
+static njs_int_t
+njs_has_suffix(const char *str, const char *suffix)
+{
+    size_t  len, slen;
+
+    len = njs_strlen(str);
+    slen = njs_strlen(suffix);
+
+    return (len >= slen && memcmp(str + len - slen, suffix, slen) == 0);
+}
+
+
+static JSModuleDef *
+njs_qjs_module_loader_so(JSContext *ctx, const char *module_name)
+{
+    void                *handle;
+    char                *filename;
+    JSModuleDef         *m;
+    qjs_addon_init_pt   init;
+
+    if (!strchr(module_name, '/')) {
+        filename = js_malloc(ctx, njs_strlen(module_name) + 3);
+        if (filename == NULL) {
+            JS_ThrowOutOfMemory(ctx);
+            return NULL;
+        }
+
+        strcpy(filename, "./");
+        strcpy(filename + 2, module_name);
+
+    } else {
+        filename = (char *) module_name;
+    }
+
+    handle = dlopen(filename, RTLD_NOW | RTLD_LOCAL);
+    if (filename != module_name) {
+        js_free(ctx, filename);
+    }
+
+    if (handle == NULL) {
+        JS_ThrowReferenceError(ctx, "could not load module filename '%s' as "
+                               "shared library: %s", module_name, dlerror());
+        return NULL;
+    }
+
+    init = dlsym(handle, "js_init_module");
+    if (init == NULL) {
+        JS_ThrowReferenceError(ctx, "could not load module filename '%s': "
+                               "js_init_module not found", module_name);
+        dlclose(handle);
+        return NULL;
+    }
+
+    m = init(ctx, module_name);
+    if (m == NULL) {
+        JS_ThrowReferenceError(ctx, "could not load module filename '%s': "
+                               "initialization error", module_name);
+        dlclose(handle);
+        return NULL;
+    }
+
+    return m;
+}
+
+
 static JSModuleDef *
 njs_qjs_module_loader(JSContext *ctx, const char *module_name, void *opaque)
 {
@@ -2571,6 +2637,10 @@ njs_qjs_module_loader(JSContext *ctx, const char *module_name, void *opaque)
 
     opts = opaque;
     console = JS_GetRuntimeOpaque(JS_GetRuntime(ctx));
+
+    if (njs_has_suffix(module_name, ".so")) {
+        return njs_qjs_module_loader_so(ctx, module_name);
+    }
 
     njs_memzero(&info, sizeof(njs_module_info_t));
 
