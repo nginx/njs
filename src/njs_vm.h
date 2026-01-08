@@ -39,6 +39,7 @@ typedef enum {
     NJS_OBJ_TYPE_DATE,
     NJS_OBJ_TYPE_PROMISE,
     NJS_OBJ_TYPE_ARRAY_BUFFER,
+    NJS_OBJ_TYPE_SHARED_ARRAY_BUFFER,
     NJS_OBJ_TYPE_DATA_VIEW,
     NJS_OBJ_TYPE_TEXT_DECODER,
     NJS_OBJ_TYPE_TEXT_ENCODER,
@@ -95,6 +96,7 @@ enum njs_object_e {
     NJS_OBJECT_NJS,
     NJS_OBJECT_PROCESS,
     NJS_OBJECT_MATH,
+    NJS_OBJECT_ATOMICS,
     NJS_OBJECT_JSON,
     NJS_OBJECT_MAX
 };
@@ -124,6 +126,8 @@ struct njs_vm_s {
     njs_value_t              **levels[NJS_LEVEL_MAX];
 
     njs_external_ptr_t       external;
+
+    njs_sab_functions_t      sab_funcs;
 
     njs_native_frame_t       *top_frame;
     njs_frame_t              *active_frame;

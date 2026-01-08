@@ -130,7 +130,7 @@ njs_typed_array_alloc(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (buffer == NULL) {
-        buffer = njs_array_buffer_alloc(vm, size, zeroing);
+        buffer = njs_array_buffer_alloc(vm, size, zeroing, 0);
         if (njs_slow_path(buffer == NULL)) {
             return NULL;
         }
