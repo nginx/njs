@@ -37,7 +37,7 @@ END
 
 njs_test="$CC $CFLAGS $NJS_CFLAGS $NJS_CC_OPT $NJS_TEST_CFLAGS \
           $njs_feature_inc_path -o $NJS_AUTOTEST $NJS_AUTOTEST.c \
-          $NJS_LD_OPT $NJS_TEST_LIBS $njs_feature_libs"
+          $NJS_LD_OPT $NJS_LINK $NJS_TEST_LIBS $njs_feature_libs"
 
 # /bin/sh -c "(...)" is to intercept "Killed", "Abort trap",
 # "Segmentation fault", or other shell messages.
