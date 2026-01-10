@@ -7525,11 +7525,11 @@ ngx_http_qjs_body_filter(ngx_http_request_t *r, ngx_http_js_loc_conf_t *jlcf,
             rc = ctx->engine->call((ngx_js_ctx_t *) ctx, &jlcf->body_filter,
                                    (njs_opaque_value_t *) &arguments[0], 3);
 
-            JS_FreeAtom(cx, last_key);
             JS_FreeValue(cx, arguments[1]);
             JS_FreeValue(cx, arguments[2]);
 
             if (rc == NGX_ERROR) {
+                JS_FreeAtom(cx, last_key);
                 return NGX_ERROR;
             }
 
@@ -7537,6 +7537,7 @@ ngx_http_qjs_body_filter(ngx_http_request_t *r, ngx_http_js_loc_conf_t *jlcf,
                 ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
                               "async operation inside \"%V\" body filter",
                               &jlcf->body_filter);
+                JS_FreeAtom(cx, last_key);
                 return NGX_ERROR;
             }
 
@@ -7545,6 +7546,7 @@ ngx_http_qjs_body_filter(ngx_http_request_t *r, ngx_http_js_loc_conf_t *jlcf,
         } else {
             cl = ngx_alloc_chain_link(c->pool);
             if (cl == NULL) {
+                JS_FreeAtom(cx, last_key);
                 return NGX_ERROR;
             }
 
@@ -7556,6 +7558,8 @@ ngx_http_qjs_body_filter(ngx_http_request_t *r, ngx_http_js_loc_conf_t *jlcf,
 
         in = in->next;
     }
+
+    JS_FreeAtom(cx, last_key);
 
     return NGX_OK;
 }
