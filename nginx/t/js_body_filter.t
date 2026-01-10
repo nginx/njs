@@ -156,9 +156,24 @@ like(http_get('/prepend'), qr/XXXAAABBCDDDD$/, 'prepend');
 
 ###############################################################################
 
+sub send_chunked {
+	my ($client, @chunks) = @_;
+
+	print $client
+		"HTTP/1.1 200 OK" . CRLF .
+		"Transfer-Encoding: chunked" . CRLF .
+		"Connection: close" . CRLF .
+		CRLF;
+
+	for my $chunk (@chunks) {
+		printf $client "%x\r\n%s\r\n", length($chunk), $chunk;
+	}
+
+	print $client "0\r\n\r\n";
+}
+
 sub http_daemon {
 	my $port = shift;
-	my $delay = shift || 0.05;
 
 	my $server = IO::Socket::INET->new(
 		Proto => 'tcp',
@@ -189,34 +204,10 @@ sub http_daemon {
 		log2c("(new connection $client $uri)");
 
 		if ($uri eq '/source') {
-			print $client
-				"HTTP/1.1 200 OK" . CRLF .
-				"Content-Length: 10" . CRLF .
-				"Connection: close" . CRLF .
-				CRLF;
+			send_chunked($client, "AAA", "BB", "C", "DDDD");
 
-			print $client "AAA";
-			select undef, undef, undef, $delay;
-			print $client "BB";
-			select undef, undef, undef, $delay;
-			print $client "C";
-			select undef, undef, undef, $delay;
-			print $client "DDDD";
-
-		}  elsif ($uri eq '/nonutf8_source') {
-			print $client
-				"HTTP/1.1 200 OK" . CRLF .
-				"Content-Length: 6" . CRLF .
-				"Connection: close" . CRLF .
-				CRLF;
-
-			print $client "\xaa\xaa";
-			select undef, undef, undef, $delay;
-			print $client "\xbb";
-			select undef, undef, undef, $delay;
-			print $client "\xcc";
-			select undef, undef, undef, $delay;
-			print $client "\xdd\xdd";
+		} elsif ($uri eq '/nonutf8_source') {
+			send_chunked($client, "\xaa\xaa", "\xbb", "\xcc", "\xdd\xdd");
 
 		} else {
 			print $client
