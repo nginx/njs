@@ -1,3 +1,47 @@
+Changes with njs 0.9.5                                       13 Jan 2026
+
+    nginx modules:
+
+    *) Feature: added native module support for QuickJS engine.
+       The following directives were added: js_load_http_native_module,
+       js_load_stream_native_module.
+
+    *) Bugfix: fixed js_body_filter with multiple chunks for QuickJS
+       engine.
+
+    *) Bugfix: fixed buffer_type inheritance in if blocks for js_body_filter.
+       Previously, when js_body_filter was used inside an if block,
+       the data parameter received Buffer type instead of the expected
+       String type.
+
+    *) Bugfix: fixed js_body_filter when data is not in memory.
+       Previously, when upstream data was delivered from nginx cache,
+       js_body_filter was not able to process it correctly.
+
+    *) Bugfix: improved r.subrequest() error handling.
+       Fixed a problem of a lost write event when the njs handler
+       making r.subrequest() is called from a lua handler as a
+       subrequest.
+
+    Core:
+
+    *) Bugfix: fixed XMLAttr object.
+       Pointer to xmlAttr could become invalid when the parent XMLNode
+       was modified.
+
+    *) Bugfix: fixed XMLNode update.
+
+    *) Bugfix: fixed ArrayBuffer with detached buffers.
+
+    *) Bugfix: added missing detached array checks.
+
+    *) Bugfix: fixed fs.mkdir() and friends.
+
+    *) Bugfix: fixed path restoration in fs.mkdir() and friends on
+       error.
+
+    *) Bugfix: fixed missed allocation check in promise code.
+
 Changes with njs 0.9.4                                       28 Oct 2025
 
     nginx modules:
