@@ -139,6 +139,12 @@ njs_strstr_case_eq(s1, s2)                                                    \
      && (njs_strncasecmp((s1)->start, (s2)->start, (s1)->length) == 0))
 
 
+#define                                                                       \
+njs_strstr_starts_with(str, prefix)                                           \
+    (((str)->length >= (prefix)->length)                                      \
+     && (memcmp((str)->start, (prefix)->start, (prefix)->length) == 0))
+
+
 NJS_EXPORT njs_int_t njs_strncasecmp(u_char *s1, u_char *s2, size_t n);
 
 

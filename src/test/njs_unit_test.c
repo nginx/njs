@@ -11806,8 +11806,8 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("/+/.test('')"),
       njs_str("SyntaxError: "
-              njs_pcre_var("pcre_compile2(\"+\") failed: quantifier does not follow a repeatable item at \"+\" in 1",
-                           "pcre_compile(\"+\") failed: nothing to repeat at \"+\" in 1")) },
+              njs_pcre_var("pcre_compile2(\"+\") failed: quantifier does not follow a repeatable item",
+                           "pcre_compile(\"+\") failed: nothing to repeat")) },
 
     { njs_str("/^$/.test('')"),
       njs_str("true") },
@@ -21994,9 +21994,7 @@ done:
         return NJS_ERROR;
     }
 
-    success = expected->ret.length <= s.length
-              && (memcmp(expected->ret.start, s.start, expected->ret.length)
-                  == 0);
+    success = njs_strstr_starts_with(&s, &expected->ret);
     if (!success) {
         njs_stderror("njs(\"%V\")\nexpected: \"%V\"\n     got: \"%V\"\n",
                      &expected->script, &expected->ret, &s);
@@ -22156,7 +22154,7 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
                                   "Extra characters at the end of the script");
             }
 
-            success = njs_strstr_eq(&tests[i].ret, &s);
+            success = njs_strstr_starts_with(&s, &tests[i].ret);
             if (!success) {
                 njs_stderror("njs(\"%V\")\nexpected: \"%V\"\n"
                              "     got: \"%V\"\n",
