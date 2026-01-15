@@ -847,20 +847,33 @@ njs_options_free(njs_opts_t *opts)
 int
 LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
+    u_char      *buf;
     njs_opts_t  opts;
 
     if (size == 0) {
         return 0;
     }
 
+    buf = malloc(size + 1);
+    if (buf == NULL) {
+        return 0;
+    }
+
+    memcpy(buf, data, size);
+    buf[size] = '\0';
+
     njs_memzero(&opts, sizeof(njs_opts_t));
 
     opts.file = (char *) "fuzzer";
-    opts.command.start = (u_char *) data;
+    opts.command.start = buf;
     opts.command.length = size;
     opts.suppress_stdout = 1;
 
-    return njs_main(&opts);
+    (void) njs_main(&opts);
+
+    free(buf);
+
+    return 0;
 }
 
 #endif
