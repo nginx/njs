@@ -47,6 +47,7 @@ static const njs_object_init_t  *njs_object_init[] = {
     &njs_njs_object_init,
     &njs_process_object_init,
     &njs_math_object_init,
+    &njs_atomics_object_init,
     &njs_json_object_init,
     NULL
 };
@@ -69,6 +70,7 @@ static const njs_object_type_init_t *const
     &njs_date_type_init,
     &njs_promise_type_init,
     &njs_array_buffer_type_init,
+    &njs_shared_array_buffer_type_init,
     &njs_data_view_type_init,
     &njs_text_decoder_type_init,
     &njs_text_encoder_type_init,
@@ -1007,6 +1009,9 @@ static const njs_object_prop_init_t  njs_global_this_object_properties[] =
     NJS_DECLARE_PROP_HANDLER(STRING_Math, njs_top_level_object,
                              NJS_OBJECT_MATH, NJS_OBJECT_PROP_VALUE_CW),
 
+    NJS_DECLARE_PROP_HANDLER(STRING_Atomics, njs_top_level_object,
+                             NJS_OBJECT_ATOMICS, NJS_OBJECT_PROP_VALUE_CW),
+
     NJS_DECLARE_PROP_HANDLER(STRING_JSON, njs_top_level_object,
                              NJS_OBJECT_JSON, NJS_OBJECT_PROP_VALUE_CW),
 
@@ -1026,6 +1031,11 @@ static const njs_object_prop_init_t  njs_global_this_object_properties[] =
 
     NJS_DECLARE_PROP_HANDLER(STRING_ArrayBuffer, njs_top_level_constructor,
                              NJS_OBJ_TYPE_ARRAY_BUFFER,
+                             NJS_OBJECT_PROP_VALUE_CW),
+
+    NJS_DECLARE_PROP_HANDLER(STRING_SharedArrayBuffer,
+                             njs_top_level_constructor,
+                             NJS_OBJ_TYPE_SHARED_ARRAY_BUFFER,
                              NJS_OBJECT_PROP_VALUE_CW),
 
     NJS_DECLARE_PROP_HANDLER(STRING_DataView, njs_top_level_constructor,
