@@ -13,7 +13,7 @@ END
 # Allow error exit status.
 set +e
 
-if [ -z "$(which $CC)" ]; then
+if ! command -v "${CC}" >/dev/null; then
     echo
     echo $0: error: $CC not found.
     echo
