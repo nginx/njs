@@ -169,6 +169,20 @@ case $NJS_CC_NAME in
 
 esac
 
+njs_feature="-Wl,-E"
+njs_feature_name=
+njs_feature_run=value
+njs_feature_path=
+njs_feature_incs=
+njs_feature_libs=-Wl,-E
+njs_feature_test="int main(void) { return 0; }"
+
+. auto/feature
+
+if [ $njs_found = yes ]; then
+    NJS_LINK="$NJS_LINK -Wl,-E"
+fi
+
 if [ "$NJS_DEBUG" = "YES" ]; then
         njs_define=NJS_DEBUG . auto/define
 fi
