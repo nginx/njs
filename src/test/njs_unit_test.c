@@ -21514,6 +21514,9 @@ static njs_unit_test_t  njs_shell_test[] =
 
 static njs_unit_test_t  njs_backtraces_test[] =
 {
+    { njs_str("var e = new Error(); e[0] = 1"),
+      njs_str("1") },
+
     { njs_str("function ff(o) {return o.a.a};"
               "function f(o) {return ff(o)};"
               "f({})"),
@@ -21672,6 +21675,9 @@ static njs_unit_test_t  njs_backtraces_test[] =
       njs_str("TypeError: callback argument is not callable\n"
               "    at TypedArray.prototype.every (native)\n"
               "    at main (:1)\n") },
+
+    { njs_str("var e = new Error('oops'); e.stack = 123; e.stack"),
+      njs_str("123") },
 
     /* line numbers */
 

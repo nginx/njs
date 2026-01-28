@@ -260,7 +260,6 @@ void njs_flathsh_proto_free(void *data, void *p, size_t size);
 extern const njs_str_t    njs_entry_empty;
 extern const njs_str_t    njs_entry_main;
 extern const njs_str_t    njs_entry_module;
-extern const njs_str_t    njs_entry_native;
 extern const njs_str_t    njs_entry_unknown;
 extern const njs_str_t    njs_entry_anonymous;
 

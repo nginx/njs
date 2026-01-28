@@ -738,7 +738,7 @@ njs_object_property_query(njs_vm_t *vm, njs_property_query_t *pq,
 
         case NJS_OBJECT_VALUE:
             ov = (njs_object_value_t *) proto;
-            if (!njs_is_string(&ov->value)) {
+            if (!njs_is_string(&ov->value) || proto->error_data) {
                 break;
             }
 

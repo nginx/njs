@@ -1854,7 +1854,7 @@ error:
     if (njs_is_error(&vm->exception)) {
         vm->active_frame->native.pc = pc;
 
-        (void) njs_error_stack_attach(vm, vm->exception);
+        njs_error_stack_attach(vm, vm->exception);
     }
 
     for ( ;; ) {
