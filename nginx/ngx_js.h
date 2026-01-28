@@ -63,6 +63,8 @@ enum {
     NGX_QJS_CLASS_ID_SHARED,
     NGX_QJS_CLASS_ID_SHARED_DICT,
     NGX_QJS_CLASS_ID_SHARED_DICT_ERROR,
+    NGX_QJS_CLASS_ID_SHARED_ARRAY_EXOTIC,
+    NGX_QJS_CLASS_ID_SHARED_ARRAY_INSTANCE,
     NGX_QJS_CLASS_ID_FETCH_HEADERS,
     NGX_QJS_CLASS_ID_FETCH_REQUEST,
     NGX_QJS_CLASS_ID_FETCH_RESPONSE,
@@ -73,6 +75,7 @@ enum {
 typedef struct ngx_js_loc_conf_s ngx_js_loc_conf_t;
 typedef struct ngx_js_event_s ngx_js_event_t;
 typedef struct ngx_js_dict_s  ngx_js_dict_t;
+typedef struct ngx_js_shared_array_s ngx_js_shared_array_t;
 typedef struct ngx_js_ctx_s  ngx_js_ctx_t;
 typedef struct ngx_engine_s  ngx_engine_t;
 
@@ -122,6 +125,7 @@ typedef struct {
 
 #define NGX_JS_COMMON_MAIN_CONF                                               \
     ngx_js_dict_t         *dicts;                                             \
+    ngx_js_shared_array_t *shared_arrays;                                     \
     ngx_array_t           *periodics                                          \
 
 
@@ -436,6 +440,7 @@ extern qjs_module_t  qjs_xml_module;
 extern qjs_module_t  qjs_zlib_module;
 extern qjs_module_t  ngx_qjs_ngx_module;
 extern qjs_module_t  ngx_qjs_ngx_shared_dict_module;
+extern qjs_module_t  ngx_qjs_ngx_shared_array_module;
 extern qjs_module_t  ngx_qjs_ngx_fetch_module;
 
 #endif
@@ -495,5 +500,6 @@ extern njs_module_t  njs_zlib_module;
 
 #include "ngx_js_fetch.h"
 #include "ngx_js_shared_dict.h"
+#include "ngx_js_shared_array.h"
 
 #endif /* _NGX_JS_H_INCLUDED_ */

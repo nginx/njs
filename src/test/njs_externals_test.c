@@ -554,6 +554,30 @@ njs_unit_test_r_bind(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
+njs_unit_test_r_wrap_sab(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused, njs_value_t *retval)
+{
+    njs_str_t    buffer;
+    njs_value_t  *sab;
+
+    sab = njs_arg(args, nargs, 1);
+
+    if (!njs_value_is_shared_array_buffer(sab)) {
+        njs_vm_type_error(vm, "argument is not a SharedArrayBuffer");
+        return NJS_ERROR;
+    }
+
+    if (njs_value_buffer_get(vm, sab, &buffer) != NJS_OK) {
+        njs_vm_type_error(vm, "cannot get SharedArrayBuffer data");
+        return NJS_ERROR;
+    }
+
+    return njs_vm_value_array_buffer_set2(vm, retval, buffer.start,
+                                          buffer.length, 1);
+}
+
+
+static njs_int_t
 njs_unit_test_null_get(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
 {
@@ -780,6 +804,17 @@ static njs_external_t  njs_unit_test_r_external[] = {
         .enumerable = 1,
         .u.method = {
             .native = njs_unit_test_r_bind,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("wrapSAB"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = njs_unit_test_r_wrap_sab,
         }
     },
 
