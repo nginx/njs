@@ -67,7 +67,7 @@ njs_test {
 # Backtraces for external objects
 njs_test {
     {"console.info(console.a.a)\r\n"
-     "console.info(console.a.a)\r\nThrown:\r\nTypeError:*at console.info (native)"}
+     "console.info(console.a.a)\r\nThrown:\r\nTypeError:*at info (native)"}
 }
 
 # dumper

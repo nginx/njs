@@ -70,15 +70,17 @@ njs_error_fmt_new(njs_vm_t *vm, njs_value_t *dst, njs_object_type_t type,
 void
 njs_error_stack_attach(njs_vm_t *vm, njs_value_t value)
 {
-    size_t              count;
-    uint32_t            line, prev_line;
-    njs_int_t           ret;
-    njs_str_t           name, file, prev_name;
-    njs_chb_t           chain;
-    njs_value_t         *stackval;
-    njs_vm_code_t       *code;
-    njs_function_t      *function;
-    njs_native_frame_t  *frame;
+    size_t               count;
+    uint32_t             line, prev_line;
+    njs_int_t            ret;
+    njs_str_t            name, file, prev_name;
+    njs_chb_t            chain;
+    njs_value_t          *stackval, retval, fobj;
+    njs_vm_code_t        *code;
+    njs_function_t       *function;
+    njs_object_prop_t    *prop;
+    njs_native_frame_t   *frame;
+    njs_flathsh_query_t  fhq;
 
     if (njs_slow_path(!vm->options.backtrace
                       || !njs_is_error(&value))
@@ -128,9 +130,40 @@ njs_error_stack_attach(njs_vm_t *vm, njs_value_t value)
             }
 
         } else {
-            ret = njs_builtin_match_native_function(vm, function, &name);
-            if (ret != NJS_OK) {
-                name = njs_entry_unknown;
+            name.length = 0;
+            fhq.key_hash = NJS_ATOM_STRING_name;
+
+            ret = njs_flathsh_unique_find(&function->object.hash, &fhq);
+            if (ret == NJS_OK) {
+                prop = fhq.value;
+
+                if (njs_is_string(njs_prop_value(prop))) {
+                    njs_string_get(vm, njs_prop_value(prop), &name);
+                }
+            }
+
+            if (name.length == 0) {
+                njs_set_function(&fobj, function);
+
+                ret = njs_value_property(vm, &fobj, NJS_ATOM_STRING_name,
+                                         &retval);
+                if (ret != NJS_OK) {
+                    continue;
+                }
+
+                if (njs_is_string(&retval)) {
+                    njs_string_get(vm, &retval, &name);
+
+                    if (name.length == 0) {
+                        continue;
+                    }
+
+                } else if (njs_is_symbol(&retval)) {
+                    name = njs_str_value("<symbol>");
+
+                } else {
+                    name = njs_entry_unknown;
+                }
             }
         }
 
