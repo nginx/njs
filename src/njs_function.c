@@ -617,12 +617,16 @@ njs_function_native_call(njs_vm_t *vm, njs_value_t *retval)
 
 #ifdef NJS_DEBUG_OPCODE
     njs_str_t              name;
+    njs_value_t            fname, fobj;
 
     if (vm->options.opcode_debug) {
+        name = njs_str_value("unmapped");
 
-        ret = njs_builtin_match_native_function(vm, function, &name);
-        if (ret != NJS_OK) {
-           name = njs_str_value("unmapped");
+        njs_set_function(&fobj, function);
+
+        ret = njs_value_property(vm, &fobj, NJS_ATOM_STRING_name, &fname);
+        if (ret == NJS_OK && njs_is_string(&fname)) {
+            njs_string_get(vm, &fname, &name);
         }
 
         njs_printf("CALL NATIVE %V %P\n", &name, function->u.native);

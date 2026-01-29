@@ -21138,12 +21138,12 @@ static njs_unit_test_t  njs_shared_test[] =
 
     { njs_str("var fs = require('fs'); fs.readFileSync()"),
       njs_str("TypeError: \"path\" must be a string or Buffer\n"
-              "    at fs.readFileSync (native)\n"
+              "    at readFileSync (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("import fs from 'fs'; fs.readFileSync()"),
       njs_str("TypeError: \"path\" must be a string or Buffer\n"
-              "    at fs.readFileSync (native)\n"
+              "    at readFileSync (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("var f = new Function('return 1;'); f();"),
@@ -21193,8 +21193,8 @@ static njs_unit_test_t  njs_shared_test[] =
 
     { njs_str("Array.prototype.push.call(preload.a, 'waka')"),
       njs_str("TypeError: Cannot add property \"2\", object is not extensible\n"
-              "    at Array.prototype.push (native)\n"
-              "    at Function.prototype.call (native)\n"
+              "    at push (native)\n"
+              "    at call (native)\n"
               "    at main (:1)\n") },
 };
 
@@ -21544,42 +21544,42 @@ static njs_unit_test_t  njs_backtraces_test[] =
               "              function(m) {return m.a.a})"),
       njs_str("TypeError: cannot get property \"a\" of undefined\n"
               "    at anonymous (:1)\n"
-              "    at RegExp.prototype[Symbol.replace] (native)\n"
-              "    at String.prototype.replace (native)\n"
+              "    at [Symbol.replace] (native)\n"
+              "    at replace (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("function f(o) {return Object.keys(o)};"
               "f()"),
       njs_str("TypeError: cannot convert undefined argument to object\n"
-              "    at Object.keys (native)\n"
+              "    at keys (native)\n"
               "    at f (:1)\n"
               "    at main (:1)\n") },
 
     { njs_str("[].concat({}.a.a)"),
       njs_str("TypeError: cannot get property \"a\" of undefined\n"
-              "    at Array.prototype.concat (native)\n"
+              "    at concat (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("''.repeat(-1)"),
       njs_str("RangeError: invalid count value\n"
-              "    at String.prototype.repeat (native)\n"
+              "    at repeat (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("Math.log({}.a.a)"),
       njs_str("TypeError: cannot get property \"a\" of undefined\n"
-              "    at Math.log (native)\n"
+              "    at log (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("var bound = Math.max.bind(null, {toString(){return {}}}); bound(1)"),
       njs_str("TypeError: Cannot convert object to primitive value\n"
-              "    at Math.max (native)\n"
+              "    at max (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("var ab = new ArrayBuffer(1);"
               "$262.detachArrayBuffer(ab);"
               "ab.slice(0)"),
       njs_str("TypeError: detached buffer\n"
-              "    at ArrayBuffer.prototype.slice (native)\n"
+              "    at slice (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("Object.prototype()"),
@@ -21593,7 +21593,7 @@ static njs_unit_test_t  njs_backtraces_test[] =
 
     { njs_str("$shared.method({}.a.a)"),
       njs_str("TypeError: cannot get property \"a\" of undefined\n"
-              "    at $shared.method (native)\n"
+              "    at method (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("new Function(\n\n@)"),
@@ -21606,24 +21606,24 @@ static njs_unit_test_t  njs_backtraces_test[] =
 
     { njs_str("require('crypto').createHash('sha')"),
       njs_str("TypeError: not supported algorithm: \"sha\"\n"
-              "    at crypto.createHash (native)\n"
+              "    at createHash (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("var h = require('crypto').createHash('sha1');"
               "h.update([])"),
       njs_str("TypeError: data is not a string or Buffer-like object\n"
-              "    at Hash.update (native)\n"
+              "    at update (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("require('crypto').createHmac('sha1', [])"),
       njs_str("TypeError: key is not a string or Buffer-like object\n"
-              "    at crypto.createHmac (native)\n"
+              "    at createHmac (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("var h = require('crypto').createHmac('sha1', 'secret');"
               "h.update([])"),
       njs_str("TypeError: data is not a string or Buffer-like object\n"
-              "    at Hmac.update (native)\n"
+              "    at update (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("function f(o) {function f_in(o) {return o.a.a};"
@@ -21659,7 +21659,7 @@ static njs_unit_test_t  njs_backtraces_test[] =
               " 'realpath',"
               " 'realpathSync',"
               "]"
-              ".every(v=>{ try {fs[v]();} catch (e) { return e.stack.search(`fs.${v} `) >= 0}})"),
+              ".every(v=>{ try {fs[v]();} catch (e) { return e.stack.search(`at ${v} `) >= 0}})"),
       njs_str("true") },
 
     { njs_str("parseInt({ toString: function() { return [1] } })"),
@@ -21673,7 +21673,7 @@ static njs_unit_test_t  njs_backtraces_test[] =
     { njs_str("Object.defineProperty(Function.__proto__, 'name', {get() { typeof 1;}});"
               "(new Uint8Array()).every()"),
       njs_str("TypeError: callback argument is not callable\n"
-              "    at TypedArray.prototype.every (native)\n"
+              "    at every (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("var e = new Error('oops'); e.stack = 123; e.stack"),
@@ -21722,7 +21722,7 @@ static njs_unit_test_t  njs_backtraces_test[] =
 
     { njs_str("Math\n.min(1,\na)"),
       njs_str("ReferenceError: \"a\" is not defined\n"
-              "    at Math.min (native)\n"
+              "    at min (native)\n"
               "    at main (:3)\n") },
 };
 
