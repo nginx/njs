@@ -21403,7 +21403,7 @@ static njs_unit_test_t  njs_shell_test[] =
       njs_str("9") },
 
     { njs_str("var e = Error(); e.name = {}; e" ENTER),
-      njs_str("[object Object]") },
+      njs_str("[object Object]\n    at main (:1)\n") },
 
     { njs_str("var a = []; Object.defineProperty(a, 'b', {enumerable: true, get: Object}); a" ENTER),
       njs_str("[\n b: '[Getter]'\n]") },
@@ -21411,12 +21411,12 @@ static njs_unit_test_t  njs_shell_test[] =
     { njs_str("var e = Error()" ENTER
               "Object.defineProperty(e, 'message', { configurable: true, set: Object })" ENTER
               "delete e.message; e" ENTER),
-      njs_str("Error") },
+      njs_str("Error\n    at main (:1)\n") },
 
     { njs_str("var e = Error()" ENTER
               "Object.defineProperty(e, 'message', { configurable: true, get(){ return 'foo'} })" ENTER
               "e" ENTER),
-      njs_str("Error: foo") },
+      njs_str("Error: foo\n    at main (:1)\n") },
 
     { njs_str("function f() {};" ENTER
               "Object.defineProperty(f, 'name', { get() {void(0)} })" ENTER
@@ -21674,6 +21674,13 @@ static njs_unit_test_t  njs_backtraces_test[] =
               "(new Uint8Array()).every()"),
       njs_str("TypeError: callback argument is not callable\n"
               "    at every (native)\n"
+              "    at main (:1)\n") },
+
+    { njs_str("var p = new Promise((_, reject) => { reject(new Error('oops'));});"
+              "p.catch((e) => { $r.retval(e.stack) });"),
+      njs_str("Error: oops\n"
+              "    at <anonymous> (:1)\n"
+              "    at Promise (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("var e = new Error('oops'); e.stack = 123; e.stack"),

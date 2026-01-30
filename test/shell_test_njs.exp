@@ -90,7 +90,7 @@ njs_test {
 
 njs_test {
     {"[InternalError(),TypeError('msg'), new RegExp(), /^undef$/m, new Date(0)]\r\n"
-     "\\\[\r\n InternalError,\r\n TypeError: msg,\r\n /(?:)/,\r\n /^undef$/m,\r\n 1970-01-01T00:00:00.000Z\r\n]"}
+     "\\\[\r\n InternalError\r\n    at main \\(shell:1\\)\r\n,\r\n TypeError: msg\r\n    at main \\(shell:1\\)\r\n,\r\n /(?:)/,\r\n /^undef$/m,\r\n 1970-01-01T00:00:00.000Z\r\n]"}
 }
 
 # dumper excapes special characters as JSON.stringify()

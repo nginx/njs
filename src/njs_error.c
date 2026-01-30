@@ -68,7 +68,7 @@ njs_error_fmt_new(njs_vm_t *vm, njs_value_t *dst, njs_object_type_t type,
 
 
 void
-njs_error_stack_attach(njs_vm_t *vm, njs_value_t value)
+njs_error_stack_attach(njs_vm_t *vm, njs_value_t value, njs_uint_t skip)
 {
     size_t               count;
     uint32_t             line, prev_line;
@@ -96,6 +96,11 @@ njs_error_stack_attach(njs_vm_t *vm, njs_value_t value)
     prev_name = njs_str_value("");
 
     for (frame = vm->top_frame; frame != NULL; frame = frame->previous) {
+        if (skip != 0) {
+            skip--;
+            continue;
+        }
+
         function = frame->native ? frame->function : NULL;
 
         if (function != NULL && function->bound != NULL) {
@@ -379,6 +384,8 @@ njs_error_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     njs_set_object(retval, error);
+
+    njs_error_stack_attach(vm, *retval, 1);
 
     return NJS_OK;
 }
