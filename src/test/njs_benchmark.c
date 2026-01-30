@@ -477,13 +477,13 @@ static njs_benchmark_test_t  njs_test[] =
 
     { "exception.stack",
       njs_str("function f() { try { throw new Error('test') } catch (e) { return e.stack } } [f].map(v=>v())[0]"),
-      njs_str("Error: test\n    at f (:1)\n    at anonymous (:1)\n    at map (native)\n    at main (:1)\n"),
+      njs_str("Error: test\n    at f (:1)\n    at <anonymous> (:1)\n    at map (native)\n    at main (:1)\n"),
       100 },
 
     { "exception.native.stack",
       njs_str("function f() { try { 'str'.replace(/t/g,function(m) {return m.a.a}) } catch (e) { return e.stack } }; f()"),
       njs_str("TypeError: cannot get property \"a\" of undefined\n"
-              "    at anonymous (:1)\n"
+              "    at <anonymous> (:1)\n"
               "    at [Symbol.replace] (native)\n"
               "    at replace (native)\n"
               "    at f (:1)\n"

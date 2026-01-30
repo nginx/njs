@@ -21536,14 +21536,14 @@ static njs_unit_test_t  njs_backtraces_test[] =
     { njs_str("function f(ff, o) {return ff(o)};"
               "f(function (o) {return o.a.a}, {})"),
       njs_str("TypeError: cannot get property \"a\" of undefined\n"
-              "    at anonymous (:1)\n"
+              "    at <anonymous> (:1)\n"
               "    at f (:1)\n"
               "    at main (:1)\n") },
 
     { njs_str("'str'.replace(/t/g,"
               "              function(m) {return m.a.a})"),
       njs_str("TypeError: cannot get property \"a\" of undefined\n"
-              "    at anonymous (:1)\n"
+              "    at <anonymous> (:1)\n"
               "    at [Symbol.replace] (native)\n"
               "    at replace (native)\n"
               "    at main (:1)\n") },
@@ -21638,7 +21638,7 @@ static njs_unit_test_t  njs_backtraces_test[] =
               "               return ff(o)};"
               "f({})"),
       njs_str("TypeError: cannot get property \"a\" of undefined\n"
-              "    at anonymous (:1)\n"
+              "    at <anonymous> (:1)\n"
               "    at f (:1)\n"
               "    at main (:1)\n") },
 
@@ -21683,17 +21683,17 @@ static njs_unit_test_t  njs_backtraces_test[] =
 
     { njs_str("/**/(function(){throw Error();})()"),
       njs_str("Error\n"
-              "    at anonymous (:1)\n"
+              "    at <anonymous> (:1)\n"
               "    at main (:1)\n") },
 
     { njs_str("/***/(function(){throw Error();})()"),
       njs_str("Error\n"
-              "    at anonymous (:1)\n"
+              "    at <anonymous> (:1)\n"
               "    at main (:1)\n") },
 
     { njs_str("/*\n**/(function(){throw Error();})()"),
       njs_str("Error\n"
-              "    at anonymous (:2)\n"
+              "    at <anonymous> (:2)\n"
               "    at main (:2)\n") },
 
     { njs_str("({})\n.a\n.a"),
