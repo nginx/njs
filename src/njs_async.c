@@ -82,6 +82,13 @@ njs_await_fulfilled(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     vm->active_frame = async_frame;
 
     if (exception) {
+        /*
+         * Attaching JS stack trace for exceptions thrown by
+         * C code (for example by njs_vm_error3()), in a C call stack.
+         */
+        async->pc = ctx->await_pc;
+        njs_error_stack_attach(vm, *value, 0);
+
         njs_vm_throw(vm, value);
 
     } else {

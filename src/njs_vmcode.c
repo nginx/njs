@@ -2772,6 +2772,7 @@ njs_vmcode_await(njs_vm_t *vm, njs_vmcode_await_t *await,
     }
 
     ctx->pc = (u_char *) await + sizeof(njs_vmcode_await_t);
+    ctx->await_pc = (u_char *) await;
     ctx->index = await->retval;
 
     frame = (njs_frame_t *) active;
