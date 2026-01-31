@@ -1287,6 +1287,8 @@ njs_promise_perform_all(njs_vm_t *vm, njs_value_t *iterator,
             }
 
             njs_set_object(&argument, error);
+
+            njs_error_stack_attach(vm, argument, 1);
         }
 
         ret = njs_function_call(vm, njs_function(&pargs->capability->resolve),
@@ -1663,6 +1665,8 @@ njs_promise_any_reject_element_functions(njs_vm_t *vm, njs_value_t *args,
         }
 
         njs_set_object(&argument, error);
+
+        njs_error_stack_attach(vm, argument, 1);
 
         return njs_function_call(vm, njs_function(&context->capability->reject),
                                  &njs_value_undefined, &argument, 1,

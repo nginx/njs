@@ -13,6 +13,7 @@ typedef struct {
     njs_frame_t               *await;
     uintptr_t                 index;
     u_char                    *pc;
+    u_char                    *await_pc;
 } njs_async_ctx_t;
 
 

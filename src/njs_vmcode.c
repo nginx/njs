@@ -1854,7 +1854,7 @@ error:
     if (njs_is_error(&vm->exception)) {
         vm->active_frame->native.pc = pc;
 
-        (void) njs_error_stack_attach(vm, vm->exception);
+        njs_error_stack_attach(vm, vm->exception, 0);
     }
 
     for ( ;; ) {
@@ -2772,6 +2772,7 @@ njs_vmcode_await(njs_vm_t *vm, njs_vmcode_await_t *await,
     }
 
     ctx->pc = (u_char *) await + sizeof(njs_vmcode_await_t);
+    ctx->await_pc = (u_char *) await;
     ctx->index = await->retval;
 
     frame = (njs_frame_t *) active;

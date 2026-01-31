@@ -8,28 +8,6 @@
 #include <njs_main.h>
 
 
-typedef struct {
-    union {
-        njs_function_t                *function;
-        u_char                        *pc;
-    } u;
-    uint8_t                           native;
-} njs_stack_entry_t;
-
-
-typedef struct {
-    njs_str_t                         name;
-    njs_str_t                         file;
-    uint32_t                          line;
-} njs_backtrace_entry_t;
-
-
-static njs_int_t njs_add_backtrace_entry(njs_vm_t *vm, njs_arr_t *stack,
-    njs_stack_entry_t *se);
-static njs_int_t njs_backtrace_to_string(njs_vm_t *vm, njs_arr_t *backtrace,
-    njs_str_t *dst);
-
-
 void
 njs_error_new(njs_vm_t *vm, njs_value_t *dst, njs_object_t *proto,
     u_char *start, size_t size)
@@ -89,74 +67,153 @@ njs_error_fmt_new(njs_vm_t *vm, njs_value_t *dst, njs_object_type_t type,
 }
 
 
-static njs_int_t
-njs_error_stack_new(njs_vm_t *vm, njs_object_value_t *error)
+void
+njs_error_stack_attach(njs_vm_t *vm, njs_value_t value, njs_uint_t skip)
 {
-    njs_arr_t           *stack;
-    njs_stack_entry_t   *se;
-    njs_native_frame_t  *frame;
+    size_t               count;
+    uint32_t             line, prev_line;
+    njs_int_t            ret;
+    njs_str_t            name, file, prev_name;
+    njs_chb_t            chain;
+    njs_value_t          *stackval, retval, fobj;
+    njs_vm_code_t        *code;
+    njs_function_t       *function;
+    njs_object_prop_t    *prop;
+    njs_native_frame_t   *frame;
+    njs_flathsh_query_t  fhq;
 
-    stack = njs_arr_create(vm->mem_pool, 4, sizeof(njs_stack_entry_t));
-    if (njs_slow_path(stack == NULL)) {
-        return NJS_ERROR;
+    if (njs_slow_path(!vm->options.backtrace
+                      || !njs_is_error(&value))
+                      || njs_object(&value)->stack_attached)
+    {
+        return;
     }
 
-    frame = vm->top_frame;
+    NJS_CHB_MP_INIT(&chain, vm->mem_pool);
 
-    for ( ;; ) {
-        if (frame->native || frame->pc != NULL) {
-            se = njs_arr_add(stack);
-            if (njs_slow_path(se == NULL)) {
-                return NJS_ERROR;
+    count = 0;
+    prev_line = 0;
+    prev_name = njs_str_value("");
+
+    for (frame = vm->top_frame; frame != NULL; frame = frame->previous) {
+        if (skip != 0) {
+            skip--;
+            continue;
+        }
+
+        function = frame->native ? frame->function : NULL;
+
+        if (function != NULL && function->bound != NULL) {
+            continue;
+        }
+
+        line = 0;
+        file = njs_str_value("");
+
+        if (!frame->native) {
+            if (frame->pc == NULL) {
+                continue;
             }
 
-            se->native = frame->native;
+            code = njs_lookup_code(vm, frame->pc);
 
-            if (se->native) {
-                se->u.function = frame->function;
+            if (code != NULL) {
+                name = code->name;
+
+                if (name.length == 0) {
+                    name = njs_entry_anonymous;
+                }
+
+                line = njs_lookup_line(code->lines, frame->pc - code->start);
+
+                if (!vm->options.quiet) {
+                    file = code->file;
+                }
 
             } else {
-                se->u.pc = frame->pc;
+                name = njs_entry_unknown;
+            }
+
+        } else {
+            name.length = 0;
+            fhq.key_hash = NJS_ATOM_STRING_name;
+
+            ret = njs_flathsh_unique_find(&function->object.hash, &fhq);
+            if (ret == NJS_OK) {
+                prop = fhq.value;
+
+                if (njs_is_string(njs_prop_value(prop))) {
+                    njs_string_get(vm, njs_prop_value(prop), &name);
+                }
+            }
+
+            if (name.length == 0) {
+                njs_set_function(&fobj, function);
+
+                ret = njs_value_property(vm, &fobj, NJS_ATOM_STRING_name,
+                                         &retval);
+                if (ret != NJS_OK) {
+                    continue;
+                }
+
+                if (njs_is_string(&retval)) {
+                    njs_string_get(vm, &retval, &name);
+
+                    if (name.length == 0) {
+                        continue;
+                    }
+
+                } else if (njs_is_symbol(&retval)) {
+                    name = njs_str_value("<symbol>");
+
+                } else {
+                    name = njs_entry_unknown;
+                }
             }
         }
 
-        frame = frame->previous;
+        if (count != 0 && name.start == prev_name.start
+            && line == prev_line)
+        {
+            count++;
+            continue;
+        }
 
-        if (frame == NULL) {
-            break;
+        if (count > 1) {
+            njs_chb_sprintf(&chain, 64, "      repeats %uz times\n", count);
+        }
+
+        count = 1;
+        prev_name = name;
+        prev_line = line;
+
+        njs_chb_sprintf(&chain, 10 + name.length, "    at %V ", &name);
+
+        if (line != 0) {
+            njs_chb_sprintf(&chain, 12 + file.length, "(%V:%uD)\n",
+                            &file, line);
+        } else {
+            njs_chb_append_literal(&chain, "(native)\n");
         }
     }
 
-    njs_data(&error->value) = stack;
-
-    return NJS_OK;
-}
-
-
-njs_int_t
-njs_error_stack_attach(njs_vm_t *vm, njs_value_t value)
-{
-    njs_int_t  ret;
-
-    if (njs_slow_path(!njs_is_error(&value))
-        || njs_object(&value)->stack_attached)
-    {
-        return NJS_DECLINED;
+    if (count > 1) {
+        njs_chb_sprintf(&chain, 64, "      repeats %uz times\n", count);
     }
 
-    if (njs_slow_path(!vm->options.backtrace || vm->start == NULL)) {
-        return NJS_OK;
+    if (njs_chb_size(&chain) == 0) {
+        return;
     }
 
-    ret = njs_error_stack_new(vm, value.data.u.object_value);
-    if (njs_slow_path(ret != NJS_OK)) {
-        njs_internal_error(vm, "njs_error_stack_new() failed");
-        return NJS_ERROR;
+    stackval = njs_object_value(&value);
+
+    ret = njs_string_create_chb(vm, stackval, &chain);
+
+    njs_chb_destroy(&chain);
+
+    if (njs_fast_path(ret == NJS_OK)) {
+        njs_object(&value)->stack_attached = 1;
     }
-
-    njs_object(&value)->stack_attached = 1;
-
-    return NJS_OK;
 }
 
 
@@ -193,7 +250,7 @@ njs_error_alloc(njs_vm_t *vm, njs_object_t *proto, const njs_value_t *name,
         goto memory_error;
     }
 
-    njs_set_data(&ov->value, NULL, NJS_DATA_TAG_ANY);
+    njs_set_undefined(&ov->value);
 
     error = &ov->object;
     njs_flathsh_init(&error->hash);
@@ -327,6 +384,8 @@ njs_error_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     njs_set_object(retval, error);
+
+    njs_error_stack_attach(vm, *retval, 1);
 
     return NJS_OK;
 }
@@ -703,12 +762,11 @@ static njs_int_t
 njs_error_prototype_stack(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
-    njs_int_t          ret;
-    njs_str_t          string;
-    njs_arr_t          *stack, *backtrace;
-    njs_uint_t         i;
-    njs_value_t        rv, *stackval;
-    njs_stack_entry_t  *se;
+    u_char       *p;
+    size_t       length;
+    njs_int_t    ret;
+    njs_str_t    msg, trace;
+    njs_value_t  msg_val, *stackval;
 
     if (retval != NULL) {
         if (!njs_is_error(value)) {
@@ -723,53 +781,29 @@ njs_error_prototype_stack(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused
             return NJS_OK;
         }
 
-        if (!njs_is_data(stackval, NJS_DATA_TAG_ANY)) {
+        if (!njs_is_string(stackval)) {
             njs_value_assign(retval, stackval);
             return NJS_OK;
         }
 
-        stack = njs_data(stackval);
-        if (stack == NULL) {
-            njs_set_undefined(retval);
-            return NJS_OK;
+        ret = njs_error_to_string2(vm, &msg_val, value, 0);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
         }
 
-        se = stack->start;
+        njs_string_get(vm, &msg_val, &msg);
+        njs_string_get(vm, stackval, &trace);
 
-        backtrace = njs_arr_create(vm->mem_pool, stack->items,
-                                   sizeof(njs_backtrace_entry_t));
-        if (njs_slow_path(backtrace == NULL)) {
+        length = msg.length + 1 + trace.length;
+
+        p = njs_string_alloc(vm, retval, msg.length + 1 + trace.length, length);
+        if (njs_slow_path(p == NULL)) {
             return NJS_ERROR;
         }
 
-        for (i = 0; i < stack->items; i++) {
-            if (njs_add_backtrace_entry(vm, backtrace, &se[i]) != NJS_OK) {
-                return NJS_ERROR;
-            }
-        }
-
-        ret = njs_error_to_string2(vm, &rv, value, 0);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return ret;
-        }
-
-        njs_string_get(vm, &rv, &string);
-
-        ret = njs_backtrace_to_string(vm, backtrace, &string);
-
-        njs_arr_destroy(backtrace);
-        njs_arr_destroy(stack);
-
-        if (njs_slow_path(ret != NJS_OK)) {
-            return ret;
-        }
-
-        ret = njs_string_create(vm, stackval, string.start, string.length);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return ret;
-        }
-
-        njs_value_assign(retval, stackval);
+        p = njs_cpymem(p, msg.start, msg.length);
+        *p++ = '\n';
+        memcpy(p, trace.start, trace.length);
 
         return NJS_OK;
     }
@@ -778,7 +812,7 @@ njs_error_prototype_stack(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused
 
     if (njs_is_error(value)) {
         stackval = njs_object_value(value);
-        njs_set_data(stackval, NULL, NJS_DATA_TAG_ANY);
+        njs_set_undefined(stackval);
     }
 
     return NJS_OK;
@@ -1088,119 +1122,3 @@ const njs_object_type_init_t  njs_aggregate_error_type_init = {
     .prototype_props = &njs_aggregate_error_prototype_init,
     .prototype_value = { .object = { .type = NJS_OBJECT } },
 };
-
-
-static njs_int_t
-njs_add_backtrace_entry(njs_vm_t *vm, njs_arr_t *stack,
-    njs_stack_entry_t *se)
-{
-    njs_int_t              ret;
-    njs_vm_code_t          *code;
-    njs_function_t         *function;
-    njs_backtrace_entry_t  *be;
-
-    function = se->native ? se->u.function : NULL;
-
-    if (function != NULL && function->bound != NULL) {
-        /* Skip. */
-        return NJS_OK;
-    }
-
-    be = njs_arr_add(stack);
-    if (njs_slow_path(be == NULL)) {
-        return NJS_ERROR;
-    }
-
-    be->line = 0;
-    be->file = njs_str_value("");
-
-    if (function != NULL && function->native) {
-        ret = njs_builtin_match_native_function(vm, function, &be->name);
-        if (ret == NJS_OK) {
-            return NJS_OK;
-        }
-
-        be->name = njs_entry_native;
-
-        return NJS_OK;
-    }
-
-    code = njs_lookup_code(vm, se->u.pc);
-
-    if (code != NULL) {
-        be->name = code->name;
-
-        if (be->name.length == 0) {
-            be->name = njs_entry_anonymous;
-        }
-
-        be->line = njs_lookup_line(code->lines, se->u.pc - code->start);
-        if (!vm->options.quiet) {
-            be->file = code->file;
-        }
-
-        return NJS_OK;
-    }
-
-    be->name = njs_entry_unknown;
-
-    return NJS_OK;
-}
-
-
-static njs_int_t
-njs_backtrace_to_string(njs_vm_t *vm, njs_arr_t *backtrace, njs_str_t *dst)
-{
-    size_t                 count;
-    njs_chb_t              chain;
-    njs_int_t              ret;
-    njs_uint_t             i;
-    njs_backtrace_entry_t  *be, *prev;
-
-    if (backtrace->items == 0) {
-        return NJS_OK;
-    }
-
-    NJS_CHB_MP_INIT(&chain, njs_vm_memory_pool(vm));
-
-    njs_chb_append_str(&chain, dst);
-    njs_chb_append(&chain, "\n", 1);
-
-    count = 0;
-    prev = NULL;
-
-    be = backtrace->start;
-
-    for (i = 0; i < backtrace->items; i++) {
-        if (i != 0 && prev->name.start == be->name.start
-            && prev->line == be->line)
-        {
-            count++;
-
-        } else {
-            if (count != 0) {
-                njs_chb_sprintf(&chain, 64, "      repeats %uz times\n", count);
-                count = 0;
-            }
-
-            njs_chb_sprintf(&chain, 10 + be->name.length, "    at %V ",
-                            &be->name);
-
-            if (be->line != 0) {
-                njs_chb_sprintf(&chain, 12 + be->file.length,
-                                "(%V:%uD)\n", &be->file, be->line);
-
-            } else {
-                njs_chb_append(&chain, "(native)\n", 9);
-            }
-        }
-
-        prev = be;
-        be++;
-    }
-
-    ret = njs_chb_join(&chain, dst);
-    njs_chb_destroy(&chain);
-
-    return ret;
-}

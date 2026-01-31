@@ -177,7 +177,6 @@ struct njs_vm_s {
     njs_value_t              global_value;
 
     njs_arr_t                *codes;  /* of njs_vm_code_t */
-    njs_arr_t                *functions_name_cache;
 
     njs_trace_t              trace;
     njs_random_t             random;
@@ -247,8 +246,6 @@ njs_value_t njs_vm_exception(njs_vm_t *vm);
 void njs_vm_scopes_restore(njs_vm_t *vm, njs_native_frame_t *frame);
 
 njs_int_t njs_builtin_objects_create(njs_vm_t *vm);
-njs_int_t njs_builtin_match_native_function(njs_vm_t *vm,
-    njs_function_t *function, njs_str_t *name);
 
 void njs_disassemble(u_char *start, u_char *end, njs_int_t count,
     njs_arr_t *lines);
@@ -260,7 +257,6 @@ void njs_flathsh_proto_free(void *data, void *p, size_t size);
 extern const njs_str_t    njs_entry_empty;
 extern const njs_str_t    njs_entry_main;
 extern const njs_str_t    njs_entry_module;
-extern const njs_str_t    njs_entry_native;
 extern const njs_str_t    njs_entry_unknown;
 extern const njs_str_t    njs_entry_anonymous;
 
