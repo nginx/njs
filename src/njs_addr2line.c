@@ -152,10 +152,10 @@ njs_read_symtab(bfd *abfd, asymbol ***syms)
         return 0;
     }
 
-    symcount = bfd_read_minisymbols(abfd, 0, (PTR) syms, &size);
+    symcount = bfd_read_minisymbols(abfd, 0, (void **) syms, &size);
     if (symcount == 0) {
         symcount = bfd_read_minisymbols(abfd, 1 /* dynamic */,
-                                        (PTR) syms, &size);
+                                        (void **) syms, &size);
     }
 
     return symcount;
