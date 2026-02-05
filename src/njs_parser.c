@@ -9223,7 +9223,7 @@ njs_parser_error(njs_vm_t *vm, njs_object_type_t type, njs_str_t *file,
     width = njs_length(" in ") + file->length + NJS_INT_T_LEN;
 
     if (p > end - width) {
-        p = end - width;
+        p = njs_max(msg, end - width);
     }
 
     if (file->length != 0 && !vm->options.quiet) {
