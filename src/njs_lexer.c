@@ -276,8 +276,13 @@ static const njs_lexer_multi_t  njs_greater_token[] = {
 };
 
 
+static const njs_lexer_multi_t  njs_coalesce_assignment_token[] = {
+    { '=', NJS_TOKEN_COALESCE_ASSIGNMENT, 0, NULL },
+};
+
+
 static const njs_lexer_multi_t  njs_conditional_token[] = {
-    { '?', NJS_TOKEN_COALESCE, 0, NULL },
+    { '?', NJS_TOKEN_COALESCE, 1, njs_coalesce_assignment_token },
 };
 
 

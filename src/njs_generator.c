@@ -665,6 +665,7 @@ njs_generate(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
 
     case NJS_TOKEN_LOGICAL_OR_ASSIGNMENT:
     case NJS_TOKEN_LOGICAL_AND_ASSIGNMENT:
+    case NJS_TOKEN_COALESCE_ASSIGNMENT:
         return njs_generate_logical_assignment(vm, generator, node);
 
     case NJS_TOKEN_BITWISE_OR:
