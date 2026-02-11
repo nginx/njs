@@ -1625,6 +1625,75 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("1 &&= 2"),
       njs_str("ReferenceError: Invalid left-hand side in assignment") },
 
+    /* Logical assignment: ??= */
+
+    { njs_str("var a = null; a ?\?= 5; a"),
+      njs_str("5") },
+    { njs_str("var a = undefined; a ?\?= 5; a"),
+      njs_str("5") },
+    { njs_str("var a = 0; a ?\?= 5; a"),
+      njs_str("0") },
+    { njs_str("var a = ''; a ?\?= 'x'; a"),
+      njs_str("") },
+    { njs_str("var a = false; a ?\?= true; a"),
+      njs_str("false") },
+    { njs_str("var a = 1; a ?\?= 5; a"),
+      njs_str("1") },
+
+    /* ??= short-circuit: RHS not evaluated */
+
+    { njs_str("var a = 1; var b = 0; a ?\?= (b = 2); b"),
+      njs_str("0") },
+    { njs_str("var a = null; var b = 0; a ?\?= (b = 2); b"),
+      njs_str("2") },
+
+    /* ??= property targets */
+
+    { njs_str("var o = {a: null}; o.a ?\?= 5; o.a"),
+      njs_str("5") },
+    { njs_str("var o = {a: 0}; o.a ?\?= 5; o.a"),
+      njs_str("0") },
+    { njs_str("var o = {a: null}; o['a'] ?\?= 5; o.a"),
+      njs_str("5") },
+
+    /* ??= expression result value */
+
+    { njs_str("var a = 1; (a ?\?= 5)"),
+      njs_str("1") },
+    { njs_str("var a = null; (a ?\?= 5)"),
+      njs_str("5") },
+
+    /* ??= const error */
+
+    { njs_str("const a = 1; a ?\?= 2"),
+      njs_str("1") },
+    { njs_str("const a = null; a ?\?= 2"),
+      njs_str("TypeError: assignment to constant variable") },
+
+    /* ??= getter/setter short-circuit */
+
+    { njs_str("var log = '';"
+              "var o = {"
+              "    get x() {log += 'g'; return 1},"
+              "    set x(v) {log += 's'}"
+              "};"
+              "o.x ?\?= 2;"
+              "log"),
+      njs_str("g") },
+    { njs_str("var log = '';"
+              "var o = {"
+              "    get x() {log += 'g'; return null},"
+              "    set x(v) {log += 's'}"
+              "};"
+              "o.x ?\?= 2;"
+              "log"),
+      njs_str("gs") },
+
+    /* ??= non-lvalue error */
+
+    { njs_str("1 ?\?= 2"),
+      njs_str("ReferenceError: Invalid left-hand side in assignment") },
+
     /* Optional chaining: property access. */
 
     { njs_str("var o = {a: 1}; o?.a"),

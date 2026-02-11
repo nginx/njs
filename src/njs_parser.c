@@ -4618,6 +4618,11 @@ njs_parser_assignment_operator(njs_parser_t *parser, njs_lexer_token_t *token,
         operation = NJS_VMCODE_TEST_IF_FALSE;
         break;
 
+    case NJS_TOKEN_COALESCE_ASSIGNMENT:
+        njs_thread_log_debug("JS: ?\?=");
+        operation = NJS_VMCODE_COALESCE;
+        break;
+
     default:
         return njs_parser_stack_pop(parser);
     }
@@ -9568,6 +9573,7 @@ njs_parser_serialize_node(njs_chb_t *chain, njs_parser_node_t *node)
     njs_token_serialize(NJS_TOKEN_BITWISE_AND_ASSIGNMENT);
     njs_token_serialize(NJS_TOKEN_LOGICAL_OR_ASSIGNMENT);
     njs_token_serialize(NJS_TOKEN_LOGICAL_AND_ASSIGNMENT);
+    njs_token_serialize(NJS_TOKEN_COALESCE_ASSIGNMENT);
     njs_token_serialize(NJS_TOKEN_EQUAL);
     njs_token_serialize(NJS_TOKEN_NOT_EQUAL);
     njs_token_serialize(NJS_TOKEN_STRICT_EQUAL);
