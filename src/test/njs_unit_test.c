@@ -1503,6 +1503,128 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("null ?? 0 || 1"),
       njs_str("SyntaxError: Unexpected token \"||\"") },
 
+    /* Logical assignment: ||= */
+
+    { njs_str("var a = 0; a ||= 5; a"),
+      njs_str("5") },
+    { njs_str("var a = 1; a ||= 5; a"),
+      njs_str("1") },
+    { njs_str("var a = ''; a ||= 'x'; a"),
+      njs_str("x") },
+    { njs_str("var a = 'y'; a ||= 'x'; a"),
+      njs_str("y") },
+    { njs_str("var a = null; a ||= 42; a"),
+      njs_str("42") },
+    { njs_str("var a = undefined; a ||= 1"),
+      njs_str("1") },
+
+    /* ||= short-circuit: RHS not evaluated */
+
+    { njs_str("var a = 1; var b = 0; a ||= (b = 2); b"),
+      njs_str("0") },
+    { njs_str("var a = 0; var b = 0; a ||= (b = 2); b"),
+      njs_str("2") },
+
+    /* Logical assignment: &&= */
+
+    { njs_str("var a = 1; a &&= 5; a"),
+      njs_str("5") },
+    { njs_str("var a = 0; a &&= 5; a"),
+      njs_str("0") },
+    { njs_str("var a = 'y'; a &&= 'x'; a"),
+      njs_str("x") },
+    { njs_str("var a = ''; a &&= 'x'; a"),
+      njs_str("") },
+
+    /* &&= short-circuit: RHS not evaluated */
+
+    { njs_str("var a = 0; var b = 0; a &&= (b = 2); b"),
+      njs_str("0") },
+    { njs_str("var a = 1; var b = 0; a &&= (b = 2); b"),
+      njs_str("2") },
+
+    /* Logical assignment: property targets */
+
+    { njs_str("var o = {a: 0}; o.a ||= 5; o.a"),
+      njs_str("5") },
+    { njs_str("var o = {a: 1}; o.a ||= 5; o.a"),
+      njs_str("1") },
+    { njs_str("var o = {a: 1}; o.a &&= 5; o.a"),
+      njs_str("5") },
+    { njs_str("var o = {a: 0}; o.a &&= 5; o.a"),
+      njs_str("0") },
+
+    /* Logical assignment: bracket property targets */
+
+    { njs_str("var o = {a: 0}; o['a'] ||= 5; o.a"),
+      njs_str("5") },
+    { njs_str("var o = {a: 1}; o['a'] &&= 5; o.a"),
+      njs_str("5") },
+
+    /* Logical assignment: expression result value */
+
+    { njs_str("var a = 1; (a ||= 5)"),
+      njs_str("1") },
+    { njs_str("var a = 0; (a ||= 5)"),
+      njs_str("5") },
+    { njs_str("var a = 1; (a &&= 5)"),
+      njs_str("5") },
+    { njs_str("var a = 0; (a &&= 5)"),
+      njs_str("0") },
+
+    /* Logical assignment: const error */
+
+    { njs_str("const a = 1; a ||= 2"),
+      njs_str("1") },
+    { njs_str("const a = 0; a ||= 2"),
+      njs_str("TypeError: assignment to constant variable") },
+    { njs_str("const a = 1; a &&= 2"),
+      njs_str("TypeError: assignment to constant variable") },
+    { njs_str("const a = 0; a &&= 2"),
+      njs_str("0") },
+
+    /* Logical assignment: getter/setter short-circuit. */
+
+    { njs_str("var log = '';"
+              "var o = {"
+              "    get x() {log += 'g'; return 1},"
+              "    set x(v) {log += 's'}"
+              "};"
+              "o.x ||= 2;"
+              "log"),
+      njs_str("g") },
+    { njs_str("var log = '';"
+              "var o = {"
+              "    get x() {log += 'g'; return 0},"
+              "    set x(v) {log += 's'}"
+              "};"
+              "o.x ||= 2;"
+              "log"),
+      njs_str("gs") },
+    { njs_str("var log = '';"
+              "var o = {"
+              "    get x() {log += 'g'; return 0},"
+              "    set x(v) {log += 's'}"
+              "};"
+              "o.x &&= 2;"
+              "log"),
+      njs_str("g") },
+    { njs_str("var log = '';"
+              "var o = {"
+              "    get x() {log += 'g'; return 1},"
+              "    set x(v) {log += 's'}"
+              "};"
+              "o.x &&= 2;"
+              "log"),
+      njs_str("gs") },
+
+    /* Logical assignment: non-lvalue error */
+
+    { njs_str("1 ||= 2"),
+      njs_str("ReferenceError: Invalid left-hand side in assignment") },
+    { njs_str("1 &&= 2"),
+      njs_str("ReferenceError: Invalid left-hand side in assignment") },
+
     /* Optional chaining: property access. */
 
     { njs_str("var o = {a: 1}; o?.a"),

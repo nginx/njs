@@ -205,8 +205,13 @@ static const njs_lexer_multi_t  njs_remainder_token[] = {
 };
 
 
+static const njs_lexer_multi_t  njs_logical_and_assignment_token[] = {
+    { '=', NJS_TOKEN_LOGICAL_AND_ASSIGNMENT, 0, NULL },
+};
+
+
 static const njs_lexer_multi_t  njs_bitwise_and_token[] = {
-    { '&', NJS_TOKEN_LOGICAL_AND, 0, NULL },
+    { '&', NJS_TOKEN_LOGICAL_AND, 1, njs_logical_and_assignment_token },
     { '=', NJS_TOKEN_BITWISE_AND_ASSIGNMENT, 0, NULL },
 };
 
@@ -216,8 +221,13 @@ static const njs_lexer_multi_t  njs_bitwise_xor_token[] = {
 };
 
 
+static const njs_lexer_multi_t  njs_logical_or_assignment_token[] = {
+    { '=', NJS_TOKEN_LOGICAL_OR_ASSIGNMENT, 0, NULL },
+};
+
+
 static const njs_lexer_multi_t  njs_bitwise_or_token[] = {
-    { '|', NJS_TOKEN_LOGICAL_OR, 0, NULL },
+    { '|', NJS_TOKEN_LOGICAL_OR, 1, njs_logical_or_assignment_token },
     { '=', NJS_TOKEN_BITWISE_OR_ASSIGNMENT, 0, NULL },
 };
 
