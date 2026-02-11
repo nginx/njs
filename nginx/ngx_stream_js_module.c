@@ -1157,8 +1157,9 @@ ngx_stream_js_variable_set(ngx_stream_session_t *s,
 
     if (rc == NGX_DECLINED) {
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
-                      "no \"js_import\" directives found for \"js_set\" handler"
-                      " \"%V\" in the current scope", fname);
+                      "no \"js_import\" or inline expression found"
+                      " for \"js_set\" handler \"%V\" at %s:%ui",
+                      fname, vdata->file_name, vdata->line);
         v->not_found = 1;
         return NGX_OK;
     }
@@ -1245,6 +1246,7 @@ ngx_stream_js_init_vm(ngx_stream_session_t *s, njs_int_t proto_id)
         }
 
         ngx_js_ctx_init((ngx_js_ctx_t *) ctx, s->connection->log);
+        ctx->conf = (ngx_js_loc_conf_t *) jscf;
 
         ngx_stream_set_ctx(s, ctx, ngx_stream_js_module);
     }
@@ -3539,9 +3541,12 @@ invalid:
 static char *
 ngx_stream_js_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    ngx_str_t              *value;
-    ngx_js_set_t           *data, *prev;
-    ngx_stream_variable_t  *v;
+    ngx_str_t                  *value;
+    ngx_js_set_t               *data, *prev;
+    ngx_stream_variable_t      *v;
+    ngx_stream_js_srv_conf_t   *jscf;
+
+    static ngx_uint_t  ngx_stream_js_inline_index;
 
     value = cf->args->elts;
 
@@ -3564,19 +3569,25 @@ ngx_stream_js_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    data->fname = value[2];
-    data->file_name = cf->conf_file->file.name.data;
-    data->line = cf->conf_file->line;
+    jscf = ngx_stream_conf_get_module_srv_conf(cf, ngx_stream_js_module);
+
+    if (ngx_js_set_init(cf, &jscf->inlines, &ngx_stream_js_inline_index,
+                        &value[2], "s", data)
+        != NGX_OK)
+    {
+        return NGX_CONF_ERROR;
+    }
 
     if (v->get_handler == ngx_stream_js_variable_set) {
         prev = (ngx_js_set_t *) v->data;
 
         if (data->fname.len != prev->fname.len
-            || ngx_strncmp(data->fname.data, prev->fname.data, data->fname.len) != 0)
+            || ngx_strncmp(data->fname.data, prev->fname.data,
+                           data->fname.len) != 0)
         {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                "variable \"%V\" is redeclared with "
-                               "different function name", &value[1]);
+                               "different handler", &value[1]);
             return NGX_CONF_ERROR;
         }
     }
