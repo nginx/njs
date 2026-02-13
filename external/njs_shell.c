@@ -479,6 +479,11 @@ main(int argc, char **argv)
         goto done;
     }
 
+    if (opts.interactive && !isatty(STDIN_FILENO)) {
+        opts.interactive = 0;
+        opts.file = (char *) "-";
+    }
+
     if (opts.version != 0) {
         njs_printf("%s\n", NJS_VERSION);
         ret = NJS_OK;
