@@ -13802,6 +13802,15 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Symbol('desc') == Symbol('desc')"),
       njs_str("false") },
 
+    { njs_str("var syms = Array(6000).fill(0).map(() => Symbol());"
+              "for (var i = 0; i < syms.length; i++) {"
+              "    for (var j = i + 1; j < i + 3 && j < syms.length; j++) {"
+              "        if (syms[i] === syms[j]) { throw `Failed: ${i} === ${j}`; }"
+              "    }"
+              "}"
+              "true"),
+      njs_str("true") },
+
     { njs_str("Symbol() == true"),
       njs_str("false") },
 

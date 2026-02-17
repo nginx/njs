@@ -7,9 +7,10 @@
 
 #include <njs_main.h>
 
+#define njs_atom_symbol_key(hash)  ((hash) | 0x80000000)
+#define njs_atom_string_key(hash)  ((hash) & 0x7FFFFFFF)
 
 static njs_int_t njs_lexer_hash_test(njs_flathsh_query_t *fhq, void *data);
-static njs_int_t njs_atom_hash_test(njs_flathsh_query_t *fhq, void *data);
 
 
 const njs_value_t njs_atom[] = {
@@ -37,15 +38,6 @@ const njs_flathsh_proto_t  njs_lexer_hash_proto
     njs_aligned(64) =
 {
     njs_lexer_hash_test,
-    njs_flathsh_proto_alloc,
-    njs_flathsh_proto_free,
-};
-
-
-const njs_flathsh_proto_t  njs_atom_hash_proto
-    njs_aligned(64) =
-{
-    njs_atom_hash_test,
     njs_flathsh_proto_alloc,
     njs_flathsh_proto_free,
 };
@@ -83,7 +75,8 @@ njs_atom_find(njs_vm_t *vm, u_char *key, size_t size, uint32_t hash)
 
     fhq.key.start = key;
     fhq.key.length = size;
-    fhq.key_hash = hash;
+    fhq.key_hash = njs_atom_string_key(hash);
+    fhq.replace = 0;
     fhq.proto = &njs_lexer_hash_proto;
 
     ret = njs_flathsh_find(vm->atom_hash_current, &fhq);
@@ -111,7 +104,8 @@ njs_atom_add(njs_vm_t *vm, njs_value_t *value, uint32_t hash)
 
     fhq.key.start = value->string.data->start;
     fhq.key.length = value->string.data->size;
-    fhq.key_hash = hash;
+    fhq.key_hash = njs_atom_string_key(hash);
+    fhq.replace = 0;
     fhq.proto = &njs_lexer_hash_proto;
     fhq.pool = vm->mem_pool;
 
@@ -136,40 +130,38 @@ njs_atom_add(njs_vm_t *vm, njs_value_t *value, uint32_t hash)
 }
 
 
-static njs_int_t
-njs_atom_hash_test(njs_flathsh_query_t *fhq, void *data)
+njs_int_t
+njs_atom_symbol_add(njs_vm_t *vm, njs_value_t *value)
 {
-    size_t       size;
-    u_char       *start;
-    njs_value_t  *name;
+    njs_int_t            ret;
+    njs_flathsh_query_t  fhq;
 
-    name = data;
+    njs_assert(njs_is_symbol(value));
+    njs_assert(value->atom_id == NJS_ATOM_STRING_unknown);
 
-    if (name->type == NJS_STRING
-        && ((njs_value_t *) fhq->value)->type == NJS_STRING)
-    {
-        size = name->string.data->length;
+    value->atom_id = vm->atom_id_generator;
 
-        if (fhq->key.length != size) {
-            return NJS_DECLINED;
-        }
+    fhq.key_hash = njs_atom_symbol_key(value->atom_id);
+    fhq.replace = 0;
+    fhq.proto = &njs_lexer_hash_proto;
+    fhq.pool = vm->mem_pool;
 
-        start = (u_char *) name->string.data->start;
-
-        if (memcmp(start, fhq->key.start, fhq->key.length) == 0) {
-           return NJS_OK;
-        }
+    ret = njs_flathsh_unique_insert(vm->atom_hash_current, &fhq);
+    if (njs_slow_path(ret != NJS_OK)) {
+        njs_internal_error(vm, "flathsh insert/replace failed");
+        return NJS_ERROR;
     }
 
-    if (name->type == NJS_SYMBOL
-        && ((njs_value_t *) fhq->value)->type == NJS_SYMBOL)
-    {
-        if (fhq->key_hash == name->atom_id) {
-            return NJS_OK;
-        }
+    vm->atom_id_generator++;
+
+    if (njs_slow_path(vm->atom_id_generator >= 0x80000000)) {
+        njs_internal_error(vm, "too many atoms");
+        return NJS_ERROR;
     }
 
-    return NJS_DECLINED;
+    *njs_prop_value(fhq.value) = *value;
+
+    return NJS_OK;
 }
 
 
@@ -188,16 +180,17 @@ njs_atom_hash_init(njs_vm_t *vm)
     njs_flathsh_init(&vm->atom_hash_shared);
 
     fhq.replace = 0;
-    fhq.proto = &njs_atom_hash_proto;
+    fhq.proto = &njs_lexer_hash_proto;
     fhq.pool = vm->mem_pool;
 
     for (n = 0; n < NJS_ATOM_SIZE; n++) {
         value = &values[n];
 
         if (value->type == NJS_SYMBOL) {
-            fhq.key_hash = value->string.atom_id;
+            fhq.key_hash = njs_atom_symbol_key(value->string.atom_id);
 
-            ret = njs_flathsh_insert(&vm->atom_hash_shared, &fhq);
+            ret = njs_flathsh_unique_insert(&vm->atom_hash_shared,
+                                            &fhq);
             if (njs_slow_path(ret != NJS_OK)) {
                 njs_internal_error(vm, "flathsh insert/replace failed");
                 return 0xffffffff;
@@ -208,7 +201,7 @@ njs_atom_hash_init(njs_vm_t *vm)
             start = value->string.data->start;
             len = value->string.data->length;
 
-            fhq.key_hash = njs_djb_hash(start, len);
+            fhq.key_hash = njs_atom_string_key(njs_djb_hash(start, len));
             fhq.key.length = len;
             fhq.key.start = start;
 
@@ -307,36 +300,6 @@ njs_atom_atomize_key(njs_vm_t *vm, njs_value_t *value)
     default:
         /* do nothing. */
         break;
-    }
-
-    return NJS_OK;
-}
-
-
-njs_int_t
-njs_atom_symbol_add(njs_vm_t *vm, njs_value_t *value)
-{
-    njs_int_t            ret;
-    njs_flathsh_query_t  fhq;
-
-    njs_assert(value->atom_id == NJS_ATOM_STRING_unknown);
-
-    fhq.replace = 0;
-    fhq.proto = &njs_lexer_hash_proto;
-    fhq.pool = vm->mem_pool;
-
-    value->atom_id = vm->atom_id_generator++;
-
-    if (value->type == NJS_SYMBOL) {
-        fhq.key_hash = value->atom_id;
-
-        ret = njs_flathsh_insert(vm->atom_hash_current, &fhq);
-        if (njs_slow_path(ret != NJS_OK)) {
-            njs_internal_error(vm, "flathsh insert/replace failed");
-            return NJS_ERROR;
-        }
-
-        *njs_prop_value(fhq.value) = *value;
     }
 
     return NJS_OK;
