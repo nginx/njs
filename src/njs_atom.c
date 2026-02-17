@@ -76,11 +76,9 @@ njs_lexer_hash_test(njs_flathsh_query_t *fhq, void *data)
 
 
 njs_value_t *
-njs_atom_find_or_add(njs_vm_t *vm, u_char *key, size_t size, size_t length,
-    uint32_t hash)
+njs_atom_find(njs_vm_t *vm, u_char *key, size_t size, uint32_t hash)
 {
     njs_int_t            ret;
-    njs_object_prop_t    *prop;
     njs_flathsh_query_t  fhq;
 
     fhq.key.start = key;
@@ -98,35 +96,12 @@ njs_atom_find_or_add(njs_vm_t *vm, u_char *key, size_t size, size_t length,
         return njs_prop_value(fhq.value);
     }
 
-    fhq.pool = vm->mem_pool;
-
-    ret = njs_flathsh_insert(vm->atom_hash_current, &fhq);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return NULL;
-    }
-
-    prop = fhq.value;
-
-    ret = njs_string_create(vm, &prop->u.value, key, size);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return NULL;
-    }
-
-    prop->u.value.string.atom_id = vm->atom_id_generator++;
-    if (njs_atom_is_number(prop->u.value.string.atom_id)) {
-        njs_internal_error(vm, "too many atoms");
-        return NULL;
-    }
-
-    prop->u.value.string.token_type = NJS_KEYWORD_TYPE_UNDEF;
-
-    return &prop->u.value;
+    return NULL;
 }
 
 
-static njs_value_t *
-njs_atom_find_or_add_string(njs_vm_t *vm, njs_value_t *value,
-    uint32_t hash)
+njs_value_t *
+njs_atom_add(njs_vm_t *vm, njs_value_t *value, uint32_t hash)
 {
     njs_int_t            ret;
     njs_object_prop_t    *prop;
@@ -138,17 +113,6 @@ njs_atom_find_or_add_string(njs_vm_t *vm, njs_value_t *value,
     fhq.key.length = value->string.data->size;
     fhq.key_hash = hash;
     fhq.proto = &njs_lexer_hash_proto;
-
-    ret = njs_flathsh_find(vm->atom_hash_current, &fhq);
-    if (ret == NJS_OK) {
-        return njs_prop_value(fhq.value);
-    }
-
-    ret = njs_flathsh_find(&vm->atom_hash_shared, &fhq);
-    if (ret == NJS_OK) {
-        return njs_prop_value(fhq.value);;
-    }
-
     fhq.pool = vm->mem_pool;
 
     ret = njs_flathsh_insert(vm->atom_hash_current, &fhq);
@@ -289,9 +253,13 @@ njs_atom_atomize_key(njs_vm_t *vm, njs_value_t *value)
             hash_id = njs_djb_hash(value->string.data->start,
                                    value->string.data->size);
 
-            entry = njs_atom_find_or_add_string(vm, value, hash_id);
-            if (njs_slow_path(entry == NULL)) {
-                return NJS_ERROR;
+            entry = njs_atom_find(vm, value->string.data->start,
+                                  value->string.data->size, hash_id);
+            if (entry == NULL) {
+                entry = njs_atom_add(vm, value, hash_id);
+                if (njs_slow_path(entry == NULL)) {
+                    return NJS_ERROR;
+                }
             }
 
             *value = *entry;
@@ -316,12 +284,14 @@ njs_atom_atomize_key(njs_vm_t *vm, njs_value_t *value)
                 hash_id = njs_djb_hash(val_str.string.data->start,
                                        val_str.string.data->size);
 
-                entry = njs_atom_find_or_add(vm, val_str.string.data->start,
-                                             val_str.string.data->size,
-                                             val_str.string.data->length,
-                                             hash_id);
-                if (njs_slow_path(entry == NULL)) {
-                    return NJS_ERROR;
+                entry = njs_atom_find(vm, val_str.string.data->start,
+                                      val_str.string.data->size,
+                                      hash_id);
+                if (entry == NULL) {
+                    entry = njs_atom_add(vm, &val_str, hash_id);
+                    if (njs_slow_path(entry == NULL)) {
+                        return NJS_ERROR;
+                    }
                 }
 
                 value->atom_id = entry->atom_id;

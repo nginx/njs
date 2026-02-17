@@ -695,6 +695,8 @@ njs_lexer_word(njs_lexer_t *lexer, njs_lexer_token_t *token)
 {
     u_char             *p, c;
     uint32_t           hash_id;
+    njs_int_t          ret;
+    njs_value_t        value;
     const njs_value_t  *entry;
 
     /* TODO: UTF-8 */
@@ -734,11 +736,19 @@ njs_lexer_word(njs_lexer_t *lexer, njs_lexer_token_t *token)
     token->text.length = p - token->text.start;
     lexer->start = p;
 
-    entry = njs_atom_find_or_add(lexer->vm, token->text.start,
-                                 token->text.length, token->text.length,
-                                 hash_id);
-    if (njs_slow_path(entry == NULL)) {
-        return NJS_ERROR;
+    entry = njs_atom_find(lexer->vm, token->text.start, token->text.length,
+                          hash_id);
+    if (entry == NULL) {
+        ret = njs_string_create(lexer->vm, &value, token->text.start,
+                                token->text.length);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return NJS_ERROR;
+        }
+
+        entry = njs_atom_add(lexer->vm, &value, hash_id);
+        if (njs_slow_path(entry == NULL)) {
+            return NJS_ERROR;
+        }
     }
 
     if (entry->string.token_type == NJS_KEYWORD_TYPE_UNDEF) {
