@@ -95,6 +95,9 @@ jobs:
         run: |
           ./configure \
                     --with-quickjs \
+                    --debug=YES \
+                    --debug-memory=YES \
+                    --address-sanitizer=YES \
                     --cc-opt="$CC_OPT -Iquickjs" \
                     --ld-opt="$LD_OPT -Lquickjs" \
           || cat build/autoconf.err
