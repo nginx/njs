@@ -136,7 +136,6 @@ struct njs_vm_s {
 
     njs_flathsh_t            values_hash;
 
-    njs_arr_t                *modules;
     njs_flathsh_t            modules_hash;
 
     uint32_t                 event_id;
@@ -216,7 +215,6 @@ struct njs_vm_shared_s {
     njs_flathsh_t            arguments_object_instance_hash;
     njs_flathsh_t            regexp_instance_hash;
 
-    size_t                   module_items;
     njs_flathsh_t            modules_hash;
 
     njs_flathsh_t            env_hash;

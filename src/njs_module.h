@@ -11,7 +11,6 @@
 struct njs_mod_s {
     njs_str_t                   name;
     njs_value_t                 value;
-    njs_index_t                 index;
     njs_function_t              function;
 };
 

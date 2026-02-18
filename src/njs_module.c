@@ -66,9 +66,11 @@ njs_module_find(njs_vm_t *vm, njs_str_t *name, njs_bool_t shared)
 
         memcpy(module, shrd, sizeof(njs_mod_t));
 
-        object = njs_object_value_copy(vm, &module->value);
-        if (njs_slow_path(object == NULL)) {
-            return NULL;
+        if (module->function.native) {
+            object = njs_object_value_copy(vm, &module->value);
+            if (njs_slow_path(object == NULL)) {
+                return NULL;
+            }
         }
 
         fhq.replace = 0;
@@ -76,6 +78,7 @@ njs_module_find(njs_vm_t *vm, njs_str_t *name, njs_bool_t shared)
 
         ret = njs_flathsh_insert(&vm->modules_hash, &fhq);
         if (njs_slow_path(ret != NJS_OK)) {
+            njs_internal_error(vm, "flathsh insert failed");
             return NULL;
         }
 

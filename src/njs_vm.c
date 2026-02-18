@@ -382,7 +382,7 @@ njs_vm_reuse(njs_vm_t *vm)
 {
     vm->active_frame = NULL;
     vm->top_frame = NULL;
-    vm->modules = NULL;
+    njs_flathsh_init(&vm->modules_hash);
 
     return njs_object_make_shared(vm, njs_object(&vm->global_value));
 }

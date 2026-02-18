@@ -8125,10 +8125,6 @@ njs_parser_module(njs_parser_t *parser, njs_str_t *name)
 
 done:
 
-    if (module->index == 0) {
-        module->index = vm->shared->module_items++;
-    }
-
     return module;
 }
 

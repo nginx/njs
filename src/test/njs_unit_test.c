@@ -21062,11 +21062,19 @@ static njs_unit_test_t  njs_async_handler_test[] =
 
 static njs_unit_test_t  njs_shared_test[] =
 {
+    { njs_str("var cr = require('unknown')"),
+      njs_str("Error: Cannot load module \"unknown\"\n"
+              "    at require (native)\n"
+              "    at main (:1)\n") },
+
     { njs_str("var cr = require('crypto'); cr.createHash"),
       njs_str("[object Function]") },
 
     { njs_str("var cr = require('crypto'); cr.createHash('md5')"),
       njs_str("[object Hash]") },
+
+    { njs_str("import cr from 'unknown'"),
+      njs_str("Error: Cannot load module \"unknown\"") },
 
     { njs_str("import cr from 'crypto'; cr.createHash"),
       njs_str("[object Function]") },
@@ -21935,6 +21943,16 @@ njs_runtime_destroy(njs_runtime_t *rt)
 }
 
 
+static njs_mod_t *
+njs_unit_test_module_loader(njs_vm_t *vm, njs_external_ptr_t external,
+    njs_str_t *name)
+{
+    njs_vm_error(vm, "Cannot load module \"%V\"", name);
+
+    return NULL;
+}
+
+
 static njs_int_t
 njs_process_test(njs_external_state_t *state, njs_opts_t *opts,
     njs_unit_test_t *expected)
@@ -22109,6 +22127,8 @@ njs_unit_test(njs_unit_test_t tests[], size_t num, njs_str_t *name,
             njs_printf("njs_vm_create() failed\n");
             goto done;
         }
+
+        njs_vm_set_module_loader(vm, njs_unit_test_module_loader, NULL);
 
         if (opts->preload) {
             start = preload.start;
