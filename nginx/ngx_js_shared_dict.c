@@ -1877,14 +1877,14 @@ ngx_js_dict_render_json(ngx_js_dict_t *dict, njs_chb_t *chain)
         }
 
         if (dict->timeout) {
-            len = sizeof(",\"expire\":1000000000");
+            len = sizeof(",\"expire\":18446744073709551615");
             dst = njs_chb_reserve(chain, len);
             if (dst == NULL) {
                 return NGX_ERROR;
             }
 
-            p = njs_sprintf(dst, dst + len, ",\"expire\":%ui",
-                            node->expire.key);
+            p = ngx_slprintf(dst, dst + len, ",\"expire\":%ui",
+                             node->expire.key);
             njs_chb_written(chain, p - dst);
         }
 
@@ -2942,6 +2942,14 @@ ngx_js_shared_dict_zone(ngx_conf_t *cf, ngx_command_t *cmd, void *conf,
                            "evict requires timeout=");
         return NGX_CONF_ERROR;
     }
+
+#if (NGX_PTR_SIZE == 4)
+    if (timeout != 0 && file.len != 0) {
+        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "state file is not supported "
+                           "on 32-bit platform when timeout is used");
+        return NGX_CONF_ERROR;
+    }
+#endif
 
     shm_zone = ngx_shared_memory_add(cf, &name, size, tag);
     if (shm_zone == NULL) {

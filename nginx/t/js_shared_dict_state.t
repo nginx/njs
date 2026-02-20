@@ -42,15 +42,10 @@ http {
     js_import test.js;
 
     js_shared_dict_zone zone=bar:64k type=string state=bar.json;
-    js_shared_dict_zone zone=waka:32k timeout=1000s type=number state=waka.json;
 
     server {
         listen       127.0.0.1:8080;
         server_name  localhost;
-
-        location /add {
-            js_content test.add;
-        }
 
         location /clear {
             js_content test.clear;
@@ -62,10 +57,6 @@ http {
 
         location /get {
             js_content test.get;
-        }
-
-        location /incr {
-            js_content test.incr;
         }
 
         location /pop {
@@ -90,30 +81,6 @@ $t->write_file('bar.json', <<EOF);
 EOF
 
 $t->write_file('test.js', <<'EOF');
-    function convertToValue(dict, v) {
-        if (dict.type == 'number') {
-            return parseInt(v);
-
-        } else if (v == 'empty') {
-            v = '';
-        }
-
-        return v;
-    }
-
-    function add(r) {
-        var dict = ngx.shared[r.args.dict];
-        var value = convertToValue(dict, r.args.value);
-
-        if (r.args.timeout) {
-            var timeout = Number(r.args.timeout);
-            r.return(200, dict.add(r.args.key, value, timeout));
-
-        } else {
-            r.return(200, dict.add(r.args.key, value));
-        }
-    }
-
     function clear(r) {
         var dict = ngx.shared[r.args.dict];
         var result = dict.clear();
@@ -139,21 +106,6 @@ $t->write_file('test.js', <<'EOF');
         r.return(200, val);
     }
 
-    function incr(r) {
-        var dict = ngx.shared[r.args.dict];
-        var def = r.args.def ? parseInt(r.args.def) : 0;
-
-        if (r.args.timeout) {
-            var timeout = Number(r.args.timeout);
-            var val = dict.incr(r.args.key, parseInt(r.args.by), def, timeout);
-            r.return(200, val);
-
-        } else {
-            var val = dict.incr(r.args.key, parseInt(r.args.by), def);
-            r.return(200, val);
-        }
-    }
-
     function pop(r) {
         var dict = ngx.shared[r.args.dict];
         var val = dict.pop(r.args.key);
@@ -169,18 +121,16 @@ $t->write_file('test.js', <<'EOF');
 
     function set(r) {
         var dict = ngx.shared[r.args.dict];
-        var value = convertToValue(dict, r.args.value);
+        var value = r.args.value;
 
-        if (r.args.timeout) {
-            var timeout = Number(r.args.timeout);
-            r.return(200, dict.set(r.args.key, value, timeout) === dict);
-
-        } else {
-            r.return(200, dict.set(r.args.key, value) === dict);
+        if (value == 'empty') {
+            value = '';
         }
+
+        r.return(200, dict.set(r.args.key, value) === dict);
     }
 
-    export default { add, clear, del, get, incr, pop, set };
+    export default { clear, del, get, pop, set };
 EOF
 
 $t->try_run('no js_shared_dict_zone with state=')->plan(11);
@@ -195,39 +145,36 @@ like(http_get('/get?dict=bar&key=abc'), qr/def/, 'get bar.abc');
 http_get('/set?dict=bar&key=waka&value=foo2');
 http_get('/delete?dict=bar&key=bar');
 
-http_get('/set?dict=waka&key=foo&value=42');
-
 select undef, undef, undef, 1.1;
 
-$t->reload();
+$t->stop();
+$t->run();
 
 my $bar_state = read_state($t, 'bar.json');
-my $waka_state = read_state($t, 'waka.json');
 
 is($bar_state->{waka}->{value}, 'foo2', 'get bar.waka from state');
+is($bar_state->{waka}->{expire}, undef,
+	'no expire field for bar.waka in state in non-timeout case');
 is($bar_state->{bar}, undef, 'no bar.bar in state');
-is($waka_state->{foo}->{value}, '42', 'get waka.foo from state');
-like($waka_state->{foo}->{expire}, qr/^\d+$/, 'waka.foo expire');
+
+like(http_get('/get?dict=bar&key=waka'), qr/foo2/,
+	'get bar.waka after restart');
+like(http_get('/get?dict=bar&key=bar'), qr/undefined/,
+	'get bar.bar after restart');
 
 http_get('/pop?dict=bar&key=FOO%20%0A');
-
-http_get('/incr?dict=waka&key=foo&by=1');
 
 select undef, undef, undef, 1.1;
 
 $bar_state = read_state($t, 'bar.json');
-$waka_state = read_state($t, 'waka.json');
 
 is($bar_state->{'FOO \\n'}, undef, 'no bar.FOO \\n in state');
-is($waka_state->{foo}->{value}, '43', 'get waka.foo from state');
 
 http_get('/clear?dict=bar');
 
 select undef, undef, undef, 1.1;
 
-$bar_state = read_state($t, 'bar.json');
-
-is($bar_state->{waka}, undef, 'no bar.waka in state');
+is($t->read_file('bar.json'), "{}", 'empty dict saved as empty state');
 
 ###############################################################################
 
