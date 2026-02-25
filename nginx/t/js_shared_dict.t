@@ -100,6 +100,10 @@ http {
             js_content test.name;
         }
 
+        location /evict_stress {
+            js_content test.evict_stress;
+        }
+
         location /overflow {
             js_content test.overflow;
         }
@@ -261,6 +265,31 @@ $t->write_file('test.js', <<'EOF');
         r.return(200, dict.replace(r.args.key, value));
     }
 
+    function evict_stress(r) {
+        var dict = ngx.shared.foo;
+        dict.clear();
+
+        var v = 'x'.repeat(1024);
+        var n = 64;
+        var failed = 0;
+
+        for (var i = 0; i < n; i++) {
+            try {
+                dict.set('stress_' + i, v);
+            } catch (e) {
+                failed++;
+            }
+        }
+
+        var last = dict.get('stress_' + (n - 1));
+        var first = dict.get('stress_0');
+
+        var last_s = last !== undefined ? 'exists' : 'missing';
+        var first_s = first !== undefined ? 'exists' : 'missing';
+
+        r.return(200, `failed:${failed},last:${last_s},first:${first_s}`);
+    }
+
     function overflow(r) {
         var dict = ngx.shared.overflow;
 
@@ -327,14 +356,15 @@ $t->write_file('test.js', <<'EOF');
         r.return(200, Object.keys(ngx.shared).sort());
     }
 
-    export default { add, capacity, chain, clear, del, free_space, get, has,
-                     incr, items, keys, name, njs: test_njs, pop, replace, set,
-                     set_clear, size, zones, overflow };
+    export default { add, capacity, chain, clear, del, evict_stress,
+                     free_space, get, has, incr, items, keys, name,
+                     njs: test_njs, pop, replace, set, set_clear, size,
+                     zones, overflow };
 EOF
 
 $t->try_run('no js_shared_dict_zone');
 
-$t->plan(52);
+$t->plan(56);
 
 ###############################################################################
 
@@ -437,6 +467,13 @@ local $TODO = 'not yet' unless has_version('0.8.8');
 like(http_get('/overflow'), qr/SharedMemoryError/, 'overflow exception');
 
 }
+
+my $evict_resp = http_get('/evict_stress');
+like($evict_resp, qr/failed:0/, 'evict stress: all writes succeeded');
+like($evict_resp, qr/last:exists/, 'evict stress: last write exists');
+like($evict_resp, qr/first:missing/, 'evict stress: first write evicted');
+unlike($t->read_file('error.log'), qr/no memory in js shared zone "foo"/,
+	'evict stress: no shared zone foo errors in error log');
 
 ###############################################################################
 

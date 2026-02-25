@@ -1302,7 +1302,9 @@ ngx_js_dict_alloc(ngx_js_dict_t *dict, size_t n)
 {
     void  *p;
 
+    dict->shpool->log_nomem = !dict->evict;
     p = ngx_slab_alloc_locked(dict->shpool, n);
+    dict->shpool->log_nomem = 1;
 
     if (p == NULL && dict->evict) {
         ngx_js_dict_evict(dict, 16);
