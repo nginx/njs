@@ -8296,6 +8296,18 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'r' !== '\\r'"),
       njs_str("true") },
 
+    { njs_str("'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaα'[32]"),
+      njs_str("α") },
+
+    { njs_str("'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaα'[33]"),
+      njs_str("α") },
+
+    { njs_str("'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaα'[34]"),
+      njs_str("α") },
+
+    { njs_str("'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaα'[35]"),
+      njs_str("α") },
+
     /* Octal escape sequences are not allowed in strict mode.*/
 
     { njs_str("'\\0a'"),
