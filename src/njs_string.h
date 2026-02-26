@@ -77,6 +77,11 @@ struct njs_string_s {
 };
 
 
+uint32_t njs_string_data_size(uint32_t size, uint32_t length);
+void njs_string_data_init(struct njs_string_s *string, uint32_t size,
+    uint32_t length);
+
+
 typedef struct {
     size_t    size;
     size_t    length;

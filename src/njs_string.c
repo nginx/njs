@@ -147,12 +147,43 @@ njs_string_new(njs_vm_t *vm, njs_value_t *value, const u_char *start,
 }
 
 
+uint32_t
+njs_string_data_size(uint32_t size, uint32_t length)
+{
+    if (size != length && length > NJS_STRING_MAP_STRIDE) {
+        return njs_string_map_offset(size + njs_length("\0"))
+               + njs_string_map_size(length);
+    }
+
+    return size + njs_length("\0");
+}
+
+
+void
+njs_string_data_init(njs_string_t *string, uint32_t size, uint32_t length)
+{
+    uint32_t  map_offset, *map;
+
+    string->start = (u_char *) string + sizeof(njs_string_t);
+    string->size = size;
+    string->length = length;
+
+    string->start[size] = '\0';
+
+    if (size != length && length > NJS_STRING_MAP_STRIDE) {
+        map_offset = njs_string_map_offset(size + njs_length("\0"));
+        map = (uint32_t *) (string->start + map_offset);
+        map[0] = 0;
+    }
+}
+
+
 /* Underlying string data is zero-terminated. */
 u_char *
 njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint64_t size,
     uint64_t length)
 {
-    uint32_t      total, map_offset, *map;
+    uint32_t      total;
     njs_string_t  *string;
 
     if (njs_slow_path(size > NJS_STRING_MAX_LENGTH)) {
@@ -164,30 +195,14 @@ njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint64_t size,
     value->truth = size != 0;
     value->atom_id = NJS_ATOM_STRING_unknown;
 
-    if (size != length && length > NJS_STRING_MAP_STRIDE) {
-        map_offset = njs_string_map_offset(size + njs_length("\0"));
-        total = map_offset + njs_string_map_size(length);
-
-    } else {
-        map_offset = 0;
-        total = size + njs_length("\0");
-    }
+    total = njs_string_data_size(size, length);
 
     string = njs_mp_alloc(vm->mem_pool, sizeof(njs_string_t) + total);
 
     if (njs_fast_path(string != NULL)) {
         value->string.data = string;
 
-        string->start = (u_char *) string + sizeof(njs_string_t);
-        string->size = size;
-        string->length = length;
-
-        string->start[size] = '\0';
-
-        if (map_offset != 0) {
-            map = (uint32_t *) (string->start + map_offset);
-            map[0] = 0;
-        }
+        njs_string_data_init(string, size, length);
 
         return string->start;
     }

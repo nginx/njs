@@ -158,6 +158,9 @@ njs_scope_value_index(njs_vm_t *vm, const njs_value_t *src, njs_uint_t runtime,
     njs_object_prop_t    *pr;
     njs_flathsh_query_t  fhq;
 
+    /* Suppress "may be used uninitialized" warning. */
+    length = 0;
+
     is_string = 0;
     value_size = sizeof(njs_value_t);
 
@@ -194,12 +197,8 @@ njs_scope_value_index(njs_vm_t *vm, const njs_value_t *src, njs_uint_t runtime,
         if (is_string) {
             length = src->string.data->length;
 
-            if (size != length && length > NJS_STRING_MAP_STRIDE) {
-                size = njs_string_map_offset(size)
-                       + njs_string_map_size(length);
-            }
-
-            value_size += sizeof(njs_string_t) + size + 1;
+            value_size += sizeof(njs_string_t)
+                          + njs_string_data_size(size, length);
         }
 
         value_size += sizeof(njs_index_t);
@@ -217,11 +216,7 @@ njs_scope_value_index(njs_vm_t *vm, const njs_value_t *src, njs_uint_t runtime,
 
             value->string.data = string;
 
-            string->start = (u_char *) string + sizeof(njs_string_t);
-            string->length = src->string.data->length;
-            string->size = src->string.data->size;
-
-            string->start[size] = '\0';
+            njs_string_data_init(string, size, length);
 
             memcpy(string->start, start, size);
         }
