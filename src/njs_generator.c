@@ -238,6 +238,20 @@ static njs_int_t njs_generate_comma_expression_end(njs_vm_t *vm,
 static njs_int_t njs_generate_global_property_set(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node_dst,
     njs_parser_node_t *node_src);
+static njs_int_t njs_generate_preserve_property_lvalue(njs_vm_t *vm,
+    njs_generator_t *generator, njs_parser_node_t *lvalue,
+    njs_parser_node_t *expr);
+static njs_index_t njs_generate_property_index(njs_vm_t *vm,
+    njs_generator_t *generator, njs_parser_node_t *node,
+    njs_parser_node_t *object, njs_parser_node_t *property);
+static njs_vmcode_t njs_generate_property_get_opcode(njs_parser_node_t *node);
+static njs_vmcode_t njs_generate_property_set_opcode(njs_parser_node_t *node);
+static njs_int_t njs_generate_property_get(njs_vm_t *vm,
+    njs_generator_t *generator, njs_parser_node_t *node, njs_index_t value,
+    njs_index_t object, njs_index_t property);
+static njs_int_t njs_generate_property_set(njs_vm_t *vm,
+    njs_generator_t *generator, njs_parser_node_t *node, njs_index_t value,
+    njs_index_t object, njs_index_t property);
 static njs_int_t njs_generate_assignment(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
 static njs_int_t njs_generate_assignment_name(njs_vm_t *vm,
@@ -3040,6 +3054,144 @@ njs_generate_global_property_set(njs_vm_t *vm, njs_generator_t *generator,
 
 
 static njs_int_t
+njs_generate_preserve_property_lvalue(njs_vm_t *vm,
+    njs_generator_t *generator, njs_parser_node_t *lvalue,
+    njs_parser_node_t *expr)
+{
+    njs_index_t        index, src;
+    njs_parser_node_t  *object, *property;
+    njs_vmcode_move_t  *move;
+
+    if (!njs_slow_path(njs_parser_has_side_effect(expr))) {
+        return NJS_OK;
+    }
+
+    object = lvalue->left;
+    property = lvalue->right;
+
+    /*
+     * Preserve object and property values stored in variables in a case
+     * if the variables can be changed by side effects in expression.
+     */
+    if (object->token_type == NJS_TOKEN_NAME) {
+        src = object->index;
+
+        index = njs_generate_node_temp_index_get(vm, generator, object);
+        if (njs_slow_path(index == NJS_INDEX_ERROR)) {
+            return NJS_ERROR;
+        }
+
+        njs_generate_code_move(generator, move, index, src, object);
+    }
+
+    if (property->token_type == NJS_TOKEN_NAME) {
+        src = property->index;
+
+        index = njs_generate_node_temp_index_get(vm, generator, property);
+        if (njs_slow_path(index == NJS_INDEX_ERROR)) {
+            return NJS_ERROR;
+        }
+
+        njs_generate_code_move(generator, move, index, src, property);
+    }
+
+    return NJS_OK;
+}
+
+
+static njs_index_t
+njs_generate_property_index(njs_vm_t *vm, njs_generator_t *generator,
+    njs_parser_node_t *node, njs_parser_node_t *object,
+    njs_parser_node_t *property)
+{
+    njs_index_t         prop_index;
+    njs_vmcode_3addr_t  *to_property_key;
+
+    prop_index = property->index;
+
+    if (!njs_parser_is_primitive(property)) {
+        prop_index = njs_generate_node_temp_index_get(vm, generator, node);
+        if (njs_slow_path(prop_index == NJS_INDEX_ERROR)) {
+            return NJS_INDEX_ERROR;
+        }
+
+        njs_generate_code(generator, njs_vmcode_3addr_t, to_property_key,
+                          NJS_VMCODE_TO_PROPERTY_KEY_CHK, property);
+
+        to_property_key->src2 = object->index;
+        to_property_key->src1 = property->index;
+        to_property_key->dst = prop_index;
+    }
+
+    return prop_index;
+}
+
+
+static njs_vmcode_t
+njs_generate_property_get_opcode(njs_parser_node_t *node)
+{
+    if (node->token_type == NJS_TOKEN_STRING
+        || (node->token_type == NJS_TOKEN_NUMBER
+            && node->u.value.atom_id != NJS_ATOM_STRING_unknown))
+    {
+        return NJS_VMCODE_PROPERTY_ATOM_GET;
+    }
+
+    return NJS_VMCODE_PROPERTY_GET;
+}
+
+
+static njs_vmcode_t
+njs_generate_property_set_opcode(njs_parser_node_t *node)
+{
+    if (node->token_type == NJS_TOKEN_STRING
+        || (node->token_type == NJS_TOKEN_NUMBER
+            && node->u.value.atom_id != NJS_ATOM_STRING_unknown))
+    {
+        return NJS_VMCODE_PROPERTY_ATOM_SET;
+    }
+
+    return NJS_VMCODE_PROPERTY_SET;
+}
+
+
+static njs_int_t
+njs_generate_property_get(njs_vm_t *vm, njs_generator_t *generator,
+    njs_parser_node_t *node, njs_index_t value, njs_index_t object,
+    njs_index_t property)
+{
+    njs_vmcode_prop_get_t  *prop_get;
+
+    njs_generate_code(generator, njs_vmcode_prop_get_t, prop_get,
+                      njs_generate_property_get_opcode(node), node);
+
+    prop_get->value = value;
+    prop_get->object = object;
+    prop_get->property = property;
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+njs_generate_property_set(njs_vm_t *vm, njs_generator_t *generator,
+    njs_parser_node_t *node, njs_index_t value, njs_index_t object,
+    njs_index_t property)
+{
+    njs_vmcode_prop_set_t  *prop_set;
+
+    njs_generate_code(generator, njs_vmcode_prop_set_t, prop_set,
+                      njs_generate_property_set_opcode(node), node);
+
+    prop_set->value = value;
+    prop_set->object = object;
+    prop_set->property = property;
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
 njs_generate_assignment(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
@@ -3134,42 +3286,14 @@ static njs_int_t
 njs_generate_assignment_prop(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
-    njs_index_t        index, src;
-    njs_parser_node_t  *lvalue, *expr, *object, *property;
-    njs_vmcode_move_t  *move;
+    njs_int_t          ret;
+    njs_parser_node_t  *expr;
 
-    lvalue = node->left;
     expr = node->right;
-
-    object = lvalue->left;
-    property = lvalue->right;
-
-    if (njs_slow_path(njs_parser_has_side_effect(expr))) {
-        /*
-         * Preserve object and property values stored in variables in a case
-         * if the variables can be changed by side effects in expression.
-         */
-        if (object->token_type == NJS_TOKEN_NAME) {
-            src = object->index;
-
-            index = njs_generate_node_temp_index_get(vm, generator, object);
-            if (njs_slow_path(index == NJS_INDEX_ERROR)) {
-                return NJS_ERROR;
-            }
-
-            njs_generate_code_move(generator, move, index, src, object);
-        }
-
-        if (property->token_type == NJS_TOKEN_NAME) {
-            src = property->index;
-
-            index = njs_generate_node_temp_index_get(vm, generator, property);
-            if (njs_slow_path(index == NJS_INDEX_ERROR)) {
-                return NJS_ERROR;
-            }
-
-            njs_generate_code_move(generator, move, index, src, property);
-        }
+    ret = njs_generate_preserve_property_lvalue(vm, generator, node->left,
+                                                expr);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
 
     njs_generator_next(generator, njs_generate, expr);
@@ -3243,18 +3367,10 @@ njs_generate_assignment_end(njs_vm_t *vm, njs_generator_t *generator,
         break;
 
     default:
-        if (property->token_type == NJS_TOKEN_STRING
-            || (property->token_type == NJS_TOKEN_NUMBER
-                && property->u.value.atom_id != NJS_ATOM_STRING_unknown))
-        {
-            opcode = NJS_VMCODE_PROPERTY_ATOM_SET;
+        opcode = njs_generate_property_set_opcode(property);
 
-        } else {
-            opcode = NJS_VMCODE_PROPERTY_SET;
-        }
-
-        njs_generate_code(generator, njs_vmcode_prop_set_t, prop_set,
-                          opcode, expr);
+        njs_generate_code(generator, njs_vmcode_prop_set_t, prop_set, opcode,
+                          expr);
     }
 
     prop_set->value = expr->index;
@@ -3400,59 +3516,24 @@ static njs_int_t
 njs_generate_operation_assignment_prop(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
-    njs_index_t            index, src, prop_index;
-    njs_vmcode_t           opcode;
+    njs_index_t            index, prop_index;
+    njs_int_t              ret;
     njs_parser_node_t      *lvalue, *object, *property;
-    njs_vmcode_move_t      *move;
-    njs_vmcode_3addr_t     *to_property_key;
-    njs_vmcode_prop_get_t  *prop_get;
 
     lvalue = node->left;
     object = lvalue->left;
     property = lvalue->right;
 
-    if (njs_slow_path(njs_parser_has_side_effect(node->right))) {
-        /*
-         * Preserve object and property values stored in variables in a case
-         * if the variables can be changed by side effects in expression.
-         */
-        if (object->token_type == NJS_TOKEN_NAME) {
-            src = object->index;
-
-            index = njs_generate_node_temp_index_get(vm, generator, object);
-            if (njs_slow_path(index == NJS_INDEX_ERROR)) {
-                return NJS_ERROR;
-            }
-
-            njs_generate_code_move(generator, move, index, src, object);
-        }
-
-        if (property->token_type == NJS_TOKEN_NAME) {
-            src = property->index;
-
-            index = njs_generate_node_temp_index_get(vm, generator, property);
-            if (njs_slow_path(index == NJS_INDEX_ERROR)) {
-                return NJS_ERROR;
-            }
-
-            njs_generate_code_move(generator, move, index, src, property);
-        }
+    ret = njs_generate_preserve_property_lvalue(vm, generator, lvalue,
+                                                node->right);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
 
-    prop_index = property->index;
-
-    if (!njs_parser_is_primitive(property)) {
-        prop_index = njs_generate_node_temp_index_get(vm, generator, node);
-        if (njs_slow_path(prop_index == NJS_INDEX_ERROR)) {
-            return NJS_ERROR;
-        }
-
-        njs_generate_code(generator, njs_vmcode_3addr_t, to_property_key,
-                          NJS_VMCODE_TO_PROPERTY_KEY_CHK, property);
-
-        to_property_key->src2 = object->index;
-        to_property_key->src1 = property->index;
-        to_property_key->dst = prop_index;
+    prop_index = njs_generate_property_index(vm, generator, node, object,
+                                             property);
+    if (njs_slow_path(prop_index == NJS_INDEX_ERROR)) {
+        return NJS_ERROR;
     }
 
     index = njs_generate_node_temp_index_get(vm, generator, node);
@@ -3460,22 +3541,11 @@ njs_generate_operation_assignment_prop(njs_vm_t *vm, njs_generator_t *generator,
         return NJS_ERROR;
     }
 
-    if (property->token_type == NJS_TOKEN_STRING
-        || (property->token_type == NJS_TOKEN_NUMBER
-            && property->u.value.atom_id != NJS_ATOM_STRING_unknown))
-    {
-        opcode = NJS_VMCODE_PROPERTY_ATOM_GET;
-
-    } else {
-        opcode = NJS_VMCODE_PROPERTY_GET;
+    ret = njs_generate_property_get(vm, generator, property, index,
+                                    object->index, prop_index);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
-
-    njs_generate_code(generator, njs_vmcode_prop_get_t, prop_get,
-                      opcode, property);
-
-    prop_get->value = index;
-    prop_get->object = object->index;
-    prop_get->property = prop_index;
 
     njs_generator_next(generator, njs_generate, node->right);
 
@@ -3490,12 +3560,10 @@ static njs_int_t
 njs_generate_operation_assignment_end(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
-    njs_int_t              ret;
-    njs_index_t            prop_index;
-    njs_vmcode_t           opcode;
-    njs_parser_node_t      *lvalue, *expr, *prop;
-    njs_vmcode_3addr_t     *code;
-    njs_vmcode_prop_set_t  *prop_set;
+    njs_int_t           ret;
+    njs_index_t         prop_index;
+    njs_parser_node_t   *lvalue, *expr;
+    njs_vmcode_3addr_t  *code;
 
     lvalue = node->left;
     expr = node->right;
@@ -3508,24 +3576,11 @@ njs_generate_operation_assignment_end(njs_vm_t *vm, njs_generator_t *generator,
     code->src1 = node->index;
     code->src2 = expr->index;
 
-    prop = lvalue->right;
-
-    if (prop->token_type == NJS_TOKEN_STRING
-        || (prop->token_type == NJS_TOKEN_NUMBER
-            && prop->u.value.atom_id != NJS_ATOM_STRING_unknown))
-    {
-        opcode = NJS_VMCODE_PROPERTY_ATOM_SET;
-
-    } else {
-        opcode = NJS_VMCODE_PROPERTY_SET;
+    ret = njs_generate_property_set(vm, generator, lvalue->right, node->index,
+                                    lvalue->left->index, prop_index);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
     }
-
-    njs_generate_code(generator, njs_vmcode_prop_set_t, prop_set,
-                      opcode, expr);
-
-    prop_set->value = node->index;
-    prop_set->object = lvalue->left->index;
-    prop_set->property = prop_index;
 
     ret = njs_generate_children_indexes_release(vm, generator, lvalue);
     if (njs_slow_path(ret != NJS_OK)) {
