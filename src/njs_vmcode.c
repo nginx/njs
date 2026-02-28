@@ -212,6 +212,7 @@ njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc, njs_value_t *rval,
         NJS_GOTO_ROW(NJS_VMCODE_TEST_IF_TRUE),
         NJS_GOTO_ROW(NJS_VMCODE_TEST_IF_FALSE),
         NJS_GOTO_ROW(NJS_VMCODE_COALESCE),
+        NJS_GOTO_ROW(NJS_VMCODE_OPTIONAL_CHAIN),
         NJS_GOTO_ROW(NJS_VMCODE_UNARY_PLUS),
         NJS_GOTO_ROW(NJS_VMCODE_UNARY_NEGATION),
         NJS_GOTO_ROW(NJS_VMCODE_BITWISE_NOT),
@@ -1107,6 +1108,23 @@ NEXT_LBL;
 
         njs_vmcode_operand(vm, vmcode->operand1, retval);
         *retval = *value1;
+
+        BREAK;
+
+    CASE (NJS_VMCODE_OPTIONAL_CHAIN):
+        njs_vmcode_debug_opcode();
+
+        njs_vmcode_operand(vm, vmcode->operand2, value1);
+
+        if (njs_is_null_or_undefined(value1)) {
+            njs_vmcode_operand(vm, vmcode->operand1, retval);
+            njs_set_undefined(retval);
+            test_jump = (njs_vmcode_test_jump_t *) pc;
+            ret = test_jump->offset;
+
+        } else {
+            ret = sizeof(njs_vmcode_3addr_t);
+        }
 
         BREAK;
 
