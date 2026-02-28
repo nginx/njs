@@ -94,6 +94,8 @@ static njs_parser_node_t *njs_parser_create_call(njs_parser_t *parser,
 static njs_int_t njs_parser_call_arguments(njs_parser_t *parser,
     njs_lexer_token_t *token, njs_queue_link_t *current,
     njs_parser_node_t *func, njs_parser_state_func_t after);
+
+static njs_int_t njs_parser_right_link_pop(njs_parser_t *parser);
 static njs_int_t njs_parser_call_expression(njs_parser_t *parser,
     njs_lexer_token_t *token, njs_queue_link_t *current);
 static njs_int_t njs_parser_call_expression_args(njs_parser_t *parser,
@@ -2447,10 +2449,7 @@ njs_parser_member_expression_bracket(njs_parser_t *parser,
 
     njs_lexer_consume_token(parser->lexer, 1);
 
-    parser->target->right = parser->node;
-    parser->node = parser->target;
-
-    return njs_parser_stack_pop(parser);
+    return njs_parser_right_link_pop(parser);
 }
 
 
@@ -2690,6 +2689,16 @@ njs_parser_call_arguments(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_parser_next(parser, njs_parser_arguments);
 
     return njs_parser_after(parser, current, func, 1, after);
+}
+
+
+static njs_int_t
+njs_parser_right_link_pop(njs_parser_t *parser)
+{
+    parser->target->right = parser->node;
+    parser->node = parser->target;
+
+    return njs_parser_stack_pop(parser);
 }
 
 
@@ -3608,10 +3617,7 @@ njs_parser_await_after(njs_parser_t *parser, njs_lexer_token_t *token,
         return njs_parser_failed(parser);
     }
 
-    parser->target->right = parser->node;
-    parser->node = parser->target;
-
-    return njs_parser_stack_pop(parser);
+    return njs_parser_right_link_pop(parser);
 }
 
 
@@ -4522,10 +4528,7 @@ static njs_int_t
 njs_parser_assignment_operator_after(njs_parser_t *parser,
     njs_lexer_token_t *token, njs_queue_link_t *current)
 {
-    parser->target->right = parser->node;
-    parser->node = parser->target;
-
-    return njs_parser_stack_pop(parser);
+    return njs_parser_right_link_pop(parser);
 }
 
 
@@ -5407,10 +5410,7 @@ static njs_int_t
 njs_parser_do_while_semicolon(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
 {
-    parser->target->right = parser->node;
-    parser->node = parser->target;
-
-    return njs_parser_stack_pop(parser);
+    return njs_parser_right_link_pop(parser);
 }
 
 
@@ -5581,10 +5581,7 @@ static njs_int_t
 njs_parser_after_expr(njs_parser_t *parser,
     njs_lexer_token_t *token, njs_queue_link_t *current)
 {
-    parser->target->right = parser->node;
-    parser->node = parser->target;
-
-    return njs_parser_stack_pop(parser);
+    return njs_parser_right_link_pop(parser);
 }
 
 
@@ -6086,10 +6083,7 @@ static njs_int_t
 njs_parser_for_in_statement_after(njs_parser_t *parser,
     njs_lexer_token_t *token, njs_queue_link_t *current)
 {
-    parser->target->right = parser->node;
-    parser->node = parser->target;
-
-    return njs_parser_stack_pop(parser);
+    return njs_parser_right_link_pop(parser);
 }
 
 
@@ -6342,10 +6336,7 @@ njs_parser_return_statement_after(njs_parser_t *parser,
         return njs_parser_failed(parser);
     }
 
-    parser->target->right = parser->node;
-    parser->node = parser->target;
-
-    return njs_parser_stack_pop(parser);
+    return njs_parser_right_link_pop(parser);
 }
 
 
@@ -6769,10 +6760,7 @@ njs_parser_throw_statement_after(njs_parser_t *parser,
         return njs_parser_failed(parser);
     }
 
-    parser->target->right = parser->node;
-    parser->node = parser->target;
-
-    return njs_parser_stack_pop(parser);
+    return njs_parser_right_link_pop(parser);
 }
 
 
@@ -8084,10 +8072,7 @@ njs_parser_export_after(njs_parser_t *parser, njs_lexer_token_t *token,
         return njs_parser_failed(parser);
     }
 
-    parser->target->right = parser->node;
-    parser->node = parser->target;
-
-    return njs_parser_stack_pop(parser);
+    return njs_parser_right_link_pop(parser);
 }
 
 
