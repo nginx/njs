@@ -323,6 +323,21 @@ njs_disassemble(u_char *start, u_char *end, njs_int_t count, njs_arr_t *lines)
             continue;
         }
 
+        if (operation == NJS_VMCODE_OPTIONAL_CHAIN) {
+            test_jump = (njs_vmcode_test_jump_t *) p;
+
+            njs_printf("%5uD | %05uz OPTIONAL CHAIN    "
+                       "%04Xz %04Xz %z\n",
+                       line, p - start,
+                       (size_t) test_jump->retval,
+                       (size_t) test_jump->value,
+                       (size_t) test_jump->offset);
+
+            p += sizeof(njs_vmcode_test_jump_t);
+
+            continue;
+        }
+
         if (operation == NJS_VMCODE_FUNCTION_FRAME) {
             function = (njs_vmcode_function_frame_t *) p;
 
