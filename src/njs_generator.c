@@ -286,6 +286,9 @@ static njs_int_t njs_generate_template_literal(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
 static njs_int_t njs_generate_template_literal_end(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
+static njs_int_t njs_generate_test_jump(njs_vm_t *vm,
+    njs_generator_t *generator, njs_parser_node_t *node, njs_vmcode_t opcode,
+    njs_index_t value, njs_index_t retval, njs_jump_off_t *jump_offset);
 static njs_int_t njs_generate_test_jump_expression(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
 static njs_int_t njs_generate_test_jump_expression_after(njs_vm_t *vm,
@@ -3821,6 +3824,24 @@ njs_generate_template_literal_end(njs_vm_t *vm, njs_generator_t *generator,
 
 
 static njs_int_t
+njs_generate_test_jump(njs_vm_t *vm, njs_generator_t *generator,
+    njs_parser_node_t *node, njs_vmcode_t opcode, njs_index_t value,
+    njs_index_t retval, njs_jump_off_t *jump_offset)
+{
+    njs_vmcode_test_jump_t  *test_jump;
+
+    njs_generate_code(generator, njs_vmcode_test_jump_t, test_jump, opcode,
+                      node);
+
+    *jump_offset = njs_code_offset(generator, test_jump);
+    test_jump->value = value;
+    test_jump->retval = retval;
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
 njs_generate_test_jump_expression(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
@@ -3837,20 +3858,20 @@ static njs_int_t
 njs_generate_test_jump_expression_after(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node)
 {
-    njs_jump_off_t          jump_offset;
-    njs_vmcode_test_jump_t  *test_jump;
-
-    njs_generate_code(generator, njs_vmcode_test_jump_t, test_jump,
-                      node->u.operation, node);
-    jump_offset = njs_code_offset(generator, test_jump);
-    test_jump->value = node->left->index;
+    njs_int_t       ret;
+    njs_jump_off_t  jump_offset;
 
     node->index = njs_generate_node_temp_index_get(vm, generator, node);
     if (njs_slow_path(node->index == NJS_INDEX_ERROR)) {
         return node->index;
     }
 
-    test_jump->retval = node->index;
+    ret = njs_generate_test_jump(vm, generator, node, node->u.operation,
+                                 node->left->index, node->index,
+                                 &jump_offset);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
 
     njs_generator_next(generator, njs_generate, node->right);
 
