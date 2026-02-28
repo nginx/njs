@@ -241,6 +241,9 @@ static njs_int_t njs_generate_global_property_set(njs_vm_t *vm,
 static njs_int_t njs_generate_preserve_property_lvalue(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *lvalue,
     njs_parser_node_t *expr);
+static njs_int_t njs_generate_read_property_assignment(njs_vm_t *vm,
+    njs_generator_t *generator, njs_parser_node_t *node,
+    njs_parser_node_t *expr, njs_index_t *prop_index);
 static njs_index_t njs_generate_property_index(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node,
     njs_parser_node_t *object, njs_parser_node_t *property);
@@ -3102,6 +3105,47 @@ njs_generate_preserve_property_lvalue(njs_vm_t *vm,
 }
 
 
+static njs_int_t
+njs_generate_read_property_assignment(njs_vm_t *vm,
+    njs_generator_t *generator, njs_parser_node_t *node,
+    njs_parser_node_t *expr, njs_index_t *prop_index)
+{
+    njs_int_t          ret;
+    njs_index_t        index;
+    njs_parser_node_t  *lvalue, *object, *property;
+
+    lvalue = node->left;
+    object = lvalue->left;
+    property = lvalue->right;
+
+    ret = njs_generate_preserve_property_lvalue(vm, generator, lvalue, expr);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    *prop_index = njs_generate_property_index(vm, generator, node, object,
+                                              property);
+    if (njs_slow_path(*prop_index == NJS_INDEX_ERROR)) {
+        return NJS_ERROR;
+    }
+
+    index = njs_generate_node_temp_index_get(vm, generator, node);
+    if (njs_slow_path(index == NJS_INDEX_ERROR)) {
+        return NJS_ERROR;
+    }
+
+    ret = njs_generate_property_get(vm, generator, property, index,
+                                    object->index, *prop_index);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    node->index = index;
+
+    return NJS_OK;
+}
+
+
 static njs_index_t
 njs_generate_property_index(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node, njs_parser_node_t *object,
@@ -3519,33 +3563,11 @@ static njs_int_t
 njs_generate_operation_assignment_prop(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_node_t *node)
 {
-    njs_index_t            index, prop_index;
-    njs_int_t              ret;
-    njs_parser_node_t      *lvalue, *object, *property;
+    njs_int_t    ret;
+    njs_index_t  prop_index;
 
-    lvalue = node->left;
-    object = lvalue->left;
-    property = lvalue->right;
-
-    ret = njs_generate_preserve_property_lvalue(vm, generator, lvalue,
-                                                node->right);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
-    }
-
-    prop_index = njs_generate_property_index(vm, generator, node, object,
-                                             property);
-    if (njs_slow_path(prop_index == NJS_INDEX_ERROR)) {
-        return NJS_ERROR;
-    }
-
-    index = njs_generate_node_temp_index_get(vm, generator, node);
-    if (njs_slow_path(index == NJS_INDEX_ERROR)) {
-        return NJS_ERROR;
-    }
-
-    ret = njs_generate_property_get(vm, generator, property, index,
-                                    object->index, prop_index);
+    ret = njs_generate_read_property_assignment(vm, generator, node,
+                                                node->right, &prop_index);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
