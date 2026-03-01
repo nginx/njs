@@ -238,6 +238,9 @@ static njs_int_t njs_generate_comma_expression_end(njs_vm_t *vm,
 static njs_int_t njs_generate_global_property_set(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node_dst,
     njs_parser_node_t *node_src);
+static njs_int_t njs_generate_property_lvalue(njs_vm_t *vm,
+    njs_generator_t *generator, njs_parser_node_t *node,
+    njs_generator_state_func_t after, void *ctx, size_t ctx_size);
 static njs_int_t njs_generate_preserve_property_lvalue(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *lvalue,
     njs_parser_node_t *expr);
@@ -3060,6 +3063,35 @@ njs_generate_global_property_set(njs_vm_t *vm, njs_generator_t *generator,
 
 
 static njs_int_t
+njs_generate_property_lvalue(njs_vm_t *vm, njs_generator_t *generator,
+    njs_parser_node_t *node, njs_generator_state_func_t after, void *ctx,
+    size_t ctx_size)
+{
+    njs_int_t          ret;
+    njs_parser_node_t  *lvalue;
+
+    lvalue = node->left;
+
+    /* Object. */
+
+    njs_generator_next(generator, njs_generate, lvalue->left);
+
+    ret = njs_generator_after(vm, generator,
+                              njs_queue_first(&generator->stack), node,
+                              after, ctx, ctx_size);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    /* Property. */
+
+    return njs_generator_after(vm, generator,
+                               njs_queue_first(&generator->stack),
+                               lvalue->right, njs_generate, NULL, 0);
+}
+
+
+static njs_int_t
 njs_generate_preserve_property_lvalue(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *lvalue,
     njs_parser_node_t *expr)
@@ -3278,22 +3310,9 @@ njs_generate_assignment(njs_vm_t *vm, njs_generator_t *generator,
 
     /* lvalue->token == NJS_TOKEN_PROPERTY(_INIT) */
 
-    /* Object. */
-
-    njs_generator_next(generator, njs_generate, lvalue->left);
-
-    ret = njs_generator_after(vm, generator,
-                              njs_queue_first(&generator->stack), node,
-                              njs_generate_assignment_prop, NULL, 0);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
-    }
-
-    /* Property. */
-
-    return njs_generator_after(vm, generator,
-                               njs_queue_first(&generator->stack),
-                               lvalue->right, njs_generate, NULL, 0);
+    return njs_generate_property_lvalue(vm, generator, node,
+                                        njs_generate_assignment_prop,
+                                        NULL, 0);
 }
 
 
@@ -3500,22 +3519,9 @@ njs_generate_operation_assignment(njs_vm_t *vm, njs_generator_t *generator,
 
     /* lvalue->token == NJS_TOKEN_PROPERTY */
 
-    /* Object. */
-
-    njs_generator_next(generator, njs_generate, lvalue->left);
-
-    ret = njs_generator_after(vm, generator,
-                              njs_queue_first(&generator->stack), node,
-                              njs_generate_operation_assignment_prop, NULL, 0);
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
-    }
-
-    /* Property. */
-
-    return njs_generator_after(vm, generator,
-                               njs_queue_first(&generator->stack),
-                               lvalue->right, njs_generate, NULL, 0);
+    return njs_generate_property_lvalue(vm, generator, node,
+                                        njs_generate_operation_assignment_prop,
+                                        NULL, 0);
 }
 
 
@@ -4189,23 +4195,9 @@ njs_generate_inc_dec_operation(njs_vm_t *vm, njs_generator_t *generator,
 
     /* lvalue->token == NJS_TOKEN_PROPERTY */
 
-    /* Object. */
-
-    njs_generator_next(generator, njs_generate, lvalue->left);
-
-    ret = njs_generator_after(vm, generator,
-                              njs_queue_first(&generator->stack), node,
-                              njs_generate_inc_dec_operation_prop,
-                              &post, sizeof(njs_bool_t));
-    if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
-    }
-
-    /* Property. */
-
-    return njs_generator_after(vm, generator,
-                               njs_queue_first(&generator->stack),
-                               lvalue->right, njs_generate, NULL, 0);
+    return njs_generate_property_lvalue(vm, generator, node,
+                                        njs_generate_inc_dec_operation_prop,
+                                        &post, sizeof(njs_bool_t));
 }
 
 
