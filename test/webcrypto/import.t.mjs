@@ -178,6 +178,18 @@ let aes_tsuite = {
                alg: { name: "AES-CBC" },
                usage: [ "encrypt", "decrypt" ] },
         exception: "TypeError: Invalid JWK oct alg" },
+      { key: { fmt: "jwk",
+               key: { kty: 'RSA' },
+               alg: { name: "AES-CBC" },
+               extractable: true,
+               usage: [ "encrypt" ] },
+        exception: "TypeError: JWK kty \"RSA\" doesn't match algorithm \"AES-CBC\"" },
+      { key: { fmt: "jwk",
+               key: { kty: 'EC' },
+               alg: { name: "AES-GCM" },
+               extractable: true,
+               usage: [ "encrypt" ] },
+        exception: "TypeError: JWK kty \"EC\" doesn't match algorithm \"AES-GCM\"" },
 ]};
 
 let ec_tsuite = {
@@ -341,6 +353,24 @@ let ec_tsuite = {
                extractable: true,
                usage: [ "verify" ] },
         exception: "TypeError: EC_POINT_oct2point()" },
+      { key: { fmt: "jwk",
+               key: { kty: 'oct', k: 'AQIDBAUG', alg: 'HS256' },
+               alg: { name: "ECDSA", namedCurve: "P-256" },
+               extractable: true,
+               usage: [ "sign" ] },
+        exception: "TypeError: JWK kty \"oct\" doesn't match algorithm \"ECDSA\"" },
+      { key: { fmt: "jwk",
+               key: { kty: 'oct', k: 'AQIDBAUG', alg: 'HS256' },
+               alg: { name: "ECDH", namedCurve: "P-256" },
+               extractable: true,
+               usage: [ "deriveBits" ] },
+        exception: "TypeError: JWK kty \"oct\" doesn't match algorithm \"ECDH\"" },
+      { key: { fmt: "jwk",
+               key: { kty: 'RSA' },
+               alg: { name: "ECDSA", namedCurve: "P-256" },
+               extractable: true,
+               usage: [ "sign" ] },
+        exception: "TypeError: JWK kty \"RSA\" doesn't match algorithm \"ECDSA\"" },
 ]};
 
 let hmac_tsuite = {
@@ -455,6 +485,18 @@ let hmac_tsuite = {
                extractable: true,
                usage: [ "verify" ]},
         exception: "TypeError: Key operations and usage mismatch" },
+      { key: { fmt: "jwk",
+               key: { kty: 'RSA' },
+               alg: { name: "HMAC", hash: "SHA-256" },
+               extractable: true,
+               usage: [ "sign" ] },
+        exception: "TypeError: JWK kty \"RSA\" doesn't match algorithm \"HMAC\"" },
+      { key: { fmt: "jwk",
+               key: { kty: 'EC' },
+               alg: { name: "HMAC", hash: "SHA-256" },
+               extractable: true,
+               usage: [ "sign" ] },
+        exception: "TypeError: JWK kty \"EC\" doesn't match algorithm \"HMAC\"" },
 ]};
 
 let rsa_tsuite = {
@@ -631,6 +673,18 @@ let rsa_tsuite = {
                extractable: true,
                usage: [ "encrypt" ] },
         exception: "TypeError: d2i_PUBKEY() failed" },
+      { key: { fmt: "jwk",
+               key: { kty: 'oct', k: 'AQIDBAUG', alg: 'HS256' },
+               alg: { name: "RSA-OAEP", hash: "SHA-256" },
+               extractable: true,
+               usage: [ "encrypt" ] },
+        exception: "TypeError: JWK kty \"oct\" doesn't match algorithm \"RSA-OAEP\"" },
+      { key: { fmt: "jwk",
+               key: { kty: 'EC' },
+               alg: { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+               extractable: true,
+               usage: [ "sign" ] },
+        exception: "TypeError: JWK kty \"EC\" doesn't match algorithm \"RSASSA-PKCS1-v1_5\"" },
 ]};
 
 run([

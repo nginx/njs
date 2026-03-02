@@ -3634,12 +3634,31 @@ njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
 
         if (njs_strstr_eq(&kty, &njs_str_value("RSA"))) {
+            if (alg->type != NJS_ALGORITHM_RSASSA_PKCS1_v1_5
+                && alg->type != NJS_ALGORITHM_RSA_PSS
+                && alg->type != NJS_ALGORITHM_RSA_OAEP)
+            {
+                njs_vm_type_error(vm, "JWK kty \"RSA\" doesn't match "
+                                  "algorithm \"%V\"",
+                                  njs_algorithm_string(alg));
+                goto fail;
+            }
+
             pkey = njs_import_jwk_rsa(vm, jwk, key);
             if (njs_slow_path(pkey == NULL)) {
                 goto fail;
             }
 
         } else if (njs_strstr_eq(&kty, &njs_str_value("EC"))) {
+            if (alg->type != NJS_ALGORITHM_ECDSA
+                && alg->type != NJS_ALGORITHM_ECDH)
+            {
+                njs_vm_type_error(vm, "JWK kty \"EC\" doesn't match "
+                                  "algorithm \"%V\"",
+                                  njs_algorithm_string(alg));
+                goto fail;
+            }
+
             ret = njs_algorithm_curve(vm, options, &key->u.a.curve);
             if (njs_slow_path(ret == NJS_ERROR)) {
                 goto fail;
@@ -3651,6 +3670,13 @@ njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             }
 
         } else if (njs_strstr_eq(&kty, &njs_str_value("oct"))) {
+            if (!alg->raw) {
+                njs_vm_type_error(vm, "JWK kty \"oct\" doesn't match "
+                                  "algorithm \"%V\"",
+                                  njs_algorithm_string(alg));
+                goto fail;
+            }
+
             ret = njs_import_jwk_oct(vm, jwk, key);
             if (njs_slow_path(ret != NJS_OK)) {
                 goto fail;
@@ -4609,7 +4635,10 @@ njs_webcrypto_cleanup_pkey(void *data)
     njs_webcrypto_key_t  *key = data;
 
     if (!key->alg->raw) {
-        EVP_PKEY_free(key->u.a.pkey);
+        if (key->u.a.pkey != NULL) {
+            EVP_PKEY_free(key->u.a.pkey);
+        }
+
     }
 }
 

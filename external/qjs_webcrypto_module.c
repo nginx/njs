@@ -3487,6 +3487,16 @@ qjs_webcrypto_import_key(JSContext *cx, JSValueConst this_val, int argc,
 
         switch (kty) {
         case QJS_KEY_JWK_KTY_RSA:
+            if (alg->type != QJS_ALGORITHM_RSASSA_PKCS1_v1_5
+                && alg->type != QJS_ALGORITHM_RSA_PSS
+                && alg->type != QJS_ALGORITHM_RSA_OAEP)
+            {
+                JS_ThrowTypeError(cx, "JWK kty \"RSA\" doesn't "
+                                  "match algorithm \"%s\"",
+                                  qjs_algorithm_string(alg));
+                goto fail;
+            }
+
             pkey = qjs_import_jwk_rsa(cx, jwk, wkey);
             if (pkey == NULL) {
                 goto fail;
@@ -3495,6 +3505,15 @@ qjs_webcrypto_import_key(JSContext *cx, JSValueConst this_val, int argc,
             break;
 
         case QJS_KEY_JWK_KTY_EC:
+            if (alg->type != QJS_ALGORITHM_ECDSA
+                && alg->type != QJS_ALGORITHM_ECDH)
+            {
+                JS_ThrowTypeError(cx, "JWK kty \"EC\" doesn't "
+                                  "match algorithm \"%s\"",
+                                  qjs_algorithm_string(alg));
+                goto fail;
+            }
+
             ret = qjs_algorithm_curve(cx, options, &wkey->u.a.curve);
             if (JS_IsException(ret)) {
                 goto fail;
@@ -3509,6 +3528,13 @@ qjs_webcrypto_import_key(JSContext *cx, JSValueConst this_val, int argc,
 
         case QJS_KEY_JWK_KTY_OCT:
         default:
+            if (!alg->raw) {
+                JS_ThrowTypeError(cx, "JWK kty \"oct\" doesn't "
+                                  "match algorithm \"%s\"",
+                                  qjs_algorithm_string(alg));
+                goto fail;
+            }
+
             ret = qjs_import_jwk_oct(cx, jwk, wkey);
             if (JS_IsException(ret)) {
                 goto fail;
