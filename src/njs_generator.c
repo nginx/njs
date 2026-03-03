@@ -3773,14 +3773,14 @@ njs_generate_logical_assignment_end(njs_vm_t *vm,
                                expr->index, node);
     }
 
-    njs_code_set_jump_offset(generator, njs_vmcode_test_jump_t,
-                             ctx->jump_offset);
-
     if (ctx->prop_index == NJS_INDEX_NONE) {
         ret = njs_generate_global_property_set(vm, generator, lvalue, expr);
         if (njs_slow_path(ret != NJS_OK)) {
             return ret;
         }
+
+        njs_code_set_jump_offset(generator, njs_vmcode_test_jump_t,
+                                 ctx->jump_offset);
 
         node->index = lvalue->index;
 
@@ -3797,6 +3797,9 @@ njs_generate_logical_assignment_end(njs_vm_t *vm,
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
+
+    njs_code_set_jump_offset(generator, njs_vmcode_test_jump_t,
+                             ctx->jump_offset);
 
     ret = njs_generate_children_indexes_release(vm, generator, lvalue);
     if (njs_slow_path(ret != NJS_OK)) {

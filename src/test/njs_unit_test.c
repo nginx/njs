@@ -1618,6 +1618,38 @@ static njs_unit_test_t  njs_test[] =
               "log"),
       njs_str("gs") },
 
+    /* Logical assignment: short-circuit with non-writable property. */
+
+    { njs_str("var o = {};"
+              "Object.defineProperty(o, 'x', {value: 0, writable: false});"
+              "o.x &&= 1"),
+      njs_str("0") },
+    { njs_str("var o = {};"
+              "Object.defineProperty(o, 'x', {value: 2, writable: false});"
+              "o.x ||= 1"),
+      njs_str("2") },
+
+    /* Logical assignment: short-circuit with getter-only property. */
+
+    { njs_str("var o = {};"
+              "Object.defineProperty(o, 'x',"
+              "    {get: function() {return 0}, set: undefined});"
+              "o.x &&= 1"),
+      njs_str("0") },
+    { njs_str("var o = {};"
+              "Object.defineProperty(o, 'x',"
+              "    {get: function() {return 2}, set: undefined});"
+              "o.x ||= 1"),
+      njs_str("2") },
+
+    /* Logical assignment: short-circuit with non-extensible object. */
+
+    { njs_str("var o = {};"
+              "Object.preventExtensions(o);"
+              "o.prop &&= 1;"
+              "o.prop"),
+      njs_str("undefined") },
+
     /* Logical assignment: non-lvalue error */
 
     { njs_str("1 ||= 2"),
@@ -1688,6 +1720,21 @@ static njs_unit_test_t  njs_test[] =
               "o.x ?\?= 2;"
               "log"),
       njs_str("gs") },
+
+    /* ??= short-circuit with non-writable property. */
+
+    { njs_str("var o = {};"
+              "Object.defineProperty(o, 'x', {value: 0, writable: false});"
+              "o.x ?\?= 1"),
+      njs_str("0") },
+
+    /* ??= short-circuit with getter-only property. */
+
+    { njs_str("var o = {};"
+              "Object.defineProperty(o, 'x',"
+              "    {get: function() {return 0}, set: undefined});"
+              "o.x ?\?= 1"),
+      njs_str("0") },
 
     /* ??= non-lvalue error */
 
