@@ -1,3 +1,57 @@
+Changes with njs 0.9.6                                       03 Mar 2026
+
+    nginx modules:
+
+    *) Bugfix: fixed expire field truncation in shared dict state files.
+       Millisecond timestamps were silently truncated to 10 digits,
+       making restored entries appear expired on restart.
+       The issue has been present since eca03622 (0.9.1).
+
+    *) Bugfix: suppressed slab log_nomem for evict shared dict zones.
+       When evict is enabled, memory allocation failures are expected
+       and handled by evicting old entries.
+
+    *) Bugfix: fixed stack trace for native fetch exceptions for QuickJS
+       engine.
+
+    Core:
+
+    *) Feature: added optional chaining support.
+
+    *) Feature: added nullish coalescing assignment operator (??=).
+
+    *) Feature: added logical assignment operators (||= and &&=).
+
+    *) Improvement: aligned SyntaxError reporting with other JS engines.
+       Previously, file name was a part of the error message.  Now it is
+       reported as "stack" property.
+
+    *) Improvement: improved Error.stack traces.
+       Stack traces are now attached in error constructors.  Performance
+       of Error.stack is improved by ~100 times.
+
+    *) Bugfix: fixed string offset map corruption in scope values hash.
+       The issue caused SEGV/SIGBUS crashes for multi-byte UTF-8 string
+       constants with more than 32 characters when accessing a character
+       at index >= 32 (e.g. via .replace() or bracket notation).
+       The issue was introduced in e7caa46d (0.9.5).
+
+    *) Bugfix: fixed heap-buffer-overflow in atom hash caused by
+       Symbol().
+
+    *) Bugfix: fixed WebCrypto importKey() crash with mismatched JWK key
+       type.
+
+    *) Bugfix: fixed interactive mode detection for piped stdin.
+       The issue was introduced in 4988565c (0.8.0).
+
+    *) Bugfix: fixed build on MacOS.
+
+    *) Bugfix: fixed PTR macro compatibility with newer BFD library.
+
+    *) Bugfix: auto/cc: use portable 'command -v' instead of 'which'.
+       Thanks to Zurab Kvachadze.
+
 Changes with njs 0.9.5                                       13 Jan 2026
 
     nginx modules:
