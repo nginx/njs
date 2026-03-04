@@ -2274,8 +2274,6 @@ static njs_int_t
 njs_parser_tagged_template_literal_after(njs_parser_t *parser,
     njs_lexer_token_t *token, njs_queue_link_t *current)
 {
-    parser->scope->in_tagged_template--;
-
     return njs_parser_stack_pop(parser);
 }
 
@@ -2358,8 +2356,6 @@ njs_parser_property(njs_parser_t *parser, njs_lexer_token_t *token,
         node->token_line = token->line;
 
         parser->node = node;
-
-        parser->scope->in_tagged_template++;
 
         njs_parser_next(parser, njs_parser_template_literal);
 
@@ -3885,12 +3881,6 @@ njs_parser_await(njs_parser_t *parser, njs_lexer_token_t *token,
     if (!njs_function_scope(parser->scope)->async) {
         njs_parser_syntax_error(parser,
                                 "await is only valid in async functions");
-        return NJS_ERROR;
-    }
-
-    if (parser->scope->in_tagged_template > 0) {
-        njs_parser_syntax_error(parser,
-                                "await in tagged template not supported");
         return NJS_ERROR;
     }
 
