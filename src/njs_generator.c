@@ -109,6 +109,14 @@ typedef struct {
 } njs_generator_log_assign_ctx_t;
 
 
+njs_inline njs_bool_t
+njs_generate_is_property_lvalue(njs_parser_node_t *node)
+{
+    return node->token_type == NJS_TOKEN_PROPERTY
+           || node->token_type == NJS_TOKEN_PROPERTY_REF;
+}
+
+
 static u_char *njs_generate_reserve(njs_vm_t *vm, njs_generator_t *generator,
     size_t size);
 static njs_int_t njs_generate_code_map(njs_vm_t *vm, njs_generator_t *generator,
@@ -691,6 +699,7 @@ njs_generate(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
     case NJS_TOKEN_REMAINDER:
     case NJS_TOKEN_PROPERTY_DELETE:
     case NJS_TOKEN_PROPERTY:
+    case NJS_TOKEN_PROPERTY_REF:
         return njs_generate_3addr_operation(vm, generator, node, 0);
 
     case NJS_TOKEN_IN:
@@ -2218,7 +2227,7 @@ njs_generate_for_in_statement(njs_vm_t *vm, njs_generator_t *generator,
 
     foreach = node->left;
 
-    if (foreach->left->token_type != NJS_TOKEN_PROPERTY) {
+    if (!njs_generate_is_property_lvalue(foreach->left)) {
         name = foreach->left->right;
 
         if (name != NULL) {
@@ -3334,7 +3343,10 @@ njs_generate_assignment(njs_vm_t *vm, njs_generator_t *generator,
                                    njs_generate_assignment_name, NULL, 0);
     }
 
-    /* lvalue->token == NJS_TOKEN_PROPERTY(_INIT) */
+    /*
+     * lvalue->token == NJS_TOKEN_PROPERTY(_REF|_INIT)
+     * or NJS_TOKEN_PROTO_INIT.
+     */
 
     return njs_generate_property_lvalue(vm, generator, node,
                                         njs_generate_assignment_prop,
@@ -3543,7 +3555,10 @@ njs_generate_operation_assignment(njs_vm_t *vm, njs_generator_t *generator,
                                    &index, sizeof(njs_index_t));
     }
 
-    /* lvalue->token == NJS_TOKEN_PROPERTY */
+    if (!njs_generate_is_property_lvalue(lvalue)) {
+        njs_internal_error(vm, "unexpected assignment target");
+        return NJS_ERROR;
+    }
 
     return njs_generate_property_lvalue(vm, generator, node,
                                         njs_generate_operation_assignment_prop,
@@ -3699,7 +3714,10 @@ njs_generate_logical_assignment(njs_vm_t *vm, njs_generator_t *generator,
                                    sizeof(njs_generator_log_assign_ctx_t));
     }
 
-    /* lvalue->token == NJS_TOKEN_PROPERTY */
+    if (!njs_generate_is_property_lvalue(lvalue)) {
+        njs_internal_error(vm, "unexpected logical assignment target");
+        return NJS_ERROR;
+    }
 
     /* Object. */
 
@@ -4155,7 +4173,7 @@ njs_generate_optional_chain(njs_vm_t *vm, njs_generator_t *generator,
     if (call != NULL) {
         preserve = call->u.object->left;
 
-        if (preserve->token_type == NJS_TOKEN_PROPERTY) {
+        if (njs_generate_is_property_lvalue(preserve)) {
             preserve->hoist = 1;
         }
     }
@@ -4233,7 +4251,7 @@ njs_generate_optional_chain_end(njs_vm_t *vm, njs_generator_t *generator,
     if (call != NULL) {
         preserve = call->u.object->left;
 
-        if (preserve->token_type != NJS_TOKEN_PROPERTY) {
+        if (!njs_generate_is_property_lvalue(preserve)) {
             preserve = NULL;
         }
     } else {
@@ -4510,7 +4528,10 @@ njs_generate_inc_dec_operation(njs_vm_t *vm, njs_generator_t *generator,
         return njs_generator_stack_pop(vm, generator, NULL);
     }
 
-    /* lvalue->token == NJS_TOKEN_PROPERTY */
+    if (!njs_generate_is_property_lvalue(lvalue)) {
+        njs_internal_error(vm, "unexpected increment/decrement target");
+        return NJS_ERROR;
+    }
 
     return njs_generate_property_lvalue(vm, generator, node,
                                         njs_generate_inc_dec_operation_prop,

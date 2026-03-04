@@ -155,7 +155,8 @@ njs_int_t njs_parser_serialize_ast(njs_parser_node_t *node, njs_chb_t *chain);
 
 #define njs_parser_is_lvalue(node)                                            \
     ((node)->token_type == NJS_TOKEN_NAME                                     \
-     || (node)->token_type == NJS_TOKEN_PROPERTY)
+     || (node)->token_type == NJS_TOKEN_PROPERTY                              \
+     || (node)->token_type == NJS_TOKEN_PROPERTY_REF)
 
 
 #define njs_parser_is_primitive(node)                                         \
