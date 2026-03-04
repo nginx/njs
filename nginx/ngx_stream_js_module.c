@@ -224,6 +224,8 @@ static char *ngx_stream_js_merge_srv_conf(ngx_conf_t *cf, void *parent,
     void *child);
 static char *ngx_stream_js_shared_dict_zone(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
+static char *ngx_stream_js_shared_array_zone(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf);
 static char *ngx_stream_js_fetch_proxy(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 
@@ -425,6 +427,13 @@ static ngx_command_t  ngx_stream_js_commands[] = {
     { ngx_string("js_shared_dict_zone"),
       NGX_STREAM_MAIN_CONF|NGX_CONF_1MORE,
       ngx_stream_js_shared_dict_zone,
+      0,
+      0,
+      NULL },
+
+    { ngx_string("js_shared_array_zone"),
+      NGX_STREAM_MAIN_CONF|NGX_CONF_TAKE1,
+      ngx_stream_js_shared_array_zone,
       0,
       0,
       NULL },
@@ -816,6 +825,7 @@ njs_module_t *njs_stream_js_addon_modules[] = {
     &ngx_js_ngx_module,
     &ngx_js_fetch_module,
     &ngx_js_shared_dict_module,
+    &ngx_js_shared_array_module,
 #ifdef NJS_HAVE_OPENSSL
     &njs_webcrypto_module,
 #endif
@@ -908,6 +918,7 @@ static JSClassDef ngx_stream_qjs_variables_class = {
 qjs_module_t *njs_stream_qjs_addon_modules[] = {
     &ngx_qjs_ngx_module,
     &ngx_qjs_ngx_shared_dict_module,
+    &ngx_qjs_ngx_shared_array_module,
     &ngx_qjs_ngx_fetch_module,
     /*
      * Shared addons should be in the same order and the same positions
@@ -3722,6 +3733,14 @@ ngx_stream_js_shared_dict_zone(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf)
 {
     return ngx_js_shared_dict_zone(cf, cmd, conf, &ngx_stream_js_module);
+}
+
+
+static char *
+ngx_stream_js_shared_array_zone(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf)
+{
+    return ngx_js_shared_array_zone(cf, cmd, conf, &ngx_stream_js_module);
 }
 
 
