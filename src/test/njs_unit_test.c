@@ -20778,10 +20778,16 @@ static njs_unit_test_t  njs_test[] =
       njs_str("undefined") },
 
     { njs_str("(async () => (function (){}) `${(async () => 1)(await 1)}`)()"),
-      njs_str("SyntaxError: await in tagged template not supported") },
+      njs_str("[object Promise]") },
 
     { njs_str("(async () => (function (){}) `${await 1}`)()"),
-      njs_str("SyntaxError: await in tagged template not supported") },
+      njs_str("[object Promise]") },
+
+    { njs_str("(async () => ({"
+              "    x: 7,"
+              "    t(...a) { return this.x + ':' + a[1]; }"
+              "}).t`${await 2}`)()"),
+      njs_str("[object Promise]") },
 
     { njs_str("async function af() {await encrypt({},}"),
       njs_str("SyntaxError: Unexpected token \"}\"") },
@@ -21587,6 +21593,46 @@ static njs_unit_test_t  njs_externals_test[] =
               "}"
               "f().then($r.retval)"),
       njs_str("9") },
+
+    { njs_str("async function f() {"
+              "    return ((...a) => a[1])`${await Promise.resolve(1)}`;"
+              "}"
+              "f().then($r.retval)"),
+      njs_str("1") },
+
+    { njs_str("async function f() {"
+              "    return ((...a) => a[1])`${await Promise.resolve(2)}`"
+              "           + ':' +"
+              "           ((...a) => a[1])`${await Promise.resolve(3)}`;"
+              "}"
+              "f().then($r.retval)"),
+      njs_str("2:3") },
+
+    { njs_str("async function f() {"
+              "    return ({"
+              "        x: 'X',"
+              "        t(...a) { return this.x + ':' + a[1]; }"
+              "    }).t`${await Promise.resolve(4)}`;"
+              "}"
+              "f().then($r.retval)"),
+      njs_str("X:4") },
+
+    { njs_str("async function f() {"
+              "    return ((...a) => a[1] + ':' + a[2] + ':' + a[0].length)"
+              "           `a${await Promise.resolve(2)}b"
+              "${await Promise.resolve(3)}c`;"
+              "}"
+              "f().then($r.retval)"),
+      njs_str("2:3:3") },
+
+    { njs_str("async function f() {"
+              "    var log = '';"
+              "    function p(v) { log += v; return Promise.resolve(v); }"
+              "    function t() { log += 'T'; return log; }"
+              "    return t`${await p('A')}${await p('B')}`;"
+              "}"
+              "f().then($r.retval)"),
+      njs_str("ABT") },
 
     { njs_str("$r.retval(Promise.all([async () => [await x('X')]]))"),
       njs_str("[object Promise]") },
