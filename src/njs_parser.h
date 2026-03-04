@@ -26,7 +26,6 @@ struct njs_parser_scope_s {
     uint8_t                         arrow_function;
     uint8_t                         dest_disable;
     uint8_t                         async;
-    uint32_t                        in_args;
     uint32_t                        in_tagged_template;
 };
 
