@@ -87,7 +87,6 @@ njs_vmcode_interpreter(njs_vm_t *vm, u_char *pc, njs_value_t *rval,
     double                       num, exponent;
     int32_t                      i32;
     uint32_t                     u32;
-    njs_str_t                    string;
     njs_bool_t                   valid, lambda_call;
     njs_value_t                  *retval, *value1, *value2;
     njs_value_t                  *src, *s1, *s2, dst;
@@ -1509,39 +1508,8 @@ NEXT_LBL;
 
         method_frame = (njs_vmcode_method_frame_t *) pc;
 
-        if (njs_slow_path(!njs_is_key(value2))) {
-            if (njs_slow_path(njs_is_null_or_undefined(value1))) {
-                (void) njs_throw_cannot_property(vm, value1, value2, "get");
-                goto error;
-            }
-
-            ret = njs_value_to_key(vm, &primitive1, value2);
-            if (njs_slow_path(ret != NJS_OK)) {
-                goto error;
-            }
-
-            value2 = &primitive1;
-        }
-
-        ret = njs_value_property_val(vm, value1, value2, &dst);
-        if (njs_slow_path(ret == NJS_ERROR)) {
-            goto error;
-        }
-
-        if (njs_slow_path(!njs_is_function(&dst))) {
-            ret = njs_value_to_key(vm, &dst, value2);
-            if (njs_slow_path(ret != NJS_OK)) {
-                goto error;
-            }
-
-            njs_key_string_get(vm, &dst, &string);
-            njs_type_error(vm,
-                       "(intermediate value)[\"%V\"] is not a function",
-                       &string);
-            goto error;
-        }
-
-        ret = njs_function_frame_create(vm, &dst, value1, method_frame->nargs,
+        ret = njs_function_frame_create(vm, value1, value2,
+                                        method_frame->nargs,
                                         method_frame->ctor);
 
         if (njs_slow_path(ret != NJS_OK)) {
