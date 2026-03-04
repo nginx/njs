@@ -420,7 +420,7 @@ static njs_int_t njs_generate_optional_chain_after(njs_vm_t *vm,
 static njs_int_t njs_generate_optional_chain_end(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
 static njs_int_t njs_generate_3addr_operation(njs_vm_t *vm,
-    njs_generator_t *generator, njs_parser_node_t *node, njs_bool_t swap);
+    njs_generator_t *generator, njs_parser_node_t *node);
 static njs_int_t njs_generate_3addr_operation_name(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
 static njs_int_t njs_generate_3addr_operation_end(njs_vm_t *vm,
@@ -792,7 +792,7 @@ njs_generate(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
     case NJS_TOKEN_PROPERTY_DELETE:
     case NJS_TOKEN_PROPERTY:
     case NJS_TOKEN_PROPERTY_REF:
-        return njs_generate_3addr_operation(vm, generator, node, 0);
+        return njs_generate_3addr_operation(vm, generator, node);
 
     case NJS_TOKEN_IN:
         /*
@@ -801,7 +801,7 @@ njs_generate(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
          * should be swapped to be uniform with other property operations
          * (get/set and delete) to use the property trap.
          */
-        return njs_generate_3addr_operation(vm, generator, node, 1);
+        return njs_generate_3addr_operation(vm, generator, node);
 
     case NJS_TOKEN_LOGICAL_AND:
     case NJS_TOKEN_LOGICAL_OR:
@@ -4389,7 +4389,7 @@ njs_generate_optional_chain_end(njs_vm_t *vm, njs_generator_t *generator,
 
 static njs_int_t
 njs_generate_3addr_operation(njs_vm_t *vm, njs_generator_t *generator,
-    njs_parser_node_t *node, njs_bool_t swap)
+    njs_parser_node_t *node)
 {
     njs_int_t          ret;
     njs_parser_node_t  *left, *right;
@@ -4403,13 +4403,12 @@ njs_generate_3addr_operation(njs_vm_t *vm, njs_generator_t *generator,
         return njs_generator_after(vm, generator,
                                    njs_queue_first(&generator->stack), node,
                                    njs_generate_3addr_operation_name,
-                                   &swap, sizeof(njs_bool_t));
+                                   NULL, 0);
     }
 
     ret = njs_generator_after(vm, generator,
                               njs_queue_first(&generator->stack), node,
-                              njs_generate_3addr_operation_end, &swap,
-                              sizeof(njs_bool_t));
+                              njs_generate_3addr_operation_end, NULL, 0);
     if (njs_slow_path(ret != NJS_OK)) {
         return ret;
     }
@@ -4448,7 +4447,7 @@ njs_generate_3addr_operation_name(njs_vm_t *vm, njs_generator_t *generator,
     return njs_generator_after(vm, generator,
                                njs_queue_first(&generator->stack), node,
                                njs_generate_3addr_operation_end,
-                               generator->context, 0);
+                               NULL, 0);
 }
 
 
@@ -4478,7 +4477,7 @@ njs_generate_3addr_operation_end(njs_vm_t *vm, njs_generator_t *generator,
     njs_generate_code(generator, njs_vmcode_3addr_t, code,
                       opcode, node);
 
-    swap = *((njs_bool_t *) generator->context);
+    swap = (node->token_type == NJS_TOKEN_IN);
 
     if (!swap) {
         code->src1 = left->index;
