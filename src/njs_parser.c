@@ -3079,8 +3079,6 @@ njs_parser_arguments(njs_parser_t *parser, njs_lexer_token_t *token,
         return njs_parser_stack_pop(parser);
     }
 
-    parser->scope->in_args++;
-
     njs_parser_next(parser, njs_parser_argument_list);
 
     return njs_parser_after(parser, current, NULL, 1,
@@ -3092,8 +3090,6 @@ static njs_int_t
 njs_parser_parenthesis_or_comma(njs_parser_t *parser, njs_lexer_token_t *token,
     njs_queue_link_t *current)
 {
-    parser->scope->in_args--;
-
     if (token->type == NJS_TOKEN_CLOSE_PARENTHESIS) {
         njs_lexer_consume_token(parser->lexer, 1);
         return njs_parser_stack_pop(parser);
@@ -3889,11 +3885,6 @@ njs_parser_await(njs_parser_t *parser, njs_lexer_token_t *token,
     if (!njs_function_scope(parser->scope)->async) {
         njs_parser_syntax_error(parser,
                                 "await is only valid in async functions");
-        return NJS_ERROR;
-    }
-
-    if (parser->scope->in_args > 0) {
-        njs_parser_syntax_error(parser, "await in arguments not supported");
         return NJS_ERROR;
     }
 

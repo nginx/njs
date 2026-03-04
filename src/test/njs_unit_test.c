@@ -20754,31 +20754,31 @@ static njs_unit_test_t  njs_test[] =
       njs_str("ReferenceError: \"AsyncFunction\" is not defined") },
 
     { njs_str("(async function() {console.log(await 111)})"),
-      njs_str("SyntaxError: await in arguments not supported") },
+      njs_str("[object AsyncFunction]") },
 
     { njs_str("(async function() {console.log('Number: ' + await 111)})"),
-      njs_str("SyntaxError: await in arguments not supported") },
+      njs_str("[object AsyncFunction]") },
 
     { njs_str("(async function() {f(await 111)})"),
-      njs_str("SyntaxError: await in arguments not supported") },
+      njs_str("[object AsyncFunction]") },
 
     { njs_str("(async function() {f(f(1), await 111)})"),
-      njs_str("SyntaxError: await in arguments not supported") },
+      njs_str("[object AsyncFunction]") },
 
     { njs_str("async () => [await x(1)(),]; async () => [await x(1)()]"),
       njs_str("[object AsyncFunction]") },
 
     { njs_str("(async function() {f(1, 'a', await 111)})"),
-      njs_str("SyntaxError: await in arguments not supported") },
+      njs_str("[object AsyncFunction]") },
 
     { njs_str("(async function() {f('Number: ' + await 111)})"),
-      njs_str("SyntaxError: await in arguments not supported") },
+      njs_str("[object AsyncFunction]") },
 
     { njs_str("async function f1() {try {f(await f1)} catch(e) {}}"),
-      njs_str("SyntaxError: await in arguments not supported") },
+      njs_str("undefined") },
 
     { njs_str("(async () => (function (){}) `${(async () => 1)(await 1)}`)()"),
-      njs_str("SyntaxError: await in arguments not supported") },
+      njs_str("SyntaxError: await in tagged template not supported") },
 
     { njs_str("(async () => (function (){}) `${await 1}`)()"),
       njs_str("SyntaxError: await in tagged template not supported") },
@@ -21539,6 +21539,54 @@ static njs_unit_test_t  njs_externals_test[] =
               "let f = new ctor('x', 'await 1; return x');"
               "f(1).then($r.retval)"),
       njs_str("1") },
+
+    { njs_str("async function f() {"
+              "    function g(v) { return v; }"
+              "    return g(await Promise.resolve(1));"
+              "}"
+              "f().then($r.retval)"),
+      njs_str("1") },
+
+    { njs_str("async function f() {"
+              "    return ({"
+              "        g(v) { return v; }"
+              "    }).g(await Promise.resolve(2));"
+              "}"
+              "f().then($r.retval)"),
+      njs_str("2") },
+
+    { njs_str("async function f() {"
+              "    function g(a, b) { return a + b; }"
+              "    return g(await Promise.resolve(1),"
+              "             await Promise.resolve(2));"
+              "}"
+              "f().then($r.retval)"),
+      njs_str("3") },
+
+    { njs_str("async function f() {"
+              "    return ({"
+              "        k: 10,"
+              "        g(a, b) { return this.k + a + b; }"
+              "    }).g(await Promise.resolve(1),"
+              "         await Promise.resolve(2));"
+              "}"
+              "f().then($r.retval)"),
+      njs_str("13") },
+
+    { njs_str("async function f() {"
+              "    function C(v) { this.v = v; }"
+              "    return (new C(await Promise.resolve(7))).v;"
+              "}"
+              "f().then($r.retval)"),
+      njs_str("7") },
+
+    { njs_str("async function f() {"
+              "    return ({"
+              "        g(v) { return v; }"
+              "    })?.g(await Promise.resolve(9));"
+              "}"
+              "f().then($r.retval)"),
+      njs_str("9") },
 
     { njs_str("$r.retval(Promise.all([async () => [await x('X')]]))"),
       njs_str("[object Promise]") },
