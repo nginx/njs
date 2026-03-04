@@ -125,8 +125,39 @@ njs_generate_is_property_call_source(njs_parser_node_t *node)
 
 
 njs_inline njs_parser_node_t *
+njs_generate_wrapped_node(njs_parser_node_t *node)
+{
+    njs_assert(node->token_type == NJS_TOKEN_OBJECT_VALUE
+               || node->token_type == NJS_TOKEN_OPTIONAL_PRESERVE);
+
+    return node->u.object;
+}
+
+
+njs_inline njs_parser_node_t *
+njs_generate_object_value_parent(njs_parser_node_t *node)
+{
+    njs_assert(node->token_type == NJS_TOKEN_OBJECT_VALUE);
+
+    return njs_generate_wrapped_node(node);
+}
+
+
+njs_inline njs_bool_t
+njs_generate_is_object_literal_value(njs_parser_node_t *node)
+{
+    return node != NULL
+           && node->token_type == NJS_TOKEN_OBJECT_VALUE
+           && njs_generate_object_value_parent(node)->token_type
+              == NJS_TOKEN_OBJECT;
+}
+
+
+njs_inline njs_parser_node_t *
 njs_generate_optional_method_call_preserve(njs_parser_node_t *node)
 {
+    njs_assert(node->token_type == NJS_TOKEN_METHOD_CALL);
+
     return node->u.object;
 }
 
@@ -139,8 +170,32 @@ njs_generate_optional_method_call_property(njs_parser_node_t *node)
 
 
 njs_inline njs_parser_node_t *
+njs_generate_optional_method_call_base(njs_parser_node_t *node)
+{
+    njs_parser_node_t  *preserve;
+
+    preserve = njs_generate_optional_method_call_preserve(node);
+
+    return (preserve != NULL) ? preserve->left : NULL;
+}
+
+
+njs_inline njs_parser_node_t *
+njs_generate_optional_method_call_key(njs_parser_node_t *node)
+{
+    njs_parser_node_t  *preserve;
+
+    preserve = njs_generate_optional_method_call_preserve(node);
+
+    return (preserve != NULL) ? preserve->right : NULL;
+}
+
+
+njs_inline njs_parser_node_t *
 njs_generate_optional_chain_preserve(njs_parser_node_t *node)
 {
+    njs_assert(node->token_type == NJS_TOKEN_OPTIONAL_CHAIN);
+
     return node->u.object;
 }
 
@@ -148,6 +203,8 @@ njs_generate_optional_chain_preserve(njs_parser_node_t *node)
 njs_inline njs_parser_node_t *
 njs_generate_function_call_this(njs_parser_node_t *node)
 {
+    njs_assert(node->token_type == NJS_TOKEN_FUNCTION_CALL);
+
     return node->u.object;
 }
 
@@ -787,7 +844,8 @@ njs_generate(njs_vm_t *vm, njs_generator_t *generator, njs_parser_node_t *node)
         return njs_generator_stack_pop(vm, generator, NULL);
 
     case NJS_TOKEN_OBJECT_VALUE:
-        node->index = node->u.object->index;
+    case NJS_TOKEN_OPTIONAL_PRESERVE:
+        node->index = njs_generate_wrapped_node(node)->index;
         return njs_generator_stack_pop(vm, generator, NULL);
 
     case NJS_TOKEN_OBJECT:
@@ -3465,8 +3523,7 @@ njs_generate_assignment_end(njs_vm_t *vm, njs_generator_t *generator,
     case NJS_TOKEN_PROPERTY_INIT:
 
         if ((object->token_type == NJS_TOKEN_OBJECT
-             || (object->token_type == NJS_TOKEN_OBJECT_VALUE
-                 && object->u.object->token_type == NJS_TOKEN_OBJECT))
+             || njs_generate_is_object_literal_value(object))
             && (expr->token_type == NJS_TOKEN_FUNCTION
                 || expr->token_type == NJS_TOKEN_FUNCTION_EXPRESSION
                 || expr->token_type == NJS_TOKEN_ASYNC_FUNCTION_EXPRESSION))
@@ -4186,10 +4243,12 @@ njs_generate_optional_method_call(njs_vm_t *vm, njs_parser_node_t *node)
 {
     njs_parser_node_t  *preserve;
 
-    if (node == NULL
-        || node->token_type != NJS_TOKEN_METHOD_CALL
-        || node->u.object == NULL)
-    {
+    if (node == NULL || node->token_type != NJS_TOKEN_METHOD_CALL) {
+        return NULL;
+    }
+
+    preserve = njs_generate_optional_method_call_preserve(node);
+    if (preserve == NULL) {
         return NULL;
     }
 
@@ -4197,8 +4256,6 @@ njs_generate_optional_method_call(njs_vm_t *vm, njs_parser_node_t *node)
         njs_internal_error(vm, "unexpected optional method call source");
         return NULL;
     }
-
-    preserve = njs_generate_optional_method_call_preserve(node);
 
     if (preserve->left == NULL || preserve->right == NULL) {
         njs_internal_error(vm, "unexpected optional method call state");
@@ -4225,7 +4282,7 @@ njs_generate_optional_chain(njs_vm_t *vm, njs_generator_t *generator,
 
     call = njs_generate_optional_method_call(vm, node->right);
     if (call != NULL) {
-        preserve = njs_generate_optional_method_call_preserve(call)->left;
+        preserve = njs_generate_optional_method_call_base(call);
 
         if (njs_generate_is_property_lvalue(preserve)) {
             preserve->hoist = 1;
@@ -4266,10 +4323,10 @@ njs_generate_optional_chain_after(njs_vm_t *vm, njs_generator_t *generator,
     call = njs_generate_optional_method_call(vm, node->right);
     if (call != NULL) {
         prop = njs_generate_optional_method_call_property(call);
-        prop->left->index = njs_generate_optional_method_call_preserve(call)
-                                ->left->index;
-        prop->right->index = njs_generate_optional_method_call_preserve(call)
-                                 ->right->index;
+        prop->left->index = njs_generate_optional_method_call_base(call)
+                                ->index;
+        prop->right->index = njs_generate_optional_method_call_key(call)
+                                 ->index;
 
     } else if (njs_generate_optional_chain_preserve(node) != NULL) {
         njs_generate_optional_chain_preserve(node)->index = node->left->index;
@@ -4305,7 +4362,7 @@ njs_generate_optional_chain_end(njs_vm_t *vm, njs_generator_t *generator,
 
     call = njs_generate_optional_method_call(vm, node->right);
     if (call != NULL) {
-        preserve = njs_generate_optional_method_call_preserve(call)->left;
+        preserve = njs_generate_optional_method_call_base(call);
         if (!njs_generate_is_property_lvalue(preserve)) {
             preserve = NULL;
         }
