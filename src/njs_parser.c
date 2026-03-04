@@ -2761,30 +2761,20 @@ njs_parser_create_call(njs_parser_t *parser, njs_parser_node_t *node,
 
     this_object = njs_parser_optional_chain_call_this(node);
 
-    switch (node->token_type) {
-    case NJS_TOKEN_NAME:
-        func = node;
-        func->token_type = NJS_TOKEN_FUNCTION_CALL;
-
-        break;
-
-    default:
-        /*
-         * NJS_TOKEN_METHOD_CALL,
-         * NJS_TOKEN_FUNCTION_CALL,
-         * NJS_TOKEN_FUNCTION_EXPRESSION,
-         * NJS_TOKEN_OPEN_PARENTHESIS,
-         * NJS_TOKEN_EVAL.
-         */
-        func = njs_parser_node_new(parser, NJS_TOKEN_FUNCTION_CALL);
-        if (func == NULL) {
-            return NULL;
-        }
-
-        func->left = node;
-        break;
+    /*
+     * NJS_TOKEN_NAME,
+     * NJS_TOKEN_METHOD_CALL,
+     * NJS_TOKEN_FUNCTION_CALL,
+     * NJS_TOKEN_FUNCTION_EXPRESSION,
+     * NJS_TOKEN_OPEN_PARENTHESIS,
+     * NJS_TOKEN_EVAL.
+     */
+    func = njs_parser_node_new(parser, NJS_TOKEN_FUNCTION_CALL);
+    if (func == NULL) {
+        return NULL;
     }
 
+    func->left = node;
     func->ctor = ctor;
     njs_parser_set_call_this(func, this_object);
 

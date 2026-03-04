@@ -56,7 +56,7 @@ njs_test {
 
 njs_test {
     {"console.ll()\r\n"
-     "console.ll()\r\nThrown:\r\nTypeError: (intermediate value)\\\[\"ll\"] is not a function"}
+     "console.ll()\r\nThrown:\r\nTypeError: undefined is not a function"}
 }
 
 njs_test {
@@ -67,7 +67,7 @@ njs_test {
 # Backtraces for external objects
 njs_test {
     {"console.info(console.a.a)\r\n"
-     "console.info(console.a.a)\r\nThrown:\r\nTypeError:*at info (native)"}
+     "console.info(console.a.a)\r\nThrown:\r\nTypeError:*at main (shell:1)"}
 }
 
 # dumper
