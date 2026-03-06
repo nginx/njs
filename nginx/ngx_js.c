@@ -571,6 +571,7 @@ ngx_engine_njs_init(ngx_engine_t *engine, ngx_engine_opts_t *opts)
     vm_options.argc = ngx_argc;
     vm_options.init = 1;
 
+    vm_options.file.length = opts->file.length;
     vm_options.file.start = njs_mp_alloc(engine->pool, opts->file.length);
     if (vm_options.file.start == NULL) {
         return NGX_ERROR;
@@ -599,21 +600,154 @@ ngx_engine_njs_init(ngx_engine_t *engine, ngx_engine_opts_t *opts)
 }
 
 
+/*
+ * Parse line number from JS exception stack trace.
+ *
+ * njs format:
+ *   SyntaxError: ...\n    at /path:LINE\n
+ *
+ * QuickJS format:
+ *   SyntaxError: ...\n    at <main>:LINE:COL\n
+ *
+ * Returns 0 if no line number found.
+ */
+static ngx_uint_t
+ngx_js_error_line(u_char *start, size_t len)
+{
+    u_char      *p, *end;
+    ngx_uint_t   line;
+
+    end = start + len;
+
+    p = ngx_strlchr(start, end, '\n');
+    if (p == NULL) {
+        return 0;
+    }
+
+    p++;
+
+    while (p < end && *p == ' ') {
+        p++;
+    }
+
+    if (end - p < 3 || p[0] != 'a' || p[1] != 't' || p[2] != ' ') {
+        return 0;
+    }
+
+    p += 3;
+
+    /* find first ':' followed by a digit */
+
+    while (p < end && *p != '\n') {
+        if (*p == ':' && p + 1 < end && p[1] >= '0' && p[1] <= '9') {
+            p++;
+
+            line = 0;
+
+            while (p < end && *p >= '0' && *p <= '9') {
+                line = line * 10 + (*p - '0');
+                p++;
+            }
+
+            return line;
+        }
+
+        p++;
+    }
+
+    return 0;
+}
+
+
+static ngx_js_inline_t *
+ngx_js_inline_map(ngx_js_loc_conf_t *conf, u_char *start, size_t len)
+{
+    ngx_uint_t        i, line;
+    ngx_js_inline_t  *inl;
+
+    line = ngx_js_error_line(start, len);
+
+    if (line == 0 || conf->inlines == NGX_CONF_UNSET_PTR) {
+        return NULL;
+    }
+
+    i = line - 1;
+
+    if (conf->imports != NGX_CONF_UNSET_PTR) {
+        if (i < conf->imports->nelts) {
+            return NULL;
+        }
+
+        i -= conf->imports->nelts;
+    }
+
+    if (i >= conf->inlines->nelts) {
+        return NULL;
+    }
+
+    inl = conf->inlines->elts;
+
+    return &inl[i];
+}
+
+
+static ngx_js_inline_t *
+ngx_js_inline_from_stack(ngx_js_loc_conf_t *conf, u_char *start, size_t len)
+{
+    u_char           *p, *end;
+    ngx_uint_t        index;
+    ngx_js_inline_t  *inl;
+
+    static const u_char  prefix[] = "__js_set_";
+
+    if (conf == NULL || conf->inlines == NGX_CONF_UNSET_PTR) {
+        return NULL;
+    }
+
+    end = start + len;
+    p = start;
+
+    while (p + (sizeof(prefix) - 1) <= end) {
+        if (ngx_strncmp(p, prefix, sizeof(prefix) - 1) == 0) {
+            p += sizeof(prefix) - 1;
+
+            if (p >= end || *p < '0' || *p > '9') {
+                return NULL;
+            }
+
+            index = 0;
+
+            while (p < end && *p >= '0' && *p <= '9') {
+                index = index * 10 + (*p - '0');
+                p++;
+            }
+
+            if (index >= conf->inlines->nelts) {
+                return NULL;
+            }
+
+            inl = conf->inlines->elts;
+
+            return &inl[index];
+        }
+
+        p++;
+    }
+
+    return NULL;
+}
+
+
 static ngx_int_t
 ngx_engine_njs_compile(ngx_js_loc_conf_t *conf, ngx_log_t *log, u_char *start,
     size_t size)
 {
-    u_char               *end;
-    njs_vm_t             *vm;
-    njs_int_t             rc;
-    njs_str_t             text;
-    ngx_uint_t            i;
-    njs_value_t          *value;
-    njs_opaque_value_t    exception, lvalue;
-    ngx_js_named_path_t  *import;
-
-    static const njs_str_t line_number_key = njs_str("lineNumber");
-    static const njs_str_t file_name_key = njs_str("fileName");
+    u_char              *end;
+    njs_vm_t            *vm;
+    njs_int_t            rc;
+    njs_str_t            text;
+    ngx_js_inline_t     *inl;
+    njs_opaque_value_t   exception;
 
     vm = conf->engine->u.njs.vm;
 
@@ -633,26 +767,16 @@ ngx_engine_njs_compile(ngx_js_loc_conf_t *conf, ngx_log_t *log, u_char *start,
         njs_vm_exception_get(vm, njs_value_arg(&exception));
         njs_vm_value_string(vm, &text, njs_value_arg(&exception));
 
-        value = njs_vm_object_prop(vm, njs_value_arg(&exception),
-                                   &file_name_key, &lvalue);
-        if (value == NULL) {
-            value = njs_vm_object_prop(vm, njs_value_arg(&exception),
-                                       &line_number_key, &lvalue);
+        inl = ngx_js_inline_map(conf, text.start, text.length);
+        if (inl != NULL) {
+            ngx_log_error(NGX_LOG_EMERG, log, 0, "%*s, included at %s:%ui",
+                          text.length, text.start, inl->file, inl->line);
 
-            if (value != NULL) {
-                i = njs_value_number(value) - 1;
-
-                if (i < conf->imports->nelts) {
-                    import = conf->imports->elts;
-                    ngx_log_error(NGX_LOG_EMERG, log, 0,
-                                  "%*s, included in %s:%ui", text.length,
-                                  text.start, import[i].file, import[i].line);
-                    return NGX_ERROR;
-                }
-            }
+        } else {
+            ngx_log_error(NGX_LOG_EMERG, log, 0, "%*s",
+                          text.length, text.start);
         }
 
-        ngx_log_error(NGX_LOG_EMERG, log, 0, "%*s", text.length, text.start);
         return NGX_ERROR;
     }
 
@@ -763,10 +887,12 @@ static ngx_int_t
 ngx_engine_njs_call(ngx_js_ctx_t *ctx, ngx_str_t *fname,
     njs_opaque_value_t *args, njs_uint_t nargs)
 {
-    njs_vm_t        *vm;
-    njs_int_t        ret;
-    njs_str_t        name;
-    njs_function_t  *func;
+    njs_vm_t         *vm;
+    njs_int_t         ret;
+    njs_str_t         name, str;
+    ngx_str_t         s;
+    ngx_js_inline_t  *inl;
+    njs_function_t   *func;
 
     name.start = fname->data;
     name.length = fname->len;
@@ -783,7 +909,24 @@ ngx_engine_njs_call(ngx_js_ctx_t *ctx, ngx_str_t *fname,
     ret = njs_vm_invoke(vm, func, njs_value_arg(args), nargs,
                         njs_value_arg(&ctx->retval));
     if (ret == NJS_ERROR) {
-        ngx_js_log_exception(vm, ctx->log, "exception");
+        if (njs_vm_exception_string(vm, &str) != NJS_OK) {
+            ngx_log_error(NGX_LOG_ERR, ctx->log, 0,
+                          "js exception");
+            return NGX_ERROR;
+        }
+
+        s.data = str.start;
+        s.len = str.length;
+
+        inl = ngx_js_inline_from_stack(ctx->conf, s.data, s.len);
+        if (inl != NULL) {
+            ngx_log_error(NGX_LOG_ERR, ctx->log, 0,
+                          "js exception: %V, included at %s:%ui",
+                          &s, inl->file, inl->line);
+        } else {
+            ngx_log_error(NGX_LOG_ERR, ctx->log, 0,
+                          "js exception: %V", &s);
+        }
 
         return NGX_ERROR;
     }
@@ -963,9 +1106,11 @@ static ngx_int_t
 ngx_engine_qjs_compile(ngx_js_loc_conf_t *conf, ngx_log_t *log, u_char *start,
     size_t size)
 {
-    JSValue               code;
+    ngx_str_t             text;
+    JSValue               code, exception;
     JSContext            *cx;
     ngx_engine_t         *engine;
+    ngx_js_inline_t      *inl;
     ngx_js_code_entry_t  *pc;
 
     engine = conf->engine;
@@ -975,8 +1120,34 @@ ngx_engine_qjs_compile(ngx_js_loc_conf_t *conf, ngx_log_t *log, u_char *start,
                    JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY);
 
     if (JS_IsException(code)) {
-        ngx_qjs_log_exception(engine, log, "compile");
+        exception = JS_GetException(cx);
+
+        if (ngx_qjs_dump_obj(engine, exception, &text) == NGX_OK) {
+            inl = ngx_js_inline_map(conf, text.data, text.len);
+            if (inl != NULL) {
+                ngx_log_error(NGX_LOG_EMERG, log, 0, "%V, included at %s:%ui",
+                              &text, inl->file, inl->line);
+
+            } else {
+                ngx_log_error(NGX_LOG_EMERG, log, 0, "js compile: %V", &text);
+            }
+
+        } else {
+            ngx_log_error(NGX_LOG_EMERG, log, 0, "js compile error");
+        }
+
+        JS_FreeValue(cx, exception);
         return NGX_ERROR;
+    }
+
+    if (engine->precompiled == NULL) {
+        engine->precompiled = njs_arr_create(engine->pool, 4,
+                                             sizeof(ngx_js_code_entry_t));
+        if (engine->precompiled == NULL) {
+            JS_FreeValue(cx, code);
+            ngx_log_error(NGX_LOG_EMERG, log, 0, "njs_arr_create() failed");
+            return NGX_ERROR;
+        }
     }
 
     pc = njs_arr_add(engine->precompiled);
@@ -1120,9 +1291,11 @@ static ngx_int_t
 ngx_engine_qjs_call(ngx_js_ctx_t *ctx, ngx_str_t *fname,
     njs_opaque_value_t *args, njs_uint_t nargs)
 {
-    JSValue     fn, val;
-    ngx_int_t   rc;
-    JSContext  *cx;
+    JSValue           fn, val, exc;
+    ngx_int_t         rc;
+    ngx_str_t         s;
+    JSContext        *cx;
+    ngx_js_inline_t  *inl;
 
     cx = ctx->engine->u.qjs.ctx;
 
@@ -1138,7 +1311,24 @@ ngx_engine_qjs_call(ngx_js_ctx_t *ctx, ngx_str_t *fname,
     val = JS_Call(cx, fn, JS_UNDEFINED, nargs, &ngx_qjs_arg(args[0]));
     JS_FreeValue(cx, fn);
     if (JS_IsException(val)) {
-        ngx_qjs_log_exception(ctx->engine, ctx->log, "call exception");
+        exc = JS_GetException(cx);
+
+        if (ngx_qjs_dump_obj(ctx->engine, exc, &s) == NGX_OK) {
+            inl = ngx_js_inline_from_stack(ctx->conf, s.data, s.len);
+            if (inl != NULL) {
+                ngx_log_error(NGX_LOG_ERR, ctx->log, 0,
+                              "js exception: %V, included at %s:%ui",
+                              &s, inl->file, inl->line);
+            } else {
+                ngx_log_error(NGX_LOG_ERR, ctx->log, 0,
+                              "js exception: %V", &s);
+            }
+
+        } else {
+            ngx_log_error(NGX_LOG_ERR, ctx->log, 0, "js exception");
+        }
+
+        JS_FreeValue(cx, exc);
 
         return NGX_ERROR;
     }
@@ -3668,6 +3858,131 @@ ngx_js_init_preload_vm(njs_vm_t *vm, ngx_js_loc_conf_t *conf)
 }
 
 
+ngx_int_t
+ngx_js_is_function_ref(ngx_str_t *str)
+{
+    u_char  *p, *end;
+
+    p = str->data;
+    end = p + str->len;
+
+    if (p == end) {
+        return 0;
+    }
+
+    for ( ;; ) {
+        if ((*p < 'a' || *p > 'z')
+            && (*p < 'A' || *p > 'Z')
+            && *p != '_' && *p != '$')
+        {
+            return 0;
+        }
+
+        p++;
+
+        while (p < end && *p != '.') {
+            if ((*p < 'a' || *p > 'z')
+                && (*p < 'A' || *p > 'Z')
+                && (*p < '0' || *p > '9')
+                && *p != '_' && *p != '$')
+            {
+                return 0;
+            }
+
+            p++;
+        }
+
+        if (p == end) {
+            return 1;
+        }
+
+        /* skip '.' */
+        p++;
+
+        if (p == end) {
+            return 0;
+        }
+    }
+}
+
+
+static ngx_int_t
+ngx_js_set_inline(ngx_conf_t *cf, ngx_array_t **inlines, ngx_uint_t *index,
+    ngx_str_t *code, const char *arg, ngx_str_t *fname)
+{
+    size_t            arg_len;
+    ngx_js_inline_t  *inl;
+
+    if (*inlines == NGX_CONF_UNSET_PTR) {
+        *inlines = ngx_array_create(cf->pool, 4, sizeof(ngx_js_inline_t));
+        if (*inlines == NULL) {
+            return NGX_ERROR;
+        }
+    }
+
+    inl = ngx_array_push(*inlines);
+    if (inl == NULL) {
+        return NGX_ERROR;
+    }
+
+    arg_len = ngx_strlen(arg);
+    inl->code = *code;
+    inl->file = cf->conf_file->file.name.data;
+    inl->line = cf->conf_file->line;
+    inl->arg.len = arg_len;
+    inl->arg.data = (u_char *) arg;
+
+    inl->fname.data = ngx_pnalloc(cf->pool, sizeof("__js_set_65535") - 1);
+    if (inl->fname.data == NULL) {
+        return NGX_ERROR;
+    }
+
+    inl->fname.len = ngx_sprintf(inl->fname.data, "__js_set_%ui", (*index)++)
+                      - inl->fname.data;
+
+    *fname = inl->fname;
+
+    return NGX_OK;
+}
+
+
+ngx_int_t
+ngx_js_set_init(ngx_conf_t *cf, ngx_array_t **inlines, ngx_uint_t *index,
+    ngx_str_t *handler, const char *arg, ngx_js_set_t *set)
+{
+    u_char  *p, *end;
+
+    set->flags = 0;
+    set->file_name = cf->conf_file->file.name.data;
+    set->line = cf->conf_file->line;
+
+    if (ngx_js_is_function_ref(handler)) {
+
+        p = handler->data;
+        end = p + handler->len;
+
+        while (p < end) {
+            if (*p == '$' && p + 1 < end
+                && ((p[1] >= 'a' && p[1] <= 'z')
+                    || (p[1] >= 'A' && p[1] <= 'Z')
+                    || p[1] == '_'))
+            {
+                goto inline_expr;
+            }
+
+            p++;
+        }
+
+        set->fname = *handler;
+        return NGX_OK;
+    }
+
+inline_expr:
+
+    return ngx_js_set_inline(cf, inlines, index, handler, arg, &set->fname);
+}
+
+
 /*
  * Merge configuration values used at configuration time.
  */
@@ -3686,10 +4001,14 @@ ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
 {
     ngx_str_t            *path, *s;
     ngx_uint_t            i;
-    ngx_array_t          *imports, *preload_objects, *paths;
+    ngx_array_t          *imports, *inlines, *preload_objects, *paths;
+    ngx_js_inline_t      *inl, *ili;
     ngx_js_named_path_t  *import, *pi, *pij, *preload;
 
-    if (prev->imports != NGX_CONF_UNSET_PTR && prev->engine == NULL) {
+    if ((prev->imports != NGX_CONF_UNSET_PTR
+         || prev->inlines != NGX_CONF_UNSET_PTR)
+        && prev->engine == NULL)
+    {
         /*
          * special handling to preserve conf->engine
          * in the "http" or "stream" section to inherit it to all servers
@@ -3703,6 +4022,7 @@ ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
     }
 
     if (conf->imports == NGX_CONF_UNSET_PTR
+        && conf->inlines == NGX_CONF_UNSET_PTR
         && conf->type == prev->type
         && conf->paths == NGX_CONF_UNSET_PTR
         && conf->preload_objects == NGX_CONF_UNSET_PTR)
@@ -3710,6 +4030,7 @@ ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
         if (prev->engine != NULL) {
             conf->preload_objects = prev->preload_objects;
             conf->imports = prev->imports;
+            conf->inlines = prev->inlines;
             conf->type = prev->type;
             conf->paths = prev->paths;
             conf->engine = prev->engine;
@@ -3791,6 +4112,43 @@ ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
         }
     }
 
+    if (prev->inlines != NGX_CONF_UNSET_PTR) {
+        if (conf->inlines == NGX_CONF_UNSET_PTR) {
+            conf->inlines = prev->inlines;
+
+        } else {
+            inlines = ngx_array_create(cf->pool, 4,
+                                       sizeof(ngx_js_inline_t));
+            if (inlines == NULL) {
+                return NGX_ERROR;
+            }
+
+            ili = prev->inlines->elts;
+
+            for (i = 0; i < prev->inlines->nelts; i++) {
+                inl = ngx_array_push(inlines);
+                if (inl == NULL) {
+                    return NGX_ERROR;
+                }
+
+                *inl = ili[i];
+            }
+
+            ili = conf->inlines->elts;
+
+            for (i = 0; i < conf->inlines->nelts; i++) {
+                inl = ngx_array_push(inlines);
+                if (inl == NULL) {
+                    return NGX_ERROR;
+                }
+
+                *inl = ili[i];
+            }
+
+            conf->inlines = inlines;
+        }
+    }
+
     if (prev->paths != NGX_CONF_UNSET_PTR) {
         if (conf->paths == NGX_CONF_UNSET_PTR) {
             conf->paths = prev->paths;
@@ -3827,7 +4185,9 @@ ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
         }
     }
 
-    if (conf->imports == NGX_CONF_UNSET_PTR) {
+    if (conf->imports == NGX_CONF_UNSET_PTR
+        && conf->inlines == NGX_CONF_UNSET_PTR)
+    {
         return NGX_OK;
     }
 
@@ -4155,6 +4515,7 @@ ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
     size_t                size;
     ngx_str_t            *m, file;
     ngx_uint_t            i;
+    ngx_js_inline_t      *inl;
     ngx_pool_cleanup_t   *cln;
     ngx_js_named_path_t  *import;
 
@@ -4164,14 +4525,34 @@ ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
 
     size = 0;
 
-    import = conf->imports->elts;
-    for (i = 0; i < conf->imports->nelts; i++) {
+    if (conf->imports != NGX_CONF_UNSET_PTR) {
+        import = conf->imports->elts;
 
-        /* import <name> from '<path>'; globalThis.<name> = <name>; */
+        for (i = 0; i < conf->imports->nelts; i++) {
 
-        size += sizeof("import  from '';") - 1 + import[i].name.len * 3
-                + import[i].path.len
-                + sizeof(" globalThis. = ;\n") - 1;
+            /* import <name> from '<path>'; globalThis.<name> = <name>; */
+
+            size += sizeof("import  from '';") - 1 + import[i].name.len * 3
+                    + import[i].path.len
+                    + sizeof(" globalThis. = ;\n") - 1;
+        }
+    }
+
+    if (conf->inlines != NGX_CONF_UNSET_PTR) {
+        inl = conf->inlines->elts;
+
+        for (i = 0; i < conf->inlines->nelts; i++) {
+
+            /*
+             * function <fname>(<arg>) { return (<code>); }
+             *     globalThis.<fname> = <fname>;\n
+             */
+
+            size += sizeof("function () { return (); }") - 1
+                    + sizeof(" globalThis. = ;\n") - 1
+                    + inl[i].fname.len * 3
+                    + inl[i].arg.len + inl[i].code.len;
+        }
     }
 
     start = ngx_pnalloc(cf->pool, size + 1);
@@ -4180,20 +4561,44 @@ ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
     }
 
     p = start;
-    import = conf->imports->elts;
-    for (i = 0; i < conf->imports->nelts; i++) {
 
-        /* import <name> from '<path>'; globalThis.<name> = <name>; */
+    if (conf->imports != NGX_CONF_UNSET_PTR) {
+        import = conf->imports->elts;
 
-        p = ngx_cpymem(p, "import ", sizeof("import ") - 1);
-        p = ngx_cpymem(p, import[i].name.data, import[i].name.len);
-        p = ngx_cpymem(p, " from '", sizeof(" from '") - 1);
-        p = ngx_cpymem(p, import[i].path.data, import[i].path.len);
-        p = ngx_cpymem(p, "'; globalThis.", sizeof("'; globalThis.") - 1);
-        p = ngx_cpymem(p, import[i].name.data, import[i].name.len);
-        p = ngx_cpymem(p, " = ", sizeof(" = ") - 1);
-        p = ngx_cpymem(p, import[i].name.data, import[i].name.len);
-        p = ngx_cpymem(p, ";\n", sizeof(";\n") - 1);
+        for (i = 0; i < conf->imports->nelts; i++) {
+
+            /* import <name> from '<path>'; globalThis.<name> = <name>; */
+
+            p = ngx_cpymem(p, "import ", sizeof("import ") - 1);
+            p = ngx_cpymem(p, import[i].name.data, import[i].name.len);
+            p = ngx_cpymem(p, " from '", sizeof(" from '") - 1);
+            p = ngx_cpymem(p, import[i].path.data, import[i].path.len);
+            p = ngx_cpymem(p, "'; globalThis.",
+                           sizeof("'; globalThis.") - 1);
+            p = ngx_cpymem(p, import[i].name.data, import[i].name.len);
+            p = ngx_cpymem(p, " = ", sizeof(" = ") - 1);
+            p = ngx_cpymem(p, import[i].name.data, import[i].name.len);
+            p = ngx_cpymem(p, ";\n", sizeof(";\n") - 1);
+        }
+    }
+
+    if (conf->inlines != NGX_CONF_UNSET_PTR) {
+        inl = conf->inlines->elts;
+
+        for (i = 0; i < conf->inlines->nelts; i++) {
+            p = ngx_cpymem(p, "function ", sizeof("function ") - 1);
+            p = ngx_cpymem(p, inl[i].fname.data, inl[i].fname.len);
+            p = ngx_cpymem(p, "(", 1);
+            p = ngx_cpymem(p, inl[i].arg.data, inl[i].arg.len);
+            p = ngx_cpymem(p, ") { return (", sizeof(") { return (") - 1);
+            p = ngx_cpymem(p, inl[i].code.data, inl[i].code.len);
+            p = ngx_cpymem(p, "); } globalThis.",
+                           sizeof("); } globalThis.") - 1);
+            p = ngx_cpymem(p, inl[i].fname.data, inl[i].fname.len);
+            p = ngx_cpymem(p, " = ", sizeof(" = ") - 1);
+            p = ngx_cpymem(p, inl[i].fname.data, inl[i].fname.len);
+            p = ngx_cpymem(p, ";\n", sizeof(";\n") - 1);
+        }
     }
 
     *p = '\0';
@@ -4288,6 +4693,7 @@ ngx_js_create_conf(ngx_conf_t *cf, size_t size)
     conf->paths = NGX_CONF_UNSET_PTR;
     conf->type = NGX_CONF_UNSET_UINT;
     conf->imports = NGX_CONF_UNSET_PTR;
+    conf->inlines = NGX_CONF_UNSET_PTR;
     conf->preload_objects = NGX_CONF_UNSET_PTR;
 
     conf->reuse = NGX_CONF_UNSET_SIZE;
