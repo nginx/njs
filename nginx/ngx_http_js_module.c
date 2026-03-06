@@ -992,6 +992,16 @@ static njs_external_t  ngx_http_js_ext_request[] = {
 
     {
         .flags = NJS_EXTERN_OBJECT,
+        .name.string = njs_str("var"),
+        .u.object = {
+            .writable = 1,
+            .prop_handler = ngx_http_js_ext_variables,
+            .magic32 = NGX_JS_STRING,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_OBJECT,
         .name.string = njs_str("variables"),
         .u.object = {
             .writable = 1,
@@ -1031,6 +1041,16 @@ static njs_external_t  ngx_http_js_ext_periodic_session[] = {
             .writable = 1,
             .prop_handler = ngx_http_js_periodic_session_variables,
             .magic32 = NGX_JS_BUFFER,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_OBJECT,
+        .name.string = njs_str("var"),
+        .u.object = {
+            .writable = 1,
+            .prop_handler = ngx_http_js_periodic_session_variables,
+            .magic32 = NGX_JS_STRING,
         }
     },
 
@@ -1155,6 +1175,8 @@ static const JSCFunctionListEntry ngx_http_qjs_ext_request[] = {
     JS_CFUNC_DEF("subrequest", 3, ngx_http_qjs_ext_subrequest),
     JS_CGETSET_MAGIC_DEF("uri", ngx_http_qjs_ext_string, NULL,
                          offsetof(ngx_http_request_t, uri)),
+    JS_CGETSET_MAGIC_DEF("var", ngx_http_qjs_ext_variables,
+                         NULL, NGX_JS_STRING),
     JS_CGETSET_MAGIC_DEF("variables", ngx_http_qjs_ext_variables,
                          NULL, NGX_JS_STRING),
     JS_CFUNC_MAGIC_DEF("warn", 1, ngx_http_qjs_ext_log, NGX_LOG_WARN),
@@ -1166,6 +1188,8 @@ static const JSCFunctionListEntry ngx_http_qjs_ext_periodic[] = {
                        JS_PROP_CONFIGURABLE),
     JS_CGETSET_MAGIC_DEF("rawVariables", ngx_http_qjs_ext_periodic_variables,
                    NULL, NGX_JS_BUFFER),
+    JS_CGETSET_MAGIC_DEF("var", ngx_http_qjs_ext_periodic_variables,
+                         NULL, NGX_JS_STRING),
     JS_CGETSET_MAGIC_DEF("variables", ngx_http_qjs_ext_periodic_variables,
                          NULL, NGX_JS_STRING),
 };

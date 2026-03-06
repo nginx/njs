@@ -687,6 +687,16 @@ static njs_external_t  ngx_stream_js_ext_session[] = {
 
     {
         .flags = NJS_EXTERN_OBJECT,
+        .name.string = njs_str("var"),
+        .u.object = {
+            .writable = 1,
+            .prop_handler = ngx_stream_js_ext_variables,
+            .magic32 = NGX_JS_STRING,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_OBJECT,
         .name.string = njs_str("variables"),
         .u.object = {
             .writable = 1,
@@ -726,6 +736,16 @@ static njs_external_t  ngx_stream_js_ext_periodic_session[] = {
             .writable = 1,
             .prop_handler = ngx_stream_js_periodic_variables,
             .magic32 = NGX_JS_BUFFER,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_OBJECT,
+        .name.string = njs_str("var"),
+        .u.object = {
+            .writable = 1,
+            .prop_handler = ngx_stream_js_periodic_variables,
+            .magic32 = NGX_JS_STRING,
         }
     },
 
@@ -853,6 +873,8 @@ static const JSCFunctionListEntry ngx_stream_qjs_ext_session[] = {
     JS_CFUNC_DEF("setReturnValue", 1, ngx_stream_qjs_ext_set_return_value),
     JS_CGETSET_MAGIC_DEF("status", ngx_stream_qjs_ext_uint, NULL,
                          offsetof(ngx_stream_session_t, status)),
+    JS_CGETSET_MAGIC_DEF("var", ngx_stream_qjs_ext_variables,
+                         NULL, NGX_JS_STRING),
     JS_CGETSET_MAGIC_DEF("variables", ngx_stream_qjs_ext_variables,
                          NULL, NGX_JS_STRING),
     JS_CFUNC_MAGIC_DEF("warn", 1, ngx_stream_qjs_ext_log, NGX_LOG_WARN),
@@ -864,6 +886,8 @@ static const JSCFunctionListEntry ngx_stream_qjs_ext_periodic[] = {
                        JS_PROP_CONFIGURABLE),
     JS_CGETSET_MAGIC_DEF("rawVariables", ngx_stream_qjs_ext_periodic_variables,
                    NULL, NGX_JS_BUFFER),
+    JS_CGETSET_MAGIC_DEF("var", ngx_stream_qjs_ext_periodic_variables,
+                         NULL, NGX_JS_STRING),
     JS_CGETSET_MAGIC_DEF("variables", ngx_stream_qjs_ext_periodic_variables,
                          NULL, NGX_JS_STRING),
 };
