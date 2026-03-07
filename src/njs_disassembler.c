@@ -53,6 +53,8 @@ static njs_code_name_t  code_names[] = {
 
     { NJS_VMCODE_FUNCTION_CALL, sizeof(njs_vmcode_function_call_t),
           njs_str("FUNCTION CALL   ") },
+    { NJS_VMCODE_METHOD_FRAME, sizeof(njs_vmcode_method_frame_t),
+          njs_str("METHOD FRAME    ") },
     { NJS_VMCODE_RETURN, sizeof(njs_vmcode_return_t),
           njs_str("RETURN          ") },
     { NJS_VMCODE_STOP, sizeof(njs_vmcode_stop_t),
@@ -354,8 +356,8 @@ njs_disassemble(u_char *start, u_char *end, njs_int_t count, njs_arr_t *lines)
             method = (njs_vmcode_method_frame_t *) p;
 
             njs_printf("%5uD | %05uz METHOD FRAME      %04Xz %04Xz %uz%s\n",
-                       line, p - start, (size_t) method->object,
-                       (size_t) method->method, method->nargs,
+                       line, p - start, (size_t) method->function,
+                       (size_t) method->this_object, method->nargs,
                        method->ctor ? " CTOR" : "");
 
             p += sizeof(njs_vmcode_method_frame_t);

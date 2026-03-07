@@ -296,8 +296,8 @@ typedef struct {
 typedef struct {
     njs_vmcode_t               code;
     njs_index_t                nargs;
-    njs_index_t                object;
-    njs_index_t                method;
+    njs_index_t                function;
+    njs_index_t                this_object;
     uint8_t                    ctor;       /* 1 bit  */
 } njs_vmcode_method_frame_t;
 

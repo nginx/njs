@@ -168,6 +168,77 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("function f(a) {return function (x) {return a(x)}} f(1)(0)"),
       njs_str("TypeError: number is not a function") },
 
+    { njs_str("var fooCalled = false;"
+              "function foo(){ fooCalled = true; }"
+              "var o = {}, r;"
+              "try { o.bar(foo()) } catch (e) { r = e.name + ':' + fooCalled }"
+              "r"),
+      njs_str("TypeError:true") },
+
+    { njs_str("var o = {}, r;"
+              "Object.defineProperty(o, 'bar', {"
+              "    get: function() { this.barGetter = true; return 42; }"
+              "});"
+              "try { o.foo(o.bar) } catch (e) { r = e.name + ':' + o.barGetter }"
+              "r"),
+      njs_str("TypeError:true") },
+
+    { njs_str("var o = {}, r;"
+              "Object.defineProperty(o, 'bar', {"
+              "    get: function() { this.barGetter = true; return 42; }"
+              "});"
+              "try { o.foo(o['bar']) } catch (e) {"
+              "    r = e.name + ':' + o.barGetter"
+              "}"
+              "r"),
+      njs_str("TypeError:true") },
+
+    { njs_str("var fooCalled = false;"
+              "function foo(){ fooCalled = true; }"
+              "var o = {}, r;"
+              "try { o.bar.gar(foo()) } catch (e) {"
+              "    r = e.name + ':' + fooCalled"
+              "}"
+              "r"),
+      njs_str("TypeError:false") },
+
+    { njs_str("var x = function() { this.foo = 42; };"
+              "var result = new x(x = 1);"
+              "[x, result.foo]"),
+      njs_str("1,42") },
+
+    { njs_str("function fn() {"
+              "    var x = function() { this.foo = 42; };"
+              "    var result = new x(x = 1);"
+              "    return [x, result.foo];"
+              "}"
+              "fn()"),
+      njs_str("1,42") },
+
+    { njs_str("var C = {}; var ran = false, r;"
+              "try { new C((ran = true, 1)) } catch (e) {"
+              "    r = e.name + ':' + ran"
+              "}"
+              "r"),
+      njs_str("TypeError:true") },
+
+    { njs_str("var o = {"
+              "    get f() { this.hit = (this.hit || 0) + 1; return 1; }"
+              "};"
+              "var ran = false, r;"
+              "try { o.f((ran = true, 1)) } catch (e) {"
+              "    r = ran + ':' + o.hit"
+              "}"
+              "r"),
+      njs_str("true:1") },
+
+    { njs_str("var o = {"
+              "    get f() { return function(v) { return this.x + v } },"
+              "    x: 7"
+              "};"
+              "o.f(5)"),
+      njs_str("12") },
+
     { njs_str("var x = 0;"
               ""
               "function f1() {"
@@ -1866,8 +1937,36 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var o = {m: function() {return 42}}; (o?.m)()"),
       njs_str("42") },
 
+    { njs_str("var o = {x: 5, m: function() {return this.x}}; (o?.m)()"),
+      njs_str("5") },
+
+    { njs_str("var o = {x: 3, m: function() {return {c: this.x}}};"
+              "o.m?.().c"),
+      njs_str("3") },
+
+    { njs_str("var o = {x: 4, m: function() {return {c: this.x}}};"
+              "(o.m)?.().c"),
+      njs_str("4") },
+
+    { njs_str("var o = {x: 6, m: function() {return {c: this.x}}};"
+              "o?.m?.().c"),
+      njs_str("6") },
+
+    { njs_str("var o = {x: 8, m: function() {return {c: this.x}}};"
+              "(o?.m)?.().c"),
+      njs_str("8") },
+
+    { njs_str("var k = 'm';"
+              "var o = {x: 9, m: function() {return this.x}};"
+              "(o?.[k])()"),
+      njs_str("9") },
+
     { njs_str("var o = null; (o?.m)()"),
       njs_str("TypeError: undefined is not a function") },
+
+    { njs_str("var o = {x: 7, t: function(s) {return this.x + s[0]}};"
+              "o.t`!`"),
+      njs_str("7!") },
 
     { njs_str("var o = {a: {b: 1}}; delete o?.a?.b; o.a.b"),
       njs_str("undefined") },
@@ -2626,10 +2725,10 @@ static njs_unit_test_t  njs_test[] =
       njs_str("false") },
 
     { njs_str("new 0[isNaN]"),
-      njs_str("TypeError: (intermediate value)[\"[object Function]\"] is not a function") },
+      njs_str("TypeError: undefined is not a function") },
 
     { njs_str("new 0[undefined]"),
-      njs_str("TypeError: (intermediate value)[\"undefined\"] is not a function") },
+      njs_str("TypeError: undefined is not a function") },
 
     /**/
 
@@ -3336,6 +3435,12 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var a = []; for (var k in new Uint8Array([1,2,3])) { a.push(k); }; a"),
       njs_str("0,1,2") },
 
+    { njs_str("var dst = {}; for (dst.a in {x: 1}) {} dst.a"),
+      njs_str("x") },
+
+    { njs_str("var dst = {}; for ((dst.a) in {x: 1}) {} dst.a"),
+      njs_str("x") },
+
     { njs_str("var i=0, a=[], r=[], d=[3,5];"
               "function ret_a() {r.push('ret_a'); return a};"
               "function ret_d() {r.push('ret_d'); return d};"
@@ -4006,7 +4111,7 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("function f() { Object.prototype.toString = 1; };"
               "Object.prototype.toString = f;"
               "(function () { try { 's'[{}](); } catch (e) { throw e; } })()"),
-      njs_str("TypeError: (intermediate value)[\"undefined\"] is not a function") },
+      njs_str("TypeError: undefined is not a function") },
 
     { njs_str("var i; for (i = 0; i < 10; i++) { i += 1 } i"),
       njs_str("10") },
@@ -10815,7 +10920,7 @@ static njs_unit_test_t  njs_test[] =
       njs_str("TypeError: number is not a function") },
 
     { njs_str("var o = {a:1}; o.a()"),
-      njs_str("TypeError: (intermediate value)[\"a\"] is not a function") },
+      njs_str("TypeError: number is not a function") },
 
     { njs_str("(function(){})()"),
       njs_str("undefined") },
@@ -11393,6 +11498,9 @@ static njs_unit_test_t  njs_test[] =
       njs_str("10") },
 
     { njs_str("var o = { x: 1, f: function() { return this.x } }; o.f()"),
+      njs_str("1") },
+
+    { njs_str("var o = { x: 1, f: function() { return this.x } }; (o.f)()"),
       njs_str("1") },
 
     { njs_str("var o = { x: 1, f: function(a) { return this.x += a } };"
@@ -12851,10 +12959,10 @@ static njs_unit_test_t  njs_test[] =
       njs_str("SyntaxError: Unexpected token \"null\"") },
 
     { njs_str("'a'.f()"),
-      njs_str("TypeError: (intermediate value)[\"f\"] is not a function") },
+      njs_str("TypeError: undefined is not a function") },
 
     { njs_str("1..f()"),
-      njs_str("TypeError: (intermediate value)[\"f\"] is not a function") },
+      njs_str("TypeError: undefined is not a function") },
 
     { njs_str("try {}"),
       njs_str("SyntaxError: Missing catch or finally after try") },
@@ -15259,6 +15367,12 @@ static njs_unit_test_t  njs_test[] =
                  "o.a = 1; o.a"),
       njs_str("1") },
 
+    { njs_str("var o = {a:1}; (o.a) = 2; o.a"),
+      njs_str("2") },
+
+    { njs_str("var o = {a:1}; (o.a)++; o.a"),
+      njs_str("2") },
+
     { njs_str("var p = Object.create(Function);"
                  "Object.defineProperty(p, 'length', {writable: true});"
                  "p.length = 32; p.length"),
@@ -15276,6 +15390,9 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("var o = {};"
                  "Object.defineProperty(o, 'a', {value:1, configurable:true});"
                  "delete o.a; o.a"),
+      njs_str("undefined") },
+
+    { njs_str("var o = {a:1}; delete (o.a); o.a"),
       njs_str("undefined") },
 
     { njs_str("var o = {};"
@@ -20637,34 +20754,40 @@ static njs_unit_test_t  njs_test[] =
       njs_str("ReferenceError: \"AsyncFunction\" is not defined") },
 
     { njs_str("(async function() {console.log(await 111)})"),
-      njs_str("SyntaxError: await in arguments not supported") },
+      njs_str("[object AsyncFunction]") },
 
     { njs_str("(async function() {console.log('Number: ' + await 111)})"),
-      njs_str("SyntaxError: await in arguments not supported") },
+      njs_str("[object AsyncFunction]") },
 
     { njs_str("(async function() {f(await 111)})"),
-      njs_str("SyntaxError: await in arguments not supported") },
+      njs_str("[object AsyncFunction]") },
 
     { njs_str("(async function() {f(f(1), await 111)})"),
-      njs_str("SyntaxError: await in arguments not supported") },
+      njs_str("[object AsyncFunction]") },
 
     { njs_str("async () => [await x(1)(),]; async () => [await x(1)()]"),
       njs_str("[object AsyncFunction]") },
 
     { njs_str("(async function() {f(1, 'a', await 111)})"),
-      njs_str("SyntaxError: await in arguments not supported") },
+      njs_str("[object AsyncFunction]") },
 
     { njs_str("(async function() {f('Number: ' + await 111)})"),
-      njs_str("SyntaxError: await in arguments not supported") },
+      njs_str("[object AsyncFunction]") },
 
     { njs_str("async function f1() {try {f(await f1)} catch(e) {}}"),
-      njs_str("SyntaxError: await in arguments not supported") },
+      njs_str("undefined") },
 
     { njs_str("(async () => (function (){}) `${(async () => 1)(await 1)}`)()"),
-      njs_str("SyntaxError: await in arguments not supported") },
+      njs_str("[object Promise]") },
 
     { njs_str("(async () => (function (){}) `${await 1}`)()"),
-      njs_str("SyntaxError: await in tagged template not supported") },
+      njs_str("[object Promise]") },
+
+    { njs_str("(async () => ({"
+              "    x: 7,"
+              "    t(...a) { return this.x + ':' + a[1]; }"
+              "}).t`${await 2}`)()"),
+      njs_str("[object Promise]") },
 
     { njs_str("async function af() {await encrypt({},}"),
       njs_str("SyntaxError: Unexpected token \"}\"") },
@@ -21423,6 +21546,94 @@ static njs_unit_test_t  njs_externals_test[] =
               "f(1).then($r.retval)"),
       njs_str("1") },
 
+    { njs_str("async function f() {"
+              "    function g(v) { return v; }"
+              "    return g(await Promise.resolve(1));"
+              "}"
+              "f().then($r.retval)"),
+      njs_str("1") },
+
+    { njs_str("async function f() {"
+              "    return ({"
+              "        g(v) { return v; }"
+              "    }).g(await Promise.resolve(2));"
+              "}"
+              "f().then($r.retval)"),
+      njs_str("2") },
+
+    { njs_str("async function f() {"
+              "    function g(a, b) { return a + b; }"
+              "    return g(await Promise.resolve(1),"
+              "             await Promise.resolve(2));"
+              "}"
+              "f().then($r.retval)"),
+      njs_str("3") },
+
+    { njs_str("async function f() {"
+              "    return ({"
+              "        k: 10,"
+              "        g(a, b) { return this.k + a + b; }"
+              "    }).g(await Promise.resolve(1),"
+              "         await Promise.resolve(2));"
+              "}"
+              "f().then($r.retval)"),
+      njs_str("13") },
+
+    { njs_str("async function f() {"
+              "    function C(v) { this.v = v; }"
+              "    return (new C(await Promise.resolve(7))).v;"
+              "}"
+              "f().then($r.retval)"),
+      njs_str("7") },
+
+    { njs_str("async function f() {"
+              "    return ({"
+              "        g(v) { return v; }"
+              "    })?.g(await Promise.resolve(9));"
+              "}"
+              "f().then($r.retval)"),
+      njs_str("9") },
+
+    { njs_str("async function f() {"
+              "    return ((...a) => a[1])`${await Promise.resolve(1)}`;"
+              "}"
+              "f().then($r.retval)"),
+      njs_str("1") },
+
+    { njs_str("async function f() {"
+              "    return ((...a) => a[1])`${await Promise.resolve(2)}`"
+              "           + ':' +"
+              "           ((...a) => a[1])`${await Promise.resolve(3)}`;"
+              "}"
+              "f().then($r.retval)"),
+      njs_str("2:3") },
+
+    { njs_str("async function f() {"
+              "    return ({"
+              "        x: 'X',"
+              "        t(...a) { return this.x + ':' + a[1]; }"
+              "    }).t`${await Promise.resolve(4)}`;"
+              "}"
+              "f().then($r.retval)"),
+      njs_str("X:4") },
+
+    { njs_str("async function f() {"
+              "    return ((...a) => a[1] + ':' + a[2] + ':' + a[0].length)"
+              "           `a${await Promise.resolve(2)}b"
+              "${await Promise.resolve(3)}c`;"
+              "}"
+              "f().then($r.retval)"),
+      njs_str("2:3:3") },
+
+    { njs_str("async function f() {"
+              "    var log = '';"
+              "    function p(v) { log += v; return Promise.resolve(v); }"
+              "    function t() { log += 'T'; return log; }"
+              "    return t`${await p('A')}${await p('B')}`;"
+              "}"
+              "f().then($r.retval)"),
+      njs_str("ABT") },
+
     { njs_str("$r.retval(Promise.all([async () => [await x('X')]]))"),
       njs_str("[object Promise]") },
 
@@ -21667,7 +21878,7 @@ static njs_unit_test_t  njs_shared_test[] =
               "    at main (:1)\n") },
 
     { njs_str("preload.a.push(2)"),
-      njs_str("TypeError: (intermediate value)[\"push\"] is not a function\n"
+      njs_str("TypeError: undefined is not a function\n"
               "    at main (:1)\n") },
 
     { njs_str("Array.prototype.push.call(preload.a, 'waka')"),
@@ -22036,7 +22247,6 @@ static njs_unit_test_t  njs_backtraces_test[] =
 
     { njs_str("[].concat({}.a.a)"),
       njs_str("TypeError: cannot get property \"a\" of undefined\n"
-              "    at concat (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("''.repeat(-1)"),
@@ -22046,7 +22256,6 @@ static njs_unit_test_t  njs_backtraces_test[] =
 
     { njs_str("Math.log({}.a.a)"),
       njs_str("TypeError: cannot get property \"a\" of undefined\n"
-              "    at log (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("var bound = Math.max.bind(null, {toString(){return {}}}); bound(1)"),
@@ -22062,7 +22271,7 @@ static njs_unit_test_t  njs_backtraces_test[] =
               "    at main (:1)\n") },
 
     { njs_str("Object.prototype()"),
-      njs_str("TypeError: (intermediate value)[\"prototype\"] is not a function\n"
+      njs_str("TypeError: object is not a function\n"
                "    at main (:1)\n") },
 
     { njs_str("eval()"),
@@ -22072,7 +22281,6 @@ static njs_unit_test_t  njs_backtraces_test[] =
 
     { njs_str("$shared.method({}.a.a)"),
       njs_str("TypeError: cannot get property \"a\" of undefined\n"
-              "    at method (native)\n"
               "    at main (:1)\n") },
 
     { njs_str("new Function(\n\n@)"),
@@ -22205,7 +22413,7 @@ static njs_unit_test_t  njs_backtraces_test[] =
 
     { njs_str("function log(v) {}\nlog({}\n.a\n.a)"),
       njs_str("TypeError: cannot get property \"a\" of undefined\n"
-              "    at main (:4)\n") },
+              "    at main (:2)\n") },
 
     { njs_str("\nfor (var i = 0;\n i < a;\n i++) { }\n"),
       njs_str("ReferenceError: \"a\" is not defined\n"
@@ -22217,7 +22425,6 @@ static njs_unit_test_t  njs_backtraces_test[] =
 
     { njs_str("Math\n.min(1,\na)"),
       njs_str("ReferenceError: \"a\" is not defined\n"
-              "    at min (native)\n"
               "    at main (:3)\n") },
 };
 
