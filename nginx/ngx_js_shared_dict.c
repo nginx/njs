@@ -958,7 +958,7 @@ njs_js_ext_shared_dict_incr(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
 
     } else {
-        timeout = dict->timeout;
+        timeout = 0;
     }
 
     rc = ngx_js_dict_incr(vm, shm_zone->data, &key, delta, init, &value,
@@ -1638,7 +1638,10 @@ ngx_js_dict_incr(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_str_t *key,
     if (node == NULL) {
         njs_value_number_set(init, njs_value_number(init)
                                    + njs_value_number(delta));
-        if (ngx_js_dict_add(vm, dict, key, init, timeout, now) != NGX_OK) {
+        if (ngx_js_dict_add(vm, dict, key, init,
+                            timeout ? timeout : dict->timeout, now)
+            != NGX_OK)
+        {
             ngx_rwlock_unlock(&dict->sh->rwlock);
             return NGX_ERROR;
         }
@@ -1649,7 +1652,7 @@ ngx_js_dict_incr(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_str_t *key,
         node->value.number += njs_value_number(delta);
         *value = node->value.number;
 
-        if (dict->timeout) {
+        if (dict->timeout && timeout) {
             ngx_rbtree_delete(&dict->sh->rbtree_expire, &node->expire);
             node->expire.key = now + timeout;
             ngx_rbtree_insert(&dict->sh->rbtree_expire, &node->expire);
@@ -3445,7 +3448,7 @@ ngx_qjs_ext_shared_dict_incr(JSContext *cx, JSValueConst this_val,
         }
 
     } else {
-        timeout = dict->timeout;
+        timeout = 0;
     }
 
     key.data = (u_char *) JS_ToCStringLen(cx, &key.len, argv[0]);
@@ -4073,7 +4076,10 @@ ngx_qjs_dict_incr(JSContext *cx, ngx_js_dict_t *dict, ngx_str_t *key,
 
     if (node == NULL) {
         value = JS_NewFloat64(cx, init + delta);
-        if (ngx_qjs_dict_add(cx, dict, key, value, timeout, now) != NGX_OK) {
+        if (ngx_qjs_dict_add(cx, dict, key, value,
+                              timeout ? timeout : dict->timeout, now)
+            != NGX_OK)
+        {
             ngx_rwlock_unlock(&dict->sh->rwlock);
             JS_FreeValue(cx, value);
             return ngx_qjs_throw_shared_memory_error(cx);
@@ -4083,7 +4089,7 @@ ngx_qjs_dict_incr(JSContext *cx, ngx_js_dict_t *dict, ngx_str_t *key,
         node->value.number += delta;
         value = JS_NewFloat64(cx, node->value.number);
 
-        if (dict->timeout) {
+        if (dict->timeout && timeout) {
             ngx_rbtree_delete(&dict->sh->rbtree_expire, &node->expire);
             node->expire.key = now + timeout;
             ngx_rbtree_insert(&dict->sh->rbtree_expire, &node->expire);
