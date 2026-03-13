@@ -128,6 +128,10 @@ http {
             js_content test.size;
         }
 
+        location /ttl {
+            js_content test.ttl;
+        }
+
         location /zones {
             js_content test.zones;
         }
@@ -352,6 +356,23 @@ $t->write_file('test.js', <<'EOF');
     }
 
 
+    function ttl(r) {
+        var dict = ngx.shared[r.args.dict];
+
+        if (r.args.err) {
+            try {
+                dict.ttl(r.args.key);
+                r.return(200, 'no exception');
+            } catch (e) {
+                r.return(200, e.toString());
+            }
+            return;
+        }
+
+        var val = dict.ttl(r.args.key);
+        r.return(200, val === undefined ? 'undefined' : val);
+    }
+
     function zones(r) {
         r.return(200, Object.keys(ngx.shared).sort());
     }
@@ -359,12 +380,12 @@ $t->write_file('test.js', <<'EOF');
     export default { add, capacity, chain, clear, del, evict_stress,
                      free_space, get, has, incr, items, keys, name,
                      njs: test_njs, pop, replace, set, set_clear, size,
-                     zones, overflow };
+                     ttl, zones, overflow };
 EOF
 
 $t->try_run('no js_shared_dict_zone');
 
-$t->plan(56);
+$t->plan(63);
 
 ###############################################################################
 
@@ -452,6 +473,42 @@ like(http_get('/keys?dict=waka'), qr/FOO\,FOO2\,FOO3/, 'waka keys');
 
 }
 
+# ttl() tests
+
+http_get('/clear?dict=waka');
+
+http_get('/set?dict=waka&key=TTL1&value=1&timeout=30000');
+my $ttl_resp = get_ttl('/ttl?dict=waka&key=TTL1');
+ok($ttl_resp >= 25000 && $ttl_resp <= 30000, 'ttl for 30s entry in range');
+
+like(http_get('/ttl?dict=waka&key=NOKEY'), qr/undefined/,
+	'ttl for missing key');
+
+like(http_get('/ttl?dict=no_timeout&key=x&err=1'), qr/TypeError/,
+	'ttl on dict without timeout');
+
+# per-entry timeout overrides directive default (waka: timeout=1000s)
+
+http_get('/add?dict=waka&key=TTL_ADD&value=1&timeout=30000');
+my $ttl_add = get_ttl('/ttl?dict=waka&key=TTL_ADD');
+ok($ttl_add >= 25000 && $ttl_add <= 30000,
+	'add per-entry timeout overrides directive default');
+
+http_get('/set?dict=waka&key=TTL_DEF&value=1');
+my $ttl_def = get_ttl('/ttl?dict=waka&key=TTL_DEF');
+ok($ttl_def >= 900000 && $ttl_def <= 1000000,
+	'set without timeout uses directive default');
+
+http_get('/incr?dict=waka&key=TTL_INCR&by=1&timeout=30000');
+my $ttl_incr = get_ttl('/ttl?dict=waka&key=TTL_INCR');
+ok($ttl_incr >= 25000 && $ttl_incr <= 30000,
+	'incr per-entry timeout overrides directive default');
+
+http_get('/incr?dict=waka&key=TTL_INCR_DEF&by=1');
+my $ttl_incr_def = get_ttl('/ttl?dict=waka&key=TTL_INCR_DEF');
+ok($ttl_incr_def >= 900000 && $ttl_incr_def <= 1000000,
+	'incr without timeout uses directive default');
+
 like(http_get('/pop?dict=bar&key=FOO'), qr/zzz/, 'pop bar.FOO');
 like(http_get('/pop?dict=bar&key=FOO'), qr/undefined/, 'pop deleted bar.FOO');
 http_get('/set?dict=foo&key=BAR&value=xxx');
@@ -476,6 +533,12 @@ unlike($t->read_file('error.log'), qr/no memory in js shared zone "foo"/,
 	'evict stress: no shared zone foo errors in error log');
 
 ###############################################################################
+
+sub get_ttl {
+	my ($uri) = @_;
+	my $resp = http_get($uri);
+	($resp =~ /\x0d\x0a\x0d\x0a(\d+)/) ? $1 : -1;
+}
 
 sub has_version {
 	my $need = shift;

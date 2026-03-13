@@ -48,6 +48,10 @@ http {
         listen       127.0.0.1:8080;
         server_name  localhost;
 
+        location /add {
+            js_content test.add;
+        }
+
         location /get {
             js_content test.get;
         }
@@ -58,6 +62,10 @@ http {
 
         location /set {
             js_content test.set;
+        }
+
+        location /ttl {
+            js_content test.ttl;
         }
     }
 }
@@ -84,6 +92,19 @@ $t->write_file('test.js', <<'EOF');
         }
 
         return v;
+    }
+
+    function add(r) {
+        var dict = ngx.shared[r.args.dict];
+        var value = convertToValue(dict, r.args.value);
+
+        if (r.args.timeout) {
+            var timeout = Number(r.args.timeout);
+            r.return(200, dict.add(r.args.key, value, timeout));
+
+        } else {
+            r.return(200, dict.add(r.args.key, value));
+        }
     }
 
     function get(r) {
@@ -128,11 +149,17 @@ $t->write_file('test.js', <<'EOF');
         }
     }
 
-    export default { get, incr, set };
+    function ttl(r) {
+        var dict = ngx.shared[r.args.dict];
+        var val = dict.ttl(r.args.key);
+        r.return(200, val === undefined ? 'undefined' : val);
+    }
+
+    export default { add, get, incr, set, ttl };
 EOF
 
 $t->try_run('js_shared_dict_zone state with timeout no support on 32-bit')
-	->plan(13);
+	->plan(18);
 
 ###############################################################################
 
@@ -154,6 +181,39 @@ select undef, undef, undef, 1.1;
 $waka_state = read_state($t, 'waka.json');
 
 is($waka_state->{foo}->{value}, '43', 'get waka.foo from state');
+
+# incr() without timeout preserves existing TTL
+
+http_get('/set?dict=waka&key=prs&value=100&timeout=30000');
+
+my $ttl_before = get_ttl('/ttl?dict=waka&key=prs');
+ok($ttl_before >= 25000 && $ttl_before <= 30000,
+	'incr preserve: initial ttl in 30s range');
+
+http_get('/incr?dict=waka&key=prs&by=-10');
+
+my $ttl_after = get_ttl('/ttl?dict=waka&key=prs');
+ok($ttl_after >= 20000 && $ttl_after <= $ttl_before,
+	'incr preserve: ttl not reset after incr without timeout');
+
+# incr() with explicit timeout updates TTL
+
+http_get('/incr?dict=waka&key=prs&by=5&timeout=60000');
+
+my $ttl_explicit = get_ttl('/ttl?dict=waka&key=prs');
+ok($ttl_explicit >= 55000 && $ttl_explicit <= 60000,
+	'incr explicit: ttl updated to 60s range');
+
+like(http_get('/get?dict=waka&key=prs'), qr/^95$/m,
+	'incr preserve: value correct after operations');
+
+# add() per-entry timeout overrides directive default (waka: timeout=1000s)
+
+http_get('/add?dict=waka&key=add_ttl&value=77&timeout=30000');
+
+my $ttl_add = get_ttl('/ttl?dict=waka&key=add_ttl');
+ok($ttl_add >= 25000 && $ttl_add <= 30000,
+	'add per-entry timeout overrides directive default');
 
 like(http_get('/get?dict=exp&key=past'), qr/undefined/,
 	'expired entry cleaned on load');
@@ -201,6 +261,12 @@ ok(defined $exp_state->{noexp}->{expire}
 	'expire=0 entry gets expire assigned in state');
 
 ###############################################################################
+
+sub get_ttl {
+	my ($uri) = @_;
+	my $resp = http_get($uri);
+	($resp =~ /\x0d\x0a\x0d\x0a(\d+)/) ? $1 : -1;
+}
 
 sub time_ms {
 	return time() * 1000;

@@ -99,6 +99,8 @@ static njs_int_t njs_js_ext_shared_dict_set(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t flags, njs_value_t *retval);
 static njs_int_t njs_js_ext_shared_dict_size(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
+static njs_int_t njs_js_ext_shared_dict_ttl(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t njs_js_ext_shared_dict_type(njs_vm_t *vm,
     njs_object_prop_t *prop, uint32_t unused, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval);
@@ -170,6 +172,8 @@ static JSValue ngx_qjs_ext_shared_dict_pop(JSContext *cx, JSValueConst this_val,
 static JSValue ngx_qjs_ext_shared_dict_set(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv, int flags);
 static JSValue ngx_qjs_ext_shared_dict_size(JSContext *cx,
+    JSValueConst this_val, int argc, JSValueConst *argv);
+static JSValue ngx_qjs_ext_shared_dict_ttl(JSContext *cx,
     JSValueConst this_val, int argc, JSValueConst *argv);
     static JSValue ngx_qjs_ext_shared_dict_type(JSContext *cx,
     JSValueConst this_val);
@@ -373,6 +377,17 @@ static njs_external_t  ngx_js_ext_shared_dict[] = {
     },
 
     {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("ttl"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = njs_js_ext_shared_dict_ttl,
+        }
+    },
+
+    {
         .flags = NJS_EXTERN_PROPERTY,
         .name.string = njs_str("type"),
         .enumerable = 1,
@@ -467,6 +482,7 @@ static const JSCFunctionListEntry ngx_qjs_ext_shared_dict[] = {
                        NGX_JS_DICT_FLAG_MUST_EXIST),
     JS_CFUNC_MAGIC_DEF("set", 3, ngx_qjs_ext_shared_dict_set, 0),
     JS_CFUNC_DEF("size", 0, ngx_qjs_ext_shared_dict_size),
+    JS_CFUNC_DEF("ttl", 1, ngx_qjs_ext_shared_dict_ttl),
     JS_CGETSET_DEF("type", ngx_qjs_ext_shared_dict_type, NULL),
 };
 
@@ -942,7 +958,7 @@ njs_js_ext_shared_dict_incr(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
 
     } else {
-        timeout = dict->timeout;
+        timeout = 0;
     }
 
     rc = ngx_js_dict_incr(vm, shm_zone->data, &key, delta, init, &value,
@@ -1238,6 +1254,59 @@ njs_js_ext_shared_dict_size(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     ngx_rwlock_unlock(&dict->sh->rwlock);
     njs_value_number_set(retval, items);
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+njs_js_ext_shared_dict_ttl(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused, njs_value_t *retval)
+{
+    ngx_str_t            key;
+    ngx_msec_t           now;
+    ngx_time_t          *tp;
+    ngx_js_dict_t       *dict;
+    ngx_shm_zone_t      *shm_zone;
+    ngx_js_dict_node_t  *node;
+
+    shm_zone = njs_vm_external(vm, ngx_js_shared_dict_proto_id,
+                               njs_argument(args, 0));
+    if (shm_zone == NULL) {
+        njs_vm_type_error(vm, "\"this\" is not a shared dict");
+        return NJS_ERROR;
+    }
+
+    dict = shm_zone->data;
+
+    if (!dict->timeout) {
+        njs_vm_type_error(vm, "shared dict must be declared with timeout");
+        return NJS_ERROR;
+    }
+
+    if (ngx_js_ngx_string(vm, njs_arg(args, nargs, 1), &key) != NGX_OK) {
+        return NJS_ERROR;
+    }
+
+    ngx_rwlock_rlock(&dict->sh->rwlock);
+
+    node = ngx_js_dict_lookup(dict, &key);
+
+    if (node != NULL) {
+        tp = ngx_timeofday();
+        now = tp->sec * 1000 + tp->msec;
+
+        if (now < node->expire.key) {
+            njs_value_number_set(retval,
+                                 (double) (node->expire.key - now));
+            ngx_rwlock_unlock(&dict->sh->rwlock);
+            return NJS_OK;
+        }
+    }
+
+    ngx_rwlock_unlock(&dict->sh->rwlock);
+
+    njs_value_undefined_set(retval);
 
     return NJS_OK;
 }
@@ -1569,7 +1638,10 @@ ngx_js_dict_incr(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_str_t *key,
     if (node == NULL) {
         njs_value_number_set(init, njs_value_number(init)
                                    + njs_value_number(delta));
-        if (ngx_js_dict_add(vm, dict, key, init, timeout, now) != NGX_OK) {
+        if (ngx_js_dict_add(vm, dict, key, init,
+                            timeout ? timeout : dict->timeout, now)
+            != NGX_OK)
+        {
             ngx_rwlock_unlock(&dict->sh->rwlock);
             return NGX_ERROR;
         }
@@ -1580,7 +1652,7 @@ ngx_js_dict_incr(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_str_t *key,
         node->value.number += njs_value_number(delta);
         *value = node->value.number;
 
-        if (dict->timeout) {
+        if (dict->timeout && timeout) {
             ngx_rbtree_delete(&dict->sh->rbtree_expire, &node->expire);
             node->expire.key = now + timeout;
             ngx_rbtree_insert(&dict->sh->rbtree_expire, &node->expire);
@@ -3376,7 +3448,7 @@ ngx_qjs_ext_shared_dict_incr(JSContext *cx, JSValueConst this_val,
         }
 
     } else {
-        timeout = dict->timeout;
+        timeout = 0;
     }
 
     key.data = (u_char *) JS_ToCStringLen(cx, &key.len, argv[0]);
@@ -3756,6 +3828,57 @@ ngx_qjs_ext_shared_dict_size(JSContext *cx, JSValueConst this_val,
 
 
 static JSValue
+ngx_qjs_ext_shared_dict_ttl(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv)
+{
+    ngx_str_t            key;
+    ngx_msec_t           now;
+    ngx_time_t          *tp;
+    ngx_js_dict_t       *dict;
+    ngx_shm_zone_t      *shm_zone;
+    ngx_js_dict_node_t  *node;
+
+    shm_zone = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_SHARED_DICT);
+    if (shm_zone == NULL) {
+        return JS_ThrowTypeError(cx, "\"this\" is not a shared dict");
+    }
+
+    dict = shm_zone->data;
+
+    if (!dict->timeout) {
+        return JS_ThrowTypeError(cx,
+                                 "shared dict must be declared with timeout");
+    }
+
+    key.data = (u_char *) JS_ToCStringLen(cx, &key.len, argv[0]);
+    if (key.data == NULL) {
+        return JS_EXCEPTION;
+    }
+
+    ngx_rwlock_rlock(&dict->sh->rwlock);
+
+    node = ngx_qjs_dict_lookup(dict, &key);
+
+    if (node != NULL) {
+        tp = ngx_timeofday();
+        now = tp->sec * 1000 + tp->msec;
+
+        if (now < node->expire.key) {
+            ngx_rwlock_unlock(&dict->sh->rwlock);
+            JS_FreeCString(cx, (char *) key.data);
+            return JS_NewFloat64(cx, (double) (node->expire.key - now));
+        }
+    }
+
+    ngx_rwlock_unlock(&dict->sh->rwlock);
+
+    JS_FreeCString(cx, (char *) key.data);
+
+    return JS_UNDEFINED;
+}
+
+
+static JSValue
 ngx_qjs_ext_shared_dict_type(JSContext *cx, JSValueConst this_val)
 {
     ngx_str_t        type;
@@ -3953,7 +4076,10 @@ ngx_qjs_dict_incr(JSContext *cx, ngx_js_dict_t *dict, ngx_str_t *key,
 
     if (node == NULL) {
         value = JS_NewFloat64(cx, init + delta);
-        if (ngx_qjs_dict_add(cx, dict, key, value, timeout, now) != NGX_OK) {
+        if (ngx_qjs_dict_add(cx, dict, key, value,
+                              timeout ? timeout : dict->timeout, now)
+            != NGX_OK)
+        {
             ngx_rwlock_unlock(&dict->sh->rwlock);
             JS_FreeValue(cx, value);
             return ngx_qjs_throw_shared_memory_error(cx);
@@ -3963,7 +4089,7 @@ ngx_qjs_dict_incr(JSContext *cx, ngx_js_dict_t *dict, ngx_str_t *key,
         node->value.number += delta;
         value = JS_NewFloat64(cx, node->value.number);
 
-        if (dict->timeout) {
+        if (dict->timeout && timeout) {
             ngx_rbtree_delete(&dict->sh->rbtree_expire, &node->expire);
             node->expire.key = now + timeout;
             ngx_rbtree_insert(&dict->sh->rbtree_expire, &node->expire);
