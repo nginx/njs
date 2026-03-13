@@ -179,6 +179,28 @@ static njs_external_t  ngx_js_ext_global_shared[] = {
 };
 
 
+static njs_external_t  ngx_js_ext_global_shared_array[] = {
+
+    {
+        .flags = NJS_EXTERN_PROPERTY | NJS_EXTERN_SYMBOL,
+        .name.symbol = NJS_SYMBOL_TO_STRING_TAG,
+        .u.property = {
+            .value = "GlobalSharedArray",
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_SELF,
+        .u.object = {
+            .enumerable = 1,
+            .prop_handler = njs_js_ext_global_shared_array_prop,
+            .keys = njs_js_ext_global_shared_array_keys,
+        }
+    },
+
+};
+
+
 static njs_external_t  ngx_js_ext_core[] = {
 
     {
@@ -268,6 +290,18 @@ static njs_external_t  ngx_js_ext_core[] = {
             .enumerable = 1,
             .properties = ngx_js_ext_global_shared,
             .nproperties = njs_nitems(ngx_js_ext_global_shared),
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_OBJECT,
+        .name.string = njs_str("sharedArray"),
+        .enumerable = 1,
+        .writable = 1,
+        .u.object = {
+            .enumerable = 1,
+            .properties = ngx_js_ext_global_shared_array,
+            .nproperties = njs_nitems(ngx_js_ext_global_shared_array),
         }
     },
 
