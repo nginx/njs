@@ -21740,20 +21740,23 @@ static njs_unit_test_t  njs_shared_test[] =
               "    at require (native)\n"
               "    at main (:1)\n") },
 
+    { njs_str("import cr from 'unknown'"),
+      njs_str("Error: Cannot load module \"unknown\"") },
+
+#if (NJS_HAVE_OPENSSL)
+
     { njs_str("var cr = require('crypto'); cr.createHash"),
       njs_str("[object Function]") },
 
     { njs_str("var cr = require('crypto'); cr.createHash('md5')"),
       njs_str("[object Hash]") },
 
-    { njs_str("import cr from 'unknown'"),
-      njs_str("Error: Cannot load module \"unknown\"") },
-
     { njs_str("import cr from 'crypto'; cr.createHash"),
       njs_str("[object Function]") },
 
     { njs_str("import cr from 'crypto'; cr.createHash('md5')"),
       njs_str("[object Hash]") },
+#endif
 
     { njs_str("var fs = require('fs'); fs.a = 1; fs.a"),
       njs_str("1") },
@@ -22291,6 +22294,7 @@ static njs_unit_test_t  njs_backtraces_test[] =
               "    at require (native)\n"
               "    at main (:1)\n") },
 
+#if (NJS_HAVE_OPENSSL)
     { njs_str("require('crypto').createHash('sha')"),
       njs_str("TypeError: not supported algorithm: \"sha\"\n"
               "    at createHash (native)\n"
@@ -22312,6 +22316,7 @@ static njs_unit_test_t  njs_backtraces_test[] =
       njs_str("TypeError: data is not a string or Buffer-like object\n"
               "    at update (native)\n"
               "    at main (:1)\n") },
+#endif
 
     { njs_str("function f(o) {function f_in(o) {return o.a.a};"
               "               return f_in(o)};"

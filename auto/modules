@@ -7,16 +7,13 @@ njs_module_srcs=src/njs_buffer.c
 
 . auto/module
 
-njs_module_name=njs_crypto_module
-njs_module_incs=
-njs_module_srcs="external/njs_crypto_module.c \
-                 external/njs_md5.c \
-                 external/njs_sha1.c \
-                 external/njs_sha2.c"
-
-. auto/module
-
 if [ $NJS_OPENSSL = YES -a $NJS_HAVE_OPENSSL = YES ]; then
+	njs_module_name=njs_crypto_module
+	njs_module_incs=
+	njs_module_srcs=external/njs_crypto_module.c
+
+	. auto/module
+
 	njs_module_name=njs_webcrypto_module
 	njs_module_incs=
 	njs_module_srcs=external/njs_webcrypto_module.c

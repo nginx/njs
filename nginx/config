@@ -113,13 +113,15 @@ fi
 if [ $NJS_OPENSSL != NO ]; then
     NJS_OPENSSL_LIB=OPENSSL
     have=NJS_HAVE_OPENSSL . auto/have
+    NJS_SRCS="$NJS_SRCS $ngx_addon_dir/../external/njs_crypto_module.c"
     NJS_SRCS="$NJS_SRCS $ngx_addon_dir/../external/njs_webcrypto_module.c"
 
     if [ "$NJS_HAVE_QUICKJS" = "YES" ];  then
+        NJS_SRCS="$NJS_SRCS $ngx_addon_dir/../external/qjs_crypto_module.c"
         NJS_SRCS="$NJS_SRCS $ngx_addon_dir/../external/qjs_webcrypto_module.c"
     fi
 
-    echo " enabled webcrypto module"
+    echo " enabled crypto and webcrypto modules"
 fi
 
 if [ $NJS_LIBXSLT != NO ]; then
