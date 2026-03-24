@@ -46,6 +46,37 @@
 #endif
 
 
+#if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
+#define njs_hmac_ctx_new()       HMAC_CTX_new()
+#define njs_hmac_ctx_free(_ctx)  HMAC_CTX_free(_ctx)
+#else
+
+njs_inline HMAC_CTX *
+njs_hmac_ctx_new(void)
+{
+    HMAC_CTX  *ctx;
+
+    ctx = OPENSSL_malloc(sizeof(HMAC_CTX));
+    if (ctx != NULL) {
+        HMAC_CTX_init(ctx);
+    }
+
+    return ctx;
+}
+
+
+njs_inline void
+njs_hmac_ctx_free(HMAC_CTX *ctx)
+{
+    if (ctx != NULL) {
+        HMAC_CTX_cleanup(ctx);
+        OPENSSL_free(ctx);
+    }
+}
+
+#endif
+
+
 #define njs_bio_new_mem_buf(b, len) BIO_new_mem_buf((void *) b, len)
 
 
