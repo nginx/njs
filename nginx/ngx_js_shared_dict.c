@@ -128,7 +128,7 @@ static ngx_int_t ngx_js_dict_copy_value_locked(njs_vm_t *vm,
     ngx_js_dict_t *dict, ngx_js_dict_node_t *node, njs_value_t *retval);
 
 static void ngx_js_dict_expire(ngx_js_dict_t *dict, ngx_msec_t now);
-static void ngx_js_dict_evict(ngx_js_dict_t *dict, ngx_int_t count);
+static ngx_uint_t ngx_js_dict_evict(ngx_js_dict_t *dict, ngx_uint_t count);
 
 static njs_int_t ngx_js_dict_shared_error_name(njs_vm_t *vm,
     njs_object_prop_t *prop, uint32_t unused, njs_value_t *value,
@@ -1371,12 +1371,24 @@ ngx_js_dict_alloc(ngx_js_dict_t *dict, size_t n)
 {
     void  *p;
 
-    dict->shpool->log_nomem = !dict->evict;
+    if (!dict->evict) {
+        return ngx_slab_alloc_locked(dict->shpool, n);
+    }
+
+    dict->shpool->log_nomem = 0;
     p = ngx_slab_alloc_locked(dict->shpool, n);
+
+    while (p == NULL) {
+        if (ngx_js_dict_evict(dict, 16) == 0) {
+            break;
+        }
+
+        p = ngx_slab_alloc_locked(dict->shpool, n);
+    }
+
     dict->shpool->log_nomem = 1;
 
-    if (p == NULL && dict->evict) {
-        ngx_js_dict_evict(dict, 16);
+    if (p == NULL) {
         p = ngx_slab_alloc_locked(dict->shpool, n);
     }
 
@@ -1784,9 +1796,10 @@ ngx_js_dict_expire(ngx_js_dict_t *dict, ngx_msec_t now)
 }
 
 
-static void
-ngx_js_dict_evict(ngx_js_dict_t *dict, ngx_int_t count)
+static ngx_uint_t
+ngx_js_dict_evict(ngx_js_dict_t *dict, ngx_uint_t count)
 {
+    ngx_uint_t           evicted;
     ngx_rbtree_t        *rbtree;
     ngx_rbtree_node_t   *rn, *next;
     ngx_js_dict_node_t  *node;
@@ -1794,15 +1807,17 @@ ngx_js_dict_evict(ngx_js_dict_t *dict, ngx_int_t count)
     rbtree = &dict->sh->rbtree_expire;
 
     if (rbtree->root == rbtree->sentinel) {
-        return;
+        return 0;
     }
+
+    evicted = 0;
 
     for (rn = ngx_rbtree_min(rbtree->root, rbtree->sentinel);
          rn != NULL;
          rn = next)
     {
         if (count-- == 0) {
-            return;
+            return evicted;
         }
 
         node = (ngx_js_dict_node_t *)
@@ -1815,7 +1830,11 @@ ngx_js_dict_evict(ngx_js_dict_t *dict, ngx_int_t count)
         ngx_rbtree_delete(&dict->sh->rbtree, (ngx_rbtree_node_t *) node);
 
         ngx_js_dict_node_free(dict, node);
+
+        evicted++;
     }
+
+    return evicted;
 }
 
 

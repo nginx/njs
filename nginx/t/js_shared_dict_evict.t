@@ -51,6 +51,10 @@ http {
         location /no_self_evict {
             js_content test.no_self_evict;
         }
+
+        location /cross_slab_class {
+            js_content test.cross_slab_class;
+        }
     }
 }
 
@@ -110,12 +114,38 @@ $t->write_file('test.js', <<'EOF');
         r.return(200, 'FILLED:' + elems);
     }
 
-    export default { stress, no_self_evict };
+    function cross_slab_class(r) {
+        var dict = ngx.shared.stress;
+        var v = 'x'.repeat(16);
+
+        /* Calibrate: find how many tiny entries fit. */
+        dict.clear();
+        dict.set('probe', v);
+
+        var elems = 0;
+        while (dict.has('probe')) {
+            dict.set('s_' + elems++, v);
+        }
+
+        /* Rebuild at exact capacity with tiny entries. */
+        dict.clear();
+        for (var i = 0; i < elems; i++) {
+            dict.set('s_' + i, v);
+        }
+
+        /* Check that the zone can evict enough entries to fit a big one. */
+
+        dict.set('big', 'y'.repeat(2048));
+
+        r.return(200, 'FILLED:' + elems);
+    }
+
+    export default { stress, no_self_evict, cross_slab_class };
 EOF
 
 $t->try_run('no js_shared_dict_zone');
 
-$t->plan(6);
+$t->plan(7);
 
 ###############################################################################
 
@@ -130,5 +160,8 @@ my $update_resp = http_get('/no_self_evict');
 like($update_resp, qr/FILLED:/, 'evict update: zone filled');
 unlike($t->read_file('error.log'), qr/is already free/,
 	'evict update: no double-free in error log');
+
+like(http_get('/cross_slab_class'), qr/FILLED:/,
+	'evict cross slab class: large alloc after small entries');
 
 ###############################################################################
