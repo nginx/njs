@@ -841,13 +841,14 @@ njs_js_ext_shared_dict_keys(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    ngx_rwlock_rlock(&dict->sh->rwlock);
+    now = 0;
 
     if (dict->timeout) {
         tp = ngx_timeofday();
         now = tp->sec * 1000 + tp->msec;
-        ngx_js_dict_expire(dict, now);
     }
+
+    ngx_rwlock_rlock(&dict->sh->rwlock);
 
     rbtree = &dict->sh->rbtree;
 
@@ -859,11 +860,15 @@ njs_js_ext_shared_dict_keys(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
          rn != NULL;
          rn = ngx_rbtree_next(rbtree, rn))
     {
+        node = (ngx_js_dict_node_t *) rn;
+
+        if (dict->timeout && now >= node->expire.key) {
+            continue;
+        }
+
         if (max_count-- == 0) {
             break;
         }
-
-        node = (ngx_js_dict_node_t *) rn;
 
         value = njs_vm_array_push(vm, retval);
         if (value == NULL) {
@@ -1011,13 +1016,14 @@ njs_js_ext_shared_dict_items(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    ngx_rwlock_rlock(&dict->sh->rwlock);
+    now = 0;
 
     if (dict->timeout) {
         tp = ngx_timeofday();
         now = tp->sec * 1000 + tp->msec;
-        ngx_js_dict_expire(dict, now);
     }
+
+    ngx_rwlock_rlock(&dict->sh->rwlock);
 
     rbtree = &dict->sh->rbtree;
 
@@ -1029,11 +1035,15 @@ njs_js_ext_shared_dict_items(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
          rn != NULL;
          rn = ngx_rbtree_next(rbtree, rn))
     {
+        node = (ngx_js_dict_node_t *) rn;
+
+        if (dict->timeout && now >= node->expire.key) {
+            continue;
+        }
+
         if (max_count-- == 0) {
             break;
         }
-
-        node = (ngx_js_dict_node_t *) rn;
 
         kv = njs_vm_array_push(vm, retval);
         if (kv == NULL) {
@@ -1210,13 +1220,14 @@ static njs_int_t
 njs_js_ext_shared_dict_size(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
 {
-    njs_int_t           items;
-    ngx_msec_t          now;
-    ngx_time_t         *tp;
-    ngx_rbtree_t       *rbtree;
-    ngx_js_dict_t      *dict;
-    ngx_shm_zone_t     *shm_zone;
-    ngx_rbtree_node_t  *rn;
+    njs_int_t            items;
+    ngx_msec_t           now;
+    ngx_time_t          *tp;
+    ngx_rbtree_t        *rbtree;
+    ngx_js_dict_t       *dict;
+    ngx_shm_zone_t      *shm_zone;
+    ngx_rbtree_node_t   *rn;
+    ngx_js_dict_node_t  *node;
 
     shm_zone = njs_vm_external(vm, ngx_js_shared_dict_proto_id,
                                njs_argument(args, 0));
@@ -1227,13 +1238,14 @@ njs_js_ext_shared_dict_size(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     dict = shm_zone->data;
 
-    ngx_rwlock_rlock(&dict->sh->rwlock);
+    now = 0;
 
     if (dict->timeout) {
         tp = ngx_timeofday();
         now = tp->sec * 1000 + tp->msec;
-        ngx_js_dict_expire(dict, now);
     }
+
+    ngx_rwlock_rlock(&dict->sh->rwlock);
 
     rbtree = &dict->sh->rbtree;
 
@@ -1249,6 +1261,12 @@ njs_js_ext_shared_dict_size(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
          rn != NULL;
          rn = ngx_rbtree_next(rbtree, rn))
     {
+        node = (ngx_js_dict_node_t *) rn;
+
+        if (dict->timeout && now >= node->expire.key) {
+            continue;
+        }
+
         items++;
     }
 
@@ -3528,13 +3546,14 @@ ngx_qjs_ext_shared_dict_items(JSContext *cx, JSValueConst this_val,
 
     rbtree = &dict->sh->rbtree;
 
-    ngx_rwlock_rlock(&dict->sh->rwlock);
+    now = 0;
 
     if (dict->timeout) {
         tp = ngx_timeofday();
         now = tp->sec * 1000 + tp->msec;
-        ngx_js_dict_expire(dict, now);
     }
+
+    ngx_rwlock_rlock(&dict->sh->rwlock);
 
     if (rbtree->root == rbtree->sentinel) {
         ngx_rwlock_unlock(&dict->sh->rwlock);
@@ -3553,11 +3572,15 @@ ngx_qjs_ext_shared_dict_items(JSContext *cx, JSValueConst this_val,
          rn != NULL;
          rn = ngx_rbtree_next(rbtree, rn))
     {
+        node = (ngx_js_dict_node_t *) rn;
+
+        if (dict->timeout && now >= node->expire.key) {
+            continue;
+        }
+
         if (max_count-- == 0) {
             break;
         }
-
-        node = (ngx_js_dict_node_t *) rn;
 
         kv = JS_NewArray(cx);
         if (JS_IsException(kv)) {
@@ -3638,13 +3661,14 @@ ngx_qjs_ext_shared_dict_keys(JSContext *cx, JSValueConst this_val, int argc,
 
     rbtree = &dict->sh->rbtree;
 
-    ngx_rwlock_rlock(&dict->sh->rwlock);
+    now = 0;
 
     if (dict->timeout) {
         tp = ngx_timeofday();
         now = tp->sec * 1000 + tp->msec;
-        ngx_js_dict_expire(dict, now);
     }
+
+    ngx_rwlock_rlock(&dict->sh->rwlock);
 
     if (rbtree->root == rbtree->sentinel) {
         ngx_rwlock_unlock(&dict->sh->rwlock);
@@ -3663,11 +3687,15 @@ ngx_qjs_ext_shared_dict_keys(JSContext *cx, JSValueConst this_val, int argc,
          rn != NULL;
          rn = ngx_rbtree_next(rbtree, rn))
     {
+        node = (ngx_js_dict_node_t *) rn;
+
+        if (dict->timeout && now >= node->expire.key) {
+            continue;
+        }
+
         if (max_count-- == 0) {
             break;
         }
-
-        node = (ngx_js_dict_node_t *) rn;
 
         key = JS_NewStringLen(cx, (const char *) node->sn.str.data,
                               node->sn.str.len);
@@ -3815,13 +3843,14 @@ static JSValue
 ngx_qjs_ext_shared_dict_size(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv)
 {
-    njs_int_t           items;
-    ngx_msec_t          now;
-    ngx_time_t         *tp;
-    ngx_rbtree_t       *rbtree;
-    ngx_js_dict_t      *dict;
-    ngx_shm_zone_t     *shm_zone;
-    ngx_rbtree_node_t  *rn;
+    njs_int_t            items;
+    ngx_msec_t           now;
+    ngx_time_t          *tp;
+    ngx_rbtree_t        *rbtree;
+    ngx_js_dict_t       *dict;
+    ngx_shm_zone_t      *shm_zone;
+    ngx_rbtree_node_t   *rn;
+    ngx_js_dict_node_t  *node;
 
     shm_zone = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_SHARED_DICT);
     if (shm_zone == NULL) {
@@ -3830,13 +3859,14 @@ ngx_qjs_ext_shared_dict_size(JSContext *cx, JSValueConst this_val,
 
     dict = shm_zone->data;
 
-    ngx_rwlock_rlock(&dict->sh->rwlock);
+    now = 0;
 
     if (dict->timeout) {
         tp = ngx_timeofday();
         now = tp->sec * 1000 + tp->msec;
-        ngx_js_dict_expire(dict, now);
     }
+
+    ngx_rwlock_rlock(&dict->sh->rwlock);
 
     rbtree = &dict->sh->rbtree;
 
@@ -3851,6 +3881,12 @@ ngx_qjs_ext_shared_dict_size(JSContext *cx, JSValueConst this_val,
          rn != NULL;
          rn = ngx_rbtree_next(rbtree, rn))
     {
+        node = (ngx_js_dict_node_t *) rn;
+
+        if (dict->timeout && now >= node->expire.key) {
+            continue;
+        }
+
         items++;
     }
 
