@@ -1539,11 +1539,26 @@ ngx_js_dict_update(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_js_dict_node_t *node,
     u_char     *p;
     njs_str_t   string;
 
+    if (dict->timeout) {
+        /*
+         * Remove the node from the expire tree before allocating
+         * memory for the new value.  This serves two purposes:
+         * it prevents ngx_js_dict_evict() from freeing this node
+         * during allocation, and it allows the node to be reinserted
+         * with the updated expiry time below.
+         */
+        ngx_rbtree_delete(&dict->sh->rbtree_expire, &node->expire);
+    }
+
     if (dict->type == NGX_JS_DICT_TYPE_STRING) {
         njs_value_string_get(vm, value, &string);
 
         p = ngx_js_dict_alloc(dict, string.length);
         if (p == NULL) {
+            if (dict->timeout) {
+                ngx_rbtree_insert(&dict->sh->rbtree_expire, &node->expire);
+            }
+
             return NGX_ERROR;
         }
 
@@ -1558,7 +1573,6 @@ ngx_js_dict_update(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_js_dict_node_t *node,
     }
 
     if (dict->timeout) {
-        ngx_rbtree_delete(&dict->sh->rbtree_expire, &node->expire);
         node->expire.key = now + timeout;
         ngx_rbtree_insert(&dict->sh->rbtree_expire, &node->expire);
     }
@@ -4174,15 +4188,35 @@ ngx_qjs_dict_update(JSContext *cx, ngx_js_dict_t *dict,
     u_char     *p;
     ngx_str_t   string;
 
+    if (dict->timeout) {
+        /*
+         * Remove the node from the expire tree before allocating
+         * memory for the new value.  This serves two purposes:
+         * it prevents ngx_js_dict_evict() from freeing this node
+         * during allocation, and it allows the node to be reinserted
+         * with the updated expiry time below.
+         */
+        ngx_rbtree_delete(&dict->sh->rbtree_expire, &node->expire);
+    }
+
     if (dict->type == NGX_JS_DICT_TYPE_STRING) {
         string.data = (u_char *) JS_ToCStringLen(cx, &string.len, value);
         if (string.data == NULL) {
+            if (dict->timeout) {
+                ngx_rbtree_insert(&dict->sh->rbtree_expire, &node->expire);
+            }
+
             return NGX_ERROR;
         }
 
         p = ngx_js_dict_alloc(dict, string.len);
         if (p == NULL) {
             JS_FreeCString(cx, (char *) string.data);
+
+            if (dict->timeout) {
+                ngx_rbtree_insert(&dict->sh->rbtree_expire, &node->expire);
+            }
+
             return NGX_ERROR;
         }
 
@@ -4196,12 +4230,15 @@ ngx_qjs_dict_update(JSContext *cx, ngx_js_dict_t *dict,
 
     } else {
         if (JS_ToFloat64(cx, &node->value.number, value) < 0) {
+            if (dict->timeout) {
+                ngx_rbtree_insert(&dict->sh->rbtree_expire, &node->expire);
+            }
+
             return NGX_ERROR;
         }
     }
 
     if (dict->timeout) {
-        ngx_rbtree_delete(&dict->sh->rbtree_expire, &node->expire);
         node->expire.key = now + timeout;
         ngx_rbtree_insert(&dict->sh->rbtree_expire, &node->expire);
     }
