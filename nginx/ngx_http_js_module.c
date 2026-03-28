@@ -17,6 +17,7 @@ typedef struct {
 
     ngx_http_complex_value_t  fetch_proxy_cv;
 
+    ngx_str_t              access;
     ngx_str_t              content;
     ngx_str_t              header_filter;
     ngx_str_t              body_filter;
@@ -73,6 +74,8 @@ struct ngx_http_js_ctx_s {
                                         ngx_chain_t *in);
 
     ngx_js_periodic_t     *periodic;
+
+    unsigned               in_progress:1;
 };
 
 
@@ -111,6 +114,8 @@ typedef struct {
 } ngx_http_js_entry_t;
 
 
+static ngx_int_t ngx_http_js_access_handler(ngx_http_request_t *r);
+static void ngx_http_js_access_write_event_handler(ngx_http_request_t *r);
 static ngx_int_t ngx_http_js_content_handler(ngx_http_request_t *r);
 static void ngx_http_js_content_event_handler(ngx_http_request_t *r);
 static void ngx_http_js_content_write_event_handler(ngx_http_request_t *r);
@@ -378,6 +383,8 @@ static char *ngx_http_js_periodic(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 static char *ngx_http_js_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 static char *ngx_http_js_var(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
+static char *ngx_http_js_access(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf);
 static char *ngx_http_js_content(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 static char *ngx_http_js_shared_dict_zone(ngx_conf_t *cf, ngx_command_t *cmd,
@@ -478,6 +485,13 @@ static ngx_command_t  ngx_http_js_commands[] = {
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE12,
       ngx_http_js_var,
       0,
+      0,
+      NULL },
+
+    { ngx_string("js_access"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+      ngx_http_js_access,
+      NGX_HTTP_LOC_CONF_OFFSET,
       0,
       NULL },
 
@@ -1240,6 +1254,85 @@ qjs_module_t *njs_http_qjs_addon_modules[] = {
 
 
 #endif
+
+
+static ngx_int_t
+ngx_http_js_access_handler(ngx_http_request_t *r)
+{
+    ngx_int_t                rc;
+    ngx_http_js_ctx_t       *ctx;
+    ngx_http_js_loc_conf_t  *jlcf;
+
+    jlcf = ngx_http_get_module_loc_conf(r, ngx_http_js_module);
+
+    if (jlcf->access.len == 0) {
+        return NGX_DECLINED;
+    }
+
+    if (r != r->main) {
+        return NGX_DECLINED;
+    }
+
+    rc = ngx_http_js_init_vm(r, ngx_http_js_request_proto_id);
+    if (rc != NGX_OK) {
+        return rc;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    if (ctx->in_progress) {
+        if (ngx_js_ctx_pending(ctx)) {
+            return NGX_AGAIN;
+        }
+
+        ctx->in_progress = 0;
+
+        if (ctx->rejected_promises != NULL
+            && ctx->rejected_promises->items > 0)
+        {
+            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        }
+
+        return ctx->status;
+    }
+
+    ctx->status = NGX_DECLINED;
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "http js access handler \"%V\"", &jlcf->access);
+
+    rc = ctx->engine->call((ngx_js_ctx_t *) ctx, &jlcf->access, &ctx->args[0],
+                           1);
+
+    if (rc == NGX_ERROR) {
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    if (ngx_js_ctx_pending(ctx)) {
+        ctx->in_progress = 1;
+        r->write_event_handler = ngx_http_js_access_write_event_handler;
+        return NGX_AGAIN;
+    }
+
+    return ctx->status;
+}
+
+
+static void
+ngx_http_js_access_write_event_handler(ngx_http_request_t *r)
+{
+    ngx_http_js_ctx_t  *ctx;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "http js access write event handler");
+
+    if (!ngx_js_ctx_pending(ctx)) {
+        ngx_http_core_run_phases(r);
+        return;
+    }
+}
 
 
 static ngx_int_t
@@ -7804,11 +7897,23 @@ ngx_http_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf)
 static ngx_int_t
 ngx_http_js_init(ngx_conf_t *cf)
 {
+    ngx_http_handler_pt        *h;
+    ngx_http_core_main_conf_t  *cmcf;
+
     ngx_http_next_header_filter = ngx_http_top_header_filter;
     ngx_http_top_header_filter = ngx_http_js_header_filter;
 
     ngx_http_next_body_filter = ngx_http_top_body_filter;
     ngx_http_top_body_filter = ngx_http_js_body_filter;
+
+    cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
+
+    h = ngx_array_push(&cmcf->phases[NGX_HTTP_ACCESS_PHASE].handlers);
+    if (h == NULL) {
+        return NGX_ERROR;
+    }
+
+    *h = ngx_http_js_access_handler;
 
     return NGX_OK;
 }
@@ -8188,6 +8293,24 @@ ngx_http_js_var(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
 
 static char *
+ngx_http_js_access(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+{
+    ngx_http_js_loc_conf_t *jlcf = conf;
+
+    ngx_str_t  *value;
+
+    if (jlcf->access.data) {
+        return "is duplicate";
+    }
+
+    value = cf->args->elts;
+    jlcf->access = value[1];
+
+    return NGX_CONF_OK;
+}
+
+
+static char *
 ngx_http_js_content(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
     ngx_http_js_loc_conf_t *jlcf = conf;
@@ -8306,6 +8429,7 @@ ngx_http_js_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_http_js_loc_conf_t *prev = parent;
     ngx_http_js_loc_conf_t *conf = child;
 
+    ngx_conf_merge_str_value(conf->access, prev->access, "");
     ngx_conf_merge_str_value(conf->content, prev->content, "");
     ngx_conf_merge_str_value(conf->header_filter, prev->header_filter, "");
     ngx_conf_merge_str_value(conf->body_filter, prev->body_filter, "");
@@ -8316,6 +8440,15 @@ ngx_http_js_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
         != NGX_CONF_OK)
     {
         return NGX_CONF_ERROR;
+    }
+
+    if (conf->access.len != 0) {
+        if (conf->imports == NGX_CONF_UNSET_PTR) {
+            ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
+                          "no imports defined for \"js_access\" \"%V\", "
+                          "use \"js_import\" directive", &conf->access);
+            return NGX_CONF_ERROR;
+        }
     }
 
     if (conf->content.len != 0) {
