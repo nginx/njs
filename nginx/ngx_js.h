@@ -32,6 +32,10 @@
 #define NGX_JS_BOOLEAN      8
 #define NGX_JS_NUMBER       16
 
+#define NGX_JS_BODY_ARRAY_BUFFER   0
+#define NGX_JS_BODY_JSON           1
+#define NGX_JS_BODY_TEXT           2
+
 #define NGX_JS_BOOL_FALSE   0
 #define NGX_JS_BOOL_TRUE    1
 #define NGX_JS_BOOL_UNSET   2
