@@ -382,6 +382,37 @@ interface NginxHTTPRequest {
      */
     readonly requestBody?: string;
     /**
+     * Reads the client request body and returns a Promise resolving
+     * with the body as a string.
+     *
+     * Available in js_access and js_content directives.  The request body
+     * size is limited by client_max_body_size.
+     *
+     * @returns A Promise that resolves with the request body as a string.
+     */
+    readRequestText(): Promise<string>;
+    /**
+     * Reads the client request body and returns a Promise resolving
+     * with the body as an ArrayBuffer.
+     *
+     * Available in js_access and js_content directives.  The request body
+     * size is limited by client_max_body_size.
+     *
+     * @returns A Promise that resolves with the request body
+     *   as an ArrayBuffer.
+     */
+    readRequestArrayBuffer(): Promise<ArrayBuffer>;
+    /**
+     * Reads the client request body and returns a Promise resolving
+     * with the body parsed as JSON.
+     *
+     * Available in js_access and js_content directives.  The request body
+     * size is limited by client_max_body_size.
+     *
+     * @returns A Promise that resolves with the parsed JSON value.
+     */
+    readRequestJSON(): Promise<any>;
+    /**
      * Subrequest response body. The size of response body is limited by
      * the subrequest_output_buffer_size directive.
      *
