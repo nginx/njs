@@ -415,6 +415,13 @@ interface NginxHTTPRequest {
      */
     return(status: number, body?: NjsStringOrBuffer): void;
     /**
+     * Signals that the handler has no opinion about whether access
+     * should be allowed or denied.  Useful with the ``satisfy any``
+     * directive: without this call the handler implicitly allows
+     * access (returns NGX_OK to the access phase checker).
+     */
+    decline(): void;
+    /**
      * Sends a part of the response body to the client.
      */
     send(part: NjsStringOrBuffer): void;
