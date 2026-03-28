@@ -77,6 +77,50 @@ struct ngx_http_js_ctx_s {
     ngx_js_periodic_t     *periodic;
 
     unsigned               in_progress:1;
+
+    /*
+     * Body-read ownership state for the js_access phase handler.
+     *
+     * readRequest*() cannot call ngx_http_read_client_request_body()
+     * from the JS native directly.  The phase handler must choose between
+     * NGX_AGAIN ("I still own the request") and NGX_DONE ("I finalized
+     * it myself"), but which one is correct depends on whether the body
+     * read completes synchronously or goes async -- and that is only
+     * known after the call returns.
+     *
+     * In the async case the body reader takes over r->read_event_handler
+     * and may call ngx_http_finalize_request() on I/O errors without
+     * invoking our post_handler.  If the phase handler had returned
+     * NGX_AGAIN, both the phase engine and the body reader would own
+     * the request, causing a hang on errors such as chunked 413.
+     *
+     *   IDLE         no body read requested (initial and terminal state).
+     *   DEFERRED     JS called readRequest*(); the access handler
+     *                will start the read after engine->call() returns.
+     *   IN_PROGRESS  ngx_http_read_client_request_body() returned
+     *                NGX_AGAIN; request ownership transferred to the
+     *                body reader via NGX_DONE.  access_body_done
+     *                callback resumes phases on completion.
+     *
+     * IDLE -> DEFERRED -> IDLE                  (sync completion or error)
+     * IDLE -> DEFERRED -> IN_PROGRESS -> IDLE   (async completion)
+     */
+#define NGX_HTTP_JS_BODY_READ_IDLE 0
+#define NGX_HTTP_JS_BODY_READ_DEFERRED 1
+#define NGX_HTTP_JS_BODY_READ_IN_PROGRESS 2
+    unsigned               body_read_state:2;
+
+    /*
+     * Collected request body as a contiguous buffer.
+     * Shared by both synchronous property getters (requestText,
+     * requestBuffer) and async readRequest*() methods.
+     */
+    unsigned               body_read_nul:1;
+    u_char                *body_read_data;
+    size_t                 body_read_len;
+
+    /* Pending promise/event for deferred body reads. */
+    void                  *body_read_event;
 };
 
 
@@ -129,6 +173,25 @@ static ngx_int_t ngx_http_js_variable_var(ngx_http_request_t *r,
     ngx_http_variable_value_t *v, uintptr_t data);
 static ngx_int_t ngx_http_js_init_vm(ngx_http_request_t *r, njs_int_t proto_id);
 static void ngx_http_js_cleanup_ctx(void *data);
+static void ngx_http_js_body_read_abort(ngx_http_js_ctx_t *ctx);
+static ngx_int_t ngx_http_js_collect_body(ngx_http_request_t *r,
+    ngx_http_js_ctx_t *ctx);
+static void ngx_http_js_access_body_finalize(ngx_http_request_t *r,
+    ngx_http_js_ctx_t *ctx, ngx_int_t rc);
+static void ngx_http_js_access_body_done(ngx_http_request_t *r);
+static ngx_int_t ngx_http_js_body_resolve(ngx_http_js_ctx_t *ctx,
+    void *event);
+
+static njs_int_t ngx_http_js_ext_read_request_body(njs_vm_t *vm,
+    njs_value_t *args, njs_uint_t nargs, njs_index_t magic,
+    njs_value_t *retval);
+#if (NJS_HAVE_QUICKJS)
+static JSValue ngx_http_qjs_ext_read_request_body(JSContext *cx,
+    JSValueConst this_val, int argc, JSValueConst *argv, int magic);
+static ngx_int_t ngx_http_qjs_body_resolve(ngx_http_js_ctx_t *ctx,
+    void *event);
+static void ngx_http_js_read_body_event_destructor(ngx_qjs_event_t *event);
+#endif
 
 static njs_int_t ngx_http_js_ext_keys_header(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *keys, ngx_list_t *headers);
@@ -1001,6 +1064,42 @@ static njs_external_t  ngx_http_js_ext_request[] = {
 
     {
         .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("readRequestArrayBuffer"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_http_js_ext_read_request_body,
+            .magic8 = NGX_JS_BODY_ARRAY_BUFFER,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("readRequestJSON"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_http_js_ext_read_request_body,
+            .magic8 = NGX_JS_BODY_JSON,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("readRequestText"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_http_js_ext_read_request_body,
+            .magic8 = NGX_JS_BODY_TEXT,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
         .name.string = njs_str("subrequest"),
         .writable = 1,
         .configurable = 1,
@@ -1168,6 +1267,13 @@ static const JSCFunctionListEntry ngx_http_qjs_ext_request[] = {
     JS_CFUNC_DEF("setReturnValue", 1, ngx_http_qjs_ext_set_return_value),
     JS_CGETSET_DEF("status", ngx_http_qjs_ext_status_get,
                    ngx_http_qjs_ext_status_set),
+    JS_CFUNC_MAGIC_DEF("readRequestArrayBuffer", 0,
+                       ngx_http_qjs_ext_read_request_body,
+                       NGX_JS_BODY_ARRAY_BUFFER),
+    JS_CFUNC_MAGIC_DEF("readRequestJSON", 0,
+                       ngx_http_qjs_ext_read_request_body, NGX_JS_BODY_JSON),
+    JS_CFUNC_MAGIC_DEF("readRequestText", 0,
+                       ngx_http_qjs_ext_read_request_body, NGX_JS_BODY_TEXT),
     JS_CFUNC_DEF("subrequest", 3, ngx_http_qjs_ext_subrequest),
     JS_CGETSET_MAGIC_DEF("uri", ngx_http_qjs_ext_string, NULL,
                          offsetof(ngx_http_request_t, uri)),
@@ -1292,6 +1398,38 @@ ngx_http_js_access_handler(ngx_http_request_t *r)
     if (rc == NGX_ERROR) {
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
+
+    /* JS called readRequest*(). */
+
+    if (ctx->body_read_state == NGX_HTTP_JS_BODY_READ_DEFERRED) {
+
+        rc = ngx_http_read_client_request_body(r, ngx_http_js_access_body_done);
+
+        if (rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+            ngx_http_js_body_read_abort(ctx);
+            return rc;
+        }
+
+        r->preserve_body = 1;
+
+        if (rc == NGX_OK) {
+            /*
+             * Sync: access_body_done callback already fired, resolved
+             * or rejected the promise.  access_body_finalize() returned
+             * without running posted requests.  Fall through to let
+             * the pending/status check handle the result.
+             */
+            ctx->body_read_state = NGX_HTTP_JS_BODY_READ_IDLE;
+            goto done;
+        }
+
+        ctx->body_read_state = NGX_HTTP_JS_BODY_READ_IN_PROGRESS;
+        ctx->in_progress = 1;
+        ngx_http_finalize_request(r, NGX_DONE);
+        return NGX_DONE;
+    }
+
+done:
 
     if (ngx_js_ctx_pending(ctx)) {
         ctx->in_progress = 1;
@@ -3129,14 +3267,9 @@ ngx_http_js_ext_get_request_body(njs_vm_t *vm, njs_object_prop_t *prop,
     uint32_t unused, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval)
 {
-    u_char              *p, *body;
-    size_t               len;
-    ssize_t              n;
     uint32_t             buffer_type;
-    ngx_buf_t           *buf;
     njs_int_t            ret;
     njs_value_t         *request_body;
-    ngx_chain_t         *cl;
     ngx_http_js_ctx_t   *ctx;
     ngx_http_request_t  *r;
 
@@ -3164,6 +3297,43 @@ ngx_http_js_ext_get_request_body(njs_vm_t *vm, njs_object_prop_t *prop,
         return NJS_DECLINED;
     }
 
+    if (ngx_http_js_collect_body(r, ctx) != NGX_OK) {
+        njs_vm_internal_error(vm, "failed to read request body");
+        return NJS_ERROR;
+    }
+
+    ret = ngx_js_prop(vm, buffer_type, request_body, ctx->body_read_data,
+                      ctx->body_read_len);
+    if (ret != NJS_OK) {
+        return NJS_ERROR;
+    }
+
+    njs_value_assign(retval, request_body);
+
+    return NJS_OK;
+}
+
+
+static ngx_int_t
+ngx_http_js_collect_body(ngx_http_request_t *r, ngx_http_js_ctx_t *ctx)
+{
+    u_char       *p, *body;
+    size_t        len;
+    ssize_t       n;
+    ngx_buf_t    *buf;
+    ngx_chain_t  *cl;
+
+    if (ctx->body_read_data != NULL) {
+        return NGX_OK;
+    }
+
+    if (r->request_body == NULL || r->request_body->bufs == NULL) {
+        ctx->body_read_data = (u_char *) "";
+        ctx->body_read_len = 0;
+        ctx->body_read_nul = 1;
+        return NGX_OK;
+    }
+
     cl = r->request_body->bufs;
     buf = cl->buf;
 
@@ -3172,66 +3342,289 @@ ngx_http_js_ext_get_request_body(njs_vm_t *vm, njs_object_prop_t *prop,
                       "http js reading request body from a temporary file");
 
         if (buf == NULL || !buf->in_file) {
-            njs_vm_internal_error(vm, "cannot find request body");
-            return NJS_ERROR;
+            return NGX_ERROR;
         }
 
         len = buf->file_last - buf->file_pos;
 
-        body = ngx_pnalloc(r->pool, len);
+        body = ngx_pnalloc(r->pool, len + 1);
         if (body == NULL) {
-            njs_vm_memory_error(vm);
-            return NJS_ERROR;
+            return NGX_ERROR;
         }
 
         n = ngx_read_file(buf->file, body, len, buf->file_pos);
         if (n != (ssize_t) len) {
-            njs_vm_internal_error(vm, "failed to read request body");
-            return NJS_ERROR;
+            return NGX_ERROR;
         }
 
-        goto done;
-    }
+        body[len] = '\0';
+        ctx->body_read_nul = 1;
 
-    if (cl->next == NULL) {
+    } else if (cl->next == NULL) {
         len = buf->last - buf->pos;
         body = buf->pos;
 
-        goto done;
+    } else {
+        len = buf->last - buf->pos;
+        cl = cl->next;
+
+        for ( /* void */ ; cl; cl = cl->next) {
+            buf = cl->buf;
+            len += buf->last - buf->pos;
+        }
+
+        p = ngx_pnalloc(r->pool, len + 1);
+        if (p == NULL) {
+            return NGX_ERROR;
+        }
+
+        body = p;
+        cl = r->request_body->bufs;
+
+        for ( /* void */ ; cl; cl = cl->next) {
+            buf = cl->buf;
+            p = ngx_cpymem(p, buf->pos, buf->last - buf->pos);
+        }
+
+        *p = '\0';
+        ctx->body_read_nul = 1;
     }
 
-    len = buf->last - buf->pos;
-    cl = cl->next;
+    ctx->body_read_data = body;
+    ctx->body_read_len = len;
 
-    for ( /* void */ ; cl; cl = cl->next) {
-        buf = cl->buf;
-        len += buf->last - buf->pos;
+    return NGX_OK;
+}
+
+
+static void
+ngx_http_js_body_read_abort(ngx_http_js_ctx_t *ctx)
+{
+    if (ctx->body_read_event != NULL) {
+#if (NJS_HAVE_QUICKJS)
+        if (ctx->engine->type == NGX_ENGINE_QJS) {
+            ngx_js_del_event(ctx, (ngx_qjs_event_t *) ctx->body_read_event);
+        } else
+#endif
+        {
+            ngx_js_del_event(ctx, (ngx_js_event_t *) ctx->body_read_event);
+        }
+
+        ctx->body_read_event = NULL;
     }
 
-    p = ngx_pnalloc(r->pool, len);
-    if (p == NULL) {
+    ctx->body_read_state = NGX_HTTP_JS_BODY_READ_IDLE;
+}
+
+
+static njs_int_t
+ngx_http_js_body_to_value(njs_vm_t *vm, ngx_http_js_ctx_t *ctx,
+    ngx_uint_t type, njs_value_t *retval)
+{
+    njs_int_t           ret;
+    njs_opaque_value_t  arg;
+
+    switch (type) {
+    case NGX_JS_BODY_ARRAY_BUFFER:
+        return njs_vm_value_array_buffer_set(vm, retval,
+                                             ctx->body_read_data,
+                                             ctx->body_read_len);
+
+    case NGX_JS_BODY_JSON:
+        ret = njs_vm_value_string_create(vm, njs_value_arg(&arg),
+                                         ctx->body_read_data,
+                                         ctx->body_read_len);
+        if (ret != NJS_OK) {
+            return NJS_ERROR;
+        }
+
+        return njs_vm_json_parse(vm, njs_value_arg(&arg), 1, retval);
+
+    case NGX_JS_BODY_TEXT:
+    default:
+        return njs_vm_value_string_create(vm, retval,
+                                          ctx->body_read_data,
+                                          ctx->body_read_len);
+    }
+}
+
+
+static void
+ngx_http_js_access_body_finalize(ngx_http_request_t *r, ngx_http_js_ctx_t *ctx,
+    ngx_int_t rc)
+{
+    switch (ctx->body_read_state) {
+    case NGX_HTTP_JS_BODY_READ_IN_PROGRESS:
+        ctx->body_read_state = NGX_HTTP_JS_BODY_READ_IDLE;
+
+        if (ngx_js_ctx_pending(ctx)) {
+            r->write_event_handler = ngx_http_js_access_write_event_handler;
+            return;
+        }
+
+        r->write_event_handler = ngx_http_core_run_phases;
+        ngx_http_core_run_phases(r);
+        break;
+
+    case NGX_HTTP_JS_BODY_READ_DEFERRED:
+        /*
+         * Sync body read completion from the access handler.
+         * The promise is resolved/rejected but the access handler
+         * is still on the call stack -- do not run posted requests
+         * or resume phases here; the access handler will do it.
+         */
+        break;
+
+    case NGX_HTTP_JS_BODY_READ_IDLE:
+    default:
+        ngx_http_js_event_finalize(r, rc);
+    }
+}
+
+
+static ngx_int_t
+ngx_http_js_body_resolve(ngx_http_js_ctx_t *ctx, void *event)
+{
+    njs_vm_t            *vm;
+    njs_int_t            rc;
+    ngx_js_event_t      *ev;
+    njs_opaque_value_t   result;
+
+    ev = event;
+    vm = ctx->engine->u.njs.vm;
+
+    rc = ngx_http_js_body_to_value(vm, ctx, (uintptr_t) ev->data,
+                                   njs_value_arg(&result));
+    if (rc != NJS_OK) {
+        njs_vm_exception_get(vm, njs_value_arg(&result));
+
+        rc = ngx_js_call(vm, njs_value_function(njs_value_arg(&ev->args[1])),
+                         &result, 1);
+
+        ngx_js_del_event(ctx, ev);
+        return rc;
+    }
+
+    rc = ngx_js_call(vm, njs_value_function(njs_value_arg(&ev->function)),
+                     &result, 1);
+
+    ngx_js_del_event(ctx, ev);
+
+    return rc;
+}
+
+
+static void
+ngx_http_js_access_body_done(ngx_http_request_t *r)
+{
+    ngx_int_t           rc;
+    ngx_http_js_ctx_t  *ctx;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "http js body read done");
+
+    /*
+     * ngx_http_read_client_request_body() incremented count.
+     * For the IN_PROGRESS (async) path, ngx_http_finalize_request(NGX_DONE)
+     * already consumed it; for the DEFERRED (sync) path, we consume it here.
+     */
+    if (ctx->body_read_state == NGX_HTTP_JS_BODY_READ_DEFERRED) {
+        r->main->count--;
+    }
+
+    if (ctx->body_read_event == NULL) {
+        return;
+    }
+
+    if (ngx_http_js_collect_body(r, ctx) != NGX_OK) {
+        ngx_http_js_body_read_abort(ctx);
+        ngx_http_js_access_body_finalize(r, ctx, NGX_ERROR);
+        return;
+    }
+
+#if (NJS_HAVE_QUICKJS)
+    if (ctx->engine->type == NGX_ENGINE_QJS) {
+        rc = ngx_http_qjs_body_resolve(ctx, ctx->body_read_event);
+    } else
+#endif
+    {
+        rc = ngx_http_js_body_resolve(ctx, ctx->body_read_event);
+    }
+
+    ctx->body_read_event = NULL;
+
+    ngx_http_js_access_body_finalize(r, ctx, rc);
+}
+
+
+static njs_int_t
+ngx_http_js_ext_read_request_body(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t magic, njs_value_t *retval)
+{
+    ngx_int_t            rc;
+    ngx_js_event_t      *event;
+    ngx_http_js_ctx_t   *ctx;
+    ngx_http_request_t  *r;
+
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id,
+                        njs_argument(args, 0));
+    if (r == NULL) {
+        njs_vm_error(vm, "\"this\" is not an external");
+        return NJS_ERROR;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    event = njs_mp_zalloc(njs_vm_memory_pool(vm),
+                          sizeof(ngx_js_event_t)
+                          + sizeof(njs_opaque_value_t) * 2);
+    if (njs_slow_path(event == NULL)) {
         njs_vm_memory_error(vm);
         return NJS_ERROR;
     }
 
-    body = p;
-    cl = r->request_body->bufs;
-
-    for ( /* void */ ; cl; cl = cl->next) {
-        buf = cl->buf;
-        p = ngx_cpymem(p, buf->pos, buf->last - buf->pos);
+    /*
+     * r->request_body is set by ngx_http_read_client_request_body().
+     * JS only runs after body reading completes, so non-NULL means
+     * the body is available.
+     */
+    if (r->request_body) {
+        goto resolve;
     }
 
-done:
-
-    ret = ngx_js_prop(vm, buffer_type, request_body, body, len);
-    if (ret != NJS_OK) {
+    if (ctx->body_read_event) {
+        njs_vm_error(vm, "request body is already being read");
         return NJS_ERROR;
     }
 
-    njs_value_assign(retval, request_body);
+    event->fd = ctx->event_id++;
+    event->args = (njs_opaque_value_t *) &event[1];
+    event->data = (void *) (uintptr_t) magic;
+
+    rc = njs_vm_promise_create(vm, retval, njs_value_arg(event->args));
+    if (rc != NJS_OK) {
+        return NJS_ERROR;
+    }
+
+    njs_value_assign(&event->function, njs_value_arg(event->args));
+
+    ngx_js_add_event(ctx, event);
+
+    ctx->body_read_event = event;
+    ctx->body_read_state = NGX_HTTP_JS_BODY_READ_DEFERRED;
 
     return NJS_OK;
+
+resolve:
+
+    if (ngx_http_js_collect_body(r, ctx) != NGX_OK) {
+        njs_vm_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    return ngx_http_js_body_to_value(vm, ctx, (ngx_uint_t) magic, retval);
 }
 
 
@@ -5486,14 +5879,10 @@ ngx_http_qjs_ext_response_body(JSContext *cx, JSValueConst this_val, int type)
 static JSValue
 ngx_http_qjs_ext_request_body(JSContext *cx, JSValueConst this_val, int type)
 {
-    u_char                  *p, *data;
-    size_t                   len;
-    ssize_t                  n;
     JSValue                  body;
     uint32_t                 buffer_type;
-    ngx_buf_t               *buf;
-    ngx_chain_t             *cl;
     ngx_http_request_t      *r;
+    ngx_http_js_ctx_t       *ctx;
     ngx_http_qjs_request_t  *req;
 
     req = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_HTTP_REQUEST);
@@ -5517,63 +5906,14 @@ ngx_http_qjs_ext_request_body(JSContext *cx, JSValueConst this_val, int type)
         return JS_UNDEFINED;
     }
 
-    cl = r->request_body->bufs;
-    buf = cl->buf;
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
-    if (r->request_body->temp_file) {
-        ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
-                      "http js reading request body from a temporary file");
-
-        if (buf == NULL || !buf->in_file) {
-            return JS_ThrowInternalError(cx, "cannot find body file");
-        }
-
-        len = buf->file_last - buf->file_pos;
-
-        data = ngx_pnalloc(r->pool, len);
-        if (data == NULL) {
-            return JS_ThrowOutOfMemory(cx);
-        }
-
-        n = ngx_read_file(buf->file, data, len, buf->file_pos);
-        if (n != (ssize_t) len) {
-            return JS_ThrowInternalError(cx, "failed to read request body");
-        }
-
-        goto done;
+    if (ngx_http_js_collect_body(r, ctx) != NGX_OK) {
+        return JS_ThrowInternalError(cx, "failed to read request body");
     }
 
-    if (cl->next == NULL) {
-        len = buf->last - buf->pos;
-        data = buf->pos;
-
-        goto done;
-    }
-
-    len = buf->last - buf->pos;
-    cl = cl->next;
-
-    for ( /* void */ ; cl; cl = cl->next) {
-        buf = cl->buf;
-        len += buf->last - buf->pos;
-    }
-
-    p = ngx_pnalloc(r->pool, len);
-    if (p == NULL) {
-        return JS_ThrowOutOfMemory(cx);
-    }
-
-    data = p;
-    cl = r->request_body->bufs;
-
-    for ( /* void */ ; cl; cl = cl->next) {
-        buf = cl->buf;
-        p = ngx_cpymem(p, buf->pos, buf->last - buf->pos);
-    }
-
-done:
-
-    body = ngx_qjs_prop(cx, buffer_type, data, len);
+    body = ngx_qjs_prop(cx, buffer_type, ctx->body_read_data,
+                        ctx->body_read_len);
     if (JS_IsException(body)) {
         return JS_EXCEPTION;
     }
@@ -5581,6 +5921,155 @@ done:
     req->request_body = body;
 
     return JS_DupValue(cx, req->request_body);
+}
+
+
+static JSValue
+ngx_http_qjs_body_to_value(JSContext *cx, ngx_http_js_ctx_t *ctx,
+    ngx_uint_t type)
+{
+    JSValue      str;
+    const char  *cstr;
+
+    switch (type) {
+    case NGX_JS_BODY_ARRAY_BUFFER:
+        return JS_NewArrayBuffer(cx, ctx->body_read_data,
+                                 ctx->body_read_len, NULL, NULL, 0);
+
+    case NGX_JS_BODY_JSON:
+        if (ctx->body_read_nul) {
+            return JS_ParseJSON(cx, (const char *) ctx->body_read_data,
+                                ctx->body_read_len, "<body>");
+        }
+
+        str = qjs_string_create(cx, ctx->body_read_data,
+                                ctx->body_read_len);
+        if (JS_IsException(str)) {
+            return str;
+        }
+
+        cstr = JS_ToCString(cx, str);
+        JS_FreeValue(cx, str);
+
+        if (cstr == NULL) {
+            return JS_EXCEPTION;
+        }
+
+        str = JS_ParseJSON(cx, cstr, ctx->body_read_len, "<body>");
+        JS_FreeCString(cx, cstr);
+
+        return str;
+
+    case NGX_JS_BODY_TEXT:
+    default:
+        return qjs_string_create(cx, ctx->body_read_data,
+                                 ctx->body_read_len);
+    }
+}
+
+
+static ngx_int_t
+ngx_http_qjs_body_resolve(ngx_http_js_ctx_t *ctx, void *event)
+{
+    JSValue           result;
+    JSContext        *cx;
+    ngx_int_t         rc;
+    ngx_qjs_event_t  *ev;
+
+    ev = event;
+    cx = ctx->engine->u.qjs.ctx;
+
+    result = ngx_http_qjs_body_to_value(cx, ctx, (uintptr_t) ev->data);
+    if (JS_IsException(result)) {
+        result = JS_GetException(cx);
+
+        rc = ngx_qjs_call(cx, ev->args[1], &result, 1);
+
+        JS_FreeValue(cx, result);
+        ngx_js_del_event(ctx, ev);
+        return rc;
+    }
+
+    rc = ngx_qjs_call(cx, ev->function, &result, 1);
+
+    JS_FreeValue(cx, result);
+    ngx_js_del_event(ctx, ev);
+
+    return rc;
+}
+
+
+static JSValue
+ngx_http_qjs_ext_read_request_body(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv, int magic)
+{
+    JSValue                  retval;
+    ngx_qjs_event_t         *event;
+    ngx_http_js_ctx_t       *ctx;
+    ngx_http_request_t      *r;
+    ngx_http_qjs_request_t  *req;
+
+    req = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_HTTP_REQUEST);
+    if (req == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+    }
+
+    r = req->request;
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    if (r->request_body) {
+        goto resolve;
+    }
+
+    if (ctx->body_read_event) {
+        return JS_ThrowInternalError(cx, "request body is already being read");
+    }
+
+    event = ngx_pcalloc(r->pool, sizeof(ngx_qjs_event_t) + sizeof(JSValue) * 2);
+    if (event == NULL) {
+        return JS_ThrowOutOfMemory(cx);
+    }
+
+    event->ctx = cx;
+    event->fd = ctx->event_id++;
+    event->args = (JSValue *) &event[1];
+    event->data = (void *) (uintptr_t) magic;
+
+    retval = JS_NewPromiseCapability(cx, &event->args[0]);
+    if (JS_IsException(retval)) {
+        return JS_EXCEPTION;
+    }
+
+    event->function = JS_DupValue(cx, event->args[0]);
+    event->destructor = ngx_http_js_read_body_event_destructor;
+
+    ngx_js_add_event(ctx, event);
+
+    ctx->body_read_event = event;
+    ctx->body_read_state = NGX_HTTP_JS_BODY_READ_DEFERRED;
+
+    return retval;
+
+resolve:
+
+    if (ngx_http_js_collect_body(r, ctx) != NGX_OK) {
+        return JS_ThrowOutOfMemory(cx);
+    }
+
+    return ngx_http_qjs_body_to_value(cx, ctx, (ngx_uint_t) magic);
+}
+
+
+static void
+ngx_http_js_read_body_event_destructor(ngx_qjs_event_t *event)
+{
+    JSContext  *cx;
+
+    cx = event->ctx;
+
+    JS_FreeValue(cx, event->function);
+    JS_FreeValue(cx, event->args[0]);
+    JS_FreeValue(cx, event->args[1]);
 }
 
 

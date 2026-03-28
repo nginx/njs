@@ -382,6 +382,47 @@ interface NginxHTTPRequest {
      */
     readonly requestBody?: string;
     /**
+     * Reads the client request body and returns a Promise resolving
+     * with the body as a string.
+     *
+     * Available in js_access and js_content directives.  The request body
+     * size is limited by client_max_body_size.
+     *
+     * The body is read once and cached on the request: subsequent
+     * `readRequestText`, `readRequestArrayBuffer`, and `readRequestJSON`
+     * calls resolve synchronously from the cache and do not re-read the
+     * wire.  This deliberately differs from the WHATWG Fetch Body mixin
+     * (which makes the body unusable after the first call) and matches
+     * the server-side caching pattern used by Express, Flask, and similar
+     * frameworks.
+     *
+     * A second call issued while a previous `readRequest*` promise has
+     * not yet resolved throws `"request body is already being read"`.
+     *
+     * @returns A Promise that resolves with the request body as a string.
+     * @since 0.9.9
+     */
+    readRequestText(): Promise<string>;
+    /**
+     * Reads the client request body and returns a Promise resolving
+     * with the body as an ArrayBuffer.  See {@link readRequestText} for
+     * caching, concurrency, and availability semantics.
+     *
+     * @returns A Promise that resolves with the request body
+     *   as an ArrayBuffer.
+     * @since 0.9.9
+     */
+    readRequestArrayBuffer(): Promise<ArrayBuffer>;
+    /**
+     * Reads the client request body and returns a Promise resolving
+     * with the body parsed as JSON.  See {@link readRequestText} for
+     * caching, concurrency, and availability semantics.
+     *
+     * @returns A Promise that resolves with the parsed JSON value.
+     * @since 0.9.9
+     */
+    readRequestJSON(): Promise<any>;
+    /**
      * Subrequest response body. The size of response body is limited by
      * the subrequest_output_buffer_size directive.
      *
