@@ -139,6 +139,8 @@ static JSValue qjs_webcrypto_key_usages(JSContext *cx, JSValueConst this_val);
 
 static JSValue qjs_get_random_values(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv);
+static JSValue qjs_random_uuid(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv);
 
 static JSValue qjs_webcrypto_key_make(JSContext *cx,
   qjs_webcrypto_algorithm_t *alg, unsigned usage, int extractable);
@@ -456,6 +458,7 @@ static const JSCFunctionListEntry qjs_webcrypto_key_proto[] = {
 
 static const JSCFunctionListEntry qjs_webcrypto_export[] = {
     JS_CFUNC_DEF("getRandomValues", 1, qjs_get_random_values),
+    JS_CFUNC_DEF("randomUUID", 0, qjs_random_uuid),
     JS_OBJECT_DEF("subtle",
                   qjs_webcrypto_subtle,
                   njs_nitems(qjs_webcrypto_subtle),
@@ -4475,6 +4478,39 @@ qjs_get_random_values(JSContext *cx, JSValueConst this_val, int argc,
     }
 
     return buffer;
+}
+
+
+static JSValue
+qjs_random_uuid(JSContext *cx, JSValueConst this_val, int argc,
+    JSValueConst *argv)
+{
+    u_char    *p;
+    uint32_t  i;
+    u_char    bytes[16], buf[36];
+
+    static const u_char  hex[] = "0123456789abcdef";
+
+    if (RAND_bytes(bytes, 16) != 1) {
+        qjs_webcrypto_error(cx, "RAND_bytes() failed");
+        return JS_EXCEPTION;
+    }
+
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+
+    p = buf;
+
+    for (i = 0; i < 16; i++) {
+        *p++ = hex[bytes[i] >> 4];
+        *p++ = hex[bytes[i] & 0x0f];
+
+        if (i == 3 || i == 5 || i == 7 || i == 9) {
+            *p++ = '-';
+        }
+    }
+
+    return JS_NewStringLen(cx, (const char *) buf, sizeof(buf));
 }
 
 

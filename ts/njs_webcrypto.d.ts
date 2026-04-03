@@ -328,6 +328,7 @@ interface SubtleCrypto {
 interface Crypto {
     readonly subtle: SubtleCrypto;
     getRandomValues(ta:TypedArray): TypedArray;
+    randomUUID(): string;
 }
 
 declare const crypto: Crypto;
