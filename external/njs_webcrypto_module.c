@@ -141,6 +141,8 @@ static njs_int_t njs_key_ext_usages(njs_vm_t *vm, njs_object_prop_t *prop,
     njs_value_t *retval);
 static njs_int_t njs_ext_get_random_values(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
+static njs_int_t njs_ext_random_uuid(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 
 static njs_webcrypto_key_t *njs_webcrypto_key_alloc(njs_vm_t *vm,
     njs_webcrypto_algorithm_t *alg, unsigned usage, njs_bool_t extractable);
@@ -644,6 +646,17 @@ static njs_external_t  njs_ext_webcrypto[] = {
         .enumerable = 1,
         .u.method = {
             .native = njs_ext_get_random_values,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("randomUUID"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = njs_ext_random_uuid,
         }
     },
 
@@ -4626,6 +4639,39 @@ njs_ext_get_random_values(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_value_assign(retval, buffer);
 
     return NJS_OK;
+}
+
+
+static njs_int_t
+njs_ext_random_uuid(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused, njs_value_t *retval)
+{
+    u_char      *p;
+    njs_uint_t  i;
+    u_char      bytes[16], buf[36];
+
+    static const u_char  hex[] = "0123456789abcdef";
+
+    if (RAND_bytes(bytes, 16) != 1) {
+        njs_webcrypto_error(vm, "RAND_bytes() failed");
+        return NJS_ERROR;
+    }
+
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+
+    p = buf;
+
+    for (i = 0; i < 16; i++) {
+        *p++ = hex[bytes[i] >> 4];
+        *p++ = hex[bytes[i] & 0x0f];
+
+        if (i == 3 || i == 5 || i == 7 || i == 9) {
+            *p++ = '-';
+        }
+    }
+
+    return njs_vm_value_string_create(vm, retval, buf, sizeof(buf));
 }
 
 
