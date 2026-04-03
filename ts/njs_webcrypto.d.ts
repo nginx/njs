@@ -55,7 +55,7 @@ interface  HmacImportParams {
     hash: HashVariants;
 }
 
-type AesVariants = "AES-CTR" | "AES-CBC" | "AES-GCM";
+type AesVariants = "AES-CTR" | "AES-CBC" | "AES-GCM" | "AES-KW";
 
 interface  AesImportParams {
     name: AesVariants;
@@ -323,6 +323,19 @@ interface SubtleCrypto {
            key: CryptoKey,
            signature: NjsStringOrBuffer,
            data: NjsStringOrBuffer): Promise<boolean>;
+
+    wrapKey(format: "raw" | "pkcs8" | "spki" | "jwk",
+            key: CryptoKey,
+            wrappingKey: CryptoKey,
+            wrapAlgorithm: CipherAlgorithm | "AES-KW"): Promise<ArrayBuffer>;
+
+    unwrapKey(format: "raw" | "pkcs8" | "spki" | "jwk",
+              wrappedKey: NjsStringOrBuffer,
+              unwrappingKey: CryptoKey,
+              unwrapAlgorithm: CipherAlgorithm | "AES-KW",
+              unwrappedKeyAlgorithm: ImportAlgorithm,
+              extractable: boolean,
+              keyUsages: Array<string>): Promise<CryptoKey>;
 }
 
 interface Crypto {
