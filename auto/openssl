@@ -33,6 +33,17 @@ if [ $NJS_OPENSSL = YES ]; then
 
 
     if [ $njs_found = yes ]; then
+        njs_feature="EVP_aes_128_wrap()"
+        njs_feature_name=NJS_HAVE_AES_WRAP
+        njs_feature_run=
+        njs_feature_test="#include <openssl/evp.h>
+
+                          int main() {
+                              (void) EVP_aes_128_wrap();
+                              return 0;
+                         }"
+        . auto/feature
+
         njs_feature="OpenSSL version"
         njs_feature_name=NJS_OPENSSL_VERSION
         njs_feature_run=value
