@@ -251,7 +251,7 @@ njs_array_length_set(njs_vm_t *vm, njs_value_t *value,
 
     ret = njs_array_length_redefine(vm, value, length, prev->writable);
     if (njs_slow_path(ret != NJS_OK)) {
-        return ret;
+        goto done;
     }
 
     ret = NJS_OK;
