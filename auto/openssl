@@ -44,6 +44,22 @@ if [ $NJS_OPENSSL = YES ]; then
                          }"
         . auto/feature
 
+        # Ed25519 and X25519 share the same Curve25519 implementation and
+        # were introduced together in OpenSSL 1.1.1, LibreSSL 3.7.0,
+        # BoringSSL, and AWS-LC.  No known build configuration enables
+        # one without the other, so a single probe is sufficient.
+
+        njs_feature="EVP_PKEY_ED25519"
+        njs_feature_name=NJS_HAVE_ED25519
+        njs_feature_run=
+        njs_feature_test="#include <openssl/evp.h>
+
+                          int main() {
+                              return EVP_PKEY_new_raw_public_key(
+                                  EVP_PKEY_ED25519, NULL, NULL, 0) == NULL;
+                         }"
+        . auto/feature
+
         njs_feature="OpenSSL version"
         njs_feature_name=NJS_OPENSSL_VERSION
         njs_feature_run=value

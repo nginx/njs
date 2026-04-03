@@ -10,8 +10,8 @@ Tests in this folder are expected to be compatible with node.js
 Tested versions
 ---------------
 
-node: v16.4.0
-openssl: OpenSSL 1.1.1f  31 Mar 2020
+node: v25.2.1
+openssl: OpenSSL 3.0.13  30 Jan 2024
 
 Keys generation
 ===============
@@ -33,6 +33,24 @@ Generating EC PKCS8/SPKI key files
   openssl ecparam -name prime256v1 -genkey -noout -out ec.pem
   openssl pkcs8 -inform PEM -in ec.pem -nocrypt -topk8 -outform PEM -out ec.pkcs8
   openssl ec -in ec.pkcs8 -pubout > ec.spki
+
+Generating Ed25519 PKCS8/SPKI key files
+---------------------------------------
+
+.. code-block:: shell
+
+  openssl genpkey -algorithm Ed25519 -out ed25519.pem
+  openssl pkcs8 -inform PEM -in ed25519.pem -nocrypt -topk8 -outform PEM -out ed25519.pkcs8
+  openssl pkey -in ed25519.pkcs8 -pubout > ed25519.spki
+
+Generating X25519 PKCS8/SPKI key files
+--------------------------------------
+
+.. code-block:: shell
+
+  openssl genpkey -algorithm X25519 -out x25519.pem
+  openssl pkcs8 -inform PEM -in x25519.pem -nocrypt -topk8 -outform PEM -out x25519.pkcs8
+  openssl pkey -in x25519.pkcs8 -pubout > x25519.spki
 
 Encoding
 ========
