@@ -171,6 +171,25 @@ let wrap_tsuite = {
                         counter: crypto.getRandomValues(new Uint8Array(16)),
                         length: 64},
           check_raw: true },
+
+        /* AES-GCM wrapping an AES key in JWK format */
+        { wrap_alg: {name: "AES-GCM", length: 256},
+          key_alg: {name: "AES-GCM", length: 128},
+          key_usage: ["encrypt", "decrypt"],
+          format: "jwk",
+          wrap_params: {name: "AES-GCM",
+                        iv: crypto.getRandomValues(new Uint8Array(12))},
+          verify_encrypt: {name: "AES-GCM",
+                           iv: crypto.getRandomValues(new Uint8Array(12))} },
+
+        /* AES-GCM wrapping an HMAC key in JWK format */
+        { wrap_alg: {name: "AES-GCM", length: 256},
+          key_alg: {name: "HMAC", hash: "SHA-256"},
+          key_usage: ["sign", "verify"],
+          format: "jwk",
+          wrap_params: {name: "AES-GCM",
+                        iv: crypto.getRandomValues(new Uint8Array(12))},
+          verify_sign: {name: "HMAC"} },
 ]};
 
 let wrap_error_tsuite = {

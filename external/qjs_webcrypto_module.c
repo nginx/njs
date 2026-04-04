@@ -141,6 +141,10 @@ static int qjs_webcrypto_generate_25519_keypair(JSContext *cx, int pkey_id,
 #endif
 static JSValue qjs_webcrypto_import_key(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv);
+static JSValue qjs_webcrypto_import_key_internal(JSContext *cx,
+    qjs_webcrypto_key_format_t fmt, JSValueConst key_data,
+    qjs_webcrypto_algorithm_t *alg, JSValueConst options,
+    int extractable, unsigned usage);
 static JSValue qjs_webcrypto_sign(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv, int verify);
 static JSValue qjs_webcrypto_wrap_key(JSContext *cx, JSValueConst this_val,
@@ -3834,45 +3838,38 @@ done:
 
 
 static JSValue
-qjs_webcrypto_import_key(JSContext *cx, JSValueConst this_val, int argc,
-    JSValueConst *argv)
+qjs_webcrypto_import_key_internal(JSContext *cx, qjs_webcrypto_key_format_t fmt,
+    JSValueConst key_data, qjs_webcrypto_algorithm_t *alg, JSValueConst options,
+    int extractable, unsigned usage)
 {
-    int                         nid;
-    BIO                         *bio;
+    int                      nid;
+    BIO                      *bio;
 #if (OPENSSL_VERSION_NUMBER < 0x30000000L)
-    RSA                         *rsa;
-    EC_KEY                      *ec;
+    RSA                      *rsa;
+    EC_KEY                   *ec;
 #else
-    char                        gname[80];
+    char                     gname[80];
 #endif
-    JSValue                     options, key, jwk, val, ret;
-    unsigned                    mask, usage;
-    EVP_PKEY                    *pkey;
-    njs_str_t                   key_data;
-    const u_char                *start;
+    JSValue                  key, jwk, val, ret;
+    unsigned                 mask;
+    EVP_PKEY                 *pkey;
+    njs_str_t                kd;
+    const u_char             *start;
 #if (OPENSSL_VERSION_NUMBER < 0x30000000L)
-    const EC_GROUP              *group;
+    const EC_GROUP           *group;
 #endif
-    qjs_webcrypto_key_t         *wkey;
-    PKCS8_PRIV_KEY_INFO         *pkcs8;
-    qjs_webcrypto_hash_t        hash;
-    qjs_webcrypto_jwk_kty_t     kty;
-    qjs_webcrypto_algorithm_t   *alg;
-    qjs_webcrypto_key_format_t  fmt;
+    qjs_webcrypto_key_t      *wkey;
+    PKCS8_PRIV_KEY_INFO      *pkcs8;
+    qjs_webcrypto_hash_t     hash;
+    qjs_webcrypto_jwk_kty_t  kty;
 
     pkey = NULL;
-    key_data.start = NULL;
-    key_data.length = 0;
+    kd.start = NULL;
+    kd.length = 0;
 
-    fmt = qjs_key_format(cx, argv[0]);
-    if (fmt == QJS_KEY_FORMAT_UNKNOWN) {
-        return JS_EXCEPTION;
-    }
-
-    options = argv[2];
-
-    alg = qjs_key_algorithm(cx, options);
-    if (alg == NULL) {
+    if (usage & ~alg->usage) {
+        JS_ThrowTypeError(cx, "unsupported key usage for \"%s\" key",
+                          qjs_algorithm_string(alg));
         return JS_EXCEPTION;
     }
 
@@ -3882,45 +3879,23 @@ qjs_webcrypto_import_key(JSContext *cx, JSValueConst this_val, int argc,
         return JS_EXCEPTION;
     }
 
-    ret = qjs_key_usage(cx, argv[4], &usage);
-    if (JS_IsException(ret)) {
-        return JS_EXCEPTION;
-    }
-
-    if (usage & ~alg->usage) {
-        JS_ThrowTypeError(cx, "unsupported key usage for \"%s\" key",
-                          qjs_algorithm_string(alg));
-        return JS_EXCEPTION;
-    }
-
     if (fmt != QJS_KEY_FORMAT_JWK) {
-        ret = qjs_typed_array_data(cx, argv[1], &key_data);
+        ret = qjs_typed_array_data(cx, key_data, &kd);
         if (JS_IsException(ret)) {
             return JS_EXCEPTION;
         }
     }
 
-    key = qjs_webcrypto_key_make(cx, alg, usage, JS_ToBool(cx, argv[3]));
+    key = qjs_webcrypto_key_make(cx, alg, usage, extractable);
     if (JS_IsException(key)) {
         return JS_EXCEPTION;
     }
 
     wkey = JS_GetOpaque(key, QJS_CORE_CLASS_ID_WEBCRYPTO_KEY);
 
-    /*
-     * set by qjs_webcrypto_key_make():
-     *
-     *  key->u.a.pkey = NULL;
-     *  key->u.s.raw.length = 0;
-     *  key->u.s.raw.start = NULL;
-     *  key->u.a.curve = 0;
-     *  key->u.a.privat = 0;
-     *  key->hash = QJS_HASH_UNSET;
-     */
-
     switch (fmt) {
     case QJS_KEY_FORMAT_PKCS8:
-        bio = BIO_new_mem_buf(key_data.start, key_data.length);
+        bio = BIO_new_mem_buf(kd.start, kd.length);
         if (bio == NULL) {
             qjs_webcrypto_error(cx, "BIO_new_mem_buf() failed");
             goto fail;
@@ -3949,8 +3924,8 @@ qjs_webcrypto_import_key(JSContext *cx, JSValueConst this_val, int argc,
         break;
 
     case QJS_KEY_FORMAT_SPKI:
-        start = key_data.start;
-        pkey = d2i_PUBKEY(NULL, &start, key_data.length);
+        start = kd.start;
+        pkey = d2i_PUBKEY(NULL, &start, kd.length);
         if (pkey == NULL) {
             qjs_webcrypto_error(cx, "d2i_PUBKEY() failed");
             goto fail;
@@ -3959,7 +3934,7 @@ qjs_webcrypto_import_key(JSContext *cx, JSValueConst this_val, int argc,
         break;
 
     case QJS_KEY_FORMAT_JWK:
-        jwk = argv[1];
+        jwk = key_data;
         if (!JS_IsObject(jwk)) {
             JS_ThrowTypeError(cx, "invalid JWK key data: object value "
                               "expected");
@@ -4125,7 +4100,7 @@ qjs_webcrypto_import_key(JSContext *cx, JSValueConst this_val, int argc,
         }
 
         if (fmt == QJS_KEY_FORMAT_RAW) {
-            pkey = qjs_import_raw_ec(cx, &key_data, wkey);
+            pkey = qjs_import_raw_ec(cx, &kd, wkey);
             if (pkey == NULL) {
                 goto fail;
             }
@@ -4185,7 +4160,7 @@ qjs_webcrypto_import_key(JSContext *cx, JSValueConst this_val, int argc,
     case QJS_ALGORITHM_ED25519:
         if (fmt == QJS_KEY_FORMAT_RAW) {
             pkey = EVP_PKEY_new_raw_public_key(EVP_PKEY_ED25519, NULL,
-                                               key_data.start, key_data.length);
+                                               kd.start, kd.length);
             if (pkey == NULL) {
                 qjs_webcrypto_error(cx,
                     "EVP_PKEY_new_raw_public_key() failed");
@@ -4212,7 +4187,7 @@ qjs_webcrypto_import_key(JSContext *cx, JSValueConst this_val, int argc,
     case QJS_ALGORITHM_X25519:
         if (fmt == QJS_KEY_FORMAT_RAW) {
             pkey = EVP_PKEY_new_raw_public_key(EVP_PKEY_X25519, NULL,
-                                               key_data.start, key_data.length);
+                                               kd.start, kd.length);
             if (pkey == NULL) {
                 qjs_webcrypto_error(cx,
                     "EVP_PKEY_new_raw_public_key() failed");
@@ -4248,14 +4223,14 @@ qjs_webcrypto_import_key(JSContext *cx, JSValueConst this_val, int argc,
                 goto fail;
             }
 
-            wkey->u.s.raw.start = js_malloc(cx, key_data.length);
+            wkey->u.s.raw.start = js_malloc(cx, kd.length);
             if (wkey->u.s.raw.start == NULL) {
                 JS_ThrowOutOfMemory(cx);
                 goto fail;
             }
 
-            wkey->u.s.raw.length = key_data.length;
-            memcpy(wkey->u.s.raw.start, key_data.start, key_data.length);
+            wkey->u.s.raw.length = kd.length;
+            memcpy(wkey->u.s.raw.start, kd.start, kd.length);
 
         } else {
             /* QJS_KEY_FORMAT_JWK. */
@@ -4278,7 +4253,7 @@ qjs_webcrypto_import_key(JSContext *cx, JSValueConst this_val, int argc,
     case QJS_ALGORITHM_AES_CBC:
     case QJS_ALGORITHM_AES_KW:
         if (fmt == QJS_KEY_FORMAT_RAW) {
-            switch (key_data.length) {
+            switch (kd.length) {
             case 16:
             case 24:
             case 32:
@@ -4289,14 +4264,14 @@ qjs_webcrypto_import_key(JSContext *cx, JSValueConst this_val, int argc,
                 goto fail;
             }
 
-            wkey->u.s.raw.start = js_malloc(cx, key_data.length);
+            wkey->u.s.raw.start = js_malloc(cx, kd.length);
             if (wkey->u.s.raw.start == NULL) {
                 JS_ThrowOutOfMemory(cx);
                 goto fail;
             }
 
-            wkey->u.s.raw.length = key_data.length;
-            memcpy(wkey->u.s.raw.start, key_data.start, key_data.length);
+            wkey->u.s.raw.length = kd.length;
+            memcpy(wkey->u.s.raw.start, kd.start, kd.length);
         }
 
         break;
@@ -4304,18 +4279,18 @@ qjs_webcrypto_import_key(JSContext *cx, JSValueConst this_val, int argc,
     case QJS_ALGORITHM_PBKDF2:
     case QJS_ALGORITHM_HKDF:
     default:
-        wkey->u.s.raw.start = js_malloc(cx, key_data.length);
+        wkey->u.s.raw.start = js_malloc(cx, kd.length);
         if (wkey->u.s.raw.start == NULL) {
             JS_ThrowOutOfMemory(cx);
             goto fail;
         }
 
-        wkey->u.s.raw.length = key_data.length;
-        memcpy(wkey->u.s.raw.start, key_data.start, key_data.length);
+        wkey->u.s.raw.length = kd.length;
+        memcpy(wkey->u.s.raw.start, kd.start, kd.length);
         break;
     }
 
-    return qjs_promise_result(cx, key);
+    return key;
 
 fail:
 
@@ -4325,7 +4300,41 @@ fail:
 
     JS_FreeValue(cx, key);
 
-    return qjs_promise_result(cx, JS_EXCEPTION);
+    return JS_EXCEPTION;
+}
+
+
+static JSValue
+qjs_webcrypto_import_key(JSContext *cx, JSValueConst this_val, int argc,
+    JSValueConst *argv)
+{
+    JSValue                     ret, key;
+    unsigned                    usage;
+    qjs_webcrypto_algorithm_t   *alg;
+    qjs_webcrypto_key_format_t  fmt;
+
+    fmt = qjs_key_format(cx, argv[0]);
+    if (fmt == QJS_KEY_FORMAT_UNKNOWN) {
+        return JS_EXCEPTION;
+    }
+
+    alg = qjs_key_algorithm(cx, argv[2]);
+    if (alg == NULL) {
+        return JS_EXCEPTION;
+    }
+
+    ret = qjs_key_usage(cx, argv[4], &usage);
+    if (JS_IsException(ret)) {
+        return JS_EXCEPTION;
+    }
+
+    key = qjs_webcrypto_import_key_internal(cx, fmt, argv[1], alg, argv[2],
+                                            JS_ToBool(cx, argv[3]), usage);
+    if (JS_IsException(key)) {
+        return qjs_promise_result(cx, JS_EXCEPTION);
+    }
+
+    return qjs_promise_result(cx, key);
 }
 
 
@@ -4973,10 +4982,13 @@ static JSValue
 qjs_webcrypto_unwrap_key(JSContext *cx, JSValueConst this_val, int argc,
     JSValueConst *argv)
 {
-    unsigned                    mask, usage;
+    unsigned                    usage;
     JSValue                     options, ret, decrypted, key_value;
     njs_str_t                   data, key_data;
-    qjs_webcrypto_key_t         *wrapping_key, *ikey;
+    const char                  *str;
+    size_t                      len;
+    JSValue                     json_str;
+    qjs_webcrypto_key_t         *wrapping_key;
     qjs_webcrypto_algorithm_t   *alg, *key_alg;
     qjs_webcrypto_key_format_t  fmt;
 
@@ -5010,8 +5022,7 @@ qjs_webcrypto_unwrap_key(JSContext *cx, JSValueConst this_val, int argc,
         goto fail;
     }
 
-    mask = QJS_KEY_USAGE_UNWRAP_KEY;
-    if (!(wrapping_key->usage & mask)) {
+    if (!(wrapping_key->usage & QJS_KEY_USAGE_UNWRAP_KEY)) {
         JS_ThrowTypeError(cx, "unwrapping key does not support unwrapKey");
         goto fail;
     }
@@ -5029,88 +5040,47 @@ qjs_webcrypto_unwrap_key(JSContext *cx, JSValueConst this_val, int argc,
         goto fail;
     }
 
-    ret = qjs_typed_array_data(cx, decrypted, &key_data);
-    if (JS_IsException(ret)) {
-        JS_FreeValue(cx, decrypted);
-        goto fail;
-    }
-
-    if (usage & ~key_alg->usage) {
-        JS_FreeValue(cx, decrypted);
-        JS_ThrowTypeError(cx, "unsupported key usage for \"%s\" key",
-                          qjs_algorithm_string(key_alg));
-        goto fail;
-    }
-
-    if (!(fmt & key_alg->fmt)) {
-        JS_FreeValue(cx, decrypted);
-        JS_ThrowTypeError(cx, "unsupported key fmt for \"%s\" key",
-                          qjs_algorithm_string(key_alg));
-        goto fail;
-    }
-
-    key_value = qjs_webcrypto_key_make(cx, key_alg, usage,
-                                       JS_ToBool(cx, argv[5]));
-    if (JS_IsException(key_value)) {
-        JS_FreeValue(cx, decrypted);
-        goto fail;
-    }
-
-    ikey = JS_GetOpaque2(cx, key_value, QJS_CORE_CLASS_ID_WEBCRYPTO_KEY);
-
-    if (fmt == QJS_KEY_FORMAT_RAW) {
-        switch (key_alg->type) {
-        case QJS_ALGORITHM_AES_GCM:
-        case QJS_ALGORITHM_AES_CTR:
-        case QJS_ALGORITHM_AES_CBC:
-        case QJS_ALGORITHM_AES_KW:
-            switch (key_data.length) {
-            case 16:
-            case 24:
-            case 32:
-                break;
-            default:
-                JS_FreeValue(cx, decrypted);
-                JS_FreeValue(cx, key_value);
-                JS_ThrowTypeError(cx, "AES Invalid key length");
-                goto fail;
-            }
-
-            ikey->u.s.raw.start = js_malloc(cx, key_data.length);
-            if (ikey->u.s.raw.start == NULL) {
-                JS_FreeValue(cx, decrypted);
-                JS_FreeValue(cx, key_value);
-                JS_ThrowOutOfMemory(cx);
-                goto fail;
-            }
-
-            ikey->u.s.raw.length = key_data.length;
-            memcpy(ikey->u.s.raw.start, key_data.start, key_data.length);
-            break;
-
-        case QJS_ALGORITHM_HMAC:
-        default:
-            ikey->u.s.raw.start = js_malloc(cx, key_data.length);
-            if (ikey->u.s.raw.start == NULL) {
-                JS_FreeValue(cx, decrypted);
-                JS_FreeValue(cx, key_value);
-                JS_ThrowOutOfMemory(cx);
-                goto fail;
-            }
-
-            ikey->u.s.raw.length = key_data.length;
-            memcpy(ikey->u.s.raw.start, key_data.start, key_data.length);
-            break;
+    if (fmt == QJS_KEY_FORMAT_JWK) {
+        ret = qjs_typed_array_data(cx, decrypted, &key_data);
+        if (JS_IsException(ret)) {
+            JS_FreeValue(cx, decrypted);
+            goto fail;
         }
 
-    } else {
+        json_str = JS_NewStringLen(cx, (const char *) key_data.start,
+                                   key_data.length);
         JS_FreeValue(cx, decrypted);
-        JS_FreeValue(cx, key_value);
-        JS_ThrowTypeError(cx, "unwrapKey: unsupported format");
-        goto fail;
+
+        if (JS_IsException(json_str)) {
+            goto fail;
+        }
+
+        str = JS_ToCStringLen(cx, &len, json_str);
+        JS_FreeValue(cx, json_str);
+
+        if (str == NULL) {
+            goto fail;
+        }
+
+        decrypted = JS_ParseJSON(cx, str, len, "<unwrapKey>");
+        JS_FreeCString(cx, str);
+
+        if (JS_IsException(decrypted)) {
+            JS_ThrowTypeError(cx, "wrapped key is not valid JWK "
+                              "JSON");
+            goto fail;
+        }
     }
 
+    key_value = qjs_webcrypto_import_key_internal(cx, fmt, decrypted,
+                                                  key_alg, argv[4],
+                                                  JS_ToBool(cx, argv[5]),
+                                                  usage);
     JS_FreeValue(cx, decrypted);
+
+    if (JS_IsException(key_value)) {
+        goto fail;
+    }
 
     return qjs_promise_result(cx, key_value);
 

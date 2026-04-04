@@ -134,6 +134,10 @@ static njs_int_t njs_webcrypto_generate_25519_keypair(njs_vm_t *vm,
 #endif
 static njs_int_t njs_ext_import_key(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
+static njs_int_t njs_webcrypto_import_key_internal(njs_vm_t *vm,
+    njs_webcrypto_key_format_t fmt, njs_value_t *key_data,
+    njs_webcrypto_algorithm_t *alg, njs_value_t *options,
+    njs_bool_t extractable, unsigned usage, njs_value_t *retval);
 static njs_int_t njs_ext_sign(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t verify, njs_value_t *retval);
 static njs_int_t njs_webcrypto_export_key_raw(njs_vm_t *vm,
@@ -3840,57 +3844,40 @@ done:
 
 
 static njs_int_t
-njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
-    njs_index_t unused, njs_value_t *retval)
+njs_webcrypto_import_key_internal(njs_vm_t *vm, njs_webcrypto_key_format_t fmt,
+    njs_value_t *key_data, njs_webcrypto_algorithm_t *alg, njs_value_t *options,
+    njs_bool_t extractable, unsigned usage, njs_value_t *retval)
 {
-    int                         nid;
-    BIO                         *bio;
+    int                   nid;
+    BIO                   *bio;
 #if (OPENSSL_VERSION_NUMBER < 0x30000000L)
-    RSA                         *rsa;
-    EC_KEY                      *ec;
+    RSA                   *rsa;
+    EC_KEY                *ec;
 #else
-    char                        gname[80];
+    char                  gname[80];
 #endif
-    unsigned                    mask, usage;
-    EVP_PKEY                    *pkey;
-    njs_int_t                   ret;
-    njs_str_t                   key_data, kty;
-    njs_value_t                 *options, *jwk, *val;
-    const u_char                *start;
+    unsigned              mask;
+    EVP_PKEY              *pkey;
+    njs_int_t             ret;
+    njs_str_t             raw_data, kty;
+    njs_value_t           *jwk, *val;
+    const u_char          *start;
 #if (OPENSSL_VERSION_NUMBER < 0x30000000L)
-    const EC_GROUP              *group;
+    const EC_GROUP        *group;
 #endif
-    njs_webcrypto_key_t         *key;
-    PKCS8_PRIV_KEY_INFO         *pkcs8;
-    njs_opaque_value_t          value;
-    njs_webcrypto_hash_t        hash;
-    njs_webcrypto_algorithm_t   *alg;
-    njs_webcrypto_key_format_t  fmt;
+    njs_opaque_value_t    value;
+    njs_webcrypto_key_t   *key;
+    PKCS8_PRIV_KEY_INFO   *pkcs8;
+    njs_webcrypto_hash_t  hash;
 
     pkey = NULL;
-    key_data.start = NULL;
-    key_data.length = 0;
-
-    fmt = njs_key_format(vm, njs_arg(args, nargs, 1));
-    if (njs_slow_path(fmt == NJS_KEY_FORMAT_UNKNOWN)) {
-        goto fail;
-    }
-
-    options = njs_arg(args, nargs, 3);
-    alg = njs_key_algorithm(vm, options);
-    if (njs_slow_path(alg == NULL)) {
-        goto fail;
-    }
+    raw_data.start = NULL;
+    raw_data.length = 0;
 
     if (njs_slow_path(!(fmt & alg->fmt))) {
         njs_vm_type_error(vm, "unsupported key fmt \"%V\" for \"%V\" key",
                           njs_format_string(fmt),
                           njs_algorithm_string(alg));
-        goto fail;
-    }
-
-    ret = njs_key_usage(vm, njs_arg(args, nargs, 5), &usage);
-    if (njs_slow_path(ret != NJS_OK)) {
         goto fail;
     }
 
@@ -3901,14 +3888,13 @@ njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (fmt != NJS_KEY_FORMAT_JWK) {
-        ret = njs_vm_value_to_bytes(vm, &key_data, njs_arg(args, nargs, 2));
+        ret = njs_vm_value_to_bytes(vm, &raw_data, key_data);
         if (njs_slow_path(ret != NJS_OK)) {
             goto fail;
         }
     }
 
-    key = njs_webcrypto_key_alloc(vm, alg, usage,
-                                  njs_value_bool(njs_arg(args, nargs, 4)));
+    key = njs_webcrypto_key_alloc(vm, alg, usage, extractable);
     if (njs_slow_path(key == NULL)) {
         goto fail;
     }
@@ -3926,7 +3912,7 @@ njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     switch (fmt) {
     case NJS_KEY_FORMAT_PKCS8:
-        bio = njs_bio_new_mem_buf(key_data.start, key_data.length);
+        bio = njs_bio_new_mem_buf(raw_data.start, raw_data.length);
         if (njs_slow_path(bio == NULL)) {
             njs_webcrypto_error(vm, "BIO_new_mem_buf() failed");
             goto fail;
@@ -3955,8 +3941,8 @@ njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         break;
 
     case NJS_KEY_FORMAT_SPKI:
-        start = key_data.start;
-        pkey = d2i_PUBKEY(NULL, &start, key_data.length);
+        start = raw_data.start;
+        pkey = d2i_PUBKEY(NULL, &start, raw_data.length);
         if (njs_slow_path(pkey == NULL)) {
             njs_webcrypto_error(vm, "d2i_PUBKEY() failed");
             goto fail;
@@ -3965,7 +3951,7 @@ njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         break;
 
     case NJS_KEY_FORMAT_JWK:
-        jwk = njs_arg(args, nargs, 2);
+        jwk = key_data;
         if (!njs_value_is_object(jwk)) {
             njs_vm_type_error(vm, "invalid JWK key data: object value "
                               "expected");
@@ -4121,7 +4107,7 @@ njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
 
         if (fmt == NJS_KEY_FORMAT_RAW) {
-            pkey = njs_import_raw_ec(vm, &key_data, key);
+            pkey = njs_import_raw_ec(vm, &raw_data, key);
             if (njs_slow_path(pkey == NULL)) {
                 goto fail;
             }
@@ -4186,10 +4172,9 @@ njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     case NJS_ALGORITHM_ED25519:
         if (fmt == NJS_KEY_FORMAT_RAW) {
             pkey = EVP_PKEY_new_raw_public_key(EVP_PKEY_ED25519, NULL,
-                                               key_data.start, key_data.length);
+                                               raw_data.start, raw_data.length);
             if (njs_slow_path(pkey == NULL)) {
-                njs_webcrypto_error(vm,
-                    "EVP_PKEY_new_raw_public_key() failed");
+                njs_webcrypto_error(vm, "EVP_PKEY_new_raw_public_key() failed");
                 goto fail;
             }
         }
@@ -4214,7 +4199,7 @@ njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     case NJS_ALGORITHM_X25519:
         if (fmt == NJS_KEY_FORMAT_RAW) {
             pkey = EVP_PKEY_new_raw_public_key(EVP_PKEY_X25519, NULL,
-                                               key_data.start, key_data.length);
+                                               raw_data.start, raw_data.length);
             if (njs_slow_path(pkey == NULL)) {
                 njs_webcrypto_error(vm,
                     "EVP_PKEY_new_raw_public_key() failed");
@@ -4251,7 +4236,7 @@ njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                 goto fail;
             }
 
-            key->u.s.raw = key_data;
+            key->u.s.raw = raw_data;
 
         } else {
             /* NJS_KEY_FORMAT_JWK. */
@@ -4274,7 +4259,7 @@ njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     case NJS_ALGORITHM_AES_CBC:
     case NJS_ALGORITHM_AES_KW:
         if (fmt == NJS_KEY_FORMAT_RAW) {
-            switch (key_data.length) {
+            switch (raw_data.length) {
             case 16:
             case 24:
             case 32:
@@ -4285,7 +4270,7 @@ njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                 goto fail;
             }
 
-            key->u.s.raw = key_data;
+            key->u.s.raw = raw_data;
         }
 
         break;
@@ -4293,12 +4278,63 @@ njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     case NJS_ALGORITHM_PBKDF2:
     case NJS_ALGORITHM_HKDF:
     default:
-        key->u.s.raw = key_data;
+        key->u.s.raw = raw_data;
         break;
     }
 
-    ret = njs_vm_external_create(vm, njs_value_arg(&value),
+    ret = njs_vm_external_create(vm, retval,
                                  njs_webcrypto_crypto_key_proto_id, key, 0);
+    if (njs_slow_path(ret != NJS_OK)) {
+        goto fail;
+    }
+
+    return NJS_OK;
+
+fail:
+
+    if (pkey != NULL) {
+        EVP_PKEY_free(pkey);
+    }
+
+    return NJS_ERROR;
+}
+
+
+static njs_int_t
+njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused, njs_value_t *retval)
+{
+    unsigned                    usage;
+    njs_int_t                   ret;
+    njs_value_t                 *options;
+    njs_bool_t                  extractable;
+    njs_opaque_value_t          value;
+    njs_webcrypto_algorithm_t   *alg;
+    njs_webcrypto_key_format_t  fmt;
+
+    fmt = njs_key_format(vm, njs_arg(args, nargs, 1));
+    if (njs_slow_path(fmt == NJS_KEY_FORMAT_UNKNOWN)) {
+        goto fail;
+    }
+
+    options = njs_arg(args, nargs, 3);
+    alg = njs_key_algorithm(vm, options);
+    if (njs_slow_path(alg == NULL)) {
+        goto fail;
+    }
+
+    ret = njs_key_usage(vm, njs_arg(args, nargs, 5), &usage);
+    if (njs_slow_path(ret != NJS_OK)) {
+        goto fail;
+    }
+
+    extractable = njs_value_bool(njs_arg(args, nargs, 4));
+
+    ret = njs_webcrypto_import_key_internal(vm, fmt,
+                                            njs_arg(args, nargs, 2),
+                                            alg, options, extractable,
+                                            usage,
+                                            njs_value_arg(&value));
     if (njs_slow_path(ret != NJS_OK)) {
         goto fail;
     }
@@ -4306,10 +4342,6 @@ njs_ext_import_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     return njs_webcrypto_result(vm, &value, NJS_OK, retval);
 
 fail:
-
-    if (pkey != NULL) {
-        EVP_PKEY_free(pkey);
-    }
 
     return njs_webcrypto_result(vm, NULL, NJS_ERROR, retval);
 }
@@ -5121,11 +5153,11 @@ njs_ext_unwrap_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 {
     unsigned                   usage;
     njs_int_t                  ret;
-    njs_str_t                  data, key_data;
+    njs_str_t                  data;
     njs_value_t                *options;
     njs_bool_t                 extractable;
     njs_opaque_value_t         decrypted, value;
-    njs_webcrypto_key_t        *wrapping_key, *ikey;
+    njs_webcrypto_key_t        *wrapping_key;
     njs_webcrypto_algorithm_t  *alg, *key_alg;
     njs_webcrypto_key_format_t fmt;
 
@@ -5182,61 +5214,39 @@ njs_ext_unwrap_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         goto fail;
     }
 
-    ret = njs_vm_value_to_bytes(vm, &key_data, njs_value_arg(&decrypted));
-    if (njs_slow_path(ret != NJS_OK)) {
-        goto fail;
-    }
+    if (fmt == NJS_KEY_FORMAT_JWK) {
+        njs_str_t           json_data;
+        njs_opaque_value_t  json_str, jwk;
 
-    if (njs_slow_path(usage & ~key_alg->usage)) {
-        njs_vm_type_error(vm, "unsupported key usage for \"%V\" key",
-                          njs_algorithm_string(key_alg));
-        goto fail;
-    }
-
-    if (njs_slow_path(!(fmt & key_alg->fmt))) {
-        njs_vm_type_error(vm, "unsupported key fmt for \"%V\" key",
-                          njs_algorithm_string(key_alg));
-        goto fail;
-    }
-
-    ikey = njs_webcrypto_key_alloc(vm, key_alg, usage, extractable);
-    if (njs_slow_path(ikey == NULL)) {
-        goto fail;
-    }
-
-    if (fmt == NJS_KEY_FORMAT_RAW) {
-        switch (key_alg->type) {
-        case NJS_ALGORITHM_AES_GCM:
-        case NJS_ALGORITHM_AES_CTR:
-        case NJS_ALGORITHM_AES_CBC:
-        case NJS_ALGORITHM_AES_KW:
-            switch (key_data.length) {
-            case 16:
-            case 24:
-            case 32:
-                break;
-            default:
-                njs_vm_type_error(vm, "AES Invalid key length");
-                goto fail;
-            }
-
-            ikey->u.s.raw = key_data;
-            break;
-
-        case NJS_ALGORITHM_HMAC:
-        default:
-            ikey->u.s.raw = key_data;
-            break;
+        ret = njs_vm_value_to_bytes(vm, &json_data,
+                                    njs_value_arg(&decrypted));
+        if (njs_slow_path(ret != NJS_OK)) {
+            goto fail;
         }
 
-    } else {
-        njs_vm_type_error(vm, "unwrapKey: unsupported format \"%V\"",
-                          njs_format_string(fmt));
-        goto fail;
+        ret = njs_vm_value_string_create(vm, njs_value_arg(&json_str),
+                                         json_data.start, json_data.length);
+        if (njs_slow_path(ret != NJS_OK)) {
+            goto fail;
+        }
+
+        ret = njs_vm_json_parse(vm, njs_value_arg(&json_str), 1,
+                                njs_value_arg(&jwk));
+        if (njs_slow_path(ret != NJS_OK)) {
+            njs_vm_type_error(vm,
+                              "wrapped key is not valid JWK JSON");
+            goto fail;
+        }
+
+        njs_value_assign(&decrypted, &jwk);
     }
 
-    ret = njs_vm_external_create(vm, njs_value_arg(&value),
-                                 njs_webcrypto_crypto_key_proto_id, ikey, 0);
+    ret = njs_webcrypto_import_key_internal(vm, fmt,
+                                            njs_value_arg(&decrypted),
+                                            key_alg,
+                                            njs_arg(args, nargs, 5),
+                                            extractable, usage,
+                                            njs_value_arg(&value));
     if (njs_slow_path(ret != NJS_OK)) {
         goto fail;
     }
