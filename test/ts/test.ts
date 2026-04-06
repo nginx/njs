@@ -69,6 +69,15 @@ async function http_module(r: NginxHTTPRequest) {
     // r.requestBuffer
     r.requestBuffer?.equals(Buffer.from([1]));
 
+    // r.readRequestText
+    let text: string = await r.readRequestText();
+
+    // r.readRequestArrayBuffer
+    let buf: ArrayBuffer = await r.readRequestArrayBuffer();
+
+    // r.readRequestJSON
+    let json: any = await r.readRequestJSON();
+
     // r.responseText
     r.responseText == 'a';
     r.responseText?.startsWith('a');
