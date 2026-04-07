@@ -294,6 +294,9 @@ struct ngx_engine_s {
     void                      (*destroy)(ngx_engine_t *e, ngx_js_ctx_t *ctx,
                                          ngx_js_loc_conf_t *conf);
 
+#if (NGX_DEBUG)
+    ngx_uint_t                  id;
+#endif
     unsigned                    type;
     const char                 *name;
     njs_mp_t                   *pool;

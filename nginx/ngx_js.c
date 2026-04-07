@@ -41,6 +41,10 @@ typedef struct {
 } njs_module_info_t;
 
 
+#if (NGX_DEBUG)
+static ngx_uint_t  ngx_js_engine_id;
+#endif
+
 static ngx_int_t ngx_engine_njs_init(ngx_engine_t *engine,
     ngx_engine_opts_t *opts);
 static ngx_int_t ngx_engine_njs_compile(ngx_js_loc_conf_t *conf, ngx_log_t *log,
@@ -92,6 +96,9 @@ static JSValue ngx_qjs_ext_console_time(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv);
 static JSValue ngx_qjs_ext_console_time_end(JSContext *cx,
     JSValueConst this_val, int argc, JSValueConst *argv);
+#if (NGX_DEBUG)
+static JSValue ngx_qjs_ext_engine_id(JSContext *cx, JSValueConst this_val);
+#endif
 static JSValue ngx_qjs_ext_prefix(JSContext *cx, JSValueConst this_val);
 static JSValue ngx_qjs_ext_worker_id(JSContext *cx, JSValueConst this_val);
 
@@ -128,6 +135,11 @@ static njs_int_t ngx_js_ext_prefix(njs_vm_t *vm, njs_object_prop_t *prop,
 static njs_int_t ngx_js_ext_version(njs_vm_t *vm, njs_object_prop_t *prop,
     uint32_t unused,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval);
+#if (NGX_DEBUG)
+static njs_int_t ngx_js_ext_engine_id(njs_vm_t *vm, njs_object_prop_t *prop,
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval);
+#endif
 static njs_int_t ngx_js_ext_worker_id(njs_vm_t *vm, njs_object_prop_t *prop,
     uint32_t unused, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval);
@@ -310,6 +322,17 @@ static njs_external_t  ngx_js_ext_core[] = {
         }
     },
 
+#if (NGX_DEBUG)
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("engine_id"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = ngx_js_ext_engine_id,
+        }
+    },
+#endif
+
     {
         .flags = NJS_EXTERN_PROPERTY,
         .name.string = njs_str("worker_id"),
@@ -453,6 +476,9 @@ static const JSCFunctionListEntry ngx_qjs_ext_ngx[] = {
     JS_PROP_INT32_DEF("version_number", nginx_version, JS_PROP_C_W_E),
     JS_CGETSET_MAGIC_DEF("WARN", ngx_qjs_ext_constant_integer, NULL,
                          NGX_LOG_WARN),
+#if (NGX_DEBUG)
+    JS_CGETSET_DEF("engine_id", ngx_qjs_ext_engine_id, NULL),
+#endif
     JS_CGETSET_DEF("worker_id", ngx_qjs_ext_worker_id, NULL),
 };
 
@@ -507,6 +533,10 @@ ngx_create_engine(ngx_engine_opts_t *opts)
 
     engine->pool = mp;
     engine->clone = opts->clone;
+
+#if (NGX_DEBUG)
+    engine->id = ++ngx_js_engine_id;
+#endif
 
     switch (opts->engine) {
     case NGX_ENGINE_NJS:
@@ -1800,6 +1830,21 @@ ngx_qjs_ext_worker_id(JSContext *cx, JSValueConst this_val)
 }
 
 
+#if (NGX_DEBUG)
+static JSValue
+ngx_qjs_ext_engine_id(JSContext *cx, JSValueConst this_val)
+{
+    void          *external;
+    ngx_js_ctx_t  *ctx;
+
+    external = JS_GetContextOpaque(cx);
+    ctx = ngx_qjs_external_ctx(cx, external);
+
+    return JS_NewUint32(cx, ctx->engine->id);
+}
+#endif
+
+
 static void
 ngx_qjs_console_finalizer(JSRuntime *rt, JSValue val)
 {
@@ -2709,6 +2754,21 @@ ngx_js_ext_version(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
     return njs_vm_value_string_create(vm, retval, (u_char *) NGINX_VERSION,
                                       njs_strlen(NGINX_VERSION));
 }
+
+
+#if (NGX_DEBUG)
+static njs_int_t
+ngx_js_ext_engine_id(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
+    njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
+{
+    ngx_js_ctx_t  *ctx;
+
+    ctx = ngx_external_ctx(vm, njs_vm_external_ptr(vm));
+
+    njs_value_number_set(retval, ctx->engine->id);
+    return NJS_OK;
+}
+#endif
 
 
 njs_int_t
@@ -4209,9 +4269,6 @@ ngx_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
         ngx_log_error(NGX_LOG_EMERG, cf->log, 0, "failed to create js VM");
         return NGX_ERROR;
     }
-
-    ngx_log_error(NGX_LOG_NOTICE, cf->log, 0, "js vm init %s: %p",
-                  conf->engine->name, conf->engine);
 
     cln = ngx_pool_cleanup_add(cf->pool, 0);
     if (cln == NULL) {

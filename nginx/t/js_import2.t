@@ -52,6 +52,10 @@ http {
             js_content foo.test;
         }
 
+        location /test_bar {
+            js_content foo.test;
+        }
+
         location /test_lib {
             # context 2
             js_import lib.js;
@@ -62,11 +66,6 @@ http {
             # context 3
             js_import fun.js;
             js_content fun;
-        }
-
-        location /test_exception {
-            js_import exception.js;
-            js_content exception.nonexistent;
         }
 
         location /test_var {
@@ -94,7 +93,7 @@ EOF
 
 $t->write_file('lib.js', <<EOF);
     function test(r) {
-        r.return(200, "LIB-TEST");
+        r.return(200, "LIB-TEST:" + ngx.engine_id);
     }
 
     function p(r) {
@@ -106,12 +105,9 @@ $t->write_file('lib.js', <<EOF);
 EOF
 
 $t->write_file('fun.js', <<EOF);
-    export default function (r) {r.return(200, "FUN-TEST")};
-
-EOF
-
-$t->write_file('exception.js', <<EOF);
-    export default {nonexistent};
+    export default function (r) {
+        r.return(200, "FUN-TEST:" + ngx.engine_id);
+    };
 
 EOF
 
@@ -121,29 +117,44 @@ $t->write_file('main.js', <<EOF);
     }
 
     function test(r) {
-        r.return(200, "MAIN-TEST");
+        r.return(200, "MAIN-TEST:" + ngx.engine_id);
     }
 
-    export default {version, test, bar: {p(r) {return "P-TEST"}}};
+    export default {version, test, bar: {p(r) {return "P-TEST:" + ngx.engine_id}}};
 
 EOF
 
-$t->try_run('no njs available')->plan(6);
+$t->try_run('no njs available');
 
 ###############################################################################
 
-like(http_get('/test_foo'), qr/MAIN-TEST/s, 'foo.test');
-like(http_get('/test_lib'), qr/LIB-TEST/s, 'lib.test');
-like(http_get('/test_fun'), qr/FUN-TEST/s, 'fun');
-like(http_get('/proxy/test_fun'), qr/FUN-TEST/s, 'proxy fun');
-like(http_get('/test_var'), qr/P-TEST/s, 'foo.bar.p');
-http_get('/test_exception');
-http_get('/test_exception');
+my ($mainid) = http_get('/test_foo') =~ /MAIN-TEST:(\d+)/s;
 
-$t->stop();
+plan(skip_all => 'ngx.engine_id requires --with-debug')
+    unless defined $mainid;
 
-my $content = $t->read_file('error.log');
-my $count = () = $content =~ m/js vm init/g;
-ok($count == 5, 'uniq js vm contexts');
+$t->plan(5);
+
+my ($barid) = http_get('/test_bar') =~ /MAIN-TEST:(\d+)/s;
+
+ok($barid == $mainid, 'same context for main.js');
+
+my ($libid) = http_get('/test_lib') =~ /LIB-TEST:(\d+)/s;
+
+ok($libid != $mainid, 'different context for lib.js');
+
+my ($funid) = http_get('/test_fun') =~ /FUN-TEST:(\d+)/s;
+
+ok($funid != $mainid && $funid != $libid,
+   'different context for fun.js');
+
+my ($pfunid) = http_get('/proxy/test_fun') =~ /FUN-TEST:(\d+)/s;
+
+ok($pfunid != $funid && $pfunid != $mainid && $pfunid != $libid,
+   'different context for fun.js in proxy');
+
+my ($varid) = http_get('/test_var') =~ /P-TEST:(\d+)/s;
+
+ok($varid == $mainid, 'variable from main.js');
 
 ###############################################################################
