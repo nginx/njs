@@ -39,40 +39,65 @@ http {
 
     server {
         listen       127.0.0.1:8080;
+
+        location / {
+            js_content main.engine_id;
+        }
     }
 
     server {
         listen       127.0.0.1:8081;
+
+        location / {
+            js_content main.engine_id;
+        }
     }
 
     server {
         listen       127.0.0.1:8082;
+
+        location / {
+            js_content main.engine_id;
+        }
     }
 
     server {
         listen       127.0.0.1:8083;
+
+        location / {
+            js_content main.engine_id;
+        }
     }
 }
 
 EOF
 
 $t->write_file('main.js', <<EOF);
-    function version(r) {
-        r.return(200, njs.version);
+    function engine_id(r) {
+        r.return(200, ngx.engine_id);
     }
 
-    export default {version};
+    export default {engine_id};
 
 EOF
 
-$t->try_run('no njs available')->plan(1);
+$t->try_run('no njs available');
 
 ###############################################################################
 
-$t->stop();
+my %ids;
+for my $port (port(8080), port(8081), port(8082), port(8083)) {
+	http("GET / HTTP/1.0\nHost: localhost\n\n",
+		PeerAddr => "127.0.0.1:$port")
+		=~ /\x0d\x0a\x0d\x0a(\d+)/ms;
+	$ids{$1} = 1 if defined $1;
+}
 
-my $content = $t->read_file('error.log');
-my $count = () = $content =~ m/ js vm init/g;
-ok($count == 1, 'http js block imported once');
+plan(skip_all => 'ngx.engine_id requires --with-debug')
+    unless scalar keys %ids;
+
+$t->plan(1);
+
+is(scalar keys %ids, 1, 'http js block imported once');
 
 ###############################################################################

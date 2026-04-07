@@ -42,19 +42,19 @@ http {
         server_name  localhost;
 
         location /a {
-            js_content main.version;
+            js_content main.engine_id;
         }
 
         location /b {
-            js_content main.version;
+            js_content main.engine_id;
         }
 
         location /c {
-            js_content main.version;
+            js_content main.engine_id;
         }
 
         location /d {
-            js_content main.version;
+            js_content main.engine_id;
         }
     }
 }
@@ -62,22 +62,29 @@ http {
 EOF
 
 $t->write_file('main.js', <<EOF);
-    function version(r) {
-        r.return(200, njs.version);
+    function engine_id(r) {
+        r.return(200, ngx.engine_id);
     }
 
-    export default {version};
+    export default {engine_id};
 
 EOF
 
-$t->try_run('no njs available')->plan(1);
+$t->try_run('no njs available');
 
 ###############################################################################
 
-$t->stop();
+my %ids;
+for my $uri ('/a', '/b', '/c', '/d') {
+	http_get($uri) =~ /\x0d\x0a\x0d\x0a(\d+)/ms;
+	$ids{$1} = 1 if defined $1;
+}
 
-my $content = $t->read_file('error.log');
-my $count = () = $content =~ m/ js vm init/g;
-ok($count == 1, 'http js block imported once');
+plan(skip_all => 'ngx.engine_id requires --with-debug')
+    unless scalar keys %ids;
+
+$t->plan(1);
+
+is(scalar keys %ids, 1, 'http js block imported once');
 
 ###############################################################################
