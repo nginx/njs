@@ -431,8 +431,10 @@ NJS_EXPORT njs_int_t njs_vm_value_string_create_chb(njs_vm_t *vm,
 NJS_EXPORT njs_int_t njs_vm_string_compare(njs_vm_t *vm, const njs_value_t *v1,
     const njs_value_t *v2);
 
-NJS_EXPORT njs_int_t njs_vm_value_array_buffer_set(njs_vm_t *vm,
-    njs_value_t *value, const u_char *start, uint32_t size);
+NJS_EXPORT njs_int_t njs_vm_value_array_buffer_set2(njs_vm_t *vm,
+    njs_value_t *value, u_char *start, uint32_t size, njs_bool_t shared);
+#define njs_vm_value_array_buffer_set(vm, value, start, size)               \
+    njs_vm_value_array_buffer_set2(vm, value, start, size, 0)
 
 NJS_EXPORT njs_int_t njs_value_buffer_get(njs_vm_t *vm, njs_value_t *value,
     njs_str_t *dst);
@@ -515,6 +517,8 @@ NJS_EXPORT njs_int_t njs_value_is_external(const njs_value_t *value,
 NJS_EXPORT njs_int_t njs_value_is_array(const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_value_is_function(const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_value_is_buffer(const njs_value_t *value);
+NJS_EXPORT njs_int_t njs_value_is_array_buffer(const njs_value_t *value);
+NJS_EXPORT njs_int_t njs_value_is_shared_array_buffer(const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_value_is_data_view(const njs_value_t *value);
 NJS_EXPORT njs_int_t njs_value_is_promise(const njs_value_t *value);
 NJS_EXPORT njs_promise_type_t njs_promise_state(const njs_value_t *value);
@@ -557,6 +561,17 @@ NJS_EXPORT njs_int_t njs_vm_query_string_parse(njs_vm_t *vm, u_char *start,
 
 NJS_EXPORT njs_int_t njs_vm_promise_create(njs_vm_t *vm, njs_value_t *retval,
     njs_value_t *callbacks);
+
+
+typedef struct {
+    void *(*sab_alloc)(void *opaque, size_t size);
+    void (*sab_free)(void *opaque, void *ptr);
+    void (*sab_dup)(void *opaque, void *ptr);
+    void *sab_opaque;
+} njs_sab_functions_t;
+
+NJS_EXPORT void njs_vm_set_sab_functions(njs_vm_t *vm,
+    const njs_sab_functions_t *functions);
 
 
 njs_inline njs_int_t
