@@ -273,6 +273,19 @@ interface NginxHTTPSendBufferOptions {
     flush?: boolean
 }
 
+/**
+ * @since 0.9.8
+ */
+interface NginxHTTPRequestForm {
+    get(name: NjsStringOrBuffer): string | null;
+    getAll(name: NjsStringOrBuffer): string[];
+    has(name: NjsStringOrBuffer): boolean;
+    forEach(callback: (value: string, key: string,
+        form: NginxHTTPRequestForm) => void, thisArg?: any): void;
+    hasFiles(): boolean;
+    fileFieldNames(): string[];
+}
+
 interface NginxHTTPRequest {
     /**
      * Request arguments object.
@@ -415,6 +428,17 @@ interface NginxHTTPRequest {
      * @since 0.9.8
      */
     readRequestJSON(): Promise<any>;
+    /**
+     * Reads the client request body and parses it as a supported HTML form.
+     *
+     * Supports `application/x-www-form-urlencoded` and
+     * `multipart/form-data`.
+     *
+     * File parts are detected but their contents are not exposed.
+     *
+     * @since 0.9.8
+     */
+    readRequestForm(options?: { maxKeys?: number }): Promise<NginxHTTPRequestForm>;
     /**
      * Subrequest response body. The size of response body is limited by
      * the subrequest_output_buffer_size directive.
