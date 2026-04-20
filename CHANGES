@@ -1,3 +1,36 @@
+Changes with njs 0.9.7                                       21 Apr 2026
+
+    nginx modules:
+
+    *) Feature: improved shared dict eviction strategy.
+
+    *) Feature: added ttl() method to shared dictionaries.
+
+    *) Bugfix: removed spurious "js vm init" notice log emitted during
+       configuration parsing.
+
+    *) Bugfix: removed shared dict expiration from read-locked paths.
+
+    *) Bugfix: fixed double-free in shared dict update with eviction.
+
+    *) Bugfix: fixed per-entry TTL reset on shared dict incr() calls.
+
+    Core:
+
+    *) Feature: added Ed25519 and X25519 support for WebCrypto.
+
+    *) Feature: added wrapKey() and unwrapKey() support for WebCrypto.
+
+    *) Feature: added crypto.randomUUID().
+
+    *) Feature: allowed await expressions in tagged templates and as
+       call arguments.
+
+    *) Improvement: switched to OpenSSL EVP for hashing in the built-in
+       "crypto" module.
+
+    *) Bugfix: fixed call argument evaluation.
+
 Changes with njs 0.9.6                                       03 Mar 2026
 
     nginx modules:
