@@ -1192,11 +1192,21 @@ qjs_string_create_chb(JSContext *cx, njs_chb_t *chain)
     njs_str_t  str;
 
     ret = njs_chb_join(chain, &str);
-    njs_chb_destroy(chain);
 
     if (ret != NJS_OK) {
-        return JS_ThrowInternalError(cx, "failed to create string");
+        if (chain->error == NJS_CHB_ERR_OVERFLOW) {
+            val = JS_ThrowRangeError(cx, "invalid string length");
+
+        } else {
+            val = JS_ThrowInternalError(cx, "failed to create string");
+        }
+
+        njs_chb_destroy(chain);
+
+        return val;
     }
+
+    njs_chb_destroy(chain);
 
     val = JS_NewStringLen(cx, (const char *) str.start, str.length);
 

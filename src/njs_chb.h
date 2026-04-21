@@ -20,8 +20,12 @@ struct njs_chb_node_s {
 typedef void *(*njs_chb_alloc_t)(void *pool, size_t size);
 typedef void (*njs_chb_free_t)(void *pool, void *p);
 
+
 typedef struct {
-    njs_bool_t              error;
+#define NJS_CHB_ERR_NONE      0
+#define NJS_CHB_ERR_NOMEM     1
+#define NJS_CHB_ERR_OVERFLOW  2
+    uint8_t                 error;
 
     void                    *pool;
     njs_chb_alloc_t         alloc;
@@ -29,6 +33,9 @@ typedef struct {
 
     njs_chb_node_t          *nodes;
     njs_chb_node_t          *last;
+
+    uint64_t                total_size;
+    uint64_t                max_size;
 } njs_chb_t;
 
 
@@ -40,6 +47,10 @@ void njs_chb_init(njs_chb_t *chain, void *pool, njs_chb_alloc_t alloc,
 #define NJS_CHB_CTX_INIT(chain, ctx)                                         \
     njs_chb_init(chain, ctx, (njs_chb_alloc_t) js_malloc,                    \
     (njs_chb_free_t) js_free)
+#define NJS_CHB_MP_INIT_MAX(chain, mp, max)                                  \
+    (NJS_CHB_MP_INIT(chain, mp), (chain)->max_size = (max))
+#define NJS_CHB_CTX_INIT_MAX(chain, ctx, max)                                \
+    (NJS_CHB_CTX_INIT(chain, ctx), (chain)->max_size = (max))
 void njs_chb_append0(njs_chb_t *chain, const char *msg, size_t len);
 void njs_chb_vsprintf(njs_chb_t *chain, size_t size, const char *fmt,
     va_list args);
@@ -73,23 +84,11 @@ njs_chb_append_str(njs_chb_t *chain, njs_str_t *str)
 njs_inline int64_t
 njs_chb_size(njs_chb_t *chain)
 {
-    uint64_t        size;
-    njs_chb_node_t  *n;
-
     if (njs_slow_path(chain->error)) {
         return -1;
     }
 
-    n = chain->nodes;
-
-    size = 0;
-
-    while (n != NULL) {
-        size += njs_chb_node_size(n);
-        n = n->next;
-    }
-
-    return size;
+    return chain->total_size;
 }
 
 
@@ -151,6 +150,7 @@ njs_inline void
 njs_chb_written(njs_chb_t *chain, size_t bytes)
 {
     chain->last->pos += bytes;
+    chain->total_size += bytes;
 }
 
 
