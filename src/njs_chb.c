@@ -129,7 +129,10 @@ njs_chb_drain(njs_chb_t *chain, size_t drain)
         drain -= njs_chb_node_size(n);
         chain->nodes = n->next;
 
-        njs_mp_free(chain->pool, n);
+        if (chain->free != NULL) {
+            chain->free(chain->pool, n);
+        }
+
         n = chain->nodes;
     }
 
@@ -184,7 +187,11 @@ njs_chb_drop(njs_chb_t *chain, size_t drop)
 
     while (n != NULL) {
         next = n->next;
-        njs_mp_free(chain->pool, n);
+
+        if (chain->free != NULL) {
+            chain->free(chain->pool, n);
+        }
+
         n = next;
     }
 }
