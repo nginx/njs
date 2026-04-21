@@ -2141,7 +2141,7 @@ njs_typed_array_prototype_join(njs_vm_t *vm, njs_value_t *args,
         return NJS_ERROR;
     }
 
-    NJS_CHB_MP_INIT(&chain, njs_vm_memory_pool(vm));
+    NJS_CHB_MP_INIT_MAX(&chain, njs_vm_memory_pool(vm), NJS_STRING_MAX_LENGTH);
 
     njs_typed_array_to_chain(vm, &chain, array, separator);
 

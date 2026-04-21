@@ -1695,7 +1695,7 @@ njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     value = &entry;
 
-    NJS_CHB_MP_INIT(&chain, njs_vm_memory_pool(vm));
+    NJS_CHB_MP_INIT_MAX(&chain, njs_vm_memory_pool(vm), NJS_STRING_MAX_LENGTH);
 
     for (i = 0; i < len; i++) {
         ret = njs_value_property_i64(vm, this, i, value);
@@ -1732,7 +1732,13 @@ njs_array_prototype_join(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     size = njs_chb_size(&chain);
     if (njs_slow_path(size < 0)) {
-        njs_memory_error(vm);
+        if (chain.error == NJS_CHB_ERR_OVERFLOW) {
+            njs_range_error(vm, "invalid string length");
+
+        } else {
+            njs_memory_error(vm);
+        }
+
         return NJS_ERROR;
     }
 
