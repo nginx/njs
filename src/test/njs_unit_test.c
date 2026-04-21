@@ -23692,6 +23692,71 @@ njs_chb_test(njs_vm_t *vm, njs_opts_t *opts, njs_stat_t *stat)
     njs_chb_destroy(&chain);
     njs_mp_free(njs_vm_memory_pool(vm), string.start);
 
+    /*
+     * Overflow: capped chain refuses appends beyond max_size and
+     * reports NJS_CHB_ERR_OVERFLOW.
+     */
+    NJS_CHB_MP_INIT_MAX(&chain, njs_vm_memory_pool(vm), 100);
+
+    njs_chb_append_literal(&chain, "0123456789");
+
+    if (chain.error != NJS_CHB_ERR_NONE || njs_chb_size(&chain) != 10) {
+        ret = NJS_ERROR;
+        njs_printf("chb cap: pre-overflow state wrong, "
+                   "error:%d size:%z\n",
+                   (int) chain.error, (size_t) njs_chb_size(&chain));
+        goto done;
+    }
+
+    for (i = 0; i < 20; i++) {
+        njs_chb_append(&chain, "0123456789", 10);
+    }
+
+    if (chain.error != NJS_CHB_ERR_OVERFLOW) {
+        ret = NJS_ERROR;
+        njs_printf("chb cap: expected NJS_CHB_ERR_OVERFLOW, got %d\n",
+                   (int) chain.error);
+        goto done;
+    }
+
+    if (njs_chb_size(&chain) != -1) {
+        ret = NJS_ERROR;
+        njs_printf("chb cap: size after overflow should be -1, got %z\n",
+                   (size_t) njs_chb_size(&chain));
+        goto done;
+    }
+
+    njs_chb_destroy(&chain);
+
+    /*
+     * Full-chain drop preserves max_size.
+     */
+    NJS_CHB_MP_INIT_MAX(&chain, njs_vm_memory_pool(vm), 20);
+
+    njs_chb_append_literal(&chain, "0123456789");
+    njs_chb_drop(&chain, 100);
+
+    if (chain.max_size != 20 || njs_chb_size(&chain) != 0) {
+        ret = NJS_ERROR;
+        njs_printf("chb drop: full reset lost cap or size, "
+                   "max_size:%z size:%z\n",
+                   (size_t) chain.max_size, (size_t) njs_chb_size(&chain));
+        goto done;
+    }
+
+    /* Chain still enforces the cap after the reset. */
+    for (i = 0; i < 5; i++) {
+        njs_chb_append_literal(&chain, "0123456789");
+    }
+
+    if (chain.error != NJS_CHB_ERR_OVERFLOW) {
+        ret = NJS_ERROR;
+        njs_printf("chb drop: cap not enforced after full reset\n");
+        goto done;
+    }
+
+    njs_chb_destroy(&chain);
+
 done:
 
     if (ret != NJS_OK) {

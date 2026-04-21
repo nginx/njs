@@ -107,7 +107,13 @@ njs_string_create_chb(njs_vm_t *vm, njs_value_t *value, njs_chb_t *chain)
 
     size = njs_chb_size(chain);
     if (njs_slow_path(size < 0)) {
-        njs_memory_error(vm);
+        if (chain->error == NJS_CHB_ERR_OVERFLOW) {
+            njs_range_error(vm, "invalid string length");
+
+        } else {
+            njs_memory_error(vm);
+        }
+
         return NJS_ERROR;
     }
 
