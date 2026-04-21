@@ -1081,7 +1081,8 @@ njs_json_stringify_iterator(njs_json_stringify_t *stringify,
         goto memory_error;
     }
 
-    NJS_CHB_MP_INIT(&chain, njs_vm_memory_pool(stringify->vm));
+    NJS_CHB_MP_INIT_MAX(&chain, njs_vm_memory_pool(stringify->vm),
+                        NJS_STRING_MAX_LENGTH);
 
     for ( ;; ) {
         if (state->index == 0) {
@@ -1188,8 +1189,16 @@ done:
 
     size = njs_chb_size(&chain);
     if (njs_slow_path(size < 0)) {
+        if (chain.error == NJS_CHB_ERR_OVERFLOW) {
+            njs_range_error(stringify->vm, "invalid string length");
+
+        } else {
+            njs_memory_error(stringify->vm);
+        }
+
         njs_chb_destroy(&chain);
-        goto memory_error;
+
+        return NJS_ERROR;
     }
 
     if (size == 0) {
@@ -1200,7 +1209,7 @@ done:
     ret = njs_string_create_chb(stringify->vm, retval, &chain);
     if (njs_slow_path(ret != NJS_OK)) {
         njs_chb_destroy(&chain);
-        goto memory_error;
+        return NJS_ERROR;
     }
 
 release:

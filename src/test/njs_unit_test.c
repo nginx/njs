@@ -8721,6 +8721,18 @@ static njs_unit_test_t  njs_test[] =
                  "String.prototype.concat.apply(s, a.slice(1))"),
       njs_str("RangeError: invalid string length") },
 
+#if (NJS_64BIT)
+    /*
+     * Adversarial regex replace must throw RangeError instead of
+     * OOM-killing the process.  The chain accumulates ~2GiB before the
+     * cap trips, hence 64-bit only.
+     */
+    { njs_str("var s = 'x'.repeat(1 << 18);"
+                 "var r = '$1'.repeat(1 << 14);"
+                 "s.replace(/(.+)/g, r)"),
+      njs_str("RangeError: invalid string length") },
+#endif
+
     { njs_str("var a = 'abcdefgh'; a.substr(3, 15)"),
       njs_str("defgh") },
 
