@@ -1,3 +1,10 @@
+Changes with njs 0.9.8                                       23 Apr 2026
+
+    nginx modules:
+
+    *) Bugfix: fixed loading of the built-in "crypto" module.
+       The issue was introduced in 3185ce81 (0.9.7).
+
 Changes with njs 0.9.7                                       21 Apr 2026
 
     nginx modules:
