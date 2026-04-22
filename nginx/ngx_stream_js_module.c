@@ -10,6 +10,7 @@
 #include <ngx_core.h>
 #include <ngx_stream.h>
 #include "ngx_js.h"
+#include "ngx_js_modules.h"
 
 
 typedef struct ngx_stream_js_ctx_s  ngx_stream_js_ctx_t;
@@ -809,22 +810,7 @@ njs_module_t  ngx_js_stream_module = {
 
 
 njs_module_t *njs_stream_js_addon_modules[] = {
-    /*
-     * Shared addons should be in the same order and the same positions
-     * in all nginx modules.
-     */
-    &ngx_js_ngx_module,
-    &ngx_js_fetch_module,
-    &ngx_js_shared_dict_module,
-#ifdef NJS_HAVE_OPENSSL
-    &njs_webcrypto_module,
-#endif
-#ifdef NJS_HAVE_XML
-    &njs_xml_module,
-#endif
-#ifdef NJS_HAVE_ZLIB
-    &njs_zlib_module,
-#endif
+    NGX_JS_NJS_ADDON_MODULES
     &ngx_js_stream_module,
     NULL,
 };
@@ -906,22 +892,7 @@ static JSClassDef ngx_stream_qjs_variables_class = {
 
 
 qjs_module_t *njs_stream_qjs_addon_modules[] = {
-    &ngx_qjs_ngx_module,
-    &ngx_qjs_ngx_shared_dict_module,
-    &ngx_qjs_ngx_fetch_module,
-    /*
-     * Shared addons should be in the same order and the same positions
-     * in all nginx modules.
-     */
-#ifdef NJS_HAVE_OPENSSL
-    &qjs_webcrypto_module,
-#endif
-#ifdef NJS_HAVE_XML
-    &qjs_xml_module,
-#endif
-#ifdef NJS_HAVE_ZLIB
-    &qjs_zlib_module,
-#endif
+    NGX_JS_QJS_ADDON_MODULES
     NULL,
 };
 

@@ -10,6 +10,7 @@
 #include <ngx_core.h>
 #include <ngx_http.h>
 #include "ngx_js.h"
+#include "ngx_js_modules.h"
 
 
 typedef struct {
@@ -1072,22 +1073,7 @@ njs_module_t  ngx_js_http_module = {
 
 
 njs_module_t *njs_http_js_addon_modules[] = {
-    /*
-     * Shared addons should be in the same order and the same positions
-     * in all nginx modules.
-     */
-    &ngx_js_ngx_module,
-    &ngx_js_fetch_module,
-    &ngx_js_shared_dict_module,
-#ifdef NJS_HAVE_OPENSSL
-    &njs_webcrypto_module,
-#endif
-#ifdef NJS_HAVE_XML
-    &njs_xml_module,
-#endif
-#ifdef NJS_HAVE_ZLIB
-    &njs_zlib_module,
-#endif
+    NGX_JS_NJS_ADDON_MODULES
     &ngx_js_http_module,
     NULL,
 };
@@ -1217,24 +1203,7 @@ static JSClassDef ngx_http_qjs_headers_out_class = {
 
 
 qjs_module_t *njs_http_qjs_addon_modules[] = {
-    &ngx_qjs_ngx_module,
-    &ngx_qjs_ngx_shared_dict_module,
-#ifdef NJS_HAVE_QUICKJS
-    &ngx_qjs_ngx_fetch_module,
-#endif
-    /*
-     * Shared addons should be in the same order and the same positions
-     * in all nginx modules.
-     */
-#ifdef NJS_HAVE_OPENSSL
-    &qjs_webcrypto_module,
-#endif
-#ifdef NJS_HAVE_XML
-    &qjs_xml_module,
-#endif
-#ifdef NJS_HAVE_ZLIB
-    &qjs_zlib_module,
-#endif
+    NGX_JS_QJS_ADDON_MODULES
     NULL,
 };
 
