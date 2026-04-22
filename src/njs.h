@@ -11,8 +11,8 @@
 
 #include <njs_auto_config.h>
 
-#define NJS_VERSION                 "0.9.7"
-#define NJS_VERSION_NUMBER          0x000907
+#define NJS_VERSION                 "0.9.8"
+#define NJS_VERSION_NUMBER          0x000908
 
 
 #include <string.h>
