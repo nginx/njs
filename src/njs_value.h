@@ -59,6 +59,7 @@ typedef enum {
     NJS_PROMISE,
     NJS_OBJECT_VALUE,
     NJS_ARRAY_BUFFER,
+    NJS_SHARED_ARRAY_BUFFER,
     NJS_DATA_VIEW,
     NJS_VALUE_TYPE_MAX
 } njs_value_type_t;
@@ -195,6 +196,7 @@ struct njs_array_s {
 struct njs_array_buffer_s {
     njs_object_t                      object;
     size_t                            size;
+    uint8_t                           shared;
     union {
         uint8_t                       *u8;
         uint16_t                      *u16;
@@ -604,7 +606,12 @@ typedef struct {
 
 
 #define njs_is_array_buffer(value)                                            \
-    ((value)->type == NJS_ARRAY_BUFFER)
+    (((value)->type == NJS_ARRAY_BUFFER)                                      \
+     || ((value)->type == NJS_SHARED_ARRAY_BUFFER))
+
+
+#define njs_is_shared_array_buffer(value)                                     \
+    ((value)->type == NJS_SHARED_ARRAY_BUFFER)
 
 
 #define njs_is_typed_array(value)                                             \
@@ -871,6 +878,15 @@ njs_set_array_buffer(njs_value_t *value, njs_array_buffer_t *array)
 {
     value->data.u.array_buffer = array;
     value->type = NJS_ARRAY_BUFFER;
+    value->data.truth = 1;
+}
+
+
+njs_inline void
+njs_set_shared_array_buffer(njs_value_t *value, njs_array_buffer_t *array)
+{
+    value->data.u.array_buffer = array;
+    value->type = NJS_SHARED_ARRAY_BUFFER;
     value->data.truth = 1;
 }
 

@@ -68,6 +68,7 @@
 #include <njs_async.h>
 
 #include <njs_math.h>
+#include <njs_atomics.h>
 #include <njs_json.h>
 #include <njs_encoding.h>
 #include <njs_buffer.h>
