@@ -434,9 +434,6 @@ JSValue ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
 #define ngx_qjs_main_conf(cx)                                                \
     ((ngx_js_main_conf_t *) ngx_qjs_meta(cx, NGX_JS_EXTERNAL_MAIN_CONF))
 
-extern qjs_module_t  qjs_webcrypto_module;
-extern qjs_module_t  qjs_xml_module;
-extern qjs_module_t  qjs_zlib_module;
 extern qjs_module_t  ngx_qjs_ngx_module;
 extern qjs_module_t  ngx_qjs_ngx_shared_dict_module;
 extern qjs_module_t  ngx_qjs_ngx_fetch_module;
@@ -491,9 +488,6 @@ void *ngx_js_queue_pop(ngx_js_queue_t *queue);
 
 
 extern njs_module_t  ngx_js_ngx_module;
-extern njs_module_t  njs_webcrypto_module;
-extern njs_module_t  njs_xml_module;
-extern njs_module_t  njs_zlib_module;
 
 
 #include "ngx_js_fetch.h"
