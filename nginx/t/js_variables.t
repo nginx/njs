@@ -35,7 +35,8 @@ events {
 http {
     %%TEST_GLOBALS_HTTP%%
 
-    js_set $test_var   test.variable;
+    js_set $test_var        test.variable;
+    js_set $test_short_var  test.short_var;
 
     js_import test.js;
 
@@ -50,8 +51,16 @@ http {
             return 200 $test_var$foo;
         }
 
+        location /var_set_short {
+            return 200 $test_short_var$foo;
+        }
+
         location /content_set {
             js_content test.content_set;
+        }
+
+        location /content_set_short {
+            js_content test.short_content_set;
         }
 
         location /not_found_set {
@@ -72,9 +81,19 @@ $t->write_file('test.js', <<EOF);
         return 'test_var';
     }
 
+    function short_var(r) {
+        r.var.foo = r.var.arg_a;
+        return 'short_var';
+    }
+
     function content_set(r) {
         r.variables.foo = r.variables.arg_a;
         r.return(200, r.variables.foo);
+    }
+
+    function short_content_set(r) {
+        r.var.foo = r.var.arg_a;
+        r.return(200, r.var.foo);
     }
 
     function not_found_set(r) {
@@ -98,16 +117,21 @@ $t->write_file('test.js', <<EOF);
         r.return(200, name);
     }
 
-    export default {variable, content_set, not_found_set, variable_lowkey};
+    export default {variable, short_var, content_set, short_content_set,
+                    not_found_set, variable_lowkey};
 
 EOF
 
-$t->try_run('no njs')->plan(5);
+$t->try_run('no njs')->plan(7);
 
 ###############################################################################
 
 like(http_get('/var_set?a=bar'), qr/test_varbar/, 'var set');
+like(http_get('/var_set_short?a=bar'), qr/short_varbar/,
+    'short var set via r.var');
 like(http_get('/content_set?a=bar'), qr/bar/, 'content set');
+like(http_get('/content_set_short?a=bar'), qr/bar/,
+    'short content set via r.var');
 like(http_get('/not_found_set'), qr/variable not found/, 'not found exception');
 like(http_get('/variable_lowkey'), qr/X{16}/,
 	'variable name is not overwritten while reading');

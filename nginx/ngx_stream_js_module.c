@@ -688,6 +688,16 @@ static njs_external_t  ngx_stream_js_ext_session[] = {
 
     {
         .flags = NJS_EXTERN_OBJECT,
+        .name.string = njs_str("var"),
+        .u.object = {
+            .writable = 1,
+            .prop_handler = ngx_stream_js_ext_variables,
+            .magic32 = NGX_JS_STRING,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_OBJECT,
         .name.string = njs_str("variables"),
         .u.object = {
             .writable = 1,
@@ -727,6 +737,16 @@ static njs_external_t  ngx_stream_js_ext_periodic_session[] = {
             .writable = 1,
             .prop_handler = ngx_stream_js_periodic_variables,
             .magic32 = NGX_JS_BUFFER,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_OBJECT,
+        .name.string = njs_str("var"),
+        .u.object = {
+            .writable = 1,
+            .prop_handler = ngx_stream_js_periodic_variables,
+            .magic32 = NGX_JS_STRING,
         }
     },
 
@@ -839,6 +859,8 @@ static const JSCFunctionListEntry ngx_stream_qjs_ext_session[] = {
     JS_CFUNC_DEF("setReturnValue", 1, ngx_stream_qjs_ext_set_return_value),
     JS_CGETSET_MAGIC_DEF("status", ngx_stream_qjs_ext_uint, NULL,
                          offsetof(ngx_stream_session_t, status)),
+    JS_CGETSET_MAGIC_DEF("var", ngx_stream_qjs_ext_variables,
+                         NULL, NGX_JS_STRING),
     JS_CGETSET_MAGIC_DEF("variables", ngx_stream_qjs_ext_variables,
                          NULL, NGX_JS_STRING),
     JS_CFUNC_MAGIC_DEF("warn", 1, ngx_stream_qjs_ext_log, NGX_LOG_WARN),
@@ -850,6 +872,8 @@ static const JSCFunctionListEntry ngx_stream_qjs_ext_periodic[] = {
                        JS_PROP_CONFIGURABLE),
     JS_CGETSET_MAGIC_DEF("rawVariables", ngx_stream_qjs_ext_periodic_variables,
                    NULL, NGX_JS_BUFFER),
+    JS_CGETSET_MAGIC_DEF("var", ngx_stream_qjs_ext_periodic_variables,
+                         NULL, NGX_JS_STRING),
     JS_CGETSET_MAGIC_DEF("variables", ngx_stream_qjs_ext_periodic_variables,
                          NULL, NGX_JS_STRING),
 };
@@ -1104,8 +1128,9 @@ ngx_stream_js_variable_set(ngx_stream_session_t *s,
 
     if (rc == NGX_DECLINED) {
         ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
-                      "no \"js_import\" directives found for \"js_set\" handler"
-                      " \"%V\" in the current scope", fname);
+                      "no \"js_import\" or inline expression found"
+                      " for \"js_set\" handler \"%V\" at %s:%ui",
+                      fname, vdata->file_name, vdata->line);
         v->not_found = 1;
         return NGX_OK;
     }
@@ -1192,6 +1217,7 @@ ngx_stream_js_init_vm(ngx_stream_session_t *s, njs_int_t proto_id)
         }
 
         ngx_js_ctx_init((ngx_js_ctx_t *) ctx, s->connection->log);
+        ctx->conf = (ngx_js_loc_conf_t *) jscf;
 
         ngx_stream_set_ctx(s, ctx, ngx_stream_js_module);
     }
@@ -3486,9 +3512,12 @@ invalid:
 static char *
 ngx_stream_js_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
-    ngx_str_t              *value;
-    ngx_js_set_t           *data, *prev;
-    ngx_stream_variable_t  *v;
+    ngx_str_t                  *value;
+    ngx_js_set_t               *data, *prev;
+    ngx_stream_variable_t      *v;
+    ngx_stream_js_srv_conf_t   *jscf;
+
+    static ngx_uint_t  ngx_stream_js_inline_index;
 
     value = cf->args->elts;
 
@@ -3511,19 +3540,25 @@ ngx_stream_js_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         return NGX_CONF_ERROR;
     }
 
-    data->fname = value[2];
-    data->file_name = cf->conf_file->file.name.data;
-    data->line = cf->conf_file->line;
+    jscf = ngx_stream_conf_get_module_srv_conf(cf, ngx_stream_js_module);
+
+    if (ngx_js_set_init(cf, &jscf->inlines, &ngx_stream_js_inline_index,
+                        &value[2], "s", data)
+        != NGX_OK)
+    {
+        return NGX_CONF_ERROR;
+    }
 
     if (v->get_handler == ngx_stream_js_variable_set) {
         prev = (ngx_js_set_t *) v->data;
 
         if (data->fname.len != prev->fname.len
-            || ngx_strncmp(data->fname.data, prev->fname.data, data->fname.len) != 0)
+            || ngx_strncmp(data->fname.data, prev->fname.data,
+                           data->fname.len) != 0)
         {
             ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                                "variable \"%V\" is redeclared with "
-                               "different function name", &value[1]);
+                               "different handler", &value[1]);
             return NGX_CONF_ERROR;
         }
     }

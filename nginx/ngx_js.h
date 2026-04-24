@@ -133,6 +133,7 @@ typedef struct {
     ngx_js_queue_t        *reuse_queue;                                       \
     ngx_str_t              cwd;                                               \
     ngx_array_t           *imports;                                           \
+    ngx_array_t           *inlines;                                           \
     ngx_array_t           *paths;                                             \
                                                                               \
     ngx_array_t           *preload_objects;                                   \
@@ -184,6 +185,7 @@ typedef struct {
 
 #define NGX_JS_COMMON_CTX                                                     \
     ngx_engine_t          *engine;                                            \
+    ngx_js_loc_conf_t     *conf;                                              \
     ngx_log_t             *log;                                               \
     njs_opaque_value_t     args[3];                                           \
     njs_opaque_value_t     retval;                                            \
@@ -222,6 +224,15 @@ typedef struct {
     u_char      *file_name;
     ngx_uint_t   line;
 } ngx_js_set_t;
+
+
+typedef struct {
+    ngx_str_t    code;
+    ngx_str_t    fname;
+    ngx_str_t    arg;
+    u_char      *file;
+    ngx_uint_t   line;
+} ngx_js_inline_t;
 
 
 struct ngx_js_ctx_s {
@@ -452,6 +463,9 @@ char * ngx_js_preload_object(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 char * ngx_js_fetch_proxy(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 ngx_int_t ngx_js_parse_proxy_url(ngx_pool_t *pool, ngx_log_t *log,
     ngx_str_t *url_str, ngx_url_t **url_out, ngx_str_t *auth_header_out);
+ngx_int_t ngx_js_is_function_ref(ngx_str_t *str);
+ngx_int_t ngx_js_set_init(ngx_conf_t *cf, ngx_array_t **inlines,
+    ngx_uint_t *index, ngx_str_t *handler, const char *arg, ngx_js_set_t *set);
 ngx_int_t ngx_js_merge_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf,
     ngx_js_loc_conf_t *prev,
     ngx_int_t (*init_vm)(ngx_conf_t *cf, ngx_js_loc_conf_t *conf));
