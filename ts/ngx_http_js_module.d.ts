@@ -273,6 +273,19 @@ interface NginxHTTPSendBufferOptions {
     flush?: boolean
 }
 
+/**
+ * @since 0.9.8
+ */
+interface NginxHTTPRequestForm {
+    get(name: NjsStringOrBuffer): string | null;
+    getAll(name: NjsStringOrBuffer): string[];
+    has(name: NjsStringOrBuffer): boolean;
+    forEach(callback: (value: string, key: string,
+        form: NginxHTTPRequestForm) => void, thisArg?: any): void;
+    hasFiles(): boolean;
+    fileFieldNames(): string[];
+}
+
 interface NginxHTTPRequest {
     /**
      * Request arguments object.
@@ -382,6 +395,51 @@ interface NginxHTTPRequest {
      */
     readonly requestBody?: string;
     /**
+     * Reads the client request body and returns a Promise resolving
+     * with the body as a string.
+     *
+     * Available in js_access and js_content directives.  The request body
+     * size is limited by client_max_body_size.
+     *
+     * @returns A Promise that resolves with the request body as a string.
+     * @since 0.9.8
+     */
+    readRequestText(): Promise<string>;
+    /**
+     * Reads the client request body and returns a Promise resolving
+     * with the body as an ArrayBuffer.
+     *
+     * Available in js_access and js_content directives.  The request body
+     * size is limited by client_max_body_size.
+     *
+     * @returns A Promise that resolves with the request body
+     *   as an ArrayBuffer.
+     * @since 0.9.8
+     */
+    readRequestArrayBuffer(): Promise<ArrayBuffer>;
+    /**
+     * Reads the client request body and returns a Promise resolving
+     * with the body parsed as JSON.
+     *
+     * Available in js_access and js_content directives.  The request body
+     * size is limited by client_max_body_size.
+     *
+     * @returns A Promise that resolves with the parsed JSON value.
+     * @since 0.9.8
+     */
+    readRequestJSON(): Promise<any>;
+    /**
+     * Reads the client request body and parses it as a supported HTML form.
+     *
+     * Supports `application/x-www-form-urlencoded` and
+     * `multipart/form-data`.
+     *
+     * File parts are detected but their contents are not exposed.
+     *
+     * @since 0.9.8
+     */
+    readRequestForm(options?: { maxKeys?: number }): Promise<NginxHTTPRequestForm>;
+    /**
      * Subrequest response body. The size of response body is limited by
      * the subrequest_output_buffer_size directive.
      *
@@ -414,6 +472,13 @@ interface NginxHTTPRequest {
      * @param body Respose body.
      */
     return(status: number, body?: NjsStringOrBuffer): void;
+    /**
+     * Signals that the handler has no opinion about whether access
+     * should be allowed or denied.  Useful with the ``satisfy any``
+     * directive: without this call the handler implicitly allows
+     * access (returns NGX_OK to the access phase checker).
+     */
+    decline(): void;
     /**
      * Sends a part of the response body to the client.
      */

@@ -268,9 +268,6 @@ static njs_external_t  ngx_js_ext_http_request[] = {
         .enumerable = 1,
         .u.method = {
             .native = ngx_request_js_ext_body,
-#define NGX_JS_BODY_ARRAY_BUFFER   0
-#define NGX_JS_BODY_JSON           1
-#define NGX_JS_BODY_TEXT           2
             .magic8 = NGX_JS_BODY_ARRAY_BUFFER
         }
     },

@@ -11,6 +11,7 @@
 #include <ngx_http.h>
 #include "ngx_js.h"
 #include "ngx_js_modules.h"
+#include "ngx_js_form.h"
 
 
 typedef struct {
@@ -18,6 +19,7 @@ typedef struct {
 
     ngx_http_complex_value_t  fetch_proxy_cv;
 
+    ngx_str_t              access;
     ngx_str_t              content;
     ngx_str_t              header_filter;
     ngx_str_t              body_filter;
@@ -74,6 +76,65 @@ struct ngx_http_js_ctx_s {
                                         ngx_chain_t *in);
 
     ngx_js_periodic_t     *periodic;
+
+    unsigned               in_progress:1;
+
+    /*
+     * Body-read ownership state for the js_access phase handler.
+     *
+     * readRequest*() cannot call ngx_http_read_client_request_body()
+     * from the JS native directly.  The phase handler must choose between
+     * NGX_AGAIN ("I still own the request") and NGX_DONE ("I finalized
+     * it myself"), but which one is correct depends on whether the body
+     * read completes synchronously or goes async -- and that is only
+     * known after the call returns.
+     *
+     * In the async case the body reader takes over r->read_event_handler
+     * and may call ngx_http_finalize_request() on I/O errors without
+     * invoking our post_handler.  If the phase handler had returned
+     * NGX_AGAIN, both the phase engine and the body reader would own
+     * the request, causing a hang on errors such as chunked 413.
+     *
+     *   IDLE         no body read requested (initial and terminal state).
+     *   DEFERRED     JS called readRequest*(); the access handler
+     *                will start the read after engine->call() returns.
+     *   IN_PROGRESS  ngx_http_read_client_request_body() returned
+     *                NGX_AGAIN; request ownership transferred to the
+     *                body reader via NGX_DONE.  access_body_done
+     *                callback resumes phases on completion.
+     *
+     * IDLE -> DEFERRED -> IDLE                  (sync completion or error)
+     * IDLE -> DEFERRED -> IN_PROGRESS -> IDLE   (async completion)
+     */
+#define NGX_HTTP_JS_BODY_READ_IDLE 0
+#define NGX_HTTP_JS_BODY_READ_DEFERRED 1
+#define NGX_HTTP_JS_BODY_READ_IN_PROGRESS 2
+#define NGX_HTTP_JS_BODY_READ_FORM 4
+#define ngx_http_js_body_read_phase(state) ((state) & 3)
+#define ngx_http_js_body_read_is_form(state)                                  \
+    (((state) & NGX_HTTP_JS_BODY_READ_FORM) != 0)
+#define ngx_http_js_body_read_is_deferred(state)                              \
+    (ngx_http_js_body_read_phase(state) == NGX_HTTP_JS_BODY_READ_DEFERRED)
+#define ngx_http_js_body_read_is_in_progress(state)                           \
+    (ngx_http_js_body_read_phase(state) == NGX_HTTP_JS_BODY_READ_IN_PROGRESS)
+#define ngx_http_js_body_read_to_in_progress(state)                           \
+    (((state) & NGX_HTTP_JS_BODY_READ_FORM)                                   \
+     | NGX_HTTP_JS_BODY_READ_IN_PROGRESS)
+    unsigned               body_read_state:3;
+
+    /*
+     * Collected request body as a contiguous buffer.
+     * Shared by both synchronous property getters (requestText,
+     * requestBuffer) and async readRequest*() methods.
+     */
+    unsigned               body_read_nul:1;
+    u_char                *body_read_data;
+    size_t                 body_read_len;
+
+    /* Pending promise/event for deferred body reads. */
+    void                  *body_read_event;
+
+    ngx_js_form_t         *request_form;
 };
 
 
@@ -112,6 +173,8 @@ typedef struct {
 } ngx_http_js_entry_t;
 
 
+static ngx_int_t ngx_http_js_access_handler(ngx_http_request_t *r);
+static void ngx_http_js_access_write_event_handler(ngx_http_request_t *r);
 static ngx_int_t ngx_http_js_content_handler(ngx_http_request_t *r);
 static void ngx_http_js_content_event_handler(ngx_http_request_t *r);
 static void ngx_http_js_content_write_event_handler(ngx_http_request_t *r);
@@ -124,6 +187,70 @@ static ngx_int_t ngx_http_js_variable_var(ngx_http_request_t *r,
     ngx_http_variable_value_t *v, uintptr_t data);
 static ngx_int_t ngx_http_js_init_vm(ngx_http_request_t *r, njs_int_t proto_id);
 static void ngx_http_js_cleanup_ctx(void *data);
+static void ngx_http_js_body_read_abort(ngx_http_js_ctx_t *ctx);
+static ngx_int_t ngx_http_js_collect_body(ngx_http_request_t *r,
+    ngx_http_js_ctx_t *ctx);
+static void ngx_http_js_access_body_finalize(ngx_http_request_t *r,
+    ngx_http_js_ctx_t *ctx, ngx_int_t rc);
+static void ngx_http_js_access_body_done(ngx_http_request_t *r);
+static ngx_int_t ngx_http_js_body_resolve(ngx_http_js_ctx_t *ctx,
+    void *event);
+static ngx_int_t ngx_http_js_request_form(ngx_http_request_t *r,
+    ngx_http_js_ctx_t *ctx, ngx_uint_t max_keys, ngx_js_form_t **form,
+    ngx_str_t *error);
+static njs_int_t ngx_http_js_form_to_value(njs_vm_t *vm, ngx_http_request_t *r,
+    ngx_http_js_ctx_t *ctx, ngx_uint_t max_keys, njs_value_t *retval);
+static njs_int_t ngx_http_js_request_form_max_keys(njs_vm_t *vm,
+    njs_value_t *options, ngx_uint_t *max_keys);
+static njs_int_t ngx_http_js_request_form_make(njs_vm_t *vm,
+    ngx_js_form_t *form, njs_value_t *retval);
+static njs_int_t ngx_http_js_ext_read_request_form(njs_vm_t *vm,
+    njs_value_t *args, njs_uint_t nargs, njs_index_t unused,
+    njs_value_t *retval);
+static njs_int_t ngx_http_js_ext_request_form_get(njs_vm_t *vm,
+    njs_value_t *args, njs_uint_t nargs, njs_index_t as_array,
+    njs_value_t *retval);
+static njs_int_t ngx_http_js_ext_request_form_has(njs_vm_t *vm,
+    njs_value_t *args, njs_uint_t nargs, njs_index_t unused,
+    njs_value_t *retval);
+static njs_int_t ngx_http_js_ext_request_form_for_each(njs_vm_t *vm,
+    njs_value_t *args, njs_uint_t nargs, njs_index_t unused,
+    njs_value_t *retval);
+static njs_int_t ngx_http_js_ext_request_form_has_files(njs_vm_t *vm,
+    njs_value_t *args, njs_uint_t nargs, njs_index_t unused,
+    njs_value_t *retval);
+static njs_int_t ngx_http_js_ext_request_form_file_field_names(njs_vm_t *vm,
+    njs_value_t *args, njs_uint_t nargs, njs_index_t unused,
+    njs_value_t *retval);
+
+static njs_int_t ngx_http_js_ext_read_request_body(njs_vm_t *vm,
+    njs_value_t *args, njs_uint_t nargs, njs_index_t magic,
+    njs_value_t *retval);
+#if (NJS_HAVE_QUICKJS)
+static JSValue ngx_http_qjs_ext_read_request_body(JSContext *cx,
+    JSValueConst this_val, int argc, JSValueConst *argv, int magic);
+static ngx_int_t ngx_http_qjs_body_resolve(ngx_http_js_ctx_t *ctx,
+    void *event);
+static JSValue ngx_http_qjs_form_to_value(JSContext *cx, ngx_http_request_t *r,
+    ngx_http_js_ctx_t *ctx, ngx_uint_t max_keys);
+static ngx_int_t ngx_http_qjs_request_form_max_keys(JSContext *cx,
+    JSValueConst options, ngx_uint_t *max_keys);
+static JSValue ngx_http_qjs_request_form_make(JSContext *cx,
+    ngx_js_form_t *form);
+static JSValue ngx_http_qjs_ext_read_request_form(JSContext *cx,
+    JSValueConst this_val, int argc, JSValueConst *argv);
+static JSValue ngx_http_qjs_ext_request_form_get(JSContext *cx,
+    JSValueConst this_val, int argc, JSValueConst *argv, int as_array);
+static JSValue ngx_http_qjs_ext_request_form_has(JSContext *cx,
+    JSValueConst this_val, int argc, JSValueConst *argv);
+static JSValue ngx_http_qjs_ext_request_form_for_each(JSContext *cx,
+    JSValueConst this_val, int argc, JSValueConst *argv);
+static JSValue ngx_http_qjs_ext_request_form_has_files(JSContext *cx,
+    JSValueConst this_val, int argc, JSValueConst *argv);
+static JSValue ngx_http_qjs_ext_request_form_file_field_names(JSContext *cx,
+    JSValueConst this_val, int argc, JSValueConst *argv);
+static void ngx_http_js_read_body_event_destructor(ngx_qjs_event_t *event);
+#endif
 
 static njs_int_t ngx_http_js_ext_keys_header(njs_vm_t *vm, njs_value_t *value,
     njs_value_t *keys, ngx_list_t *headers);
@@ -191,6 +318,8 @@ static njs_int_t ngx_http_js_ext_done(njs_vm_t *vm, njs_value_t *args,
 static njs_int_t ngx_http_js_ext_finish(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t ngx_http_js_ext_return(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
+static njs_int_t ngx_http_js_ext_decline(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t ngx_http_js_ext_internal_redirect(njs_vm_t *vm,
     njs_value_t *args, njs_uint_t nargs, njs_index_t unused,
@@ -307,6 +436,8 @@ static JSValue ngx_http_qjs_ext_response_body(JSContext *cx,
     JSValueConst this_val, int type);
 static JSValue ngx_http_qjs_ext_return(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv);
+static JSValue ngx_http_qjs_ext_decline(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv);
 static JSValue ngx_http_qjs_ext_send(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv);
 static JSValue ngx_http_qjs_ext_send_buffer(JSContext *cx,
@@ -379,6 +510,8 @@ static char *ngx_http_js_periodic(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 static char *ngx_http_js_set(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 static char *ngx_http_js_var(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
+static char *ngx_http_js_access(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf);
 static char *ngx_http_js_content(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 static char *ngx_http_js_shared_dict_zone(ngx_conf_t *cf, ngx_command_t *cmd,
@@ -479,6 +612,13 @@ static ngx_command_t  ngx_http_js_commands[] = {
       NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE12,
       ngx_http_js_var,
       0,
+      0,
+      NULL },
+
+    { ngx_string("js_access"),
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_CONF_TAKE1,
+      ngx_http_js_access,
+      NGX_HTTP_LOC_CONF_OFFSET,
       0,
       NULL },
 
@@ -682,6 +822,7 @@ static ngx_http_output_body_filter_pt    ngx_http_next_body_filter;
 
 static njs_int_t    ngx_http_js_request_proto_id = 1;
 static njs_int_t    ngx_http_js_periodic_session_proto_id = 2;
+static njs_int_t    ngx_http_js_request_form_proto_id = 3;
 
 
 static njs_external_t  ngx_http_js_ext_request[] = {
@@ -918,6 +1059,17 @@ static njs_external_t  ngx_http_js_ext_request[] = {
 
     {
         .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("decline"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_http_js_ext_decline,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
         .name.string = njs_str("send"),
         .writable = 1,
         .configurable = 1,
@@ -972,6 +1124,53 @@ static njs_external_t  ngx_http_js_ext_request[] = {
 
     {
         .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("readRequestArrayBuffer"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_http_js_ext_read_request_body,
+            .magic8 = NGX_JS_BODY_ARRAY_BUFFER,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("readRequestJSON"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_http_js_ext_read_request_body,
+            .magic8 = NGX_JS_BODY_JSON,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("readRequestForm"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_http_js_ext_read_request_form,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("readRequestText"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_http_js_ext_read_request_body,
+            .magic8 = NGX_JS_BODY_TEXT,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
         .name.string = njs_str("subrequest"),
         .writable = 1,
         .configurable = 1,
@@ -1010,6 +1209,85 @@ static njs_external_t  ngx_http_js_ext_request[] = {
         .u.method = {
             .native = ngx_js_ext_log,
             .magic8 = NGX_LOG_WARN,
+        }
+    },
+};
+
+
+static njs_external_t  ngx_http_js_ext_request_form[] = {
+
+    {
+        .flags = NJS_EXTERN_PROPERTY | NJS_EXTERN_SYMBOL,
+        .name.symbol = NJS_SYMBOL_TO_STRING_TAG,
+        .u.property = {
+            .value = "RequestForm",
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("get"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_http_js_ext_request_form_get,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("getAll"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_http_js_ext_request_form_get,
+            .magic8 = 1,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("has"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_http_js_ext_request_form_has,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("forEach"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_http_js_ext_request_form_for_each,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("hasFiles"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_http_js_ext_request_form_has_files,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("fileFieldNames"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_http_js_ext_request_form_file_field_names,
         }
     },
 };
@@ -1132,12 +1410,21 @@ static const JSCFunctionListEntry ngx_http_qjs_ext_request[] = {
     JS_CGETSET_MAGIC_DEF("responseText", ngx_http_qjs_ext_response_body, NULL,
                          NGX_JS_STRING),
     JS_CFUNC_DEF("return", 2, ngx_http_qjs_ext_return),
+    JS_CFUNC_DEF("decline", 0, ngx_http_qjs_ext_decline),
     JS_CFUNC_DEF("send", 1, ngx_http_qjs_ext_send),
     JS_CFUNC_DEF("sendBuffer", 2, ngx_http_qjs_ext_send_buffer),
     JS_CFUNC_DEF("sendHeader", 0, ngx_http_qjs_ext_send_header),
     JS_CFUNC_DEF("setReturnValue", 1, ngx_http_qjs_ext_set_return_value),
     JS_CGETSET_DEF("status", ngx_http_qjs_ext_status_get,
                    ngx_http_qjs_ext_status_set),
+    JS_CFUNC_MAGIC_DEF("readRequestArrayBuffer", 0,
+                       ngx_http_qjs_ext_read_request_body,
+                       NGX_JS_BODY_ARRAY_BUFFER),
+    JS_CFUNC_MAGIC_DEF("readRequestJSON", 0,
+                       ngx_http_qjs_ext_read_request_body, NGX_JS_BODY_JSON),
+    JS_CFUNC_DEF("readRequestForm", 1, ngx_http_qjs_ext_read_request_form),
+    JS_CFUNC_MAGIC_DEF("readRequestText", 0,
+                       ngx_http_qjs_ext_read_request_body, NGX_JS_BODY_TEXT),
     JS_CFUNC_DEF("subrequest", 3, ngx_http_qjs_ext_subrequest),
     JS_CGETSET_MAGIC_DEF("uri", ngx_http_qjs_ext_string, NULL,
                          offsetof(ngx_http_request_t, uri)),
@@ -1157,6 +1444,19 @@ static const JSCFunctionListEntry ngx_http_qjs_ext_periodic[] = {
 };
 
 
+static const JSCFunctionListEntry ngx_http_qjs_ext_request_form[] = {
+    JS_PROP_STRING_DEF("[Symbol.toStringTag]", "RequestForm",
+                       JS_PROP_CONFIGURABLE),
+    JS_CFUNC_MAGIC_DEF("get", 1, ngx_http_qjs_ext_request_form_get, 0),
+    JS_CFUNC_MAGIC_DEF("getAll", 1, ngx_http_qjs_ext_request_form_get, 1),
+    JS_CFUNC_DEF("has", 1, ngx_http_qjs_ext_request_form_has),
+    JS_CFUNC_DEF("forEach", 2, ngx_http_qjs_ext_request_form_for_each),
+    JS_CFUNC_DEF("hasFiles", 0, ngx_http_qjs_ext_request_form_has_files),
+    JS_CFUNC_DEF("fileFieldNames", 0,
+                 ngx_http_qjs_ext_request_form_file_field_names),
+};
+
+
 static JSClassDef ngx_http_qjs_request_class = {
     "Request",
     .finalizer = ngx_http_qjs_request_finalizer,
@@ -1166,6 +1466,12 @@ static JSClassDef ngx_http_qjs_request_class = {
 static JSClassDef ngx_http_qjs_periodic_class = {
     "PeriodicSession",
     .finalizer = ngx_http_qjs_periodic_finalizer,
+};
+
+
+static JSClassDef ngx_http_qjs_request_form_class = {
+    "RequestForm",
+    .finalizer = NULL,
 };
 
 
@@ -1209,6 +1515,118 @@ qjs_module_t *njs_http_qjs_addon_modules[] = {
 
 
 #endif
+
+
+static ngx_int_t
+ngx_http_js_access_handler(ngx_http_request_t *r)
+{
+    ngx_int_t                rc;
+    ngx_http_js_ctx_t       *ctx;
+    ngx_http_js_loc_conf_t  *jlcf;
+
+    jlcf = ngx_http_get_module_loc_conf(r, ngx_http_js_module);
+
+    if (jlcf->access.len == 0) {
+        return NGX_DECLINED;
+    }
+
+    if (r != r->main) {
+        return NGX_DECLINED;
+    }
+
+    rc = ngx_http_js_init_vm(r, ngx_http_js_request_proto_id);
+    if (rc != NGX_OK) {
+        return rc;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    if (ctx->in_progress) {
+        if (ngx_js_ctx_pending(ctx)) {
+            return NGX_AGAIN;
+        }
+
+        ctx->in_progress = 0;
+
+        if (ctx->rejected_promises != NULL
+            && ctx->rejected_promises->items > 0)
+        {
+            return NGX_HTTP_INTERNAL_SERVER_ERROR;
+        }
+
+        return ctx->status;
+    }
+
+    ctx->status = NGX_OK;
+
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "http js access handler \"%V\"", &jlcf->access);
+
+    rc = ctx->engine->call((ngx_js_ctx_t *) ctx, &jlcf->access, &ctx->args[0],
+                           1);
+
+    if (rc == NGX_ERROR) {
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    /* JS called readRequest*(). */
+
+    if (ngx_http_js_body_read_is_deferred(ctx->body_read_state)) {
+
+        rc = ngx_http_read_client_request_body(r, ngx_http_js_access_body_done);
+
+        if (rc >= NGX_HTTP_SPECIAL_RESPONSE) {
+            ngx_http_js_body_read_abort(ctx);
+            return rc;
+        }
+
+        r->preserve_body = 1;
+
+        if (rc == NGX_OK) {
+            /*
+             * Sync: access_body_done callback already fired, resolved
+             * or rejected the promise.  access_body_finalize() returned
+             * without running posted requests.  Fall through to let
+             * the pending/status check handle the result.
+             */
+            ctx->body_read_state = NGX_HTTP_JS_BODY_READ_IDLE;
+            goto done;
+        }
+
+        ctx->body_read_state = ngx_http_js_body_read_to_in_progress(
+                                                         ctx->body_read_state);
+        ctx->in_progress = 1;
+        ngx_http_finalize_request(r, NGX_DONE);
+        return NGX_DONE;
+    }
+
+done:
+
+    if (ngx_js_ctx_pending(ctx)) {
+        ctx->in_progress = 1;
+        r->write_event_handler = ngx_http_js_access_write_event_handler;
+        return NGX_AGAIN;
+    }
+
+    return ctx->status;
+}
+
+
+static void
+ngx_http_js_access_write_event_handler(ngx_http_request_t *r)
+{
+    ngx_http_js_ctx_t  *ctx;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "http js access write event handler");
+
+    if (!ngx_js_ctx_pending(ctx)) {
+        ngx_http_core_run_phases(r);
+        return;
+    }
+}
 
 
 static ngx_int_t
@@ -2823,6 +3241,30 @@ ngx_http_js_ext_return(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 static njs_int_t
+ngx_http_js_ext_decline(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_index_t unused, njs_value_t *retval)
+{
+    ngx_http_js_ctx_t   *ctx;
+    ngx_http_request_t  *r;
+
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id,
+                        njs_argument(args, 0));
+    if (r == NULL) {
+        njs_vm_error(vm, "\"this\" is not an external");
+        return NJS_ERROR;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    ctx->status = NGX_DECLINED;
+
+    njs_value_undefined_set(retval);
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
 ngx_http_js_ext_internal_redirect(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
 {
@@ -2996,14 +3438,9 @@ ngx_http_js_ext_get_request_body(njs_vm_t *vm, njs_object_prop_t *prop,
     uint32_t unused, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval)
 {
-    u_char              *p, *body;
-    size_t               len;
-    ssize_t              n;
     uint32_t             buffer_type;
-    ngx_buf_t           *buf;
     njs_int_t            ret;
     njs_value_t         *request_body;
-    ngx_chain_t         *cl;
     ngx_http_js_ctx_t   *ctx;
     ngx_http_request_t  *r;
 
@@ -3031,6 +3468,43 @@ ngx_http_js_ext_get_request_body(njs_vm_t *vm, njs_object_prop_t *prop,
         return NJS_DECLINED;
     }
 
+    if (ngx_http_js_collect_body(r, ctx) != NGX_OK) {
+        njs_vm_internal_error(vm, "failed to read request body");
+        return NJS_ERROR;
+    }
+
+    ret = ngx_js_prop(vm, buffer_type, request_body, ctx->body_read_data,
+                      ctx->body_read_len);
+    if (ret != NJS_OK) {
+        return NJS_ERROR;
+    }
+
+    njs_value_assign(retval, request_body);
+
+    return NJS_OK;
+}
+
+
+static ngx_int_t
+ngx_http_js_collect_body(ngx_http_request_t *r, ngx_http_js_ctx_t *ctx)
+{
+    u_char       *p, *body;
+    size_t        len;
+    ssize_t       n;
+    ngx_buf_t    *buf;
+    ngx_chain_t  *cl;
+
+    if (ctx->body_read_data != NULL) {
+        return NGX_OK;
+    }
+
+    if (r->request_body == NULL || r->request_body->bufs == NULL) {
+        ctx->body_read_data = (u_char *) "";
+        ctx->body_read_len = 0;
+        ctx->body_read_nul = 1;
+        return NGX_OK;
+    }
+
     cl = r->request_body->bufs;
     buf = cl->buf;
 
@@ -3039,64 +3513,731 @@ ngx_http_js_ext_get_request_body(njs_vm_t *vm, njs_object_prop_t *prop,
                       "http js reading request body from a temporary file");
 
         if (buf == NULL || !buf->in_file) {
-            njs_vm_internal_error(vm, "cannot find request body");
-            return NJS_ERROR;
+            return NGX_ERROR;
         }
 
         len = buf->file_last - buf->file_pos;
 
-        body = ngx_pnalloc(r->pool, len);
+        body = ngx_pnalloc(r->pool, len + 1);
         if (body == NULL) {
-            njs_vm_memory_error(vm);
-            return NJS_ERROR;
+            return NGX_ERROR;
         }
 
         n = ngx_read_file(buf->file, body, len, buf->file_pos);
         if (n != (ssize_t) len) {
-            njs_vm_internal_error(vm, "failed to read request body");
-            return NJS_ERROR;
+            return NGX_ERROR;
         }
 
-        goto done;
-    }
+        body[len] = '\0';
+        ctx->body_read_nul = 1;
 
-    if (cl->next == NULL) {
+    } else if (cl->next == NULL) {
         len = buf->last - buf->pos;
         body = buf->pos;
 
-        goto done;
+    } else {
+        len = buf->last - buf->pos;
+        cl = cl->next;
+
+        for ( /* void */ ; cl; cl = cl->next) {
+            buf = cl->buf;
+            len += buf->last - buf->pos;
+        }
+
+        p = ngx_pnalloc(r->pool, len + 1);
+        if (p == NULL) {
+            return NGX_ERROR;
+        }
+
+        body = p;
+        cl = r->request_body->bufs;
+
+        for ( /* void */ ; cl; cl = cl->next) {
+            buf = cl->buf;
+            p = ngx_cpymem(p, buf->pos, buf->last - buf->pos);
+        }
+
+        *p = '\0';
+        ctx->body_read_nul = 1;
     }
 
-    len = buf->last - buf->pos;
-    cl = cl->next;
+    ctx->body_read_data = body;
+    ctx->body_read_len = len;
 
-    for ( /* void */ ; cl; cl = cl->next) {
-        buf = cl->buf;
-        len += buf->last - buf->pos;
+    return NGX_OK;
+}
+
+
+static void
+ngx_http_js_body_read_abort(ngx_http_js_ctx_t *ctx)
+{
+    if (ctx->body_read_event != NULL) {
+#if (NJS_HAVE_QUICKJS)
+        if (ctx->engine->type == NGX_ENGINE_QJS) {
+            ngx_js_del_event(ctx, (ngx_qjs_event_t *) ctx->body_read_event);
+        } else
+#endif
+        {
+            ngx_js_del_event(ctx, (ngx_js_event_t *) ctx->body_read_event);
+        }
+
+        ctx->body_read_event = NULL;
     }
 
-    p = ngx_pnalloc(r->pool, len);
-    if (p == NULL) {
+    ctx->body_read_state = NGX_HTTP_JS_BODY_READ_IDLE;
+}
+
+
+static njs_int_t
+ngx_http_js_body_to_value(njs_vm_t *vm, ngx_http_js_ctx_t *ctx,
+    ngx_uint_t type, njs_value_t *retval)
+{
+    njs_int_t           ret;
+    njs_opaque_value_t  arg;
+
+    switch (type) {
+    case NGX_JS_BODY_ARRAY_BUFFER:
+        return njs_vm_value_array_buffer_set(vm, retval,
+                                             ctx->body_read_data,
+                                             ctx->body_read_len);
+
+    case NGX_JS_BODY_JSON:
+        ret = njs_vm_value_string_create(vm, njs_value_arg(&arg),
+                                         ctx->body_read_data,
+                                         ctx->body_read_len);
+        if (ret != NJS_OK) {
+            return NJS_ERROR;
+        }
+
+        return njs_vm_json_parse(vm, njs_value_arg(&arg), 1, retval);
+
+    case NGX_JS_BODY_TEXT:
+    default:
+        return njs_vm_value_string_create(vm, retval,
+                                          ctx->body_read_data,
+                                          ctx->body_read_len);
+    }
+}
+
+
+static ngx_int_t
+ngx_http_js_request_form(ngx_http_request_t *r, ngx_http_js_ctx_t *ctx,
+    ngx_uint_t max_keys, ngx_js_form_t **form, ngx_str_t *error)
+{
+    ngx_int_t  rc;
+    ngx_str_t  content_type;
+
+    if (ctx->request_form != NULL) {
+        *form = ctx->request_form;
+        return NGX_OK;
+    }
+
+    if (r->headers_in.content_type != NULL) {
+        content_type = r->headers_in.content_type->value;
+
+    } else {
+        content_type.len = 0;
+        content_type.data = NULL;
+    }
+
+    rc = ngx_js_parse_form(r->pool, &content_type, ctx->body_read_data,
+                           ctx->body_read_len, max_keys, form, error);
+    if (rc != NGX_OK) {
+        return rc;
+    }
+
+    ctx->request_form = *form;
+
+    return NGX_OK;
+}
+
+
+static njs_int_t
+ngx_http_js_request_form_make(njs_vm_t *vm, ngx_js_form_t *form,
+    njs_value_t *retval)
+{
+    njs_int_t  rc;
+
+    rc = njs_vm_external_create(vm, retval, ngx_http_js_request_form_proto_id,
+                                form, 0);
+    if (rc != NJS_OK) {
         njs_vm_memory_error(vm);
         return NJS_ERROR;
     }
 
-    body = p;
-    cl = r->request_body->bufs;
+    return NJS_OK;
+}
 
-    for ( /* void */ ; cl; cl = cl->next) {
-        buf = cl->buf;
-        p = ngx_cpymem(p, buf->pos, buf->last - buf->pos);
+
+static njs_int_t
+ngx_http_js_form_to_value(njs_vm_t *vm, ngx_http_request_t *r,
+    ngx_http_js_ctx_t *ctx, ngx_uint_t max_keys, njs_value_t *retval)
+{
+    ngx_int_t       rc;
+    ngx_str_t       error;
+    ngx_js_form_t  *form;
+
+    rc = ngx_http_js_request_form(r, ctx, max_keys, &form, &error);
+    if (rc == NGX_OK) {
+        return ngx_http_js_request_form_make(vm, form, retval);
     }
 
-done:
-
-    ret = ngx_js_prop(vm, buffer_type, request_body, body, len);
-    if (ret != NJS_OK) {
+    if (rc == NGX_JS_FORM_TYPE_ERROR) {
+        njs_vm_type_error(vm, "%V", &error);
         return NJS_ERROR;
     }
 
-    njs_value_assign(retval, request_body);
+    if (rc == NGX_JS_FORM_PARSE_ERROR) {
+        njs_vm_error(vm, "%V", &error);
+        return NJS_ERROR;
+    }
+
+    njs_vm_memory_error(vm);
+
+    return NJS_ERROR;
+}
+
+
+static void
+ngx_http_js_access_body_finalize(ngx_http_request_t *r, ngx_http_js_ctx_t *ctx,
+    ngx_int_t rc)
+{
+    switch (ngx_http_js_body_read_phase(ctx->body_read_state)) {
+    case NGX_HTTP_JS_BODY_READ_IN_PROGRESS:
+        ctx->body_read_state = NGX_HTTP_JS_BODY_READ_IDLE;
+
+        if (ngx_js_ctx_pending(ctx)) {
+            r->write_event_handler = ngx_http_js_access_write_event_handler;
+            return;
+        }
+
+        r->write_event_handler = ngx_http_core_run_phases;
+        ngx_http_core_run_phases(r);
+        break;
+
+    case NGX_HTTP_JS_BODY_READ_DEFERRED:
+        /*
+         * Sync body read completion from the access handler.
+         * The promise is resolved/rejected but the access handler
+         * is still on the call stack -- do not run posted requests
+         * or resume phases here; the access handler will do it.
+         */
+        break;
+
+    case NGX_HTTP_JS_BODY_READ_IDLE:
+    default:
+        ngx_http_js_event_finalize(r, rc);
+    }
+}
+
+
+static ngx_int_t
+ngx_http_js_body_resolve(ngx_http_js_ctx_t *ctx, void *event)
+{
+    njs_vm_t            *vm;
+    njs_int_t            rc;
+    ngx_js_event_t      *ev;
+    njs_opaque_value_t   result;
+
+    ev = event;
+    vm = ctx->engine->u.njs.vm;
+
+    if (ngx_http_js_body_read_is_form(ctx->body_read_state)) {
+        rc = ngx_http_js_form_to_value(vm, njs_vm_external(vm,
+                                       ngx_http_js_request_proto_id,
+                                       njs_value_arg(&ctx->args[0])), ctx,
+                                       (uintptr_t) ev->data,
+                                       njs_value_arg(&result));
+
+    } else {
+        rc = ngx_http_js_body_to_value(vm, ctx, (uintptr_t) ev->data,
+                                       njs_value_arg(&result));
+    }
+
+    if (rc != NJS_OK) {
+        njs_vm_exception_get(vm, njs_value_arg(&result));
+
+        rc = ngx_js_call(vm, njs_value_function(njs_value_arg(&ev->args[1])),
+                         &result, 1);
+
+        ngx_js_del_event(ctx, ev);
+        return rc;
+    }
+
+    rc = ngx_js_call(vm, njs_value_function(njs_value_arg(&ev->function)),
+                     &result, 1);
+
+    ngx_js_del_event(ctx, ev);
+
+    return rc;
+}
+
+
+static void
+ngx_http_js_access_body_done(ngx_http_request_t *r)
+{
+    ngx_int_t           rc;
+    ngx_http_js_ctx_t  *ctx;
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "http js body read done");
+
+    /*
+     * ngx_http_read_client_request_body() incremented count.
+     * For the IN_PROGRESS (async) path, ngx_http_finalize_request(NGX_DONE)
+     * already consumed it; for the DEFERRED (sync) path, we consume it here.
+     */
+    if (ngx_http_js_body_read_is_deferred(ctx->body_read_state)) {
+        r->main->count--;
+    }
+
+    if (ctx->body_read_event == NULL) {
+        return;
+    }
+
+    if (ngx_http_js_collect_body(r, ctx) != NGX_OK) {
+        ngx_http_js_body_read_abort(ctx);
+        ngx_http_js_access_body_finalize(r, ctx, NGX_ERROR);
+        return;
+    }
+
+#if (NJS_HAVE_QUICKJS)
+    if (ctx->engine->type == NGX_ENGINE_QJS) {
+        rc = ngx_http_qjs_body_resolve(ctx, ctx->body_read_event);
+    } else
+#endif
+    {
+        rc = ngx_http_js_body_resolve(ctx, ctx->body_read_event);
+    }
+
+    ctx->body_read_event = NULL;
+
+    ngx_http_js_access_body_finalize(r, ctx, rc);
+}
+
+
+static njs_int_t
+ngx_http_js_ext_read_request_body(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t magic, njs_value_t *retval)
+{
+    ngx_int_t            rc;
+    ngx_js_event_t      *event;
+    ngx_http_js_ctx_t   *ctx;
+    ngx_http_request_t  *r;
+
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id,
+                        njs_argument(args, 0));
+    if (r == NULL) {
+        njs_vm_error(vm, "\"this\" is not an external");
+        return NJS_ERROR;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    event = njs_mp_zalloc(njs_vm_memory_pool(vm),
+                          sizeof(ngx_js_event_t)
+                          + sizeof(njs_opaque_value_t) * 2);
+    if (njs_slow_path(event == NULL)) {
+        njs_vm_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    /*
+     * r->request_body is set by ngx_http_read_client_request_body().
+     * JS only runs after body reading completes, so non-NULL means
+     * the body is available.
+     */
+    if (r->request_body) {
+        goto resolve;
+    }
+
+    if (ctx->body_read_event) {
+        njs_vm_error(vm, "request body is already being read");
+        return NJS_ERROR;
+    }
+
+    event->fd = ctx->event_id++;
+    event->args = (njs_opaque_value_t *) &event[1];
+    event->data = (void *) (uintptr_t) magic;
+
+    rc = njs_vm_promise_create(vm, retval, njs_value_arg(event->args));
+    if (rc != NJS_OK) {
+        return NJS_ERROR;
+    }
+
+    njs_value_assign(&event->function, njs_value_arg(event->args));
+
+    ngx_js_add_event(ctx, event);
+
+    ctx->body_read_event = event;
+    ctx->body_read_state = NGX_HTTP_JS_BODY_READ_DEFERRED;
+
+    return NJS_OK;
+
+resolve:
+
+    if (ngx_http_js_collect_body(r, ctx) != NGX_OK) {
+        njs_vm_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    return ngx_http_js_body_to_value(vm, ctx, (ngx_uint_t) magic, retval);
+}
+
+
+static njs_int_t
+ngx_http_js_request_form_max_keys(njs_vm_t *vm, njs_value_t *options,
+    ngx_uint_t *max_keys)
+{
+    ngx_int_t            n;
+    njs_value_t         *value;
+    njs_opaque_value_t   lvalue;
+
+    static const njs_str_t  max_keys_name = njs_str("maxKeys");
+
+    *max_keys = NGX_JS_FORM_DEFAULT_MAX_KEYS;
+
+    if (njs_value_is_undefined(options)) {
+        return NJS_OK;
+    }
+
+    if (!njs_value_is_object(options)) {
+        njs_vm_type_error(vm, "\"options\" must be an object");
+        return NJS_ERROR;
+    }
+
+    value = njs_vm_object_prop(vm, options, &max_keys_name, &lvalue);
+    if (value == NULL) {
+        return NJS_ERROR;
+    }
+
+    if (njs_value_is_undefined(value)) {
+        return NJS_OK;
+    }
+
+    if (ngx_js_integer(vm, value, &n) != NGX_OK) {
+        return NJS_ERROR;
+    }
+
+    if (n < 1) {
+        njs_vm_type_error(vm, "\"maxKeys\" must be a positive integer");
+        return NJS_ERROR;
+    }
+
+    *max_keys = n;
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+ngx_http_js_ext_read_request_form(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
+{
+    ngx_int_t            rc;
+    ngx_uint_t           max_keys;
+    ngx_js_event_t      *event;
+    ngx_http_js_ctx_t   *ctx;
+    ngx_http_request_t  *r;
+
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id,
+                        njs_argument(args, 0));
+    if (r == NULL) {
+        njs_vm_error(vm, "\"this\" is not an external");
+        return NJS_ERROR;
+    }
+
+    if (ngx_http_js_request_form_max_keys(vm, njs_arg(args, nargs, 1),
+                                          &max_keys)
+        != NJS_OK)
+    {
+        return NJS_ERROR;
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    if (r->request_body) {
+        goto resolve;
+    }
+
+    if (ctx->body_read_event) {
+        njs_vm_error(vm, "request body is already being read");
+        return NJS_ERROR;
+    }
+
+    event = njs_mp_zalloc(njs_vm_memory_pool(vm),
+                          sizeof(ngx_js_event_t)
+                          + sizeof(njs_opaque_value_t) * 2);
+    if (event == NULL) {
+        njs_vm_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    event->fd = ctx->event_id++;
+    event->args = (njs_opaque_value_t *) &event[1];
+    event->data = (void *) (uintptr_t) max_keys;
+
+    rc = njs_vm_promise_create(vm, retval, njs_value_arg(event->args));
+    if (rc != NJS_OK) {
+        return NJS_ERROR;
+    }
+
+    njs_value_assign(&event->function, njs_value_arg(event->args));
+
+    ngx_js_add_event(ctx, event);
+
+    ctx->body_read_event = event;
+    ctx->body_read_state = NGX_HTTP_JS_BODY_READ_DEFERRED
+                           | NGX_HTTP_JS_BODY_READ_FORM;
+
+    return NJS_OK;
+
+resolve:
+
+    if (ngx_http_js_collect_body(r, ctx) != NGX_OK) {
+        njs_vm_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    return ngx_http_js_form_to_value(vm, r, ctx, max_keys, retval);
+}
+
+
+static njs_int_t
+ngx_http_js_ext_request_form_get(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t as_array, njs_value_t *retval)
+{
+    njs_int_t             rc;
+    njs_str_t             name;
+    njs_value_t          *value;
+    ngx_uint_t            i;
+    ngx_js_form_t        *form;
+    ngx_js_form_entry_t  *entry;
+
+    form = njs_vm_external(vm, ngx_http_js_request_form_proto_id,
+                           njs_argument(args, 0));
+    if (form == NULL) {
+        njs_vm_error(vm, "\"this\" is not a RequestForm");
+        return NJS_ERROR;
+    }
+
+    rc = ngx_js_string(vm, njs_arg(args, nargs, 1), &name);
+    if (rc != NJS_OK) {
+        njs_vm_type_error(vm, "\"name\" must be a string");
+        return NJS_ERROR;
+    }
+
+    if (as_array) {
+        rc = njs_vm_array_alloc(vm, retval, 4);
+        if (rc != NJS_OK) {
+            return NJS_ERROR;
+        }
+    }
+
+    entry = form->entries.elts;
+
+    for (i = 0; i < form->entries.nelts; i++) {
+        if (entry[i].is_file || entry[i].name.len != name.length
+            || ngx_memcmp(entry[i].name.data, name.start, name.length) != 0)
+        {
+            continue;
+        }
+
+        if (!as_array) {
+            return njs_vm_value_string_create(vm, retval, entry[i].value.data,
+                                              entry[i].value.len);
+        }
+
+        value = njs_vm_array_push(vm, retval);
+        if (value == NULL) {
+            return NJS_ERROR;
+        }
+
+        rc = njs_vm_value_string_create(vm, value, entry[i].value.data,
+                                        entry[i].value.len);
+        if (rc != NJS_OK) {
+            return NJS_ERROR;
+        }
+    }
+
+    if (!as_array) {
+        njs_value_null_set(retval);
+    }
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+ngx_http_js_ext_request_form_has(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
+{
+    njs_int_t             rc;
+    njs_str_t             name;
+    ngx_uint_t            i;
+    ngx_js_form_t        *form;
+    ngx_js_form_entry_t  *entry;
+
+    form = njs_vm_external(vm, ngx_http_js_request_form_proto_id,
+                           njs_argument(args, 0));
+    if (form == NULL) {
+        njs_vm_error(vm, "\"this\" is not a RequestForm");
+        return NJS_ERROR;
+    }
+
+    rc = ngx_js_string(vm, njs_arg(args, nargs, 1), &name);
+    if (rc != NJS_OK) {
+        njs_vm_type_error(vm, "\"name\" must be a string");
+        return NJS_ERROR;
+    }
+
+    entry = form->entries.elts;
+
+    for (i = 0; i < form->entries.nelts; i++) {
+        if (!entry[i].is_file && entry[i].name.len == name.length
+            && ngx_memcmp(entry[i].name.data, name.start, name.length) == 0)
+        {
+            njs_value_boolean_set(retval, 1);
+            return NJS_OK;
+        }
+    }
+
+    njs_value_boolean_set(retval, 0);
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+ngx_http_js_ext_request_form_for_each(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
+{
+    njs_int_t             rc;
+    njs_value_t          *callback, *this_arg, *this;
+    ngx_uint_t            i;
+    ngx_js_form_t        *form;
+    ngx_js_form_entry_t  *entry;
+    njs_opaque_value_t    arguments[4], result;
+
+    this = njs_argument(args, 0);
+
+    form = njs_vm_external(vm, ngx_http_js_request_form_proto_id, this);
+    if (form == NULL) {
+        njs_vm_error(vm, "\"this\" is not a RequestForm");
+        return NJS_ERROR;
+    }
+
+    callback = njs_arg(args, nargs, 1);
+    if (!njs_value_is_function(callback)) {
+        njs_vm_error(vm, "\"callback\" is not a function");
+        return NJS_ERROR;
+    }
+
+    this_arg = njs_arg(args, nargs, 2);
+    if (this_arg == NULL) {
+        this_arg = njs_value_arg(&njs_value_undefined);
+    }
+
+    entry = form->entries.elts;
+
+    for (i = 0; i < form->entries.nelts; i++) {
+        if (entry[i].is_file) {
+            continue;
+        }
+
+        njs_value_assign(&arguments[0], this_arg);
+
+        rc = njs_vm_value_string_create(vm, njs_value_arg(&arguments[1]),
+                                        entry[i].value.data,
+                                        entry[i].value.len);
+        if (rc != NJS_OK) {
+            return NJS_ERROR;
+        }
+
+        rc = njs_vm_value_string_create(vm, njs_value_arg(&arguments[2]),
+                                        entry[i].name.data,
+                                        entry[i].name.len);
+        if (rc != NJS_OK) {
+            return NJS_ERROR;
+        }
+
+        njs_value_assign(&arguments[3], this);
+
+        rc = njs_vm_invoke(vm, njs_value_function(callback),
+                           njs_value_arg(&arguments[1]), 3,
+                           njs_value_arg(&result));
+        if (rc != NJS_OK) {
+            return NJS_ERROR;
+        }
+    }
+
+    njs_value_undefined_set(retval);
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+ngx_http_js_ext_request_form_has_files(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
+{
+    ngx_js_form_t  *form;
+
+    form = njs_vm_external(vm, ngx_http_js_request_form_proto_id,
+                           njs_argument(args, 0));
+    if (form == NULL) {
+        njs_vm_error(vm, "\"this\" is not a RequestForm");
+        return NJS_ERROR;
+    }
+
+    njs_value_boolean_set(retval, form->has_files);
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+ngx_http_js_ext_request_form_file_field_names(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
+{
+    njs_int_t             rc;
+    ngx_uint_t            i;
+    njs_value_t          *value;
+    ngx_js_form_t        *form;
+    ngx_js_form_entry_t  *entry;
+
+    form = njs_vm_external(vm, ngx_http_js_request_form_proto_id,
+                           njs_argument(args, 0));
+    if (form == NULL) {
+        njs_vm_error(vm, "\"this\" is not a RequestForm");
+        return NJS_ERROR;
+    }
+
+    rc = njs_vm_array_alloc(vm, retval, 4);
+    if (rc != NJS_OK) {
+        return NJS_ERROR;
+    }
+
+    entry = form->entries.elts;
+
+    for (i = 0; i < form->entries.nelts; i++) {
+        if (!entry[i].is_file) {
+            continue;
+        }
+
+        value = njs_vm_array_push(vm, retval);
+        if (value == NULL) {
+            return NJS_ERROR;
+        }
+
+        rc = njs_vm_value_string_create(vm, value, entry[i].name.data,
+                                        entry[i].name.len);
+        if (rc != NJS_OK) {
+            return NJS_ERROR;
+        }
+    }
 
     return NJS_OK;
 }
@@ -4763,6 +5904,13 @@ ngx_js_http_init(njs_vm_t *vm)
         return NJS_ERROR;
     }
 
+    ngx_http_js_request_form_proto_id = njs_vm_external_prototype(vm,
+                                       ngx_http_js_ext_request_form,
+                                       njs_nitems(ngx_http_js_ext_request_form));
+    if (ngx_http_js_request_form_proto_id < 0) {
+        return NJS_ERROR;
+    }
+
     ngx_http_js_periodic_session_proto_id = njs_vm_external_prototype(vm,
                                   ngx_http_js_ext_periodic_session,
                                   njs_nitems(ngx_http_js_ext_periodic_session));
@@ -5353,14 +6501,10 @@ ngx_http_qjs_ext_response_body(JSContext *cx, JSValueConst this_val, int type)
 static JSValue
 ngx_http_qjs_ext_request_body(JSContext *cx, JSValueConst this_val, int type)
 {
-    u_char                  *p, *data;
-    size_t                   len;
-    ssize_t                  n;
     JSValue                  body;
     uint32_t                 buffer_type;
-    ngx_buf_t               *buf;
-    ngx_chain_t             *cl;
     ngx_http_request_t      *r;
+    ngx_http_js_ctx_t       *ctx;
     ngx_http_qjs_request_t  *req;
 
     req = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_HTTP_REQUEST);
@@ -5384,63 +6528,14 @@ ngx_http_qjs_ext_request_body(JSContext *cx, JSValueConst this_val, int type)
         return JS_UNDEFINED;
     }
 
-    cl = r->request_body->bufs;
-    buf = cl->buf;
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
-    if (r->request_body->temp_file) {
-        ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
-                      "http js reading request body from a temporary file");
-
-        if (buf == NULL || !buf->in_file) {
-            return JS_ThrowInternalError(cx, "cannot find body file");
-        }
-
-        len = buf->file_last - buf->file_pos;
-
-        data = ngx_pnalloc(r->pool, len);
-        if (data == NULL) {
-            return JS_ThrowOutOfMemory(cx);
-        }
-
-        n = ngx_read_file(buf->file, data, len, buf->file_pos);
-        if (n != (ssize_t) len) {
-            return JS_ThrowInternalError(cx, "failed to read request body");
-        }
-
-        goto done;
+    if (ngx_http_js_collect_body(r, ctx) != NGX_OK) {
+        return JS_ThrowInternalError(cx, "failed to read request body");
     }
 
-    if (cl->next == NULL) {
-        len = buf->last - buf->pos;
-        data = buf->pos;
-
-        goto done;
-    }
-
-    len = buf->last - buf->pos;
-    cl = cl->next;
-
-    for ( /* void */ ; cl; cl = cl->next) {
-        buf = cl->buf;
-        len += buf->last - buf->pos;
-    }
-
-    p = ngx_pnalloc(r->pool, len);
-    if (p == NULL) {
-        return JS_ThrowOutOfMemory(cx);
-    }
-
-    data = p;
-    cl = r->request_body->bufs;
-
-    for ( /* void */ ; cl; cl = cl->next) {
-        buf = cl->buf;
-        p = ngx_cpymem(p, buf->pos, buf->last - buf->pos);
-    }
-
-done:
-
-    body = ngx_qjs_prop(cx, buffer_type, data, len);
+    body = ngx_qjs_prop(cx, buffer_type, ctx->body_read_data,
+                        ctx->body_read_len);
     if (JS_IsException(body)) {
         return JS_EXCEPTION;
     }
@@ -5448,6 +6543,545 @@ done:
     req->request_body = body;
 
     return JS_DupValue(cx, req->request_body);
+}
+
+
+static JSValue
+ngx_http_qjs_body_to_value(JSContext *cx, ngx_http_js_ctx_t *ctx,
+    ngx_uint_t type)
+{
+    JSValue      str;
+    const char  *cstr;
+
+    switch (type) {
+    case NGX_JS_BODY_ARRAY_BUFFER:
+        return JS_NewArrayBuffer(cx, ctx->body_read_data,
+                                 ctx->body_read_len, NULL, NULL, 0);
+
+    case NGX_JS_BODY_JSON:
+        if (ctx->body_read_nul) {
+            return JS_ParseJSON(cx, (const char *) ctx->body_read_data,
+                                ctx->body_read_len, "<body>");
+        }
+
+        str = qjs_string_create(cx, ctx->body_read_data,
+                                ctx->body_read_len);
+        if (JS_IsException(str)) {
+            return str;
+        }
+
+        cstr = JS_ToCString(cx, str);
+        JS_FreeValue(cx, str);
+
+        if (cstr == NULL) {
+            return JS_EXCEPTION;
+        }
+
+        str = JS_ParseJSON(cx, cstr, ctx->body_read_len, "<body>");
+        JS_FreeCString(cx, cstr);
+
+        return str;
+
+    case NGX_JS_BODY_TEXT:
+    default:
+        return qjs_string_create(cx, ctx->body_read_data,
+                                 ctx->body_read_len);
+    }
+}
+
+
+static ngx_int_t
+ngx_http_qjs_body_resolve(ngx_http_js_ctx_t *ctx, void *event)
+{
+    JSValue           result;
+    JSContext        *cx;
+    ngx_int_t         rc;
+    ngx_qjs_event_t  *ev;
+
+    ev = event;
+    cx = ctx->engine->u.qjs.ctx;
+
+    if (ngx_http_js_body_read_is_form(ctx->body_read_state)) {
+        result = ngx_http_qjs_form_to_value(cx,
+                                ngx_http_qjs_request(ngx_qjs_arg(ctx->args[0])),
+                                ctx, (uintptr_t) ev->data);
+
+    } else {
+        result = ngx_http_qjs_body_to_value(cx, ctx, (uintptr_t) ev->data);
+    }
+
+    if (JS_IsException(result)) {
+        result = JS_GetException(cx);
+
+        rc = ngx_qjs_call(cx, ev->args[1], &result, 1);
+
+        JS_FreeValue(cx, result);
+        ngx_js_del_event(ctx, ev);
+        return rc;
+    }
+
+    rc = ngx_qjs_call(cx, ev->function, &result, 1);
+
+    JS_FreeValue(cx, result);
+    ngx_js_del_event(ctx, ev);
+
+    return rc;
+}
+
+
+static JSValue
+ngx_http_qjs_ext_read_request_body(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv, int magic)
+{
+    JSValue                  retval;
+    ngx_qjs_event_t         *event;
+    ngx_http_js_ctx_t       *ctx;
+    ngx_http_request_t      *r;
+    ngx_http_qjs_request_t  *req;
+
+    req = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_HTTP_REQUEST);
+    if (req == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+    }
+
+    r = req->request;
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    if (r->request_body) {
+        goto resolve;
+    }
+
+    if (ctx->body_read_event) {
+        return JS_ThrowInternalError(cx, "request body is already being read");
+    }
+
+    event = ngx_pcalloc(r->pool, sizeof(ngx_qjs_event_t) + sizeof(JSValue) * 2);
+    if (event == NULL) {
+        return JS_ThrowOutOfMemory(cx);
+    }
+
+    event->ctx = cx;
+    event->fd = ctx->event_id++;
+    event->args = (JSValue *) &event[1];
+    event->data = (void *) (uintptr_t) magic;
+
+    retval = JS_NewPromiseCapability(cx, &event->args[0]);
+    if (JS_IsException(retval)) {
+        return JS_EXCEPTION;
+    }
+
+    event->function = JS_DupValue(cx, event->args[0]);
+    event->destructor = ngx_http_js_read_body_event_destructor;
+
+    ngx_js_add_event(ctx, event);
+
+    ctx->body_read_event = event;
+    ctx->body_read_state = NGX_HTTP_JS_BODY_READ_DEFERRED;
+
+    return retval;
+
+resolve:
+
+    if (ngx_http_js_collect_body(r, ctx) != NGX_OK) {
+        return JS_ThrowOutOfMemory(cx);
+    }
+
+    return ngx_http_qjs_body_to_value(cx, ctx, (ngx_uint_t) magic);
+}
+
+
+static ngx_int_t
+ngx_http_qjs_request_form_max_keys(JSContext *cx, JSValueConst options,
+    ngx_uint_t *max_keys)
+{
+    JSValue    value;
+    ngx_int_t  n;
+
+    *max_keys = NGX_JS_FORM_DEFAULT_MAX_KEYS;
+
+    if (JS_IsUndefined(options)) {
+        return NGX_OK;
+    }
+
+    if (!JS_IsObject(options)) {
+        JS_ThrowTypeError(cx, "\"options\" must be an object");
+        return NGX_ERROR;
+    }
+
+    value = JS_GetPropertyStr(cx, options, "maxKeys");
+    if (JS_IsException(value)) {
+        return NGX_ERROR;
+    }
+
+    if (JS_IsUndefined(value)) {
+        JS_FreeValue(cx, value);
+        return NGX_OK;
+    }
+
+    if (ngx_qjs_integer(cx, value, &n) != NGX_OK) {
+        JS_FreeValue(cx, value);
+        return NGX_ERROR;
+    }
+
+    JS_FreeValue(cx, value);
+
+    if (n < 1) {
+        JS_ThrowTypeError(cx, "\"maxKeys\" must be a positive integer");
+        return NGX_ERROR;
+    }
+
+    *max_keys = n;
+
+    return NGX_OK;
+}
+
+
+static JSValue
+ngx_http_qjs_request_form_make(JSContext *cx, ngx_js_form_t *form)
+{
+    JSValue  obj;
+
+    obj = JS_NewObjectClass(cx, NGX_QJS_CLASS_ID_HTTP_FORM);
+    if (JS_IsException(obj)) {
+        return JS_EXCEPTION;
+    }
+
+    JS_SetOpaque(obj, form);
+
+    return obj;
+}
+
+
+static JSValue
+ngx_http_qjs_form_to_value(JSContext *cx, ngx_http_request_t *r,
+    ngx_http_js_ctx_t *ctx, ngx_uint_t max_keys)
+{
+    ngx_int_t       rc;
+    ngx_str_t       error;
+    ngx_js_form_t  *form;
+
+    rc = ngx_http_js_request_form(r, ctx, max_keys, &form, &error);
+    if (rc == NGX_OK) {
+        return ngx_http_qjs_request_form_make(cx, form);
+    }
+
+    if (rc == NGX_JS_FORM_TYPE_ERROR) {
+        return JS_ThrowTypeError(cx, "%.*s", (int) error.len, error.data);
+    }
+
+    if (rc == NGX_JS_FORM_PARSE_ERROR) {
+        return JS_ThrowInternalError(cx, "%.*s", (int) error.len, error.data);
+    }
+
+    return JS_ThrowOutOfMemory(cx);
+}
+
+
+static JSValue
+ngx_http_qjs_ext_read_request_form(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv)
+{
+    JSValue                  retval;
+    ngx_uint_t               max_keys;
+    ngx_qjs_event_t         *event;
+    ngx_http_js_ctx_t       *ctx;
+    ngx_http_request_t      *r;
+    ngx_http_qjs_request_t  *req;
+
+    req = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_HTTP_REQUEST);
+    if (req == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+    }
+
+    if (ngx_http_qjs_request_form_max_keys(cx, argv[0], &max_keys) != NGX_OK) {
+        return JS_EXCEPTION;
+    }
+
+    r = req->request;
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    if (r->request_body) {
+        goto resolve;
+    }
+
+    if (ctx->body_read_event) {
+        return JS_ThrowInternalError(cx, "request body is already being read");
+    }
+
+    event = ngx_pcalloc(r->pool, sizeof(ngx_qjs_event_t) + sizeof(JSValue) * 2);
+    if (event == NULL) {
+        return JS_ThrowOutOfMemory(cx);
+    }
+
+    event->ctx = cx;
+    event->fd = ctx->event_id++;
+    event->args = (JSValue *) &event[1];
+    event->data = (void *) (uintptr_t) max_keys;
+
+    retval = JS_NewPromiseCapability(cx, &event->args[0]);
+    if (JS_IsException(retval)) {
+        return JS_EXCEPTION;
+    }
+
+    event->function = JS_DupValue(cx, event->args[0]);
+    event->destructor = ngx_http_js_read_body_event_destructor;
+
+    ngx_js_add_event(ctx, event);
+
+    ctx->body_read_event = event;
+    ctx->body_read_state = NGX_HTTP_JS_BODY_READ_DEFERRED
+                           | NGX_HTTP_JS_BODY_READ_FORM;
+
+    return retval;
+
+resolve:
+
+    if (ngx_http_js_collect_body(r, ctx) != NGX_OK) {
+        return JS_ThrowOutOfMemory(cx);
+    }
+
+    return ngx_http_qjs_form_to_value(cx, r, ctx, max_keys);
+}
+
+
+static JSValue
+ngx_http_qjs_ext_request_form_get(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv, int as_array)
+{
+    JSValue               array, value;
+    size_t                name_len;
+    const char           *name;
+    ngx_uint_t            i, n;
+    ngx_js_form_t        *form;
+    ngx_js_form_entry_t  *entry;
+
+    form = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_HTTP_FORM);
+    if (form == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a RequestForm");
+    }
+
+    name = JS_ToCStringLen(cx, &name_len, argv[0]);
+    if (name == NULL) {
+        return JS_ThrowTypeError(cx, "\"name\" must be a string");
+    }
+
+    if (as_array) {
+        array = JS_NewArray(cx);
+        if (JS_IsException(array)) {
+            JS_FreeCString(cx, name);
+            return JS_EXCEPTION;
+        }
+
+    } else {
+        array = JS_UNDEFINED;
+    }
+
+    entry = form->entries.elts;
+    n = 0;
+
+    for (i = 0; i < form->entries.nelts; i++) {
+        if (entry[i].is_file || entry[i].name.len != name_len
+            || ngx_memcmp(entry[i].name.data, name, name_len) != 0)
+        {
+            continue;
+        }
+
+        value = qjs_string_create(cx, entry[i].value.data, entry[i].value.len);
+        if (JS_IsException(value)) {
+            JS_FreeCString(cx, name);
+            JS_FreeValue(cx, array);
+            return JS_EXCEPTION;
+        }
+
+        if (!as_array) {
+            JS_FreeCString(cx, name);
+            return value;
+        }
+
+        if (JS_DefinePropertyValueUint32(cx, array, n++, value, JS_PROP_C_W_E)
+            < 0)
+        {
+            JS_FreeValue(cx, value);
+            JS_FreeCString(cx, name);
+            JS_FreeValue(cx, array);
+            return JS_EXCEPTION;
+        }
+    }
+
+    JS_FreeCString(cx, name);
+
+    if (as_array) {
+        return array;
+    }
+
+    return JS_NULL;
+}
+
+
+static JSValue
+ngx_http_qjs_ext_request_form_has(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv)
+{
+    size_t                name_len;
+    const char           *name;
+    ngx_uint_t            i;
+    ngx_js_form_t        *form;
+    ngx_js_form_entry_t  *entry;
+
+    form = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_HTTP_FORM);
+    if (form == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a RequestForm");
+    }
+
+    name = JS_ToCStringLen(cx, &name_len, argv[0]);
+    if (name == NULL) {
+        return JS_ThrowTypeError(cx, "\"name\" must be a string");
+    }
+
+    entry = form->entries.elts;
+
+    for (i = 0; i < form->entries.nelts; i++) {
+        if (!entry[i].is_file && entry[i].name.len == name_len
+            && ngx_memcmp(entry[i].name.data, name, name_len) == 0)
+        {
+            JS_FreeCString(cx, name);
+            return JS_NewBool(cx, 1);
+        }
+    }
+
+    JS_FreeCString(cx, name);
+
+    return JS_NewBool(cx, 0);
+}
+
+
+static JSValue
+ngx_http_qjs_ext_request_form_for_each(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv)
+{
+    JSValue               args[3], ret;
+    ngx_uint_t            i;
+    ngx_js_form_t        *form;
+    ngx_js_form_entry_t  *entry;
+
+    form = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_HTTP_FORM);
+    if (form == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a RequestForm");
+    }
+
+    if (!JS_IsFunction(cx, argv[0])) {
+        return JS_ThrowTypeError(cx, "\"callback\" is not a function");
+    }
+
+    entry = form->entries.elts;
+
+    for (i = 0; i < form->entries.nelts; i++) {
+        if (entry[i].is_file) {
+            continue;
+        }
+
+        args[0] = qjs_string_create(cx, entry[i].value.data,
+                                    entry[i].value.len);
+        if (JS_IsException(args[0])) {
+            return JS_EXCEPTION;
+        }
+
+        args[1] = qjs_string_create(cx, entry[i].name.data, entry[i].name.len);
+        if (JS_IsException(args[1])) {
+            JS_FreeValue(cx, args[0]);
+            return JS_EXCEPTION;
+        }
+
+        args[2] = JS_DupValue(cx, this_val);
+
+        ret = JS_Call(cx, argv[0], argc > 1 ? argv[1] : JS_UNDEFINED, 3, args);
+
+        JS_FreeValue(cx, args[0]);
+        JS_FreeValue(cx, args[1]);
+        JS_FreeValue(cx, args[2]);
+
+        if (JS_IsException(ret)) {
+            return JS_EXCEPTION;
+        }
+
+        JS_FreeValue(cx, ret);
+    }
+
+    return JS_UNDEFINED;
+}
+
+
+static JSValue
+ngx_http_qjs_ext_request_form_has_files(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv)
+{
+    ngx_js_form_t  *form;
+
+    form = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_HTTP_FORM);
+    if (form == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a RequestForm");
+    }
+
+    return JS_NewBool(cx, form->has_files);
+}
+
+
+static JSValue
+ngx_http_qjs_ext_request_form_file_field_names(JSContext *cx,
+    JSValueConst this_val, int argc, JSValueConst *argv)
+{
+    JSValue               array, value;
+    ngx_uint_t            i, n;
+    ngx_js_form_t        *form;
+    ngx_js_form_entry_t  *entry;
+
+    form = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_HTTP_FORM);
+    if (form == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a RequestForm");
+    }
+
+    array = JS_NewArray(cx);
+    if (JS_IsException(array)) {
+        return JS_EXCEPTION;
+    }
+
+    entry = form->entries.elts;
+    n = 0;
+
+    for (i = 0; i < form->entries.nelts; i++) {
+        if (!entry[i].is_file) {
+            continue;
+        }
+
+        value = qjs_string_create(cx, entry[i].name.data, entry[i].name.len);
+        if (JS_IsException(value)) {
+            JS_FreeValue(cx, array);
+            return JS_EXCEPTION;
+        }
+
+        if (JS_DefinePropertyValueUint32(cx, array, n++, value, JS_PROP_C_W_E)
+            < 0)
+        {
+            JS_FreeValue(cx, value);
+            JS_FreeValue(cx, array);
+            return JS_EXCEPTION;
+        }
+    }
+
+    return array;
+}
+
+
+static void
+ngx_http_js_read_body_event_destructor(ngx_qjs_event_t *event)
+{
+    JSContext  *cx;
+
+    cx = event->ctx;
+
+    JS_FreeValue(cx, event->function);
+    JS_FreeValue(cx, event->args[0]);
+    JS_FreeValue(cx, event->args[1]);
 }
 
 
@@ -5497,6 +7131,26 @@ ngx_http_qjs_ext_return(JSContext *cx, JSValueConst this_val,
     } else {
         ctx->status = status;
     }
+
+    return JS_UNDEFINED;
+}
+
+
+static JSValue
+ngx_http_qjs_ext_decline(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv)
+{
+    ngx_http_js_ctx_t   *ctx;
+    ngx_http_request_t  *r;
+
+    r = ngx_http_qjs_request(this_val);
+    if (r == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+    }
+
+    ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
+
+    ctx->status = NGX_DECLINED;
 
     return JS_UNDEFINED;
 }
@@ -7679,6 +9333,22 @@ ngx_engine_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf,
 
         JS_SetClassProto(cx, NGX_QJS_CLASS_ID_HTTP_REQUEST, proto);
 
+        if (JS_NewClass(JS_GetRuntime(cx), NGX_QJS_CLASS_ID_HTTP_FORM,
+                        &ngx_http_qjs_request_form_class) < 0)
+        {
+            return NULL;
+        }
+
+        proto = JS_NewObject(cx);
+        if (JS_IsException(proto)) {
+            return NULL;
+        }
+
+        JS_SetPropertyFunctionList(cx, proto, ngx_http_qjs_ext_request_form,
+                                   njs_nitems(ngx_http_qjs_ext_request_form));
+
+        JS_SetClassProto(cx, NGX_QJS_CLASS_ID_HTTP_FORM, proto);
+
         if (JS_NewClass(JS_GetRuntime(cx), NGX_QJS_CLASS_ID_HTTP_PERIODIC,
                         &ngx_http_qjs_periodic_class) < 0)
         {
@@ -7773,11 +9443,23 @@ ngx_http_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf)
 static ngx_int_t
 ngx_http_js_init(ngx_conf_t *cf)
 {
+    ngx_http_handler_pt        *h;
+    ngx_http_core_main_conf_t  *cmcf;
+
     ngx_http_next_header_filter = ngx_http_top_header_filter;
     ngx_http_top_header_filter = ngx_http_js_header_filter;
 
     ngx_http_next_body_filter = ngx_http_top_body_filter;
     ngx_http_top_body_filter = ngx_http_js_body_filter;
+
+    cmcf = ngx_http_conf_get_module_main_conf(cf, ngx_http_core_module);
+
+    h = ngx_array_push(&cmcf->phases[NGX_HTTP_ACCESS_PHASE].handlers);
+    if (h == NULL) {
+        return NGX_ERROR;
+    }
+
+    *h = ngx_http_js_access_handler;
 
     return NGX_OK;
 }
@@ -8157,6 +9839,24 @@ ngx_http_js_var(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
 
 static char *
+ngx_http_js_access(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+{
+    ngx_http_js_loc_conf_t *jlcf = conf;
+
+    ngx_str_t  *value;
+
+    if (jlcf->access.data) {
+        return "is duplicate";
+    }
+
+    value = cf->args->elts;
+    jlcf->access = value[1];
+
+    return NGX_CONF_OK;
+}
+
+
+static char *
 ngx_http_js_content(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 {
     ngx_http_js_loc_conf_t *jlcf = conf;
@@ -8275,6 +9975,7 @@ ngx_http_js_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     ngx_http_js_loc_conf_t *prev = parent;
     ngx_http_js_loc_conf_t *conf = child;
 
+    ngx_conf_merge_str_value(conf->access, prev->access, "");
     ngx_conf_merge_str_value(conf->content, prev->content, "");
     ngx_conf_merge_str_value(conf->header_filter, prev->header_filter, "");
     ngx_conf_merge_str_value(conf->body_filter, prev->body_filter, "");
@@ -8285,6 +9986,15 @@ ngx_http_js_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
         != NGX_CONF_OK)
     {
         return NGX_CONF_ERROR;
+    }
+
+    if (conf->access.len != 0) {
+        if (conf->imports == NGX_CONF_UNSET_PTR) {
+            ngx_log_error(NGX_LOG_EMERG, cf->log, 0,
+                          "no imports defined for \"js_access\" \"%V\", "
+                          "use \"js_import\" directive", &conf->access);
+            return NGX_CONF_ERROR;
+        }
     }
 
     if (conf->content.len != 0) {
