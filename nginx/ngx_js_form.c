@@ -117,6 +117,7 @@ ngx_js_form_parse_content_type(ngx_pool_t *pool, ngx_str_t *content_type,
     ngx_js_form_content_type_t *ct, ngx_str_t *error)
 {
     u_char      *p, *end, *last, *value_start;
+    ngx_int_t    rc;
     ngx_str_t    param, value;
     ngx_flag_t   quoted;
 
@@ -176,11 +177,10 @@ ngx_js_form_parse_content_type(ngx_pool_t *pool, ngx_str_t *content_type,
 
         p = ngx_js_form_skip_ows(p, end);
 
-        if (ngx_js_form_parse_param(pool, &p, end, &param, &value, &quoted,
-                                    error)
-            != NGX_JS_FORM_OK)
-        {
-            return NGX_JS_FORM_PARSE_ERROR;
+        rc = ngx_js_form_parse_param(pool, &p, end, &param, &value, &quoted,
+                                     error);
+        if (rc != NGX_JS_FORM_OK) {
+            return rc;
         }
 
         if (param.len == sizeof("boundary") - 1
@@ -221,6 +221,7 @@ ngx_js_form_parse_urlencoded(ngx_pool_t *pool, u_char *body, size_t len,
     ngx_uint_t max_keys, ngx_js_form_t *form, ngx_str_t *error)
 {
     u_char      *p, *end, *amp, *eq;
+    ngx_int_t    rc;
     ngx_str_t    name, value;
     ngx_uint_t   count;
 
@@ -250,27 +251,24 @@ ngx_js_form_parse_urlencoded(ngx_pool_t *pool, u_char *body, size_t len,
             eq++;
         }
 
-        if (ngx_js_form_decode_urlencoded(pool, p, eq, &name, error)
-            != NGX_JS_FORM_OK)
-        {
-            return NGX_JS_FORM_PARSE_ERROR;
+        rc = ngx_js_form_decode_urlencoded(pool, p, eq, &name, error);
+        if (rc != NGX_JS_FORM_OK) {
+            return rc;
         }
 
         if (eq < amp) {
             eq++;
         }
 
-        if (ngx_js_form_decode_urlencoded(pool, eq, amp, &value, error)
-            != NGX_JS_FORM_OK)
-        {
-            return NGX_JS_FORM_PARSE_ERROR;
+        rc = ngx_js_form_decode_urlencoded(pool, eq, amp, &value, error);
+        if (rc != NGX_JS_FORM_OK) {
+            return rc;
         }
 
-        if (ngx_js_form_add_entry(form, pool, &name, &value, &count, max_keys,
-                                  NULL, 0, error)
-            != NGX_JS_FORM_OK)
-        {
-            return NGX_JS_FORM_PARSE_ERROR;
+        rc = ngx_js_form_add_entry(form, pool, &name, &value, &count, max_keys,
+                                   NULL, 0, error);
+        if (rc != NGX_JS_FORM_OK) {
+            return rc;
         }
 
         if (amp == end) {
@@ -292,6 +290,7 @@ ngx_js_form_parse_multipart(ngx_pool_t *pool, u_char *body, size_t len,
     size_t       dlen, cdlen;
     u_char      *p, *end, *marker, *next, *headers_end, *part_end, *scan;
     u_char      *delimiter;
+    ngx_int_t    rc;
     ngx_str_t    name, value, filename;
     ngx_uint_t   count;
     ngx_flag_t   is_file;
@@ -352,11 +351,10 @@ ngx_js_form_parse_multipart(ngx_pool_t *pool, u_char *body, size_t len,
             return NGX_JS_FORM_PARSE_ERROR;
         }
 
-        if (ngx_js_form_parse_part_headers(pool, p, headers_end, &name,
-                                           &is_file, &filename, error)
-            != NGX_JS_FORM_OK)
-        {
-            return NGX_JS_FORM_PARSE_ERROR;
+        rc = ngx_js_form_parse_part_headers(pool, p, headers_end, &name,
+                                            &is_file, &filename, error);
+        if (rc != NGX_JS_FORM_OK) {
+            return rc;
         }
 
         p = headers_end + sizeof("\r\n\r\n") - 1;
@@ -392,11 +390,10 @@ ngx_js_form_parse_multipart(ngx_pool_t *pool, u_char *body, size_t len,
             }
         }
 
-        if (ngx_js_form_add_entry(form, pool, &name, &value, &count, max_keys,
-                                  &filename, is_file, error)
-            != NGX_JS_FORM_OK)
-        {
-            return NGX_JS_FORM_PARSE_ERROR;
+        rc = ngx_js_form_add_entry(form, pool, &name, &value, &count, max_keys,
+                                   &filename, is_file, error);
+        if (rc != NGX_JS_FORM_OK) {
+            return rc;
         }
 
         p = next + (sizeof("\r\n--") - 1) + boundary->len;
@@ -421,6 +418,7 @@ ngx_js_form_parse_part_headers(ngx_pool_t *pool, u_char *start,
     ngx_str_t *error)
 {
     u_char      *p, *line, *colon, *line_end;
+    ngx_int_t    rc;
     ngx_str_t    key, value;
     ngx_uint_t   headers;
     ngx_flag_t   seen_disposition;
@@ -489,11 +487,10 @@ ngx_js_form_parse_part_headers(ngx_pool_t *pool, u_char *start,
                 return NGX_JS_FORM_PARSE_ERROR;
             }
 
-            if (ngx_js_form_parse_disposition(pool, &value, name, is_file,
-                                              filename, error)
-                != NGX_JS_FORM_OK)
-            {
-                return NGX_JS_FORM_PARSE_ERROR;
+            rc = ngx_js_form_parse_disposition(pool, &value, name, is_file,
+                                               filename, error);
+            if (rc != NGX_JS_FORM_OK) {
+                return rc;
             }
 
             seen_disposition = 1;
@@ -519,6 +516,7 @@ ngx_js_form_parse_disposition(ngx_pool_t *pool, ngx_str_t *value,
     ngx_str_t *error)
 {
     u_char      *p, *end;
+    ngx_int_t    rc;
     ngx_str_t    param, param_value;
     ngx_flag_t   quoted, seen_name, seen_file;
 
@@ -549,11 +547,10 @@ ngx_js_form_parse_disposition(ngx_pool_t *pool, ngx_str_t *value,
 
         p = ngx_js_form_skip_ows(p, end);
 
-        if (ngx_js_form_parse_param(pool, &p, end, &param, &param_value,
-                                    &quoted, error)
-            != NGX_JS_FORM_OK)
-        {
-            return NGX_JS_FORM_PARSE_ERROR;
+        rc = ngx_js_form_parse_param(pool, &p, end, &param, &param_value,
+                                     &quoted, error);
+        if (rc != NGX_JS_FORM_OK) {
+            return rc;
         }
 
         if (param.len == sizeof("name") - 1
