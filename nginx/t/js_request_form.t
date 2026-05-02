@@ -213,7 +213,7 @@ $t->write_file('test.js', <<'EOF');
                      content_form_error, content_form_limit };
 EOF
 
-$t->try_run('no readRequestForm')->plan(58);
+$t->try_run('no readRequestForm')->plan(59);
 
 ###############################################################################
 
@@ -306,6 +306,16 @@ like(http_post_form('/content_form',
         upload=\[file:only.txt\]$
     }sx,
     'file parts expose filename metadata');
+
+like(http_post_form('/content_form',
+    ['multipart/form-data; boundary=X',
+     '--X' . CRLF
+     . 'Content-Disposition: form-data; name="a"; filename*=UTF-8\'\'test.txt'
+     . CRLF . CRLF
+     . 'data' . CRLF
+     . '--X--']),
+    qr/200.*\[file:\]\|\[file:\]\|true\|false\|true\|get:;all:;each:a:\|a=\[file:\]/s,
+    'filename*-only part is detected as a file upload');
 
 like(http_post_form('/content_form',
     multipart_form(

@@ -580,6 +580,18 @@ ngx_js_form_parse_disposition(ngx_pool_t *pool, ngx_str_t *value,
             *is_file = 1;
             *filename = param_value;
             seen_file = 1;
+
+        } else if (param.len == sizeof("filename*") - 1
+                   && ngx_strncasecmp(param.data, (u_char *) "filename*",
+                                      param.len)
+                      == 0)
+        {
+            /*
+             * RFC 5987 extended parameter notation (filename*=charset'lang'value).
+             * We do not decode the encoded value but still mark the part as a
+             * file upload so that hasFiles() / fileFieldNames() work correctly.
+             */
+            *is_file = 1;
         }
 
         p = ngx_js_form_skip_ows(p, end);
