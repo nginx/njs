@@ -3895,11 +3895,7 @@ ngx_http_js_request_form_max_keys(njs_vm_t *vm, njs_value_t *options,
     }
 
     value = njs_vm_object_prop(vm, options, &max_keys_name, &lvalue);
-    if (value == NULL) {
-        return NJS_ERROR;
-    }
-
-    if (njs_value_is_undefined(value)) {
+    if (value == NULL || njs_value_is_undefined(value)) {
         return NJS_OK;
     }
 
