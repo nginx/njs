@@ -3549,12 +3549,12 @@ ngx_js_parse_proxy_url(ngx_pool_t *pool, ngx_log_t *log, ngx_str_t *url,
         pass_start = colon + 1;
         pass_len = at - pass_start;
 
-        decoded_user = ngx_pnalloc(pool, 128);
+        decoded_user = ngx_pnalloc(pool, user_len);
         if (decoded_user == NULL) {
             return NGX_ERROR;
         }
 
-        decoded_pass = ngx_pnalloc(pool, 128);
+        decoded_pass = ngx_pnalloc(pool, pass_len);
         if (decoded_pass == NULL) {
             return NGX_ERROR;
         }
@@ -3562,24 +3562,22 @@ ngx_js_parse_proxy_url(ngx_pool_t *pool, ngx_log_t *log, ngx_str_t *url,
         p = user_start;
         decoded_end = decoded_user;
         ngx_unescape_uri(&decoded_end, &p, user_len, NGX_UNESCAPE_URI);
-
         user_len = decoded_end - decoded_user;
-        if (user_len == 0 || user_len > 127) {
+
+        if (user_len == 0) {
             ngx_log_error(NGX_LOG_ERR, log, 0,
-                          "js_fetch_proxy username invalid or too long "
-                          "(max 127 bytes after decoding)");
+                          "js_fetch_proxy username is empty");
             return NGX_ERROR;
         }
 
         p = pass_start;
         decoded_end = decoded_pass;
         ngx_unescape_uri(&decoded_end, &p, pass_len, NGX_UNESCAPE_URI);
-
         pass_len = decoded_end - decoded_pass;
-        if (pass_len == 0 || pass_len > 127) {
+
+        if (pass_len == 0) {
             ngx_log_error(NGX_LOG_ERR, log, 0,
-                          "js_fetch_proxy password invalid or too long "
-                          "(max 127 bytes after decoding)");
+                          "js_fetch_proxy password is empty");
             return NGX_ERROR;
         }
 

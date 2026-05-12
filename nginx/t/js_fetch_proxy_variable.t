@@ -59,6 +59,12 @@ http {
             js_fetch_proxy $proxy_url;
             js_content test.http_fetch;
         }
+
+        location /dynamic_user_proxy {
+            set $proxy_url "http://$arg_user:p@127.0.0.1:%%PORT_8081%%";
+            js_fetch_proxy $proxy_url;
+            js_content test.http_fetch;
+        }
     }
 
     server {
@@ -128,7 +134,7 @@ $t->write_file('test.js', <<EOF);
 
 EOF
 
-$t->try_run('no js_fetch_proxy')->plan(3);
+$t->try_run('no js_fetch_proxy')->plan(4);
 
 ###############################################################################
 
@@ -138,5 +144,8 @@ like(http_get('/dynamic_proxy'), qr/PROXY:Basic\s+dGVzdHVzZXI6dGVzdHBhc3M=/,
     'dynamic proxy URL with auth');
 like(http_get('/dynamic_empty_proxy'), qr/ORIGIN:OK/,
     'dynamic empty proxy URL bypasses proxy');
+like(http_get('/dynamic_user_proxy?user=' . ('a' x 200)),
+    qr/PROXY:BAD-AUTH/,
+    'long user in dynamic proxy URL decoded without overflow');
 
 ###############################################################################
