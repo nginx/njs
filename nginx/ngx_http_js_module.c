@@ -4114,9 +4114,6 @@ ngx_http_js_ext_request_form_for_each(njs_vm_t *vm, njs_value_t *args,
     }
 
     this_arg = njs_arg(args, nargs, 2);
-    if (this_arg == NULL) {
-        this_arg = njs_value_arg(&njs_value_undefined);
-    }
 
     entry = form->entries.elts;
 
