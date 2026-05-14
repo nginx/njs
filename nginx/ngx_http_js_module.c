@@ -193,8 +193,8 @@ static ngx_int_t ngx_http_js_collect_body(ngx_http_request_t *r,
 static void ngx_http_js_access_body_finalize(ngx_http_request_t *r,
     ngx_http_js_ctx_t *ctx, ngx_int_t rc);
 static void ngx_http_js_access_body_done(ngx_http_request_t *r);
-static ngx_int_t ngx_http_js_body_resolve(ngx_http_js_ctx_t *ctx,
-    void *event);
+static ngx_int_t ngx_http_js_body_resolve(ngx_http_request_t *r,
+    ngx_http_js_ctx_t *ctx, void *event);
 static ngx_int_t ngx_http_js_request_form(ngx_http_request_t *r,
     ngx_http_js_ctx_t *ctx, ngx_uint_t max_keys, ngx_js_form_t **form,
     ngx_str_t *error);
@@ -228,8 +228,8 @@ static njs_int_t ngx_http_js_ext_read_request_body(njs_vm_t *vm,
 #if (NJS_HAVE_QUICKJS)
 static JSValue ngx_http_qjs_ext_read_request_body(JSContext *cx,
     JSValueConst this_val, int argc, JSValueConst *argv, int magic);
-static ngx_int_t ngx_http_qjs_body_resolve(ngx_http_js_ctx_t *ctx,
-    void *event);
+static ngx_int_t ngx_http_qjs_body_resolve(ngx_http_request_t *r,
+    ngx_http_js_ctx_t *ctx, void *event);
 static JSValue ngx_http_qjs_form_to_value(JSContext *cx, ngx_http_request_t *r,
     ngx_http_js_ctx_t *ctx, ngx_uint_t max_keys);
 static JSValue ngx_http_qjs_request_form_entry_value(JSContext *cx,
@@ -3718,7 +3718,8 @@ ngx_http_js_access_body_finalize(ngx_http_request_t *r, ngx_http_js_ctx_t *ctx,
 
 
 static ngx_int_t
-ngx_http_js_body_resolve(ngx_http_js_ctx_t *ctx, void *event)
+ngx_http_js_body_resolve(ngx_http_request_t *r, ngx_http_js_ctx_t *ctx,
+    void *event)
 {
     njs_vm_t            *vm;
     njs_int_t            rc;
@@ -3729,10 +3730,7 @@ ngx_http_js_body_resolve(ngx_http_js_ctx_t *ctx, void *event)
     vm = ctx->engine->u.njs.vm;
 
     if (ngx_http_js_body_read_is_form(ctx->body_read_state)) {
-        rc = ngx_http_js_form_to_value(vm, njs_vm_external(vm,
-                                       ngx_http_js_request_proto_id,
-                                       njs_value_arg(&ctx->args[0])), ctx,
-                                       (uintptr_t) ev->data,
+        rc = ngx_http_js_form_to_value(vm, r, ctx, (uintptr_t) ev->data,
                                        njs_value_arg(&result));
 
     } else {
@@ -3791,11 +3789,11 @@ ngx_http_js_access_body_done(ngx_http_request_t *r)
 
 #if (NJS_HAVE_QUICKJS)
     if (ctx->engine->type == NGX_ENGINE_QJS) {
-        rc = ngx_http_qjs_body_resolve(ctx, ctx->body_read_event);
+        rc = ngx_http_qjs_body_resolve(r, ctx, ctx->body_read_event);
     } else
 #endif
     {
-        rc = ngx_http_js_body_resolve(ctx, ctx->body_read_event);
+        rc = ngx_http_js_body_resolve(r, ctx, ctx->body_read_event);
     }
 
     ctx->body_read_event = NULL;
@@ -6550,7 +6548,8 @@ ngx_http_qjs_body_to_value(JSContext *cx, ngx_http_js_ctx_t *ctx,
 
 
 static ngx_int_t
-ngx_http_qjs_body_resolve(ngx_http_js_ctx_t *ctx, void *event)
+ngx_http_qjs_body_resolve(ngx_http_request_t *r, ngx_http_js_ctx_t *ctx,
+    void *event)
 {
     JSValue           result;
     JSContext        *cx;
@@ -6561,9 +6560,7 @@ ngx_http_qjs_body_resolve(ngx_http_js_ctx_t *ctx, void *event)
     cx = ctx->engine->u.qjs.ctx;
 
     if (ngx_http_js_body_read_is_form(ctx->body_read_state)) {
-        result = ngx_http_qjs_form_to_value(cx,
-                                ngx_http_qjs_request(ngx_qjs_arg(ctx->args[0])),
-                                ctx, (uintptr_t) ev->data);
+        result = ngx_http_qjs_form_to_value(cx, r, ctx, (uintptr_t) ev->data);
 
     } else {
         result = ngx_http_qjs_body_to_value(cx, ctx, (uintptr_t) ev->data);
