@@ -101,12 +101,6 @@ njs_error_stack_attach(njs_vm_t *vm, njs_value_t value, njs_uint_t skip)
             continue;
         }
 
-        function = frame->native ? frame->function : NULL;
-
-        if (function != NULL && function->bound != NULL) {
-            continue;
-        }
-
         line = 0;
         file = njs_str_value("");
 
@@ -135,6 +129,13 @@ njs_error_stack_attach(njs_vm_t *vm, njs_value_t value, njs_uint_t skip)
             }
 
         } else {
+            function = frame->function;
+            njs_assert(function != NULL);
+
+            if (njs_slow_path(function->bound != NULL)) {
+                continue;
+            }
+
             name.length = 0;
             fhq.key_hash = NJS_ATOM_STRING_name;
 
