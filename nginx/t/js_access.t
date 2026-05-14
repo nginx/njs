@@ -157,6 +157,29 @@ http {
             js_content test.content;
         }
 
+        location /access_internal_redirect {
+            js_access test.access_internal_redirect;
+            js_content test.content;
+        }
+
+        location /access_internal_redirect_async {
+            js_access test.access_internal_redirect_async;
+            js_content test.content;
+        }
+
+        location /access_internal_redirect_named {
+            js_access test.access_internal_redirect_named;
+            js_content test.content;
+        }
+
+        location /internal_redirect_dest {
+            return 200 "internal_redirect";
+        }
+
+        location @internal_redirect_named {
+            return 200 "internal_redirect_named";
+        }
+
         location /callback {
             js_content test.content;
         }
@@ -313,11 +336,27 @@ $t->write_file('test.js', <<EOF);
         r.return(302, 'http://127.0.0.1:$p0/callback');
     }
 
+    function access_internal_redirect(r) {
+        r.internalRedirect('/internal_redirect_dest');
+    }
+
+    async function access_internal_redirect_async(r) {
+        await new Promise(resolve => setTimeout(resolve, 5));
+        r.internalRedirect('/internal_redirect_dest');
+    }
+
+    function access_internal_redirect_named(r) {
+        r.internalRedirect('\@internal_redirect_named');
+    }
+
     export default { content, deny, deny_body, exception, noop, override,
                      decline, content_only, async_timeout, async_deny,
                      async_deny_body, access_return_200,
                      async_exception, sr_skip, sr, fetch, route,
-                     auth_check, redirect, redirect_async };
+                     auth_check, redirect, redirect_async,
+                     access_internal_redirect,
+                     access_internal_redirect_async,
+                     access_internal_redirect_named };
 
 EOF
 
@@ -330,7 +369,7 @@ $t->write_file_expand('duplicate.conf', bad_conf(
 $t->write_file_expand('no_import.conf', bad_conf(
 	location => 'js_access test.noop;'));
 
-$t->try_run('no js_access')->plan(33);
+$t->try_run('no js_access')->plan(36);
 
 ###############################################################################
 
@@ -392,6 +431,12 @@ like(http_get('/redirect_async'), qr/302 Moved/,
 	'js_access async redirect');
 like(http_get('/redirect_async'), qr!Location: http://127.0.0.1:$p0/callback!,
 	'js_access async redirect Location header');
+like(http_get('/access_internal_redirect'), qr/internal_redirect/,
+	'js_access internalRedirect');
+like(http_get('/access_internal_redirect_async'), qr/internal_redirect/,
+	'async js_access internalRedirect');
+like(http_get('/access_internal_redirect_named'), qr/internal_redirect_named/,
+	'js_access internalRedirect to named location');
 
 my ($rc, $out) = nginx_test_conf($t, 'duplicate.conf');
 

@@ -182,6 +182,8 @@ static void ngx_http_js_content_event_handler(ngx_http_request_t *r);
 static void ngx_http_js_content_write_event_handler(ngx_http_request_t *r);
 static void ngx_http_js_content_finalize(ngx_http_request_t *r,
     ngx_http_js_ctx_t *ctx);
+static ngx_int_t ngx_http_js_internal_redirect(ngx_http_request_t *r,
+    ngx_http_js_ctx_t *ctx);
 static ngx_int_t ngx_http_js_header_filter(ngx_http_request_t *r);
 static ngx_int_t ngx_http_js_variable_set(ngx_http_request_t *r,
     ngx_http_variable_value_t *v, uintptr_t data);
@@ -1603,6 +1605,14 @@ done:
 static ngx_int_t
 ngx_http_js_access_finalize(ngx_http_request_t *r, ngx_http_js_ctx_t *ctx)
 {
+    ngx_int_t  rc;
+
+    if (ctx->redirect_uri.len) {
+        rc = ngx_http_js_internal_redirect(r, ctx);
+        ngx_http_finalize_request(r, rc);
+        return NGX_DONE;
+    }
+
     if (r->header_sent) {
         ngx_http_finalize_request(r, NGX_OK);
         return NGX_DONE;
@@ -1761,33 +1771,48 @@ ngx_http_js_content_write_event_handler(ngx_http_request_t *r)
 static void
 ngx_http_js_content_finalize(ngx_http_request_t *r, ngx_http_js_ctx_t *ctx)
 {
-    ngx_str_t   args;
-    ngx_int_t   rc;
-    ngx_uint_t  flags;
+    ngx_int_t  rc;
 
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http js content rc: %i", ctx->status);
 
     if (ctx->redirect_uri.len) {
-        if (ctx->redirect_uri.data[0] == '@') {
-            ngx_http_named_location(r, &ctx->redirect_uri);
-
-        } else {
-            ngx_str_null(&args);
-            flags = NGX_HTTP_LOG_UNSAFE;
-
-            rc = ngx_http_parse_unsafe_uri(r, &ctx->redirect_uri, &args,
-                                           &flags);
-            if (rc != NGX_OK) {
-                ngx_http_finalize_request(r, NGX_HTTP_INTERNAL_SERVER_ERROR);
-                return;
-            }
-
-            ngx_http_internal_redirect(r, &ctx->redirect_uri, &args);
-        }
+        rc = ngx_http_js_internal_redirect(r, ctx);
+        ngx_http_finalize_request(r, rc);
+        return;
     }
 
     ngx_http_finalize_request(r, ctx->status);
+}
+
+
+static ngx_int_t
+ngx_http_js_internal_redirect(ngx_http_request_t *r, ngx_http_js_ctx_t *ctx)
+{
+    ngx_str_t   args;
+    ngx_int_t   rc;
+    ngx_uint_t  flags;
+
+    if (r->header_sent) {
+        ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
+                      "ignored internalRedirect() because headers were "
+                      "already sent");
+        return NGX_OK;
+    }
+
+    if (ctx->redirect_uri.data[0] == '@') {
+        return ngx_http_named_location(r, &ctx->redirect_uri);
+    }
+
+    ngx_str_null(&args);
+    flags = NGX_HTTP_LOG_UNSAFE;
+
+    rc = ngx_http_parse_unsafe_uri(r, &ctx->redirect_uri, &args, &flags);
+    if (rc != NGX_OK) {
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    return ngx_http_internal_redirect(r, &ctx->redirect_uri, &args);
 }
 
 
