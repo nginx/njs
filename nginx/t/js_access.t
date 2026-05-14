@@ -89,6 +89,31 @@ http {
             js_content test.content;
         }
 
+        location /deny_body_proxy {
+            js_access test.deny_body;
+            proxy_pass http://127.0.0.1:8083;
+        }
+
+        location /async_deny_body_proxy {
+            js_access test.async_deny_body;
+            proxy_pass http://127.0.0.1:8083;
+        }
+
+        location /access_return_200 {
+            js_access test.access_return_200;
+            js_content test.content;
+        }
+
+        location /deny_error_page {
+            error_page 403 /custom_403;
+            js_access test.deny;
+            js_content test.content;
+        }
+
+        location /custom_403 {
+            return 200 "custom403";
+        }
+
         location /async_exception {
             js_access test.async_exception;
             js_content test.content;
@@ -161,6 +186,15 @@ http {
             return 200 "backend2";
         }
     }
+
+    server {
+        listen       127.0.0.1:8083;
+        access_log  %%TESTDIR%%/backend_access.log combined;
+
+        location / {
+            return 200 "backend_access";
+        }
+    }
 }
 
 EOF
@@ -176,6 +210,10 @@ $t->write_file('test.js', <<EOF);
 
     function deny(r) {
         r.return(403);
+    }
+
+    function deny_body(r) {
+        r.return(403, 'denied');
     }
 
     function exception(r) {
@@ -206,6 +244,11 @@ $t->write_file('test.js', <<EOF);
     async function async_deny(r) {
         await new Promise(resolve => setTimeout(resolve, 5));
         r.return(403);
+    }
+
+    async function async_deny_body(r) {
+        await new Promise(resolve => setTimeout(resolve, 5));
+        r.return(403, 'denied_async');
     }
 
     async function async_exception(r) {
@@ -257,6 +300,10 @@ $t->write_file('test.js', <<EOF);
         }
     }
 
+    function access_return_200(r) {
+        r.return(200, 'access_ok');
+    }
+
     function redirect(r) {
         r.return(302, 'http://127.0.0.1:$p0/callback');
     }
@@ -266,12 +313,15 @@ $t->write_file('test.js', <<EOF);
         r.return(302, 'http://127.0.0.1:$p0/callback');
     }
 
-    export default { content, deny, exception, noop, override,
+    export default { content, deny, deny_body, exception, noop, override,
                      decline, content_only, async_timeout, async_deny,
+                     async_deny_body, access_return_200,
                      async_exception, sr_skip, sr, fetch, route,
                      auth_check, redirect, redirect_async };
 
 EOF
+
+$t->write_file('backend_access.log', '');
 
 $t->write_file_expand('duplicate.conf', bad_conf(
 	http     => 'js_import test.js;',
@@ -280,7 +330,7 @@ $t->write_file_expand('duplicate.conf', bad_conf(
 $t->write_file_expand('no_import.conf', bad_conf(
 	location => 'js_access test.noop;'));
 
-$t->try_run('no js_access')->plan(26);
+$t->try_run('no js_access')->plan(33);
 
 ###############################################################################
 
@@ -306,6 +356,18 @@ like(http_get('/async_timeout'), qr/var:timeout_ok/,
 	'async js_access with setTimeout');
 like(http_get('/async_deny'), qr/403 Forbidden/,
 	'async js_access r.return(403) rejects');
+like(http_post('/deny_body_proxy'), qr/403 Forbidden.*denied/s,
+	'js_access r.return(403, body) rejects');
+is($t->read_file('backend_access.log'), '',
+	'js_access r.return(403, body) skips proxy_pass');
+like(http_post('/async_deny_body_proxy'), qr/403 Forbidden.*denied_async/s,
+	'async js_access r.return(403, body) rejects');
+is($t->read_file('backend_access.log'), '',
+	'async js_access r.return(403, body) skips proxy_pass');
+like(http_get('/access_return_200'), qr/200 OK.*access_ok/s,
+	'js_access r.return(200, body) finalizes request');
+like(http_get('/deny_error_page'), qr/custom403/,
+	'js_access r.return(403) preserves error_page');
 like(http_get('/async_exception'), qr/500 Internal Server Error/,
 	'async js_access exception returns 500');
 like(http_get('/sr_skip'), qr/var:/,
@@ -342,6 +404,9 @@ like($out, qr/"js_access" directive is duplicate/,
 isnt($rc, 0, 'js_access without js_import fails');
 like($out, qr/no imports defined for "js_access" "test\.noop"/,
 	'js_access without js_import error');
+
+unlike($t->read_file('error.log'), qr/header already sent/,
+	'js_access body return does not double-send headers');
 
 ###############################################################################
 

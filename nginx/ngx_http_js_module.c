@@ -174,6 +174,8 @@ typedef struct {
 
 
 static ngx_int_t ngx_http_js_access_handler(ngx_http_request_t *r);
+static ngx_int_t ngx_http_js_access_finalize(ngx_http_request_t *r,
+    ngx_http_js_ctx_t *ctx);
 static void ngx_http_js_access_write_event_handler(ngx_http_request_t *r);
 static ngx_int_t ngx_http_js_content_handler(ngx_http_request_t *r);
 static void ngx_http_js_content_event_handler(ngx_http_request_t *r);
@@ -1540,7 +1542,7 @@ ngx_http_js_access_handler(ngx_http_request_t *r)
             return NGX_HTTP_INTERNAL_SERVER_ERROR;
         }
 
-        return ctx->status;
+        return ngx_http_js_access_finalize(r, ctx);
     }
 
     ctx->status = NGX_OK;
@@ -1594,6 +1596,18 @@ done:
         return NGX_AGAIN;
     }
 
+    return ngx_http_js_access_finalize(r, ctx);
+}
+
+
+static ngx_int_t
+ngx_http_js_access_finalize(ngx_http_request_t *r, ngx_http_js_ctx_t *ctx)
+{
+    if (r->header_sent) {
+        ngx_http_finalize_request(r, NGX_OK);
+        return NGX_DONE;
+    }
+
     return ctx->status;
 }
 
@@ -1601,6 +1615,7 @@ done:
 static void
 ngx_http_js_access_write_event_handler(ngx_http_request_t *r)
 {
+    ngx_int_t          rc;
     ngx_http_js_ctx_t  *ctx;
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
@@ -1608,10 +1623,17 @@ ngx_http_js_access_write_event_handler(ngx_http_request_t *r)
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
                    "http js access write event handler");
 
-    if (!ngx_js_ctx_pending(ctx)) {
-        ngx_http_core_run_phases(r);
+    if (ngx_js_ctx_pending(ctx)) {
         return;
     }
+
+    rc = ngx_http_js_access_finalize(r, ctx);
+
+    if (rc == NGX_DONE) {
+        return;
+    }
+
+    ngx_http_core_run_phases(r);
 }
 
 
@@ -3694,6 +3716,10 @@ ngx_http_js_access_body_finalize(ngx_http_request_t *r, ngx_http_js_ctx_t *ctx,
 
         if (ngx_js_ctx_pending(ctx)) {
             r->write_event_handler = ngx_http_js_access_write_event_handler;
+            return;
+        }
+
+        if (ngx_http_js_access_finalize(r, ctx) == NGX_DONE) {
             return;
         }
 
