@@ -470,6 +470,15 @@ static njs_int_t njs_generate_call_argument_expressions(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
 static njs_int_t njs_generate_call_argument_expressions_after(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
+static njs_bool_t njs_generate_argument_aliases_mutable_slot(
+    njs_parser_node_t *node);
+static njs_bool_t njs_generate_argument_index_is_mutable(njs_index_t index);
+static njs_bool_t njs_generate_argument_uses_index(njs_parser_node_t *node,
+    njs_index_t index);
+static njs_bool_t njs_generate_argument_may_observe_effect(
+    njs_vm_t *vm, njs_parser_node_t *node);
+static njs_bool_t njs_generate_argument_suffix_may_observe_effect(
+    njs_vm_t *vm, njs_parser_node_t *node);
 static njs_uint_t njs_generate_call_nargs(njs_parser_node_t *node);
 static njs_int_t njs_generate_capture_stable_value(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node);
@@ -5461,8 +5470,19 @@ static njs_int_t
 njs_generate_call_argument_expressions_after(njs_vm_t *vm,
     njs_generator_t *generator, njs_parser_node_t *node)
 {
+    njs_int_t  ret;
+
     if (node->right == NULL) {
         return njs_generator_stack_pop(vm, generator, NULL);
+    }
+
+    if (njs_generate_argument_aliases_mutable_slot(node->left)
+        && njs_generate_argument_suffix_may_observe_effect(vm, node->right))
+    {
+        ret = njs_generate_capture_stable_value(vm, generator, node->left);
+        if (njs_slow_path(ret != NJS_OK)) {
+            return ret;
+        }
     }
 
     njs_generator_next(generator, njs_generate, node->right->left);
@@ -5471,6 +5491,122 @@ njs_generate_call_argument_expressions_after(njs_vm_t *vm,
                                njs_queue_first(&generator->stack), node->right,
                                njs_generate_call_argument_expressions_after,
                                NULL, 0);
+}
+
+
+static njs_bool_t
+njs_generate_argument_aliases_mutable_slot(njs_parser_node_t *node)
+{
+    njs_index_t  index;
+
+    njs_assert(node != NULL);
+
+    if (node->temporary) {
+        return 0;
+    }
+
+    if (node->token_type == NJS_TOKEN_THIS) {
+        return 0;
+    }
+
+    index = node->index;
+
+    if (!njs_generate_argument_index_is_mutable(index)) {
+        return 0;
+    }
+
+    return njs_generate_argument_uses_index(node, index);
+}
+
+
+static njs_bool_t
+njs_generate_argument_index_is_mutable(njs_index_t index)
+{
+    njs_assert(index != NJS_INDEX_NONE && index != NJS_INDEX_ERROR);
+
+    if (njs_scope_index_type(index) == NJS_LEVEL_STATIC) {
+        return 0;
+    }
+
+    if (njs_scope_index_var(index) == NJS_VARIABLE_CONST) {
+        return 0;
+    }
+
+    return 1;
+}
+
+
+static njs_bool_t
+njs_generate_argument_uses_index(njs_parser_node_t *node, njs_index_t index)
+{
+    njs_assert(node != NULL);
+
+    if (node->index == index
+        && (node->token_type == NJS_TOKEN_NAME
+            || node->token_type == NJS_TOKEN_ARGUMENTS
+            || node->token_type == NJS_TOKEN_EVAL))
+    {
+        return 1;
+    }
+
+    if (node->left != NULL && node->left->index == index
+        && njs_generate_argument_uses_index(node->left, index))
+    {
+        return 1;
+    }
+
+    if (node->right != NULL && node->right->index == index
+        && njs_generate_argument_uses_index(node->right, index))
+    {
+        return 1;
+    }
+
+    return 0;
+}
+
+
+static njs_bool_t
+njs_generate_argument_may_observe_effect(njs_vm_t *vm, njs_parser_node_t *node)
+{
+    njs_assert(node != NULL);
+
+    switch (node->token_type) {
+    case NJS_TOKEN_NULL:
+    case NJS_TOKEN_NUMBER:
+    case NJS_TOKEN_TRUE:
+    case NJS_TOKEN_UNDEFINED:
+    case NJS_TOKEN_FALSE:
+    case NJS_TOKEN_STRING:
+    case NJS_TOKEN_ARGUMENTS:
+    case NJS_TOKEN_THIS:
+        return 0;
+
+    case NJS_TOKEN_NAME:
+    case NJS_TOKEN_EVAL:
+        /*
+         * if njs_variable_resolve(vm, node) == NULL the name reference is
+         * global, it may invoke global accessor and therefore may observe
+         * effect.
+         */
+        return njs_variable_resolve(vm, node) == NULL;
+
+    default:
+        return 1;
+    }
+}
+
+
+static njs_bool_t
+njs_generate_argument_suffix_may_observe_effect(njs_vm_t *vm,
+    njs_parser_node_t *node)
+{
+    for (; node != NULL; node = node->right) {
+        if (njs_generate_argument_may_observe_effect(vm, node->left)) {
+            return 1;
+        }
+    }
+
+    return 0;
 }
 
 

@@ -11834,6 +11834,108 @@ static njs_unit_test_t  njs_test[] =
                  "o.a"),
       njs_str("7") },
 
+    { njs_str("let a = 1;"
+              "function f(x, y) { return x + ':' + y; }"
+              "f(a, a = 2)"),
+      njs_str("1:2") },
+
+    { njs_str("let a = 1, b = 4;"
+              "function f(x, y) { return x + ':' + y; }"
+              "f(a = b, b = 2)"),
+      njs_str("4:2") },
+
+    { njs_str("function f(x, y) { return x + ':' + y; }"
+              "function g(a) { return f(a, a = 2); }"
+              "g(1)"),
+      njs_str("1:2") },
+
+    { njs_str("let a = 1;"
+              "let o = { m: function(x, y) { return x + ':' + y; } };"
+              "o.m(a, a = 2)"),
+      njs_str("1:2") },
+
+    { njs_str("let a = 1;"
+              "let o = { get m() { a = 9;"
+              "    return function(x, y) { return x + ':' + y + ':' + a; };"
+              "} };"
+              "o.m(a, a = 2)"),
+      njs_str("9:2:2") },
+
+    { njs_str("let a = 1;"
+              "let o = { get x() { a = 2; return 3; } };"
+              "function f(x, y) { return x + ':' + y; }"
+              "f(a, o.x)"),
+      njs_str("1:3") },
+
+    { njs_str("let a = 1;"
+              "function f(x, y) { return x + ':' + y; }"
+              "Object.defineProperty(globalThis, 'b', {"
+              "    get: function() { a = 2; return 3; },"
+              "    configurable: true"
+              "});"
+              "let r = f(a, b);"
+              "delete globalThis.b;"
+              "r"),
+      njs_str("1:3") },
+
+    { njs_str("let a = 1;"
+              "function f(x, y, z) { return x + ':' + y + ':' + z; }"
+              "f(a, (a = 2, a), a = 3)"),
+      njs_str("1:2:3") },
+
+    { njs_str("let a = 1;"
+              "function f(x, y, z) { return x + ':' + y + ':' + z; }"
+              "f(a, 0, a = 2)"),
+      njs_str("1:0:2") },
+
+    { njs_str("let a = 1;"
+              "function f(x, y) { return x + ':' + y; }"
+              "f(a, ++a)"),
+      njs_str("1:2") },
+
+    { njs_str("let a = 1;"
+              "function f(x, y) { return x + ':' + y; }"
+              "f(a, true ? (a = 2) : 0)"),
+      njs_str("1:2") },
+
+    { njs_str("let a = 0;"
+              "function f(x, y) { return x + ':' + y; }"
+              "f(a, a ||= 2)"),
+      njs_str("0:2") },
+
+    { njs_str("let a = 1;"
+              "function f(x, y) { return x + ':' + y; }"
+              "function g(v) { return v; }"
+              "f(a, g(a = 2))"),
+      njs_str("1:2") },
+
+    { njs_str("function f(x, y) { return x + ':' + y; }"
+              "function g() { let a = 1;"
+              "    return function() { return f(a, a = 2); };"
+              "}"
+              "g()()"),
+      njs_str("1:2") },
+
+    { njs_str("let a = 1;"
+              "function F(x, y) { this.v = x + ':' + y; }"
+              "new F(a, a = 2).v"),
+      njs_str("1:2") },
+
+    { njs_str("let a = 1;"
+              "function f(x, y, z) { return x + ':' + y + ':' + z; }"
+              "f(a, [a = 2][0], { k: a = 3 }.k)"),
+      njs_str("1:2:3") },
+
+    { njs_str("let o = { x: 1 };"
+              "function f(x, y) { return x + ':' + y; }"
+              "f(o.x, o.x = 2)"),
+      njs_str("1:2") },
+
+    { njs_str("let a = 1;"
+              "let f = function(x, y) { return 'orig:' + x + ':' + y; };"
+              "f(a, (f = function() { return 'new'; }, a = 2))"),
+      njs_str("orig:1:2") },
+
     { njs_str("function F(a, b) { return }"
                  "F.prototype.constructor === F"),
       njs_str("true") },
