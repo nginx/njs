@@ -366,6 +366,9 @@ static njs_int_t ngx_http_js_ext_variables(njs_vm_t *vm,
 static njs_int_t ngx_http_js_periodic_session_variables(njs_vm_t *vm,
     njs_object_prop_t *prop, uint32_t atom_id, njs_value_t *value,
     njs_value_t *setval, njs_value_t *retval);
+static njs_int_t ngx_http_js_ext_js_var_names(njs_vm_t *vm,
+    njs_value_t *args, njs_uint_t nargs, njs_index_t unused,
+    njs_value_t *retval);
 static njs_int_t ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static ngx_int_t ngx_http_js_subrequest_done(ngx_http_request_t *r,
@@ -461,6 +464,8 @@ static JSValue ngx_http_qjs_ext_raw_headers(JSContext *cx,
     JSValueConst this_val, int out);
 static JSValue ngx_http_qjs_ext_variables(JSContext *cx,
     JSValueConst this_val, int type);
+static JSValue ngx_http_qjs_ext_js_var_names(JSContext *cx,
+    JSValueConst this_val, int argc, JSValueConst *argv);
 
 static int ngx_http_qjs_variables_own_property(JSContext *cx,
     JSPropertyDescriptor *pdesc, JSValueConst obj, JSAtom prop);
@@ -1116,6 +1121,17 @@ static njs_external_t  ngx_http_js_ext_request[] = {
     },
 
     {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("jsVarNames"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_http_js_ext_js_var_names,
+        }
+    },
+
+    {
         .flags = NJS_EXTERN_PROPERTY,
         .name.string = njs_str("status"),
         .writable = 1,
@@ -1407,6 +1423,7 @@ static const JSCFunctionListEntry ngx_http_qjs_ext_request[] = {
     JS_CFUNC_DEF("sendBuffer", 2, ngx_http_qjs_ext_send_buffer),
     JS_CFUNC_DEF("sendHeader", 0, ngx_http_qjs_ext_send_header),
     JS_CFUNC_DEF("setReturnValue", 1, ngx_http_qjs_ext_set_return_value),
+    JS_CFUNC_DEF("jsVarNames", 1, ngx_http_qjs_ext_js_var_names),
     JS_CGETSET_DEF("status", ngx_http_qjs_ext_status_get,
                    ngx_http_qjs_ext_status_set),
     JS_CFUNC_MAGIC_DEF("readRequestArrayBuffer", 0,
@@ -4436,6 +4453,88 @@ ngx_http_js_ext_keys_header_in(njs_vm_t *vm, njs_value_t *value,
     }
 
     return ngx_http_js_ext_keys_header(vm, value, keys, &r->headers_in.headers);
+}
+
+
+static ngx_uint_t
+ngx_http_js_var_name_matches(ngx_str_t *name, const u_char *prefix,
+    size_t prefix_len)
+{
+    if (prefix_len == 0) {
+        return 1;
+    }
+
+    return name->len >= prefix_len
+           && ngx_memcmp(name->data, prefix, prefix_len) == 0;
+}
+
+
+static njs_int_t
+ngx_http_js_ext_js_var_names(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
+{
+    njs_int_t                   rc;
+    njs_str_t                   prefix;
+    njs_value_t                *arg, *value;
+    ngx_uint_t                  i;
+    ngx_http_request_t         *r;
+    ngx_http_variable_t        *v;
+    ngx_http_core_main_conf_t  *cmcf;
+
+    r = njs_vm_external(vm, ngx_http_js_request_proto_id,
+                        njs_argument(args, 0));
+    if (r == NULL) {
+        njs_vm_error(vm, "\"this\" is not an external");
+        return NJS_ERROR;
+    }
+
+    prefix.start = NULL;
+    prefix.length = 0;
+
+    arg = njs_arg(args, nargs, 1);
+
+    if (!njs_value_is_undefined(arg)) {
+        if (!njs_value_is_string(arg)) {
+            njs_vm_type_error(vm, "\"prefix\" must be a string");
+            return NJS_ERROR;
+        }
+
+        njs_value_string_get(vm, arg, &prefix);
+    }
+
+    cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
+
+    rc = njs_vm_array_alloc(vm, retval, 4);
+    if (rc != NJS_OK) {
+        return NJS_ERROR;
+    }
+
+    v = cmcf->variables.elts;
+
+    for (i = 0; i < cmcf->variables.nelts; i++) {
+        if (v[i].get_handler != ngx_http_js_variable_var) {
+            continue;
+        }
+
+        if (!ngx_http_js_var_name_matches(&v[i].name, prefix.start,
+                                          prefix.length))
+        {
+            continue;
+        }
+
+        value = njs_vm_array_push(vm, retval);
+        if (value == NULL) {
+            return NJS_ERROR;
+        }
+
+        rc = njs_vm_value_string_create(vm, value, v[i].name.data,
+                                        v[i].name.len);
+        if (rc != NJS_OK) {
+            return NJS_ERROR;
+        }
+    }
+
+    return NJS_OK;
 }
 
 
@@ -7907,6 +8006,81 @@ ngx_http_qjs_ext_variables(JSContext *cx, JSValueConst this_val, int type)
     JS_SetOpaque(obj, (void *) ((uintptr_t) r | (uintptr_t) type));
 
     return obj;
+}
+
+
+static JSValue
+ngx_http_qjs_ext_js_var_names(JSContext *cx, JSValueConst this_val, int argc,
+    JSValueConst *argv)
+{
+    JSValue                     array, value;
+    uint32_t                    n;
+    size_t                      prefix_len;
+    const char                 *prefix;
+    ngx_uint_t                  i;
+    ngx_http_request_t         *r;
+    ngx_http_variable_t        *v;
+    ngx_http_core_main_conf_t  *cmcf;
+
+    r = ngx_http_qjs_request(this_val);
+    if (r == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+    }
+
+    prefix = NULL;
+    prefix_len = 0;
+
+    if (argc > 0 && !JS_IsUndefined(argv[0])) {
+        if (!JS_IsString(argv[0])) {
+            return JS_ThrowTypeError(cx, "\"prefix\" must be a string");
+        }
+
+        prefix = JS_ToCStringLen(cx, &prefix_len, argv[0]);
+        if (prefix == NULL) {
+            return JS_EXCEPTION;
+        }
+    }
+
+    array = JS_NewArray(cx);
+    if (JS_IsException(array)) {
+        JS_FreeCString(cx, prefix);
+        return JS_EXCEPTION;
+    }
+
+    n = 0;
+    cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
+    v = cmcf->variables.elts;
+
+    for (i = 0; i < cmcf->variables.nelts; i++) {
+        if (v[i].get_handler != ngx_http_js_variable_var) {
+            continue;
+        }
+
+        if (!ngx_http_js_var_name_matches(&v[i].name, (u_char *) prefix,
+                                          prefix_len))
+        {
+            continue;
+        }
+
+        value = qjs_string_create(cx, v[i].name.data, v[i].name.len);
+        if (JS_IsException(value)) {
+            JS_FreeCString(cx, prefix);
+            JS_FreeValue(cx, array);
+            return JS_EXCEPTION;
+        }
+
+        if (JS_DefinePropertyValueUint32(cx, array, n++, value,
+                                         JS_PROP_C_W_E) < 0)
+        {
+            JS_FreeCString(cx, prefix);
+            JS_FreeValue(cx, array);
+            return JS_EXCEPTION;
+        }
+    }
+
+    JS_FreeCString(cx, prefix);
+
+    return array;
 }
 
 

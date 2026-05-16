@@ -138,6 +138,9 @@ static njs_int_t ngx_stream_js_ext_send(njs_vm_t *vm, njs_value_t *args,
 static njs_int_t ngx_stream_js_ext_set_return_value(njs_vm_t *vm,
     njs_value_t *args, njs_uint_t nargs, njs_index_t unused,
     njs_value_t *retval);
+static njs_int_t ngx_stream_js_ext_js_var_names(njs_vm_t *vm,
+    njs_value_t *args, njs_uint_t nargs, njs_index_t unused,
+    njs_value_t *retval);
 
 static njs_int_t ngx_stream_js_ext_variables(njs_vm_t *vm,
     njs_object_prop_t *prop, uint32_t atom_id, njs_value_t *value,
@@ -163,6 +166,8 @@ static JSValue ngx_stream_qjs_ext_remote_address(JSContext *cx,
 static JSValue ngx_stream_qjs_ext_send(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv, int from_upstream);
 static JSValue ngx_stream_qjs_ext_set_return_value(JSContext *cx,
+    JSValueConst this_val, int argc, JSValueConst *argv);
+static JSValue ngx_stream_qjs_ext_js_var_names(JSContext *cx,
     JSValueConst this_val, int argc, JSValueConst *argv);
 static JSValue ngx_stream_qjs_ext_variables(JSContext *cx,
     JSValueConst this_val, int type);
@@ -677,6 +682,17 @@ static njs_external_t  ngx_stream_js_ext_session[] = {
     },
 
     {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("jsVarNames"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = ngx_stream_js_ext_js_var_names,
+        }
+    },
+
+    {
         .flags = NJS_EXTERN_PROPERTY,
         .name.string = njs_str("status"),
         .enumerable = 1,
@@ -837,6 +853,7 @@ static const JSCFunctionListEntry ngx_stream_qjs_ext_session[] = {
     JS_CFUNC_MAGIC_DEF("sendUpstream", 1, ngx_stream_qjs_ext_send,
                        NGX_JS_BOOL_FALSE),
     JS_CFUNC_DEF("setReturnValue", 1, ngx_stream_qjs_ext_set_return_value),
+    JS_CFUNC_DEF("jsVarNames", 1, ngx_stream_qjs_ext_js_var_names),
     JS_CGETSET_MAGIC_DEF("status", ngx_stream_qjs_ext_uint, NULL,
                          offsetof(ngx_stream_session_t, status)),
     JS_CGETSET_MAGIC_DEF("variables", ngx_stream_qjs_ext_variables,
@@ -1751,6 +1768,88 @@ ngx_stream_js_ext_set_return_value(njs_vm_t *vm, njs_value_t *args,
 }
 
 
+static ngx_uint_t
+ngx_stream_js_var_name_matches(ngx_str_t *name, const u_char *prefix,
+    size_t prefix_len)
+{
+    if (prefix_len == 0) {
+        return 1;
+    }
+
+    return name->len >= prefix_len
+           && ngx_memcmp(name->data, prefix, prefix_len) == 0;
+}
+
+
+static njs_int_t
+ngx_stream_js_ext_js_var_names(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
+{
+    njs_int_t                     rc;
+    njs_str_t                     prefix;
+    njs_value_t                  *arg, *value;
+    ngx_uint_t                    i;
+    ngx_stream_session_t         *s;
+    ngx_stream_variable_t        *v;
+    ngx_stream_core_main_conf_t  *cmcf;
+
+    s = njs_vm_external(vm, ngx_stream_js_session_proto_id,
+                        njs_argument(args, 0));
+    if (s == NULL) {
+        njs_vm_error(vm, "\"this\" is not an external");
+        return NJS_ERROR;
+    }
+
+    prefix.start = NULL;
+    prefix.length = 0;
+
+    arg = njs_arg(args, nargs, 1);
+
+    if (!njs_value_is_undefined(arg)) {
+        if (!njs_value_is_string(arg)) {
+            njs_vm_type_error(vm, "\"prefix\" must be a string");
+            return NJS_ERROR;
+        }
+
+        njs_value_string_get(vm, arg, &prefix);
+    }
+
+    cmcf = ngx_stream_get_module_main_conf(s, ngx_stream_core_module);
+
+    rc = njs_vm_array_alloc(vm, retval, 4);
+    if (rc != NJS_OK) {
+        return NJS_ERROR;
+    }
+
+    v = cmcf->variables.elts;
+
+    for (i = 0; i < cmcf->variables.nelts; i++) {
+        if (v[i].get_handler != ngx_stream_js_variable_var) {
+            continue;
+        }
+
+        if (!ngx_stream_js_var_name_matches(&v[i].name, prefix.start,
+                                            prefix.length))
+        {
+            continue;
+        }
+
+        value = njs_vm_array_push(vm, retval);
+        if (value == NULL) {
+            return NJS_ERROR;
+        }
+
+        rc = njs_vm_value_string_create(vm, value, v[i].name.data,
+                                        v[i].name.len);
+        if (rc != NJS_OK) {
+            return NJS_ERROR;
+        }
+    }
+
+    return NJS_OK;
+}
+
+
 static njs_int_t
 ngx_stream_js_session_variables(njs_vm_t *vm, njs_object_prop_t *prop,
     uint32_t atom_id, ngx_stream_session_t *s, njs_value_t *setval,
@@ -2517,6 +2616,81 @@ ngx_stream_qjs_ext_variables(JSContext *cx, JSValueConst this_val, int type)
     JS_SetOpaque(obj, (void *) ((uintptr_t) s | (uintptr_t) type));
 
     return obj;
+}
+
+
+static JSValue
+ngx_stream_qjs_ext_js_var_names(JSContext *cx, JSValueConst this_val, int argc,
+    JSValueConst *argv)
+{
+    JSValue                       array, value;
+    uint32_t                      n;
+    size_t                        prefix_len;
+    const char                   *prefix;
+    ngx_uint_t                    i;
+    ngx_stream_session_t         *s;
+    ngx_stream_variable_t        *v;
+    ngx_stream_core_main_conf_t  *cmcf;
+
+    s = ngx_stream_qjs_session(this_val);
+    if (s == NULL) {
+        return JS_ThrowInternalError(cx, "\"this\" is not a session object");
+    }
+
+    prefix = NULL;
+    prefix_len = 0;
+
+    if (argc > 0 && !JS_IsUndefined(argv[0])) {
+        if (!JS_IsString(argv[0])) {
+            return JS_ThrowTypeError(cx, "\"prefix\" must be a string");
+        }
+
+        prefix = JS_ToCStringLen(cx, &prefix_len, argv[0]);
+        if (prefix == NULL) {
+            return JS_EXCEPTION;
+        }
+    }
+
+    array = JS_NewArray(cx);
+    if (JS_IsException(array)) {
+        JS_FreeCString(cx, prefix);
+        return JS_EXCEPTION;
+    }
+
+    n = 0;
+    cmcf = ngx_stream_get_module_main_conf(s, ngx_stream_core_module);
+    v = cmcf->variables.elts;
+
+    for (i = 0; i < cmcf->variables.nelts; i++) {
+        if (v[i].get_handler != ngx_stream_js_variable_var) {
+            continue;
+        }
+
+        if (!ngx_stream_js_var_name_matches(&v[i].name, (u_char *) prefix,
+                                            prefix_len))
+        {
+            continue;
+        }
+
+        value = qjs_string_create(cx, v[i].name.data, v[i].name.len);
+        if (JS_IsException(value)) {
+            JS_FreeCString(cx, prefix);
+            JS_FreeValue(cx, array);
+            return JS_EXCEPTION;
+        }
+
+        if (JS_DefinePropertyValueUint32(cx, array, n++, value,
+                                         JS_PROP_C_W_E) < 0)
+        {
+            JS_FreeCString(cx, prefix);
+            JS_FreeValue(cx, array);
+            return JS_EXCEPTION;
+        }
+    }
+
+    JS_FreeCString(cx, prefix);
+
+    return array;
 }
 
 
