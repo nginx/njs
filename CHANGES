@@ -1,3 +1,36 @@
+Changes with njs 0.9.9                                       19 May 2026
+
+    nginx modules:
+
+    *) Security: a heap buffer overflow might occur in a worker process
+       when the "js_fetch_proxy" directive value contains nginx
+       variables derived from the client request ($http_*, $arg_*,
+       $cookie_*, etc.) and the location's JS handler invokes
+       ngx.fetch(). The issue was introduced in dea83189 (0.9.4).
+
+    *) Feature: added js_access directive.
+
+    *) Feature: added r.readRequestText(), r.readRequestArrayBuffer(),
+       and r.readRequestJSON() - async methods that read the request
+       body, available in js_access and js_content directives.
+
+    *) Feature: added r.readRequestForm() - async method that parses
+       the request body submitted from an HTML form
+       (application/x-www-form-urlencoded and multipart/form-data) and
+       returns a structured accessor object.  The method is available
+       in js_access and js_content directives.
+
+    *) Feature: added jsVarNames() method.  The method returns the
+       names of variables declared with js_var.
+
+    Core:
+
+    *) Bugfix: fixed evaluation order of call arguments with side
+       effects.  Previously, an earlier argument could observe a later
+       argument's mutation, e.g. f(a, a = 2) passed 2 as both
+       arguments.
+       The issue was introduced in fd5e523f (0.9.7).
+
 Changes with njs 0.9.8                                       23 Apr 2026
 
     nginx modules:
