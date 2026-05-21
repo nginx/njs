@@ -1347,22 +1347,20 @@ qjs_buffer_prototype_to_json(JSContext *ctx, JSValueConst this_val, int argc,
     if (rc == -1) {
         JS_FreeValue(ctx, obj);
         JS_FreeValue(ctx, data);
-        return ret;
+        return JS_EXCEPTION;
     }
 
     rc = JS_DefinePropertyValueStr(ctx, obj, "data", data, JS_PROP_ENUMERABLE);
     if (rc == -1) {
         JS_FreeValue(ctx, obj);
-        JS_FreeValue(ctx, data);
-        return ret;
+        return JS_EXCEPTION;
     }
 
     for (i = 0; i < src.length; i++) {
         rc = JS_SetPropertyUint32(ctx, data, i, JS_NewInt32(ctx, src.start[i]));
         if (rc == -1) {
             JS_FreeValue(ctx, obj);
-            JS_FreeValue(ctx, data);
-            return ret;
+            return JS_EXCEPTION;
         }
     }
 
