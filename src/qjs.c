@@ -469,11 +469,11 @@ static JSValue
 qjs_process_kill(JSContext *ctx, JSValueConst this_val, int argc,
     JSValueConst *argv)
 {
-    int                  signo, pid;
-    JSValue              val;
-    njs_str_t            name;
-    const char           *signal;
-    qjs_signal_entry_t   *entry;
+    int                 signo, pid;
+    JSValue             ret;
+    njs_str_t           name;
+    const char          *signal;
+    qjs_signal_entry_t  *entry;
 
     if (JS_ToInt32(ctx, &pid, argv[0]) < 0) {
         return JS_EXCEPTION;
@@ -491,20 +491,15 @@ qjs_process_kill(JSContext *ctx, JSValueConst this_val, int argc,
         }
 
     } else {
-        val = JS_ToString(ctx, argv[1]);
-        if (JS_IsException(val)) {
-            return JS_EXCEPTION;
-        }
-
-        signal = JS_ToCString(ctx, val);
+        signal = JS_ToCString(ctx, argv[1]);
         if (signal == NULL) {
-            JS_FreeValue(ctx, val);
             return JS_EXCEPTION;
         }
 
         if (njs_strlen(signal) < 3 || memcmp(signal, "SIG", 3) != 0) {
+            ret = JS_ThrowTypeError(ctx, "unknown signal: %s", signal);
             JS_FreeCString(ctx, signal);
-            return JS_ThrowTypeError(ctx, "unknown signal: %s", signal);
+            return ret;
         }
 
         name.start = (u_char *) signal + 3;
@@ -517,11 +512,13 @@ qjs_process_kill(JSContext *ctx, JSValueConst this_val, int argc,
             }
         }
 
-        JS_FreeCString(ctx, signal);
-
         if (entry->name.length == 0) {
-            return JS_ThrowTypeError(ctx, "unknown signal: %s", signal);
+            ret = JS_ThrowTypeError(ctx, "unknown signal: %s", signal);
+            JS_FreeCString(ctx, signal);
+            return ret;
         }
+
+        JS_FreeCString(ctx, signal);
     }
 
     if (kill(pid, signo) < 0) {
