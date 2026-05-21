@@ -635,13 +635,18 @@ qjs_buffer_from(JSContext *ctx, JSValueConst this_val, int argc,
             }
 
             name = JS_GetPropertyStr(ctx, ctor, "name");
+            JS_FreeValue(ctx, ctor);
             if (JS_IsException(name)) {
                 JS_FreeValue(ctx, ret);
                 return name;
             }
 
-            JS_FreeValue(ctx, ctor);
             str = JS_ToCString(ctx, name);
+            if (str == NULL) {
+                JS_FreeValue(ctx, name);
+                JS_FreeValue(ctx, ret);
+                return JS_EXCEPTION;
+            }
 
             if (strncmp(str, "Float32Array", 12) == 0) {
                 float32 = 1;
@@ -1909,6 +1914,7 @@ qjs_buffer_from_typed_array(JSContext *ctx, JSValueConst arr_buf,
     njs_str_t  src, dst;
 
     size = size / bytes;
+    offset = offset / bytes;
     buffer = qjs_buffer_alloc(ctx, size);
     if (JS_IsException(buffer)) {
         JS_FreeValue(ctx, arr_buf);
@@ -2045,7 +2051,7 @@ reject:
 
     ret = qjs_typed_array_data(ctx, buffer, &dst);
     if (JS_IsException(ret)) {
-        return ret;
+        goto fail;
     }
 
     p = dst.start;
@@ -2053,11 +2059,12 @@ reject:
     for (i = 0; i < len; i++) {
         ret = JS_GetPropertyUint32(ctx, obj, i);
         if (njs_slow_path(JS_IsException(ret))) {
-            return ret;
+            goto fail;
         }
 
         if (njs_slow_path(JS_ToInt32(ctx, &v, ret))) {
-            return JS_EXCEPTION;
+            JS_FreeValue(ctx, ret);
+            goto fail;
         }
 
         JS_FreeValue(ctx, ret);
@@ -2066,6 +2073,12 @@ reject:
     }
 
     return buffer;
+
+fail:
+
+    JS_FreeValue(ctx, buffer);
+
+    return JS_EXCEPTION;
 }
 
 
@@ -2085,6 +2098,9 @@ qjs_buffer_encoding(JSContext *ctx, JSValueConst value, JS_BOOL thrw)
     }
 
     name.start = (u_char *) JS_ToCStringLen(ctx, &name.length, value);
+    if (name.start == NULL) {
+        return NULL;
+    }
 
     for (encoding = &qjs_buffer_encodings[0];
          encoding->name.length != 0;
@@ -2096,12 +2112,12 @@ qjs_buffer_encoding(JSContext *ctx, JSValueConst value, JS_BOOL thrw)
         }
     }
 
-    JS_FreeCString(ctx, (char *) name.start);
-
     if (thrw) {
         JS_ThrowTypeError(ctx, "\"%.*s\" encoding is not supported",
                           (int) name.length, name.start);
     }
+
+    JS_FreeCString(ctx, (char *) name.start);
 
     return NULL;
 }

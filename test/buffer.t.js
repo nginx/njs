@@ -290,6 +290,18 @@ let fill_tsuite = {
 };
 
 
+function typedArrayWithOffset(TypedArray, prefix, values) {
+    let bytes = TypedArray.BYTES_PER_ELEMENT;
+    let buffer = new ArrayBuffer((prefix.length + values.length) * bytes);
+    let view = new TypedArray(buffer, prefix.length * bytes, values.length);
+
+    new TypedArray(buffer, 0, prefix.length).set(prefix);
+    view.set(values);
+
+    return view;
+}
+
+
 let from_tsuite = {
     name: "Buffer.from() tests",
     skip: () => (!has_buffer()),
@@ -344,6 +356,19 @@ let from_tsuite = {
         { args: [new Float32Array([234.001, 123.11])], fmt: "hex", expected: 'ea7b' },
         { args: [new Uint32Array([234, 123])], fmt: "hex", expected: 'ea7b' },
         { args: [new Float64Array([234.001, 123.11])], fmt: "hex", expected: 'ea7b' },
+        { args: [typedArrayWithOffset(Uint16Array,
+                                      [0xaaaa, 0xbbbb, 0xcccc, 0xdddd],
+                                      [0x1234, 0x00ff, 0x0100, 0x017f])],
+          fmt: "hex", expected: '34ff007f' },
+        { args: [typedArrayWithOffset(Uint32Array,
+                                      [0xaaaaaaaa, 0xbbbbbbbb,
+                                       0xcccccccc, 0xdddddddd],
+                                      [0x12345678, 0x000000ff,
+                                       0x00000100, 0x0000017f])],
+          fmt: "hex", expected: '78ff007f' },
+        { args: [typedArrayWithOffset(Float64Array,
+                                      [1000.01, 1001.01], [234.001, 123.11])],
+          fmt: "hex", expected: 'ea7b' },
 
         { args: [(new Uint8Array(2)).buffer, -1],
           exception: 'RangeError: invalid index' },
@@ -369,6 +394,10 @@ let from_tsuite = {
           fmt: "hex", expected: '010203' },
         { args: [(function() {var a = [1,2,3,4]; a[1] = { valueOf() { a.length = 3; return 1; } }; return a})()],
           fmt: "hex", expected: '01010300' },
+        { args: [{length: 3, get 0() { throw Error('boom') }}],
+          exception: 'Error: boom' },
+        { args: [{length: 3, 0: { valueOf() { throw Error('boom') } }}],
+          exception: 'Error: boom' },
 
         { args: [{type: 'B'}],
           exception: 'TypeError: first argument is not a string or Buffer-like object' },
