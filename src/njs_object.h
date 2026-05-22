@@ -244,6 +244,7 @@ njs_atom_string_get(njs_vm_t *vm, uint32_t atom_id, njs_str_t *str)
     if (njs_atom_to_value(vm, &value, atom_id) != NJS_OK) {
         str->start = (u_char *) "unknown";
         str->length = njs_length("unknown");
+        return;
     }
 
     njs_key_string_get(vm, &value, str);
