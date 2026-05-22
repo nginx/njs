@@ -8153,6 +8153,7 @@ ngx_http_qjs_variables_own_property(JSContext *cx, JSPropertyDescriptor *pdesc,
     } else {
         name_lc.data = ngx_pnalloc(r->pool, name.len);
         if (name_lc.data == NULL) {
+            JS_FreeCString(cx, (char *) name.data);
             (void) JS_ThrowOutOfMemory(cx);
             return -1;
         }
@@ -8214,6 +8215,7 @@ ngx_http_qjs_variables_set_property(JSContext *cx, JSValueConst obj,
     } else {
         lowcase_key = ngx_pnalloc(r->pool, name.len);
         if (lowcase_key == NULL) {
+            JS_FreeCString(cx, (char *) name.data);
             (void) JS_ThrowOutOfMemory(cx);
             return -1;
         }
