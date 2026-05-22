@@ -759,7 +759,7 @@ ngx_qjs_fetch_response_ctor(JSContext *cx, JSValueConst new_target, int argc,
     ret = ngx_list_init(&response->headers.header_list, pool, 4,
                         sizeof(ngx_js_tb_elt_t));
     if (ret != NGX_OK) {
-        JS_ThrowOutOfMemory(cx);
+        return JS_ThrowOutOfMemory(cx);
     }
 
     init = argv[1];
@@ -825,7 +825,7 @@ ngx_qjs_fetch_response_ctor(JSContext *cx, JSValueConst new_target, int argc,
             rc = ngx_qjs_headers_fill(cx, &response->headers, value);
             JS_FreeValue(cx, value);
 
-            if (ret != NGX_OK) {
+            if (rc != NGX_OK) {
                 return JS_EXCEPTION;
             }
         }
@@ -1458,6 +1458,9 @@ ngx_qjs_headers_ext_keys(JSContext *cx, JSValue value)
 
             hdr.data = (u_char *) JS_ToCStringLen(cx, &hdr.len, key);
             JS_FreeValue(cx, key);
+            if (hdr.data == NULL) {
+                goto fail;
+            }
 
             found = h[i].key.len == hdr.len
                     && ngx_strncasecmp(h[i].key.data,
@@ -1473,7 +1476,7 @@ ngx_qjs_headers_ext_keys(JSContext *cx, JSValue value)
         if (k == n) {
             item = JS_NewStringLen(cx, (const char *) h[i].key.data,
                                     h[i].key.len);
-            if (JS_IsException(value)) {
+            if (JS_IsException(item)) {
                 goto fail;
             }
 
