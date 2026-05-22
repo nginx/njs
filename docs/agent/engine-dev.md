@@ -148,9 +148,12 @@ NGINX coding style:
 Commit messages:
 
 - Past tense subject (`Added X`, `Fixed Y`).
-- Subject ≤67 chars, body wrapped to ~80 chars.
-- Subject prefix: `HTTP:`, `Stream:`, `Core:`, `QuickJS:`, `Tests:`,
-  `Modules:`, etc.
+- Subject ≤72 chars, body wrapped to ~80 chars.
+- Use a subject prefix only when local history clearly uses one for the
+  changed area, such as `HTTP:`, `Stream:`, `QuickJS:`, `Tests:`, or
+  `Modules:`. Otherwise use no prefix; do not invent generic prefixes.
+- Read recent commit history and write commit logs in the established njs
+  style.
 - One logical change per commit; rebase/squash before submitting.
 
 ## Project layout
