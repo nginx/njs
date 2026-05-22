@@ -1136,9 +1136,10 @@ njs_object_own_enumerate_object(njs_vm_t *vm, const njs_object_t *object,
 
         ret = njs_get_own_ordered_keys(vm, object, parent, items_sorted, flags);
         if (ret != NJS_OK) {
-            return NJS_ERROR;
+            goto fail;
         }
 
+        entry = NULL;
         njs_set_object(&value, (njs_object_t *) object);
 
         for (i = 0; i< items_sorted->length; i++) {
@@ -1152,7 +1153,7 @@ njs_object_own_enumerate_object(njs_vm_t *vm, const njs_object_t *object,
             if (njs_object_enum_kind(flags) != NJS_ENUM_VALUES) {
                 entry = njs_array_alloc(vm, 0, 2, 0);
                 if (njs_slow_path(entry == NULL)) {
-                    return NJS_ERROR;
+                    goto fail;
                 }
 
                 njs_string_copy(&entry->start[0], &items_sorted->start[i]);
@@ -1163,7 +1164,11 @@ njs_object_own_enumerate_object(njs_vm_t *vm, const njs_object_t *object,
 
             ret = njs_array_add(vm, items, &retval);
             if (njs_slow_path(ret != NJS_OK)) {
-                return NJS_ERROR;
+                if (njs_object_enum_kind(flags) != NJS_ENUM_VALUES) {
+                    njs_array_destroy(vm, entry);
+                }
+
+                goto fail;
             }
         }
 
@@ -1174,6 +1179,12 @@ njs_object_own_enumerate_object(njs_vm_t *vm, const njs_object_t *object,
     }
 
     return NJS_OK;
+
+fail:
+
+    njs_array_destroy(vm, items_sorted);
+
+    return NJS_ERROR;
 }
 
 
