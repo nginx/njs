@@ -692,6 +692,24 @@ let readFloat_tsuite = {
             throw Error(`unexpected output "${b.readFloatBE(0)}" != "123.125"`);
         }
 
+        r = b.writeFloatLE(123.125, 1);
+        if (r !== 5) {
+            throw Error(`unexpected output "${r}" != "5"`);
+        }
+
+        if (b.readFloatLE(1) !== 123.125) {
+            throw Error(`unexpected output "${b.readFloatLE(1)}" != "123.125"`);
+        }
+
+        r = b.writeFloatBE(123.125, 1);
+        if (r !== 5) {
+            throw Error(`unexpected output "${r}" != "5"`);
+        }
+
+        if (b.readFloatBE(1) !== 123.125) {
+            throw Error(`unexpected output "${b.readFloatBE(1)}" != "123.125"`);
+        }
+
         r = b.writeDoubleLE(123.125, 1);
         if (r !== 9) {
             throw Error(`unexpected output "${r}" != "9"`);

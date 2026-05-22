@@ -1225,7 +1225,7 @@ njs_buffer_prototype_read_float(njs_vm_t *vm, njs_value_t *args,
 
     switch (size) {
     case 4:
-        u32 = *((uint32_t *) u8);
+        u32 = njs_get_u32(u8);
 
         if (swap) {
             u32 = njs_bswap_u32(u32);
@@ -1237,7 +1237,7 @@ njs_buffer_prototype_read_float(njs_vm_t *vm, njs_value_t *args,
 
     case 8:
     default:
-        conv_f64.u = *((uint64_t *) u8);
+        conv_f64.u = njs_get_u64(u8);
 
         if (swap) {
             conv_f64.u = njs_bswap_u64(conv_f64.u);
@@ -1569,7 +1569,7 @@ njs_buffer_prototype_write_float(njs_vm_t *vm, njs_value_t *args,
             conv_f32.u = njs_bswap_u32(conv_f32.u);
         }
 
-        *((uint32_t *) u8) = conv_f32.u;
+        njs_set_u32(u8, conv_f32.u);
         break;
 
     case 8:
@@ -1580,7 +1580,7 @@ njs_buffer_prototype_write_float(njs_vm_t *vm, njs_value_t *args,
             conv_f64.u = njs_bswap_u64(conv_f64.u);
         }
 
-        *((uint64_t *) u8) = conv_f64.u;
+        njs_set_u64(u8, conv_f64.u);
     }
 
     njs_set_number(retval, index + size);

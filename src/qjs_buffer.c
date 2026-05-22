@@ -1123,7 +1123,7 @@ qjs_buffer_prototype_read_float(JSContext *ctx, JSValueConst this_val,
 
     switch (size) {
     case 4:
-        u32 = *((uint32_t *) &self.start[index]);
+        u32 = njs_get_u32(&self.start[index]);
 
         if (swap) {
             u32 = njs_bswap_u32(u32);
@@ -1135,7 +1135,7 @@ qjs_buffer_prototype_read_float(JSContext *ctx, JSValueConst this_val,
 
     case 8:
     default:
-        u64 = *((uint64_t *) &self.start[index]);
+        u64 = njs_get_u64(&self.start[index]);
 
         if (swap) {
             u64 = njs_bswap_u64(u64);
