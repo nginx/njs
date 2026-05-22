@@ -6475,6 +6475,9 @@ ngx_http_qjs_ext_log(JSContext *cx, JSValueConst this_val, int argc,
 
     for (n = 0; n < argc; n++) {
         msg = JS_ToCString(cx, argv[n]);
+        if (msg == NULL) {
+            return JS_EXCEPTION;
+        }
 
         ngx_js_logger(r->connection, level, (u_char *) msg, ngx_strlen(msg));
 
