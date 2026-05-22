@@ -35,10 +35,9 @@ Quick facts:
 - **Tests:** `make unit_test`, `make lib_test`, `make test262`. NGINX
   integration tests under `nginx/t/` run with
   `prove -I <tests-lib> nginx/t/`.
-- **Code style:** NGINX conventions — 4 spaces (no tabs), 80-column limit,
-  no trailing whitespace, newline after closing brace, `-Werror` build.
-- **Commit subjects:** past tense, prefixed
-  (`HTTP:`, `Stream:`, `Core:`, `QuickJS:`, `Tests:`, …), ≤67 characters.
+- **Code style and commits:** follow
+  [docs/agent/engine-dev.md](docs/agent/engine-dev.md#code-style-and-commits)
+  for formatting, warnings, and commit-log style.
 
 Full details, sanitizer builds, VM architecture, and object model:
 [docs/agent/engine-dev.md](docs/agent/engine-dev.md).
