@@ -2759,6 +2759,7 @@ ngx_stream_qjs_variables_own_property(JSContext *cx,
     } else {
         name_lc.data = ngx_pnalloc(s->connection->pool, name.len);
         if (name_lc.data == NULL) {
+            JS_FreeCString(cx, (char *) name.data);
             (void) JS_ThrowOutOfMemory(cx);
             return -1;
         }
@@ -2819,6 +2820,7 @@ ngx_stream_qjs_variables_set_property(JSContext *cx, JSValueConst obj,
     } else {
         name_lc.data = ngx_pnalloc(s->connection->pool, name.len);
         if (name_lc.data == NULL) {
+            JS_FreeCString(cx, (char *) name.data);
             (void) JS_ThrowOutOfMemory(cx);
             return -1;
         }
