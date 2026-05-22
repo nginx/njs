@@ -276,7 +276,7 @@ njs_vm_compile(njs_vm_t *vm, u_char **start, u_char *end)
 
         new = njs_scope_make(vm, scope->items);
         if (njs_slow_path(new == NULL)) {
-            return ret;
+            return NJS_ERROR;
         }
 
         vm->levels[NJS_LEVEL_GLOBAL] = new;
