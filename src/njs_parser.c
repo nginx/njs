@@ -9255,7 +9255,9 @@ next_char:
             cp_pair = 0;
 
         } else if (njs_surrogate_any(cp)) {
-            if (cp <= 0xdbff && src[0] == '\\' && src[1] == 'u') {
+            if (cp <= 0xdbff && (end - src) >= 2
+                && src[0] == '\\' && src[1] == 'u')
+            {
                 cp_pair = cp;
                 continue;
             }
@@ -9412,7 +9414,9 @@ njs_parser_escape_string_calc_length(njs_parser_t *parser,
             cp_pair = 0;
 
         } else if (njs_surrogate_any(cp)) {
-            if (cp <= 0xdbff && src[0] == '\\' && src[1] == 'u') {
+            if (cp <= 0xdbff && (end - src) >= 2
+                && src[0] == '\\' && src[1] == 'u')
+            {
                 cp_pair = cp;
                 continue;
             }

@@ -8160,6 +8160,12 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("`\\${a}bc"),
       njs_str("SyntaxError: Unterminated template literal") },
 
+    { njs_str("`\\ud83d`"),
+      njs_str("�") },
+
+    { njs_str("`\\ud83d${1}`"),
+      njs_str("�1") },
+
     { njs_str("var v = undefined; var u8 = 'α';"
               "[`undefined${u8}`.length, `undefineQ${u8}`.length]"),
       njs_str("10,10") },
