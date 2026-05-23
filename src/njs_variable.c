@@ -58,7 +58,7 @@ njs_variable_function_add(njs_parser_t *parser, njs_parser_scope_t *scope,
     }
 
     root = njs_function_scope(scope);
-    if (njs_slow_path(scope == NULL)) {
+    if (njs_slow_path(root == NULL)) {
         return NULL;
     }
 
@@ -275,7 +275,7 @@ njs_variable_scope_add(njs_parser_t *parser, njs_parser_scope_t *scope,
 
     if (index == NJS_INDEX_NONE) {
         root = njs_function_scope(scope);
-        if (njs_slow_path(scope == NULL)) {
+        if (njs_slow_path(root == NULL)) {
             return NULL;
         }
 
