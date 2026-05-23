@@ -354,6 +354,8 @@ let from_tsuite = {
         { args: [{length:3, 0:0x62, 1:0x75, 2:0x66}], expected: 'buf' },
         { args: [[-1, 1, 255, 22323, -Infinity, Infinity, NaN]], fmt: "hex", expected: 'ff01ff33000000' },
         { args: [{length:5, 0:'A'.charCodeAt(0), 2:'X', 3:NaN, 4:0xfd}], fmt: "hex", expected: '41000000fd' },
+        { args: [{length: 0x100000000}], exception: 'RangeError: invalid index' },
+        { args: [{length: 0x100000001}], exception: 'RangeError: invalid index' },
         { args: [[1, 2, 0.23, '5', 'A']], fmt: "hex", expected: '0102000500' },
         { args: [new Uint8Array([0xff, 0xde, 0xba])], fmt: "hex", expected: 'ffdeba' },
 
