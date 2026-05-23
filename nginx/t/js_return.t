@@ -55,6 +55,10 @@ http {
         location /njs {
             js_content test.njs;
         }
+
+        location /status {
+            js_content test.status;
+        }
     }
 }
 
@@ -74,11 +78,21 @@ $t->write_file('test.js', <<EOF);
         r.return(Number(r.args.c), body);
     }
 
-    export default {njs:test_njs, returnf};
+    function status(r) {
+        try {
+            r.status = Number(r.args.c);
+            r.return(200, r.status);
+
+        } catch (e) {
+            r.return(200, e.name + ': ' + e.message);
+        }
+    }
+
+    export default {njs:test_njs, returnf, status};
 
 EOF
 
-$t->try_run('no njs return')->plan(7);
+$t->try_run('no njs return')->plan(8);
 
 ###############################################################################
 
@@ -87,6 +101,8 @@ like(http_get('/?c=200&t=SEE-THIS'), qr/200 OK.*^SEE-THIS$/ms, 'return text');
 like(http_get('/?c=301&t=path'), qr/ 301 .*Location: path/s, 'return redirect');
 like(http_get('/?c=404'), qr/404 Not.*html/s, 'return error page');
 like(http_get('/?c=inv'), qr/ 500 /, 'return invalid');
+like(http_get('/status?c=1e100'), qr/RangeError: number is out of range/,
+	'status range');
 
 TODO: {
 local $TODO = 'not yet' unless has_version('0.8.6');

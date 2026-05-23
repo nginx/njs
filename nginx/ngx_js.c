@@ -58,6 +58,7 @@ static ngx_int_t ngx_engine_njs_string(ngx_engine_t *e,
 static void ngx_engine_njs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
     ngx_js_loc_conf_t *conf);
 static ngx_int_t ngx_js_init_preload_vm(njs_vm_t *vm, ngx_js_loc_conf_t *conf);
+static ngx_int_t ngx_js_integer_in_range(double num);
 
 static ngx_int_t ngx_njs_execute_pending_jobs(njs_vm_t *vm, ngx_log_t *log);
 static njs_int_t ngx_njs_await(njs_vm_t *vm, ngx_log_t *log,
@@ -1552,6 +1553,11 @@ ngx_qjs_integer(JSContext *cx, JSValueConst val, ngx_int_t *n)
         return NGX_ERROR;
     }
 
+    if (!ngx_js_integer_in_range(num)) {
+        (void) JS_ThrowRangeError(cx, "number is out of range");
+        return NGX_ERROR;
+    }
+
     *n = num;
 
     return NGX_OK;
@@ -2433,15 +2439,45 @@ ngx_js_log_exception(njs_vm_t *vm, ngx_log_t *log, const char *txt)
 }
 
 
+static ngx_int_t
+ngx_js_integer_in_range(double num)
+{
+    ngx_int_t  valid;
+
+#define NGX_JS_INT_T_LIMIT  ((double) NGX_MAX_INT_T_VALUE + 1.0)
+
+    /*
+     * The ngx_int_t range is half-open in double: -limit is valid, while
+     * +limit is not.  On 64-bit, NGX_MAX_INT_T_VALUE rounds to 2^63 as a
+     * double, so the expression still gives the exclusive upper bound.
+     */
+
+    valid = (num >= -NGX_JS_INT_T_LIMIT && num < NGX_JS_INT_T_LIMIT);
+
+#undef NGX_JS_INT_T_LIMIT
+
+    return valid;
+}
+
+
 ngx_int_t
 ngx_js_integer(njs_vm_t *vm, njs_value_t *value, ngx_int_t *n)
 {
+    double  num;
+
     if (!njs_value_is_valid_number(value)) {
         njs_vm_error(vm, "is not a number");
         return NGX_ERROR;
     }
 
-    *n = njs_value_number(value);
+    num = njs_value_number(value);
+
+    if (!ngx_js_integer_in_range(num)) {
+        njs_vm_range_error(vm, "number is out of range");
+        return NGX_ERROR;
+    }
+
+    *n = num;
 
     return NGX_OK;
 }
