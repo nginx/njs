@@ -920,8 +920,7 @@ njs_typed_array_prototype_fill(njs_vm_t *vm, njs_value_t *args,
 static void
 njs_slice_memcpy(uint8_t *dst, const uint8_t *src, size_t len)
 {
-    if (dst + len <= src || dst >= src + len) {
-        /* no overlap: can use memcpy */
+    if (!njs_memory_overlaps(dst, len, src, len)) {
         memcpy(dst, src, len);
 
     } else {

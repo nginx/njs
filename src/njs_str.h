@@ -85,6 +85,18 @@ njs_cpymem(dst, src, n)                                                       \
     (((u_char *) memcpy(dst, src, n)) + (n))
 
 
+njs_inline njs_bool_t
+njs_memory_overlaps(const u_char *p1, size_t n1, const u_char *p2, size_t n2)
+{
+    uintptr_t  s1, s2;
+
+    s1 = (uintptr_t) p1;
+    s2 = (uintptr_t) p2;
+
+    return (s1 < s2 + n2 && s2 < s1 + n1);
+}
+
+
 #define                                                                       \
 njs_strncmp(s1, s2, n)                                                        \
     strncmp((char *) s1, (char *) s2, n)

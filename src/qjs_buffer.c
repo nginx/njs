@@ -582,8 +582,8 @@ qjs_buffer_fill(JSContext *ctx, JSValueConst buffer, JSValueConst fill,
         return buffer;
     }
 
-    if (src.start >= (dst.start + dst.length)
-        || dst.start >= (dst.start + dst.length))
+    if (!njs_memory_overlaps(dst.start + offset, end - offset,
+                             src.start, src.length))
     {
         while (offset < end) {
             n = njs_min(src.length, end - offset);
@@ -862,9 +862,7 @@ qjs_buffer_prototype_copy(JSContext *ctx, JSValueConst this_val, int argc,
 
     size = njs_min(src.length, target.length);
 
-    if (src.start >= (target.start + size)
-        || target.start >= (src.start + size))
-    {
+    if (!njs_memory_overlaps(target.start, size, src.start, size)) {
         memcpy(target.start, src.start, size);
 
     } else {
