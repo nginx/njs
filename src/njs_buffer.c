@@ -2007,7 +2007,7 @@ njs_buffer_prototype_copy(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_int_t           ret;
     njs_value_t         *val1, *val2;
     njs_typed_array_t   *source, *target;
-    njs_array_buffer_t  *buffer, *array;
+    njs_array_buffer_t  *buffer;
 
     val1 = njs_argument(args, 0);
     val2 = njs_arg(args, nargs, 1);
@@ -2041,11 +2041,9 @@ njs_buffer_prototype_copy(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    array = njs_typed_array_buffer(source);
-
     size = njs_min(trg_end - trg, src_end - src);
 
-    if (buffer->u.data != array->u.data) {
+    if (!njs_memory_overlaps(trg, size, src, size)) {
         memcpy(trg, src, size);
 
     } else {

@@ -254,11 +254,18 @@ let fill_tsuite = {
     name: "buf.fill() tests",
     skip: () => (!has_buffer()),
     T: async (params) => {
-        if (params.detach_value) {
-            detach(params.value.buffer);
+        let value = params.value;
+
+        if (params.value_from_buf) {
+            value = params.buf.subarray(params.value_from_buf[0],
+                                        params.value_from_buf[1]);
         }
 
-        let r = params.buf.fill(params.value, params.offset, params.end);
+        if (params.detach_value) {
+            detach(value.buffer);
+        }
+
+        let r = params.buf.fill(value, params.offset, params.end);
 
         if (r.toString() !== params.expected) {
             throw Error(`unexpected output "${r.toString()}" != "${params.expected}"`);
@@ -286,6 +293,15 @@ let fill_tsuite = {
         { buf: Buffer.from(new Uint8Array([0x60, 0x61, 0x62, 0x63]).buffer, 1),
           value: Buffer.from('def'),
           expected: 'def' },
+        { buf: Buffer.from('0123456789'),
+          value_from_buf: [0, 4],
+          offset: 6,
+          expected: '0123450123' },
+        { buf: Buffer.from('0123456789'),
+          value_from_buf: [0, 4],
+          offset: 2,
+          end: 8,
+          expected: '0101230189' },
     ],
 };
 
