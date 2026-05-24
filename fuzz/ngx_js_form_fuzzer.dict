@@ -1,0 +1,17 @@
+# Copyright 2026 Google LLC
+# Licensed under the Apache License, Version 2.0.
+"CT:"
+"MAX:"
+"BOUNDARY:"
+"BODY:"
+"multipart/form-data"
+"application/x-www-form-urlencoded"
+"boundary="
+"Content-Disposition"
+"form-data"
+"name="
+"filename="
+"\\r\\n"
+"--"
+"%00"
+"%41"
