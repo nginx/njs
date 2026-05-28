@@ -584,6 +584,12 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 #endif
     }
 
+#if (NGX_SSL)
+    if (http->ssl != NULL && !http->ssl_verify) {
+        http->keepalive = 0;
+    }
+#endif
+
     if (request.method.len == 4
         && ngx_strncasecmp(request.method.data, (u_char *) "HEAD", 4) == 0)
     {

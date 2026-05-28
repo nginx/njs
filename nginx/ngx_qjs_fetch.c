@@ -319,6 +319,12 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
 #endif
     }
 
+#if (NGX_SSL)
+    if (http->ssl != NULL && !http->ssl_verify) {
+        http->keepalive = 0;
+    }
+#endif
+
     if (request.method.len == 4
         && ngx_strncasecmp(request.method.data, (u_char *) "HEAD", 4) == 0)
     {
