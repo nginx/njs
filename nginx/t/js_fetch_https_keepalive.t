@@ -74,6 +74,15 @@ http {
             js_fetch_protocols TLSv1.1 TLSv1.2;
             js_fetch_trusted_certificate myca.crt;
         }
+
+        location /verify_off_no_keepalive {
+            js_content test.verify_off_no_keepalive;
+
+            js_fetch_keepalive 4;
+            js_fetch_ciphers HIGH:!aNull:!MD5;
+            js_fetch_protocols TLSv1.1 TLSv1.2;
+            js_fetch_trusted_certificate myca.crt;
+        }
     }
 
     server {
@@ -174,8 +183,27 @@ $t->write_file('test.js', <<EOF);
         }
     }
 
+    async function verify_off_no_keepalive(r) {
+        try {
+            let resp = await ngx.fetch(`https://ka.example.com:$p1/loc`);
+            let body1 = await resp.text();
+
+            resp = await ngx.fetch(`https://ka.example.com:$p1/loc`,
+                                   { verify: false });
+            let body2 = await resp.text();
+
+            resp = await ngx.fetch(`https://ka.example.com:$p1/loc`);
+            let body3 = await resp.text();
+
+            r.return(200, `\${body1}|\${body2}|\${body3}`);
+
+        } catch (e) {
+            r.return(501, e.message);
+        }
+    }
+
     export default {njs: test_njs, https, sni_isolation,
-                    plain_vs_https_isolation};
+                    plain_vs_https_isolation, verify_off_no_keepalive};
 EOF
 
 my $d = $t->testdir();
@@ -247,7 +275,7 @@ foreach my $name ('1.example.com', 'ka.example.com') {
 
 $t->try_run('no njs.fetch');
 
-$t->plan(5);
+$t->plan(6);
 
 $t->run_daemon(\&dns_daemon, port(8981), $t);
 $t->waitforfile($t->testdir . '/' . port(8981));
@@ -266,6 +294,9 @@ like(http_get('/sni_isolation'),
 like(http_get('/plain_vs_https_isolation'),
 	qr/CONN:1\|PLAIN:1\|CONN:2$/s,
 	'fetch https->plain->https keepalive isolation');
+like(http_get('/verify_off_no_keepalive'),
+	qr/CONN:1\|CONN:1\|CONN:2$/s,
+	'fetch https verify off is not kept alive');
 
 ###############################################################################
 
