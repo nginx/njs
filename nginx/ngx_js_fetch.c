@@ -1087,7 +1087,8 @@ ngx_js_fetch_alloc(njs_vm_t *vm, ngx_pool_t *pool, ngx_log_t *log,
     http->conf = conf;
 
     http->content_length_n = -1;
-    http->keepalive = (conf->fetch_keepalive > 0);
+    http->keepalive = (conf->fetch_keepalive > 0
+                       && !ngx_js_conf_dynamic_proxy(conf));
 
     http->append_headers = ngx_js_fetch_append_headers;
     http->ready_handler = ngx_js_fetch_process_done;

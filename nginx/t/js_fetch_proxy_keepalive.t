@@ -58,6 +58,13 @@ http {
             js_fetch_proxy http://user:pass@127.0.0.1:%%PORT_8082%%;
             js_content test.https_fetch;
         }
+
+        location /https_via_dynamic_proxy_keepalive {
+            set $proxy_url http://user:pass@127.0.0.1:%%PORT_8082%%;
+            js_fetch_keepalive 4;
+            js_fetch_proxy $proxy_url;
+            js_content test.https_fetch;
+        }
     }
 
     server {
@@ -185,7 +192,7 @@ foreach my $name ('example.com', 'example.org') {
 		. $t->read_file('intermediate.crt'));
 }
 
-$t->try_run('no js_fetch_proxy')->plan(4);
+$t->try_run('no js_fetch_proxy')->plan(6);
 
 $t->run_daemon(\&https_proxy_daemon, $p2);
 $t->run_daemon(\&dns_daemon, port(8981), $t);
@@ -202,6 +209,10 @@ like(http_get('/https_via_proxy_keepalive?domain=example.com'),
 	qr/COM:2$/, 'https keepalive through proxy 2');
 like(http_get("/https_via_proxy_keepalive?domain=example.org&port=$p4"),
 	qr/ORG:2$/, 'https keepalive through proxy different hostnames 2');
+like(http_get('/https_via_dynamic_proxy_keepalive?domain=example.com'),
+	qr/COM:1$/, 'https dynamic proxy keepalive disabled 1');
+like(http_get('/https_via_dynamic_proxy_keepalive?domain=example.com'),
+	qr/COM:1$/, 'https dynamic proxy keepalive disabled 2');
 
 ###############################################################################
 
