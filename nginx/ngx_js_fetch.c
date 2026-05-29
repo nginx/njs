@@ -627,6 +627,11 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         resolve_host = &u.host;
     }
 
+    if (ngx_js_check_request_line_component(u.uri.data, u.uri.len) != NGX_OK) {
+        njs_vm_error(vm, "invalid url");
+        goto fail;
+    }
+
     ngx_js_fetch_build_request(http, &request, &u.uri, &u,
                                ngx_js_http_proxy(http) && !ngx_js_https(&u));
 

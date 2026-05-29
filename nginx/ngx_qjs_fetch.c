@@ -364,6 +364,11 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
         resolve_host = &u.host;
     }
 
+    if (ngx_js_check_request_line_component(u.uri.data, u.uri.len) != NGX_OK) {
+        JS_ThrowInternalError(cx, "invalid url");
+        goto fail;
+    }
+
     ngx_js_fetch_build_request(http, &request, &u.uri, &u,
                                ngx_js_http_proxy(http) && !ngx_js_https(&u));
 
