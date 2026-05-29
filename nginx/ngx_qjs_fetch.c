@@ -1323,13 +1323,12 @@ static ngx_int_t
 ngx_qjs_headers_append(JSContext *cx, ngx_js_headers_t *headers,
     u_char *name, size_t len, u_char *value, size_t vlen)
 {
-    u_char           *p, *end;
     ngx_int_t         ret;
     ngx_uint_t        i;
     ngx_list_part_t  *part;
     ngx_js_tb_elt_t  *h, **ph;
 
-    ngx_js_http_trim(&value, &vlen, 0);
+    ngx_js_http_trim_ows(&value, &vlen);
 
     ret = ngx_js_check_header_name(name, len);
     if (ret != NGX_OK) {
@@ -1337,16 +1336,10 @@ ngx_qjs_headers_append(JSContext *cx, ngx_js_headers_t *headers,
         return NGX_ERROR;
     }
 
-    p = value;
-    end = p + vlen;
-
-    while (p < end) {
-        if (*p == '\0') {
-            JS_ThrowInternalError(cx, "invalid header value");
-            return NGX_ERROR;
-        }
-
-        p++;
+    ret = ngx_js_check_header_value(value, vlen);
+    if (ret != NGX_OK) {
+        JS_ThrowInternalError(cx, "invalid header value");
+        return NGX_ERROR;
     }
 
     if (headers->guard == GUARD_IMMUTABLE) {
