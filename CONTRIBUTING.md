@@ -80,16 +80,20 @@ about coding conventions and style.
 - Keep a clean, concise and meaningful git commit history on your branch,
   rebasing locally and squashing before submitting a PR
 
-- In the subject line, use the past tense ("Added feature", not "Add feature");
-  also, use past tense to describe past scenarios, and present tense for
-  current behavior
+- Each commit message should have a single-line subject line followed by a
+  verbose description after an empty line.
 
-- Limit the subject line to 67 characters, and the rest of the commit message
-  to 80 characters
+- Limit the subject and commit message body lines to 72 characters.
 
-- Use subject line prefixes for commits that affect a specific portion of the
-  code; examples include "Tests:", "HTTP:", or "Core:". See the commit history
-  to get an idea of the prefixes used.
+- Use a subject line prefix only when local history clearly uses one for the
+  changed area; examples include "HTTP:", "Stream:", "QuickJS:", "Tests:", or
+  "Modules:". Otherwise use no prefix; do not invent generic prefixes.
 
-- Reference issues and PRs liberally after the subject line; if the commit
-  remedies a GitHub issue, [name it](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue) accordingly
+- Read recent commit history and write commit logs in the established njs
+  style.
+
+- If the commit fixes an open issue, use the phrase
+  "This closes #nn issue on GitHub."
+
+  That should go at the end of the commit message, separated by a blank line,
+  along with any other tags.
