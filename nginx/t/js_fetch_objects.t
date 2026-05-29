@@ -349,20 +349,53 @@ $t->write_file('test.js', <<EOF);
              }, 'OK'],
             ['method', () => {
                 const methods = ['get', 'hEad', 'Post', 'OPTIONS', 'PUT',
-                                 'DELETE', 'CONNECT'];
-                try {
-                    methods.forEach(m => {
-                        var r = new Request("http://nginx.org", {method: m});
-                        if (r.method != m.toUpperCase()) {
-                            throw new Error(`r.method != \${m}`);
-                        }
-                    })
+                                 'DELETE'];
+                const forbidden = ['CONNECT', 'TRACE', 'TRACK'];
+                const invalid = ['', 'GET ', ' GET', 'GE T', 'GE\\tT',
+                                 'GE\\nT', 'GE\\rT', 'GE\\x00T',
+                                 'GET\\r\\nX: y',
+                                 'GE' + String.fromCharCode(0x7f) + 'T'];
+                const high = 'G' + String.fromCharCode(0xc9) + 'T';
+                const extensions = ['PROPFIND', 'propfind', 'M-SEARCH',
+                                    high, 'FOO/BAR'];
 
-                } catch (e) {
-                    if (!e.message.startsWith('forbidden method: CONNECT')) {
-                        throw e;
+                methods.forEach(m => {
+                    var r = new Request("http://nginx.org", {method: m});
+                    if (r.method != m.toUpperCase()) {
+                        throw new Error(`r.method != \${m}`);
                     }
-                }
+                });
+
+                forbidden.forEach(m => {
+                    try {
+                        new Request("http://nginx.org", {method: m});
+                        throw new Error('no error');
+
+                    } catch (e) {
+                        if (!e.message.startsWith(`forbidden method: \${m}`)) {
+                            throw e;
+                        }
+                    }
+                });
+
+                invalid.forEach(m => {
+                    try {
+                        new Request("http://nginx.org", {method: m});
+                        throw new Error('no error');
+
+                    } catch (e) {
+                        if (e.message != 'invalid Request method') {
+                            throw e;
+                        }
+                    }
+                });
+
+                extensions.forEach(m => {
+                    var r = new Request("http://nginx.org", {method: m});
+                    if (r.method != m) {
+                        throw new Error(`r.method != \${m}`);
+                    }
+                });
 
                 return 'OK';
 

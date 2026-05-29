@@ -898,6 +898,15 @@ ngx_js_method_process(njs_vm_t *vm, ngx_js_request_t *request)
     str.start = request->method.data;
     str.length = request->method.len;
 
+    if (request->method.len == 0
+        || ngx_js_check_request_line_component(request->method.data,
+                                               request->method.len)
+           != NGX_OK)
+    {
+        njs_vm_error(vm, "invalid Request method");
+        return NJS_ERROR;
+    }
+
     for (m = &forbidden[0]; m->length != 0; m++) {
         if (njs_strstr_case_eq(&str, m)) {
             njs_vm_error(vm, "forbidden method: %V", m);

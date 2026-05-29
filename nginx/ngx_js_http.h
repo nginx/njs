@@ -182,6 +182,7 @@ void ngx_js_http_trim(u_char **value, size_t *len,
     int trim_c0_control_or_space);
 void ngx_js_http_trim_ows(u_char **value, size_t *len);
 ngx_int_t ngx_js_check_header_name(u_char *name, size_t len);
+ngx_int_t ngx_js_check_request_line_component(u_char *value, size_t len);
 ngx_int_t ngx_js_check_header_value(u_char *value, size_t len);
 
 ngx_buf_t *ngx_js_chain_to_buf(ngx_pool_t *pool, njs_chb_t *chain);

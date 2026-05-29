@@ -938,6 +938,15 @@ ngx_qjs_method_process(JSContext *cx, ngx_js_request_t *request)
         ngx_null_string,
     };
 
+    if (request->method.len == 0
+        || ngx_js_check_request_line_component(request->method.data,
+                                               request->method.len)
+           != NGX_OK)
+    {
+        JS_ThrowInternalError(cx, "invalid Request method");
+        return NGX_ERROR;
+    }
+
     for (m = &forbidden[0]; m->len != 0; m++) {
         if (request->method.len == m->len
             && ngx_strncasecmp(request->method.data, m->data, m->len) == 0)
