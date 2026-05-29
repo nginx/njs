@@ -1769,6 +1769,26 @@ ngx_js_check_header_name(u_char *name, size_t len)
 
 
 ngx_int_t
+ngx_js_check_request_line_component(u_char *value, size_t len)
+{
+    u_char  *p, *end;
+
+    p = value;
+    end = p + len;
+
+    while (p < end) {
+        if (*p <= 0x20 || *p == 0x7f) {
+            return NGX_ERROR;
+        }
+
+        p++;
+    }
+
+    return NGX_OK;
+}
+
+
+ngx_int_t
 ngx_js_check_header_value(u_char *value, size_t len)
 {
     u_char  *p, *end;
