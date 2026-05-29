@@ -73,6 +73,10 @@ http {
             return 200 $http_a;
         }
 
+        location /target {
+            return 200 $request_uri;
+        }
+
         location /body {
             js_content test.body;
         }
@@ -566,6 +570,30 @@ $t->write_file('test.js', <<EOF);
                 var body = await r.text();
                 return `\${r.url}: \${r.status} \${body}`;
              }, 'http://127.0.0.1:$p0/body: 201 foo'],
+            ['unsafe request target', async () => {
+                const unsafe = [0, 9, 10, 13, 32, 127];
+
+                for (var i = 0; i < unsafe.length; i++) {
+                    try {
+                        await ngx.fetch('http://127.0.0.1:$p0/a'
+                                        + String.fromCharCode(unsafe[i]) + 'b');
+                        throw new Error('no error');
+
+                    } catch (e) {
+                        if (e.message != 'invalid url') {
+                            throw e;
+                        }
+                    }
+                }
+
+                return 'OK';
+             }, 'OK'],
+            ['encoded request target', async () => {
+                var r = await ngx.fetch('http://127.0.0.1:$p0/'
+                                        + 'target%0D%0A?q=%00%20');
+                var body = await r.text();
+                return `\${r.status} \${body}`;
+             }, '200 /target%0D%0A?q=%00%20'],
         ];
 
         run(r, tests);
