@@ -1520,13 +1520,12 @@ static njs_int_t
 ngx_js_headers_append(njs_vm_t *vm, ngx_js_headers_t *headers,
     u_char *name, size_t len, u_char *value, size_t vlen)
 {
-    u_char           *p, *end;
     ngx_int_t         ret;
     ngx_uint_t        i;
     ngx_js_tb_elt_t  *h, **ph;
     ngx_list_part_t  *part;
 
-    ngx_js_http_trim(&value, &vlen, 0);
+    ngx_js_http_trim_ows(&value, &vlen);
 
     ret = ngx_js_check_header_name(name, len);
     if (ret != NGX_OK) {
@@ -1534,16 +1533,10 @@ ngx_js_headers_append(njs_vm_t *vm, ngx_js_headers_t *headers,
         return NJS_ERROR;
     }
 
-    p = value;
-    end = p + vlen;
-
-    while (p < end) {
-        if (*p == '\0') {
-            njs_vm_error(vm, "invalid header value");
-            return NJS_ERROR;
-        }
-
-        p++;
+    ret = ngx_js_check_header_value(value, vlen);
+    if (ret != NGX_OK) {
+        njs_vm_error(vm, "invalid header value");
+        return NJS_ERROR;
     }
 
     if (headers->guard == GUARD_IMMUTABLE) {

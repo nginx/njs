@@ -156,8 +156,42 @@ $t->write_file('test.js', <<EOF);
 
              }, 'OK'],
             ['invalid header value', () => {
-                var h = new Headers({A: 'aa\x00a'});
-             }, 'invalid header value'],
+                const invalid = [0, 1, 8, 10, 13, 31, 127];
+
+                for (var i = 0; i < invalid.length; i++) {
+                    var c = String.fromCharCode(invalid[i]);
+                    var values = [
+                        c, c + 'aa', 'aa' + c, 'aa' + c + 'a'
+                    ];
+
+                    for (var j = 0; j < values.length; j++) {
+                        try {
+                            new Headers({A: values[j]});
+                            throw new Error('no error');
+
+                        } catch (e) {
+                            if (e.message != 'invalid header value') {
+                                throw e;
+                            }
+                        }
+                    }
+                }
+
+                return 'OK';
+
+             }, 'OK'],
+            ['valid header value', () => {
+                var obs = String.fromCharCode(0x80, 0xff);
+                var h = new Headers({A: '\t a\tb \t'});
+
+                h.append('A', obs);
+
+                if (h.get('a') != 'a\tb, ' + obs) {
+                    throw new Error('invalid header value normalization');
+                }
+
+                return 'OK';
+             }, 'OK'],
             ['combine', () => {
                 var h = new Headers({a: 'X', A: 'Z'});
                 return h.get('a');
