@@ -90,7 +90,8 @@ like(http_get('/not_found'), qr/NOT_FOUND:$/, 'not found is empty');
 $t->stop();
 
 ok(index($t->read_file('error.log'),
-	'no "js_import" directives found for "js_set" handler "main.variable" '
-	. 'in the current scope') > 0, 'log error for js_set without js_import');
+	'no "js_import" or inline expression found for "js_set" handler '
+	. '"main.variable"') > 0,
+	'log error for js_set without js_import');
 
 ###############################################################################
