@@ -366,6 +366,18 @@ let modify_tsuite = {
             return xml.serializeToString(doc);
           },
           expected: `<note><to a="foo" b="bar">Tove</to><from>Jani</from></note>` },
+        { get: (doc) => {
+            try {
+                doc.note.$tag$xxx = doc.note.to;
+            } catch (e) {
+                if (e instanceof TypeError) {
+                    return 'OK';
+                }
+            }
+
+            throw Error('unexpected exception');
+          },
+          expected: 'OK' },
         { doc: `<root><a>A</a><b>B</b><a>C</a></root>`,
           get: (doc) => {
             doc.$root.removeChildren('a');

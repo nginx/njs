@@ -384,7 +384,7 @@ qjs_xml_doc_get_own_property(JSContext *cx, JSPropertyDescriptor *pdesc,
 
     tree = JS_GetOpaque(obj, QJS_CORE_CLASS_ID_XML_DOC);
     if (tree == NULL) {
-        (void) JS_ThrowInternalError(cx, "\"this\" is not an XMLDoc");
+        (void) JS_ThrowTypeError(cx, "\"this\" is not an XMLDoc");
         return -1;
     }
 
@@ -469,7 +469,7 @@ qjs_xml_doc_get_own_property_names(JSContext *cx, JSPropertyEnum **ptab,
 
     tree = JS_GetOpaque(obj, QJS_CORE_CLASS_ID_XML_DOC);
     if (tree == NULL) {
-        (void) JS_ThrowInternalError(cx, "\"this\" is not an XMLDoc");
+        (void) JS_ThrowTypeError(cx, "\"this\" is not an XMLDoc");
         return -1;
     }
 
@@ -741,9 +741,9 @@ qjs_xml_node_tag_modify(JSContext *cx, JSValue obj, njs_str_t *name,
     }
 
     if (!JS_IsNullOrUndefined(setval)) {
-        JS_ThrowInternalError(cx, "XMLNode.$tag$xxx is not assignable, "
-                           "use addChild() or node.$tags = [node1, node2, ..] "
-                           "syntax");
+        JS_ThrowTypeError(cx, "XMLNode.$tag$xxx is not assignable, "
+                          "use addChild() or node.$tags = [node1, node2, ..] "
+                          "syntax");
         return -1;
     }
 
@@ -929,7 +929,7 @@ qjs_xml_node_get_own_property(JSContext *cx, JSPropertyDescriptor *pdesc,
 
     current = JS_GetOpaque(obj, QJS_CORE_CLASS_ID_XML_NODE);
     if (current == NULL) {
-        (void) JS_ThrowInternalError(cx, "\"this\" is not an XMLNode");
+        (void) JS_ThrowTypeError(cx, "\"this\" is not an XMLNode");
         return -1;
     }
 
@@ -1173,7 +1173,7 @@ qjs_xml_node_get_own_property_names(JSContext *cx, JSPropertyEnum **ptab,
 
     tree = JS_GetOpaque(obj, QJS_CORE_CLASS_ID_XML_NODE);
     if (tree == NULL) {
-        (void) JS_ThrowInternalError(cx, "\"this\" is not an XMLNode");
+        (void) JS_ThrowTypeError(cx, "\"this\" is not an XMLNode");
         return -1;
     }
 
@@ -1552,7 +1552,7 @@ qjs_xml_node(JSContext *cx, JSValueConst val, xmlDoc **doc)
     if (current == NULL) {
         tree = JS_GetOpaque(val, QJS_CORE_CLASS_ID_XML_DOC);
         if (tree == NULL) {
-            JS_ThrowInternalError(cx, "'this' is not XMLNode or XMLDoc");
+            JS_ThrowTypeError(cx, "value is not XMLNode or XMLDoc");
             return NULL;
         }
 
@@ -1611,7 +1611,7 @@ qjs_xml_attr_get_own_property(JSContext *cx, JSPropertyDescriptor *pdesc,
 
     current = JS_GetOpaque(obj, QJS_CORE_CLASS_ID_XML_ATTR);
     if (current == NULL) {
-        (void) JS_ThrowInternalError(cx, "\"this\" is not an XMLAttr");
+        (void) JS_ThrowTypeError(cx, "\"this\" is not an XMLAttr");
         return -1;
     }
 
@@ -1675,7 +1675,7 @@ qjs_xml_attr_get_own_property_names(JSContext *cx, JSPropertyEnum **ptab,
 
     current = JS_GetOpaque(obj, QJS_CORE_CLASS_ID_XML_ATTR);
     if (current == NULL) {
-        (void) JS_ThrowInternalError(cx, "\"this\" is not an XMLAttr");
+        (void) JS_ThrowTypeError(cx, "\"this\" is not an XMLAttr");
         return -1;
     }
 
