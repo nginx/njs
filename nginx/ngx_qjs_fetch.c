@@ -1251,7 +1251,6 @@ ngx_qjs_fetch_error(ngx_js_http_t *http, const char *err)
     if (JS_SetPropertyStr(fetch->cx, fetch->response_value, "message",
                           reason) < 0)
     {
-        JS_FreeValue(fetch->cx, reason);
         goto done;
     }
 
@@ -1516,7 +1515,6 @@ ngx_qjs_headers_ext_keys(JSContext *cx, JSValue value)
             ret = JS_DefinePropertyValueUint32(cx, keys, n, item,
                                                JS_PROP_C_W_E);
             if (ret < 0) {
-                JS_FreeValue(cx, item);
                 goto fail;
             }
 
@@ -1609,7 +1607,6 @@ ngx_qjs_headers_get(JSContext *cx, JSValue this_val, ngx_str_t *name,
                                                JS_PROP_C_W_E);
             if (ret < 0) {
                 JS_FreeValue(cx, retval);
-                JS_FreeValue(cx, value);
                 return JS_EXCEPTION;
             }
 
@@ -2556,7 +2553,6 @@ ngx_qjs_fetch_init(JSContext *cx, const char *name)
         if (JS_SetPropertyStr(cx, global_obj, classes[i]->class_name, class)
             < 0)
         {
-            JS_FreeValue(cx, class);
             JS_FreeValue(cx, proto);
             JS_FreeValue(cx, global_obj);
             return NULL;

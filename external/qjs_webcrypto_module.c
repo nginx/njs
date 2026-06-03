@@ -137,7 +137,7 @@ static JSValue qjs_webcrypto_generate_key(JSContext *cx, JSValueConst this_val,
 static int qjs_webcrypto_generate_25519_keypair(JSContext *cx, int pkey_id,
     qjs_webcrypto_key_t *wkey, qjs_webcrypto_algorithm_t *alg,
     unsigned usage, int extractable, unsigned priv_usage,
-    unsigned pub_usage, JSValue key, JSValue *obj_ret);
+    unsigned pub_usage, JSValue *key, JSValue *obj_ret);
 #endif
 static JSValue qjs_webcrypto_import_key(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv);
@@ -1429,7 +1429,6 @@ qjs_base64url_bignum_set(JSContext *cx, JSValue jwk, const char *key,
     }
 
     if (JS_DefinePropertyValueStr(cx, jwk, key, value, JS_PROP_C_W_E) < 0) {
-        JS_FreeValue(cx, value);
         return -1;
     }
 
@@ -1505,7 +1504,6 @@ qjs_export_jwk_rsa(JSContext *cx, qjs_webcrypto_key_t *key)
     }
 
     if (JS_DefinePropertyValueStr(cx, jwk, "alg", alg, JS_PROP_C_W_E) < 0) {
-        JS_FreeValue(cx, alg);
         goto fail;
     }
 
@@ -1667,7 +1665,6 @@ qjs_export_jwk_asymmetric(JSContext *cx, qjs_webcrypto_key_t *key)
 
     if (JS_DefinePropertyValueStr(cx, jwk, "key_ops", ops, JS_PROP_C_W_E) < 0) {
         JS_FreeValue(cx, jwk);
-        JS_FreeValue(cx, ops);
         return JS_EXCEPTION;
     }
 
@@ -1703,7 +1700,6 @@ qjs_export_jwk_oct(JSContext *cx, qjs_webcrypto_key_t *key)
     }
 
     if (JS_DefinePropertyValueStr(cx, jwk, "k", val, JS_PROP_C_W_E) < 0) {
-        JS_FreeValue(cx, val);
         goto fail;
     }
 
@@ -1737,7 +1733,6 @@ qjs_export_jwk_oct(JSContext *cx, qjs_webcrypto_key_t *key)
     }
 
     if (JS_DefinePropertyValueStr(cx, jwk, "alg", val, JS_PROP_C_W_E) < 0) {
-        JS_FreeValue(cx, val);
         goto fail;
     }
 
@@ -1747,7 +1742,6 @@ qjs_export_jwk_oct(JSContext *cx, qjs_webcrypto_key_t *key)
     }
 
     if (JS_DefinePropertyValueStr(cx, jwk, "key_ops", val, JS_PROP_C_W_E) < 0) {
-        JS_FreeValue(cx, val);
         goto fail;
     }
 
@@ -2666,7 +2660,7 @@ qjs_webcrypto_export_key(JSContext *cx, JSValueConst this_val, int argc,
 static int
 qjs_webcrypto_generate_25519_keypair(JSContext *cx, int pkey_id,
     qjs_webcrypto_key_t *wkey, qjs_webcrypto_algorithm_t *alg, unsigned usage,
-    int extractable, unsigned priv_usage, unsigned pub_usage, JSValue key,
+    int extractable, unsigned priv_usage, unsigned pub_usage, JSValue *key,
     JSValue *obj_ret)
 {
     JSValue              keypub, obj;
@@ -2719,11 +2713,14 @@ qjs_webcrypto_generate_25519_keypair(JSContext *cx, int pkey_id,
         return -1;
     }
 
-    if (JS_SetPropertyStr(cx, obj, "privateKey", key) < 0) {
+    if (JS_SetPropertyStr(cx, obj, "privateKey", *key) < 0) {
+        *key = JS_UNDEFINED;
         JS_FreeValue(cx, keypub);
         JS_FreeValue(cx, obj);
         return -1;
     }
+
+    *key = JS_UNDEFINED;
 
     if (JS_SetPropertyStr(cx, obj, "publicKey", keypub) < 0) {
         JS_FreeValue(cx, obj);
@@ -2752,6 +2749,7 @@ qjs_webcrypto_generate_key(JSContext *cx, JSValueConst this_val,
     options = argv[0];
     key = JS_UNDEFINED;
     keypub = JS_UNDEFINED;
+    obj = JS_UNDEFINED;
 
     alg = qjs_key_algorithm(cx, options);
     if (alg == NULL) {
@@ -2855,12 +2853,14 @@ qjs_webcrypto_generate_key(JSContext *cx, JSValueConst this_val,
         }
 
         if (JS_SetPropertyStr(cx, obj, "privateKey", key) < 0) {
+            key = JS_UNDEFINED;
             goto fail;
         }
 
         key = JS_UNDEFINED;
 
         if (JS_SetPropertyStr(cx, obj, "publicKey", keypub) < 0) {
+            keypub = JS_UNDEFINED;
             goto fail;
         }
 
@@ -2938,12 +2938,14 @@ qjs_webcrypto_generate_key(JSContext *cx, JSValueConst this_val,
         }
 
         if (JS_SetPropertyStr(cx, obj, "privateKey", key) < 0) {
+            key = JS_UNDEFINED;
             goto fail;
         }
 
         key = JS_UNDEFINED;
 
         if (JS_SetPropertyStr(cx, obj, "publicKey", keypub) < 0) {
+            keypub = JS_UNDEFINED;
             goto fail;
         }
 
@@ -2956,12 +2958,11 @@ qjs_webcrypto_generate_key(JSContext *cx, JSValueConst this_val,
                                                  extractable,
                                                  QJS_KEY_USAGE_SIGN,
                                                  QJS_KEY_USAGE_VERIFY,
-                                                 key, &obj);
+                                                 &key, &obj);
         if (n < 0) {
             goto fail;
         }
 
-        key = JS_UNDEFINED;
         break;
 
     case QJS_ALGORITHM_X25519:
@@ -2970,12 +2971,11 @@ qjs_webcrypto_generate_key(JSContext *cx, JSValueConst this_val,
                                                  extractable,
                                                  QJS_KEY_USAGE_DERIVE_KEY
                                                  | QJS_KEY_USAGE_DERIVE_BITS,
-                                                 0, key, &obj);
+                                                 0, &key, &obj);
         if (n < 0) {
             goto fail;
         }
 
-        key = JS_UNDEFINED;
         break;
 #endif
 
@@ -3053,6 +3053,7 @@ fail:
 
     JS_FreeValue(cx, key);
     JS_FreeValue(cx, keypub);
+    JS_FreeValue(cx, obj);
 
     return qjs_promise_result(cx, JS_EXCEPTION);
 }
@@ -5166,7 +5167,6 @@ qjs_webcrypto_key_algorithm(JSContext *cx, JSValueConst this_val)
                                       JS_PROP_C_W_E)
             < 0)
         {
-            JS_FreeValue(cx, pe);
             JS_FreeValue(cx, obj);
             return JS_EXCEPTION;
         }
@@ -5186,6 +5186,7 @@ qjs_webcrypto_key_algorithm(JSContext *cx, JSValueConst this_val)
         if (JS_DefinePropertyValueStr(cx, ret, "name", hash, JS_PROP_C_W_E)
             < 0)
         {
+            JS_FreeValue(cx, ret);
             JS_FreeValue(cx, obj);
             return JS_EXCEPTION;
         }
@@ -5786,7 +5787,6 @@ qjs_key_ops(JSContext *cx, unsigned mask)
 
             if (JS_SetPropertyUint32(cx, ops, i++, value) < 0) {
                 JS_FreeValue(cx, ops);
-                JS_FreeValue(cx, value);
                 return JS_EXCEPTION;
             }
         }

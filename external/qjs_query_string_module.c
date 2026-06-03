@@ -400,6 +400,7 @@ qjs_query_string_append(JSContext *cx, JSValue object, const u_char *key,
 
     if (JS_IsUndefined(prev)) {
         if (JS_SetProperty(cx, object, prop, value) < 0) {
+            value = JS_UNDEFINED;
             goto exception;
         }
 
@@ -414,10 +415,12 @@ qjs_query_string_append(JSContext *cx, JSValue object, const u_char *key,
         JS_FreeValue(cx, length);
 
         if (JS_SetPropertyUint32(cx, prev, len, value) < 0) {
+            value = JS_UNDEFINED;
             goto exception;
         }
 
         JS_FreeValue(cx, prev);
+        prev = JS_UNDEFINED;
 
     } else {
         ret = JS_NewArray(cx);
@@ -426,6 +429,7 @@ qjs_query_string_append(JSContext *cx, JSValue object, const u_char *key,
         }
 
         if (JS_SetPropertyUint32(cx, ret, 0, prev) < 0) {
+            prev = JS_UNDEFINED;
             JS_FreeValue(cx, ret);
             goto exception;
         }
@@ -433,6 +437,7 @@ qjs_query_string_append(JSContext *cx, JSValue object, const u_char *key,
         prev = JS_UNDEFINED;
 
         if (JS_SetPropertyUint32(cx, ret, 1, value) < 0) {
+            value = JS_UNDEFINED;
             JS_FreeValue(cx, ret);
             goto exception;
         }
@@ -440,7 +445,6 @@ qjs_query_string_append(JSContext *cx, JSValue object, const u_char *key,
         value = JS_UNDEFINED;
 
         if (JS_SetProperty(cx, object, prop, ret) < 0) {
-            JS_FreeValue(cx, ret);
             goto exception;
         }
     }

@@ -637,7 +637,6 @@ qjs_xml_node_tags_handler(JSContext *cx, qjs_xml_node_t *current,
 
         if (JS_SetPropertyUint32(cx, arr, i++, ret) < 0) {
             JS_FreeValue(cx, arr);
-            JS_FreeValue(cx, ret);
             return JS_EXCEPTION;
         }
     }
