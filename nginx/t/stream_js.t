@@ -70,6 +70,11 @@ stream {
     js_set $js_async         test.asyncf;
     js_set $js_async_direct  test.asyncf_direct;
     js_set $js_buffer        test.buffer;
+    js_set $js_done_range    test.done_range;
+    js_set $js_event_unknown test.event_unknown;
+    js_set $js_event_dup     test.event_dup;
+    js_set $js_send_state    test.send_state;
+    js_set $js_var_not_found test.var_not_found;
 
     js_import test.js;
 
@@ -201,6 +206,31 @@ stream {
     server {
         listen      127.0.0.1:8101;
         return      $js_buffer;
+    }
+
+    server {
+        listen      127.0.0.1:8103;
+        return      $js_done_range;
+    }
+
+    server {
+        listen      127.0.0.1:8104;
+        return      $js_event_unknown;
+    }
+
+    server {
+        listen      127.0.0.1:8105;
+        return      $js_event_dup;
+    }
+
+    server {
+        listen      127.0.0.1:8106;
+        return      $js_send_state;
+    }
+
+    server {
+        listen      127.0.0.1:8107;
+        return      $js_var_not_found;
     }
 }
 
@@ -397,17 +427,51 @@ $t->write_file('test.js', <<EOF);
         return `retval: \${a1 + a2}`;
     }
 
+    function error_name(fn) {
+        try {
+            fn();
+            return 'no_error';
+
+        } catch (e) {
+            return `\${e.constructor.name}:\${e.message}`;
+        }
+    }
+
+    function done_range(s) {
+        return error_name(() => s.done(-999));
+    }
+
+    function event_unknown(s) {
+        return error_name(() => s.on('unknown', () => {}));
+    }
+
+    function event_dup(s) {
+        return error_name(() => {
+            s.on('upload', () => {});
+            s.on('upload', () => {});
+        });
+    }
+
+    function send_state(s) {
+        return error_name(() => s.send('x'));
+    }
+
+    function var_not_found(s) {
+        return error_name(() => { s.variables.unknown = 1 });
+    }
+
     export default {njs:test_njs, addr, variable, sess_unk, log, access_step,
                     preread_step, filter_step, access_undecided, access_allow,
                     access_deny, preread_async, preread_data, preread_req_line,
                     req_line, filter_empty, filter_header_inject, filter_search,
                     access_except, preread_except, filter_except, asyncf,
-                    asyncf_direct, buffer};
+                    asyncf_direct, buffer, done_range, event_unknown,
+                    event_dup, send_state, var_not_found};
 
 EOF
 
 $t->run_daemon(\&stream_daemon, port(8090));
-$t->try_run('no stream njs available')->plan(25);
+$t->try_run('no stream njs available')->plan(30);
 $t->waitforsocket('127.0.0.1:' . port(8090));
 
 ###############################################################################
@@ -452,6 +516,19 @@ like(stream('127.0.0.1:' . port(8101))->read(), qr/\xaa\xbb\xcc\xdd/,
 	'buffer variable');
 
 }
+
+is(stream('127.0.0.1:' . port(8103))->read(),
+	'RangeError:code is out of range', 's.done code range');
+like(stream('127.0.0.1:' . port(8104))->read(),
+	qr/^TypeError:unknown event "unknown"/, 's.on unknown event');
+like(stream('127.0.0.1:' . port(8105))->read(),
+	qr/^TypeError:event handler "upload" is already set/,
+	's.on duplicate handler');
+is(stream('127.0.0.1:' . port(8106))->read(),
+	'TypeError:cannot send buffer in this handler',
+	's.send wrong handler');
+is(stream('127.0.0.1:' . port(8107))->read(),
+	'TypeError:variable not found', 's.variables unknown set');
 
 $t->stop();
 
