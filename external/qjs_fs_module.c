@@ -1074,12 +1074,13 @@ done:
 
 
 static JSValue
-qjs_fs_dirent_create(JSContext *cx, JSValueConst name, struct dirent *entry)
+qjs_fs_dirent_create(JSContext *cx, JSValue name, struct dirent *entry)
 {
     JSValue  obj;
 
     obj = JS_NewObjectClass(cx, QJS_CORE_CLASS_ID_FS_DIRENT);
     if (JS_IsException(obj)) {
+        JS_FreeValue(cx, name);
         return JS_EXCEPTION;
     }
 
@@ -1243,7 +1244,6 @@ qjs_fs_readdir(JSContext *cx, JSValueConst this_val, int argc,
 
         if (!types) {
             if (JS_DefinePropertyValueUint32(cx, result, idx++, ename, 0) < 0) {
-                JS_FreeValue(cx, ename);
                 JS_FreeValue(cx, result);
                 goto done;
             }
@@ -1251,13 +1251,11 @@ qjs_fs_readdir(JSContext *cx, JSValueConst this_val, int argc,
         } else {
             v = qjs_fs_dirent_create(cx, ename, entry);
             if (JS_IsException(v)) {
-                JS_FreeValue(cx, ename);
                 JS_FreeValue(cx, result);
                 goto done;
             }
 
             if (JS_DefinePropertyValueUint32(cx, result, idx++, v, 0) < 0) {
-                JS_FreeValue(cx, ename);
                 JS_FreeValue(cx, result);
                 goto done;
             }
@@ -2106,7 +2104,6 @@ process:
                                       JS_PROP_C_W_E) < 0)
         {
             JS_FreeValue(cx, result);
-            JS_FreeValue(cx, buffer);
             result = JS_EXCEPTION;
             goto done;
         }

@@ -6231,8 +6231,11 @@ ngx_http_qjs_ext_args(JSContext *cx, JSValueConst this_val)
             return JS_EXCEPTION;
         }
 
+        arr = JS_UNDEFINED;
+
         if (JS_IsUndefined(prev)) {
             if (JS_SetProperty(cx, args, key, val) < 0) {
+                val = JS_UNDEFINED;
                 goto exception;
             }
 
@@ -6240,16 +6243,20 @@ ngx_http_qjs_ext_args(JSContext *cx, JSValueConst this_val)
             length = JS_GetPropertyStr(cx, prev, "length");
 
             if (JS_ToUint32(cx, &len, length)) {
+                JS_FreeValue(cx, length);
                 goto exception;
             }
 
             JS_FreeValue(cx, length);
 
             if (JS_SetPropertyUint32(cx, prev, len, val) < 0) {
+                val = JS_UNDEFINED;
                 goto exception;
             }
 
+            val = JS_UNDEFINED;
             JS_FreeValue(cx, prev);
+            prev = JS_UNDEFINED;
 
         } else {
 
@@ -6259,16 +6266,25 @@ ngx_http_qjs_ext_args(JSContext *cx, JSValueConst this_val)
             }
 
             if (JS_SetPropertyUint32(cx, arr, 0, prev) < 0) {
+                prev = JS_UNDEFINED;
                 goto exception;
             }
+
+            prev = JS_UNDEFINED;
 
             if (JS_SetPropertyUint32(cx, arr, 1, val) < 0) {
+                val = JS_UNDEFINED;
                 goto exception;
             }
 
+            val = JS_UNDEFINED;
+
             if (JS_SetProperty(cx, args, key, arr) < 0) {
+                arr = JS_UNDEFINED;
                 goto exception;
             }
+
+            arr = JS_UNDEFINED;
         }
 
         JS_FreeAtom(cx, key);
@@ -6286,6 +6302,8 @@ exception:
     JS_FreeAtom(cx, key);
     JS_FreeValue(cx, val);
     JS_FreeValue(cx, prev);
+    JS_FreeValue(cx, arr);
+    JS_FreeValue(cx, args);
 
     return JS_EXCEPTION;
 }
@@ -7016,7 +7034,6 @@ ngx_http_qjs_ext_request_form_get(JSContext *cx, JSValueConst this_val,
         if (JS_DefinePropertyValueUint32(cx, array, n++, value, JS_PROP_C_W_E)
             < 0)
         {
-            JS_FreeValue(cx, value);
             JS_FreeCString(cx, name);
             JS_FreeValue(cx, array);
             return JS_EXCEPTION;
@@ -7143,7 +7160,6 @@ ngx_http_qjs_request_form_entry_value(JSContext *cx,
     }
 
     if (JS_SetPropertyStr(cx, object, "name", value) < 0) {
-        JS_FreeValue(cx, value);
         JS_FreeValue(cx, object);
         return JS_EXCEPTION;
     }
@@ -7964,7 +7980,6 @@ ngx_http_qjs_ext_raw_headers(JSContext *cx, JSValueConst this_val, int out)
         if (JS_DefinePropertyValueUint32(cx, array, idx++, elem,
                                          JS_PROP_C_W_E) < 0)
         {
-            JS_FreeValue(cx, elem);
             JS_FreeValue(cx, array);
             return JS_EXCEPTION;
         }
@@ -7976,7 +7991,6 @@ ngx_http_qjs_ext_raw_headers(JSContext *cx, JSValueConst this_val, int out)
         }
 
         if (JS_DefinePropertyValueUint32(cx, elem, 0, key, JS_PROP_C_W_E) < 0) {
-            JS_FreeValue(cx, key);
             JS_FreeValue(cx, array);
             return JS_EXCEPTION;
         }
@@ -7988,7 +8002,6 @@ ngx_http_qjs_ext_raw_headers(JSContext *cx, JSValueConst this_val, int out)
         }
 
         if (JS_DefinePropertyValueUint32(cx, elem, 1, val, JS_PROP_C_W_E) < 0) {
-            JS_FreeValue(cx, val);
             JS_FreeValue(cx, array);
             return JS_EXCEPTION;
         }

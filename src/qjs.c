@@ -308,7 +308,6 @@ qjs_add_intrinsic_njs(JSContext *cx, JSValueConst global)
     }
 
     if (JS_SetPropertyStr(cx, global, "njs", obj) < 0) {
-        JS_FreeValue(cx, obj);
         return -1;
     }
 
@@ -452,16 +451,22 @@ qjs_process_env(JSContext *ctx, JSValueConst this_val)
         ret = JS_DefinePropertyValue(ctx, obj, atom, str, JS_PROP_C_W_E);
         JS_FreeAtom(ctx, atom);
         if (ret < 0) {
-error:
-            JS_FreeValue(ctx, name);
-            JS_FreeValue(ctx, str);
-            return JS_EXCEPTION;
+            str = JS_UNDEFINED;
+            goto error;
         }
 
         JS_FreeValue(ctx, name);
     }
 
     return obj;
+
+error:
+
+    JS_FreeValue(ctx, name);
+    JS_FreeValue(ctx, str);
+    JS_FreeValue(ctx, obj);
+
+    return JS_EXCEPTION;
 }
 
 
@@ -563,7 +568,6 @@ qjs_process_object(JSContext *ctx, int argc, const char **argv)
         }
 
         if (JS_DefinePropertyValueUint32(ctx, val, i, str, JS_PROP_C_W_E) < 0) {
-            JS_FreeValue(ctx, str);
             JS_FreeValue(ctx, val);
             return JS_EXCEPTION;
         }
@@ -579,7 +583,7 @@ qjs_process_object(JSContext *ctx, int argc, const char **argv)
                                njs_nitems(qjs_process_proto));
 
     if (JS_SetPropertyStr(ctx, obj, "argv", val) < 0) {
-        JS_FreeValue(ctx, val);
+        JS_FreeValue(ctx, obj);
         return JS_EXCEPTION;
     }
 
