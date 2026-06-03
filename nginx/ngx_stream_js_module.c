@@ -1446,7 +1446,8 @@ ngx_stream_js_event(ngx_stream_session_t *s, njs_str_t *event)
     }
 
     if (i == n) {
-        njs_vm_error(ctx->engine->u.njs.vm, "unknown event \"%V\"", event);
+        njs_vm_type_error(ctx->engine->u.njs.vm, "unknown event \"%V\"",
+                          event);
         return NULL;
     }
 
@@ -1455,8 +1456,8 @@ ngx_stream_js_event(ngx_stream_session_t *s, njs_str_t *event)
     for (n = 0; n < NGX_JS_EVENT_MAX; n++) {
         type = ctx->events[n].data_type;
         if (type != NGX_JS_UNSET && type != events[i].data_type) {
-            njs_vm_error(ctx->engine->u.njs.vm, "mixing string and buffer"
-                         " events is not allowed");
+            njs_vm_type_error(ctx->engine->u.njs.vm, "mixing string and buffer"
+                              " events is not allowed");
             return NULL;
         }
     }
@@ -1498,7 +1499,7 @@ ngx_stream_js_ext_done(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     s = njs_vm_external(vm, ngx_stream_js_session_proto_id,
                         njs_argument(args, 0));
     if (s == NULL) {
-        njs_vm_error(vm, "\"this\" is not an external");
+        njs_vm_type_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
     }
 
@@ -1517,7 +1518,7 @@ ngx_stream_js_ext_done(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
 
         if (status < NGX_ABORT || status > NGX_STREAM_SERVICE_UNAVAILABLE) {
-            njs_vm_error(vm, "code is out of range");
+            njs_vm_range_error(vm, "code is out of range");
             return NJS_ERROR;
         }
     }
@@ -1526,7 +1527,7 @@ ngx_stream_js_ext_done(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
 
     if (ctx->filter) {
-        njs_vm_error(vm, "should not be called while filtering");
+        njs_vm_type_error(vm, "should not be called while filtering");
         return NJS_ERROR;
     }
 
@@ -1555,18 +1556,18 @@ ngx_stream_js_ext_on(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     s = njs_vm_external(vm, ngx_stream_js_session_proto_id,
                         njs_argument(args, 0));
     if (s == NULL) {
-        njs_vm_error(vm, "\"this\" is not an external");
+        njs_vm_type_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
     }
 
     if (ngx_js_string(vm, njs_arg(args, nargs, 1), &name) == NJS_ERROR) {
-        njs_vm_error(vm, "failed to convert event arg");
+        njs_vm_type_error(vm, "failed to convert event arg");
         return NJS_ERROR;
     }
 
     callback = njs_arg(args, nargs, 2);
     if (!njs_value_is_function(callback)) {
-        njs_vm_error(vm, "callback is not a function");
+        njs_vm_type_error(vm, "callback is not a function");
         return NJS_ERROR;
     }
 
@@ -1576,7 +1577,7 @@ ngx_stream_js_ext_on(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (njs_value_is_function(njs_value_arg(&event->function))) {
-        njs_vm_error(vm, "event handler \"%V\" is already set", &name);
+        njs_vm_type_error(vm, "event handler \"%V\" is already set", &name);
         return NJS_ERROR;
     }
 
@@ -1599,12 +1600,12 @@ ngx_stream_js_ext_off(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     s = njs_vm_external(vm, ngx_stream_js_session_proto_id,
                         njs_argument(args, 0));
     if (s == NULL) {
-        njs_vm_error(vm, "\"this\" is not an external");
+        njs_vm_type_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
     }
 
     if (ngx_js_string(vm, njs_arg(args, nargs, 1), &name) == NJS_ERROR) {
-        njs_vm_error(vm, "failed to convert event arg");
+        njs_vm_type_error(vm, "failed to convert event arg");
         return NJS_ERROR;
     }
 
@@ -1643,7 +1644,7 @@ ngx_stream_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     s = njs_vm_external(vm, ngx_stream_js_session_proto_id,
                         njs_argument(args, 0));
     if (s == NULL) {
-        njs_vm_error(vm, "\"this\" is not an external");
+        njs_vm_type_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
     }
 
@@ -1652,12 +1653,12 @@ ngx_stream_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
 
     if (!ctx->filter) {
-        njs_vm_error(vm, "cannot send buffer in this handler");
+        njs_vm_type_error(vm, "cannot send buffer in this handler");
         return NJS_ERROR;
     }
 
     if (ngx_js_string(vm, njs_arg(args, nargs, 1), &buffer) != NGX_OK) {
-        njs_vm_error(vm, "failed to get buffer arg");
+        njs_vm_type_error(vm, "failed to get buffer arg");
         return NJS_ERROR;
     }
 
@@ -1702,7 +1703,7 @@ ngx_stream_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     cl = ngx_chain_get_free_buf(c->pool, &ctx->free);
     if (cl == NULL) {
-        njs_vm_error(vm, "memory error");
+        njs_vm_memory_error(vm);
         return NJS_ERROR;
     }
 
@@ -1727,7 +1728,7 @@ ngx_stream_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     } else {
 
         if (ngx_stream_js_next_filter(s, ctx, cl, from_upstream) == NGX_ERROR) {
-            njs_vm_error(vm, "ngx_stream_js_next_filter() failed");
+            njs_vm_internal_error(vm, "ngx_stream_js_next_filter() failed");
             return NJS_ERROR;
         }
     }
@@ -1738,8 +1739,8 @@ ngx_stream_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 exception:
 
-    njs_vm_error(vm, "\"from_upstream\" flag is expected when"
-                "called asynchronously");
+    njs_vm_type_error(vm, "\"from_upstream\" flag is expected when "
+                      "called asynchronously");
 
     return NJS_ERROR;
 }
@@ -1755,7 +1756,7 @@ ngx_stream_js_ext_set_return_value(njs_vm_t *vm, njs_value_t *args,
     s = njs_vm_external(vm, ngx_stream_js_session_proto_id,
                         njs_argument(args, 0));
     if (s == NULL) {
-        njs_vm_error(vm, "\"this\" is not an external");
+        njs_vm_type_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
     }
 
@@ -1796,7 +1797,7 @@ ngx_stream_js_ext_js_var_names(njs_vm_t *vm, njs_value_t *args,
     s = njs_vm_external(vm, ngx_stream_js_session_proto_id,
                         njs_argument(args, 0));
     if (s == NULL) {
-        njs_vm_error(vm, "\"this\" is not an external");
+        njs_vm_type_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
     }
 
@@ -1877,7 +1878,7 @@ ngx_stream_js_session_variables(njs_vm_t *vm, njs_object_prop_t *prop,
         } else {
             name.data = ngx_pnalloc(s->connection->pool, val.length);
             if (name.data == NULL) {
-                njs_vm_error(vm, "internal error");
+                njs_vm_memory_error(vm);
                 return NJS_ERROR;
             }
         }
@@ -1904,7 +1905,7 @@ ngx_stream_js_session_variables(njs_vm_t *vm, njs_object_prop_t *prop,
     } else {
         name.data = ngx_pnalloc(s->connection->pool, val.length);
         if (name.data == NULL) {
-            njs_vm_error(vm, "internal error");
+            njs_vm_memory_error(vm);
             return NJS_ERROR;
         }
     }
@@ -1914,7 +1915,7 @@ ngx_stream_js_session_variables(njs_vm_t *vm, njs_object_prop_t *prop,
     v = ngx_hash_find(&cmcf->variables_hash, key, name.data, val.length);
 
     if (v == NULL) {
-        njs_vm_error(vm, "variable not found");
+        njs_vm_type_error(vm, "variable not found");
         return NJS_ERROR;
     }
 
@@ -1926,6 +1927,7 @@ ngx_stream_js_session_variables(njs_vm_t *vm, njs_object_prop_t *prop,
         vv = ngx_pcalloc(s->connection->pool,
                          sizeof(ngx_stream_variable_value_t));
         if (vv == NULL) {
+            njs_vm_memory_error(vm);
             return NJS_ERROR;
         }
 
@@ -1940,7 +1942,7 @@ ngx_stream_js_session_variables(njs_vm_t *vm, njs_object_prop_t *prop,
     }
 
     if (!(v->flags & NGX_STREAM_VAR_INDEXED)) {
-        njs_vm_error(vm, "variable is not writable");
+        njs_vm_type_error(vm, "variable is not writable");
         return NJS_ERROR;
     }
 
@@ -2130,7 +2132,7 @@ ngx_stream_qjs_ext_done(JSContext *cx, JSValueConst this_val, int argc,
 
     s = ngx_stream_qjs_session(this_val);
     if (s == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a session object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a session object");
     }
 
     status = (ngx_int_t) magic;
@@ -2146,15 +2148,14 @@ ngx_stream_qjs_ext_done(JSContext *cx, JSValueConst this_val, int argc,
         }
 
         if (status < NGX_ABORT || status > NGX_STREAM_SERVICE_UNAVAILABLE) {
-            return JS_ThrowInternalError(cx, "code is out of range");
+            return JS_ThrowRangeError(cx, "code is out of range");
         }
     }
 
     ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
 
     if (ctx->filter) {
-        return JS_ThrowInternalError(cx, "should not be called while "
-                                     "filtering");
+        return JS_ThrowTypeError(cx, "should not be called while filtering");
     }
 
     ngx_log_debug1(NGX_LOG_DEBUG_STREAM, s->connection->log, 0,
@@ -2178,7 +2179,7 @@ ngx_stream_qjs_ext_log(JSContext *cx, JSValueConst this_val, int argc,
 
     s = ngx_stream_qjs_session(this_val);
     if (s == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a session object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a session object");
     }
 
     for (n = 0; n < argc; n++) {
@@ -2251,8 +2252,8 @@ ngx_stream_qjs_event(ngx_stream_session_t *s, JSContext *cx, JSValue name)
     }
 
     if (i == n) {
-        (void) JS_ThrowInternalError(cx, "unknown event \"%.*s\"",
-                                     (int) event.len, event.data);
+        (void) JS_ThrowTypeError(cx, "unknown event \"%.*s\"",
+                                 (int) event.len, event.data);
         JS_FreeCString(cx, (char *) event.data);
         return NULL;
     }
@@ -2264,8 +2265,8 @@ ngx_stream_qjs_event(ngx_stream_session_t *s, JSContext *cx, JSValue name)
     for (n = 0; n < NGX_JS_EVENT_MAX; n++) {
         type = ctx->events[n].data_type;
         if (type != NGX_JS_UNSET && type != events[i].data_type) {
-            (void) JS_ThrowInternalError(cx, "mixing string and buffer"
-                                         " events is not allowed");
+            (void) JS_ThrowTypeError(cx, "mixing string and buffer"
+                                     " events is not allowed");
             return NULL;
         }
     }
@@ -2284,7 +2285,7 @@ ngx_stream_qjs_ext_on(JSContext *cx, JSValueConst this_val, int argc,
 
     ses = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_STREAM_SESSION);
     if (ses == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a session object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a session object");
     }
 
     ctx = ngx_stream_get_module_ctx(ses->session, ngx_stream_js_module);
@@ -2295,8 +2296,8 @@ ngx_stream_qjs_ext_on(JSContext *cx, JSValueConst this_val, int argc,
     }
 
     if (JS_IsFunction(cx, ngx_qjs_arg(ctx->events[e->id].function))) {
-        return JS_ThrowInternalError(cx, "event handler \"%s\" is already set",
-                                     e->name.data);
+        return JS_ThrowTypeError(cx, "event handler \"%s\" is already set",
+                                 e->name.data);
     }
 
     if (!JS_IsFunction(cx, argv[1])) {
@@ -2322,7 +2323,7 @@ ngx_stream_qjs_ext_off(JSContext *cx, JSValueConst this_val, int argc,
 
     s = ngx_stream_qjs_session(this_val);
     if (s == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a session object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a session object");
     }
 
     ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
@@ -2348,7 +2349,7 @@ ngx_stream_qjs_ext_periodic_variables(JSContext *cx,
 
     ses = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_STREAM_PERIODIC);
     if (ses == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a periodic object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a periodic object");
     }
 
     obj = JS_NewObjectProtoClass(cx, JS_NULL, NGX_QJS_CLASS_ID_STREAM_VARS);
@@ -2371,7 +2372,7 @@ ngx_stream_qjs_ext_remote_address(JSContext *cx, JSValueConst this_val)
 
     s = ngx_stream_qjs_session(this_val);
     if (s == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a session object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a session object");
     }
 
     c = s->connection;
@@ -2397,7 +2398,7 @@ ngx_stream_qjs_ext_send(JSContext *cx, JSValueConst this_val, int argc,
 
     s = ngx_stream_qjs_session(this_val);
     if (s == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a session object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a session object");
     }
 
     c = s->connection;
@@ -2405,7 +2406,7 @@ ngx_stream_qjs_ext_send(JSContext *cx, JSValueConst this_val, int argc,
     ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
 
     if (!ctx->filter) {
-        return JS_ThrowInternalError(cx, "cannot send buffer in this handler");
+        return JS_ThrowTypeError(cx, "cannot send buffer in this handler");
     }
 
     /*
@@ -2455,9 +2456,9 @@ ngx_stream_qjs_ext_send(JSContext *cx, JSValueConst this_val, int argc,
             }
 
             if (from_upstream == NGX_JS_BOOL_UNSET && ctx->buf == NULL) {
-                return JS_ThrowInternalError(cx, "from_upstream flag is "
-                                             "expected when called "
-                                             "asynchronously");
+                return JS_ThrowTypeError(cx, "from_upstream flag is "
+                                         "expected when called "
+                                         "asynchronously");
             }
         }
     }
@@ -2576,7 +2577,7 @@ out_of_memory:
 
     JS_FreeValue(cx, buf);
 
-    return JS_ThrowInternalError(cx, "memory error");
+    return JS_ThrowOutOfMemory(cx);
 }
 
 
@@ -2589,7 +2590,7 @@ ngx_stream_qjs_ext_set_return_value(JSContext *cx, JSValueConst this_val,
 
     s = ngx_stream_qjs_session(this_val);
     if (s == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a session object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a session object");
     }
 
     ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
@@ -2609,7 +2610,7 @@ ngx_stream_qjs_ext_variables(JSContext *cx, JSValueConst this_val, int type)
 
     s = ngx_stream_qjs_session(this_val);
     if (s == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a session object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a session object");
     }
 
     obj = JS_NewObjectProtoClass(cx, JS_NULL, NGX_QJS_CLASS_ID_STREAM_VARS);
@@ -2639,7 +2640,7 @@ ngx_stream_qjs_ext_js_var_names(JSContext *cx, JSValueConst this_val, int argc,
 
     s = ngx_stream_qjs_session(this_val);
     if (s == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a session object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a session object");
     }
 
     prefix = NULL;
@@ -2707,7 +2708,7 @@ ngx_stream_qjs_ext_uint(JSContext *cx, JSValueConst this_val, int offset)
 
     s = ngx_stream_qjs_session(this_val);
     if (s == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a session object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a session object");
     }
 
     field = (ngx_uint_t *) ((u_char *) s + offset);
@@ -2744,7 +2745,7 @@ ngx_stream_qjs_variables_own_property(JSContext *cx,
     s = (ngx_stream_session_t *) ((uintptr_t) s & ~(uintptr_t) 1);
 
     if (s == NULL) {
-        (void) JS_ThrowInternalError(cx, "\"this\" is not a session object");
+        (void) JS_ThrowTypeError(cx, "\"this\" is not a session object");
         return -1;
     }
 
@@ -2805,7 +2806,7 @@ ngx_stream_qjs_variables_set_property(JSContext *cx, JSValueConst obj,
     s = (ngx_stream_session_t *) ((uintptr_t) s & ~(uintptr_t) 1);
 
     if (s == NULL) {
-        (void) JS_ThrowInternalError(cx, "\"this\" is not a session object");
+        (void) JS_ThrowTypeError(cx, "\"this\" is not a session object");
         return -1;
     }
 
@@ -2836,7 +2837,7 @@ ngx_stream_qjs_variables_set_property(JSContext *cx, JSValueConst obj,
     JS_FreeCString(cx, (char *) name.data);
 
     if (v == NULL) {
-        (void) JS_ThrowInternalError(cx, "variable not found");
+        (void) JS_ThrowTypeError(cx, "variable not found");
         return -1;
     }
 

@@ -123,7 +123,7 @@ $t->write_file('test.js', <<EOF);
             s.on('upload', () => {});
             s.on('downstream', () => {});
         } catch (e) {
-            throw new Error(`cb_mismatch:\${e.message}`)
+            throw new Error(`cb_mismatch:\${e.constructor.name}:\${e.message}`)
         }
     }
 
@@ -132,7 +132,7 @@ $t->write_file('test.js', <<EOF);
             s.on('upstream', () => {});
             s.on('download', () => {});
         } catch (e) {
-            throw new Error(`cb_mismatch2:\${e.message}`)
+            throw new Error(`cb_mismatch2:\${e.constructor.name}:\${e.message}`)
         }
     }
 
@@ -192,10 +192,12 @@ is(stream('127.0.0.1:' . port(8086))->io('x', length => 6), 'ellllo',
 
 $t->stop();
 
-ok(index($t->read_file('error.log'), 'cb_mismatch:mixing string and buffer')
-   > 0, 'cb mismatch');
-ok(index($t->read_file('error.log'), 'cb_mismatch2:mixing string and buffer')
-   > 0, 'cb mismatch');
+ok(index($t->read_file('error.log'),
+	'cb_mismatch:TypeError:mixing string and buffer') > 0,
+	'cb mismatch');
+ok(index($t->read_file('error.log'),
+	'cb_mismatch2:TypeError:mixing string and buffer') > 0,
+	'cb mismatch');
 
 ###############################################################################
 
