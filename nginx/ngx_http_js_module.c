@@ -2983,12 +2983,14 @@ ngx_http_js_ext_send_header(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (ngx_http_set_content_type(r) != NGX_OK) {
+        njs_vm_internal_error(vm, "failed to set content type");
         return NJS_ERROR;
     }
 
     r->disable_not_modified = 1;
 
     if (ngx_http_send_header(r) == NGX_ERROR) {
+        njs_vm_internal_error(vm, "failed to send header");
         return NJS_ERROR;
     }
 
@@ -3037,6 +3039,7 @@ ngx_http_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
         b = ngx_calloc_buf(r->pool);
         if (b == NULL) {
+            njs_vm_memory_error(vm);
             return NJS_ERROR;
         }
 
@@ -3048,6 +3051,7 @@ ngx_http_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
         cl = ngx_alloc_chain_link(r->pool);
         if (cl == NULL) {
+            njs_vm_memory_error(vm);
             return NJS_ERROR;
         }
 
@@ -3060,6 +3064,7 @@ ngx_http_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     *ll = NULL;
 
     if (ngx_http_output_filter(r, out) == NGX_ERROR) {
+        njs_vm_internal_error(vm, "failed to send response");
         return NJS_ERROR;
     }
 
@@ -3217,6 +3222,7 @@ ngx_http_js_ext_finish(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (ngx_http_send_special(r, NGX_HTTP_LAST) == NGX_ERROR) {
+        njs_vm_internal_error(vm, "failed to send response");
         return NJS_ERROR;
     }
 
