@@ -2399,7 +2399,7 @@ qjs_fs_stats_get_own_property(JSContext *cx, JSPropertyDescriptor *pdesc,
 
     st = JS_GetOpaque2(cx, obj, QJS_CORE_CLASS_ID_FS_STATS);
     if (st == NULL) {
-        (void) JS_ThrowInternalError(cx, "\"this\" is not a Stats object");
+        (void) JS_ThrowTypeError(cx, "\"this\" is not a Stats object");
         return -1;
     }
 
