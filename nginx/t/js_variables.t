@@ -108,7 +108,8 @@ $t->try_run('no njs')->plan(5);
 
 like(http_get('/var_set?a=bar'), qr/test_varbar/, 'var set');
 like(http_get('/content_set?a=bar'), qr/bar/, 'content set');
-like(http_get('/not_found_set'), qr/variable not found/, 'not found exception');
+like(http_get('/not_found_set'), qr/TypeError: variable not found/,
+	'not found exception');
 like(http_get('/variable_lowkey'), qr/X{16}/,
 	'variable name is not overwritten while reading');
 like(http_get('/variable_lowkey?set=1'), qr/X{16}/,

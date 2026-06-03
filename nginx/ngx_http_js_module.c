@@ -2978,7 +2978,7 @@ ngx_http_js_ext_send_header(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     r = njs_vm_external(vm, ngx_http_js_request_proto_id,
                         njs_argument(args, 0));
     if (r == NULL) {
-        njs_vm_error(vm, "\"this\" is not an external");
+        njs_vm_type_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
     }
 
@@ -3014,14 +3014,14 @@ ngx_http_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     r = njs_vm_external(vm, ngx_http_js_request_proto_id,
                         njs_argument(args, 0));
     if (r == NULL) {
-        njs_vm_error(vm, "\"this\" is not an external");
+        njs_vm_type_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
     if (ctx->filter) {
-        njs_vm_error(vm, "cannot send while in body filter");
+        njs_vm_type_error(vm, "cannot send while in body filter");
         return NJS_ERROR;
     }
 
@@ -3093,19 +3093,19 @@ ngx_http_js_ext_send_buffer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     r = njs_vm_external(vm, ngx_http_js_request_proto_id,
                         njs_argument(args, 0));
     if (r == NULL) {
-        njs_vm_error(vm, "\"this\" is not an external");
+        njs_vm_type_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
     if (!ctx->filter) {
-        njs_vm_error(vm, "cannot send buffer while not filtering");
+        njs_vm_type_error(vm, "cannot send buffer while not filtering");
         return NJS_ERROR;
     }
 
     if (ngx_js_string(vm, njs_arg(args, nargs, 1), &buffer) != NGX_OK) {
-        njs_vm_error(vm, "failed to get buffer arg");
+        njs_vm_type_error(vm, "failed to get buffer arg");
         return NJS_ERROR;
     }
 
@@ -3128,7 +3128,7 @@ ngx_http_js_ext_send_buffer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     cl = ngx_chain_get_free_buf(r->pool, &ctx->free);
     if (cl == NULL) {
-        njs_vm_error(vm, "memory error");
+        njs_vm_memory_error(vm);
         return NJS_ERROR;
     }
 
@@ -3165,7 +3165,7 @@ ngx_http_js_ext_set_return_value(njs_vm_t *vm, njs_value_t *args,
     r = njs_vm_external(vm, ngx_http_js_request_proto_id,
                         njs_argument(args, 0));
     if (r == NULL) {
-        njs_vm_error(vm, "\"this\" is not an external");
+        njs_vm_type_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
     }
 
@@ -3188,14 +3188,14 @@ ngx_http_js_ext_done(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     r = njs_vm_external(vm, ngx_http_js_request_proto_id,
                         njs_argument(args, 0));
     if (r == NULL) {
-        njs_vm_error(vm, "\"this\" is not an external");
+        njs_vm_type_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
     if (!ctx->filter) {
-        njs_vm_error(vm, "cannot set done while not filtering");
+        njs_vm_type_error(vm, "cannot set done while not filtering");
         return NJS_ERROR;
     }
 
@@ -3217,7 +3217,7 @@ ngx_http_js_ext_finish(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     r = njs_vm_external(vm, ngx_http_js_request_proto_id,
                         njs_argument(args, 0));
     if (r == NULL) {
-        njs_vm_error(vm, "\"this\" is not an external");
+        njs_vm_type_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
     }
 
@@ -3249,7 +3249,7 @@ ngx_http_js_ext_return(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     r = njs_vm_external(vm, ngx_http_js_request_proto_id,
                         njs_argument(args, 0));
     if (r == NULL) {
-        njs_vm_error(vm, "\"this\" is not an external");
+        njs_vm_type_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
     }
 
@@ -3258,7 +3258,7 @@ ngx_http_js_ext_return(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (status < 0 || status > 999) {
-        njs_vm_error(vm, "code is out of range");
+        njs_vm_range_error(vm, "code is out of range");
         return NJS_ERROR;
     }
 
@@ -3268,7 +3268,7 @@ ngx_http_js_ext_return(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         || !njs_value_is_null_or_undefined(njs_arg(args, nargs, 2)))
     {
         if (ngx_js_string(vm, njs_arg(args, nargs, 2), &text) != NGX_OK) {
-            njs_vm_error(vm, "failed to convert text");
+            njs_vm_memory_error(vm);
             return NJS_ERROR;
         }
 
@@ -3282,7 +3282,7 @@ ngx_http_js_ext_return(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         ctx->status = ngx_http_send_response(r, status, NULL, &cv);
 
         if (ctx->status == NGX_ERROR) {
-            njs_vm_error(vm, "failed to send response");
+            njs_vm_internal_error(vm, "failed to send response");
             return NJS_ERROR;
         }
 
@@ -3306,7 +3306,7 @@ ngx_http_js_ext_decline(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     r = njs_vm_external(vm, ngx_http_js_request_proto_id,
                         njs_argument(args, 0));
     if (r == NULL) {
-        njs_vm_error(vm, "\"this\" is not an external");
+        njs_vm_type_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
     }
 
@@ -3331,29 +3331,31 @@ ngx_http_js_ext_internal_redirect(njs_vm_t *vm, njs_value_t *args,
     r = njs_vm_external(vm, ngx_http_js_request_proto_id,
                         njs_argument(args, 0));
     if (r == NULL) {
-        njs_vm_error(vm, "\"this\" is not an external");
+        njs_vm_type_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
     }
 
     if (r->parent != NULL) {
-        njs_vm_error(vm, "internalRedirect cannot be called from a subrequest");
+        njs_vm_type_error(vm, "internalRedirect cannot be called from "
+                          "a subrequest");
         return NJS_ERROR;
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
     if (ctx->filter) {
-        njs_vm_error(vm, "internalRedirect cannot be called while filtering");
+        njs_vm_type_error(vm, "internalRedirect cannot be called while "
+                          "filtering");
         return NJS_ERROR;
     }
 
     if (ngx_js_string(vm, njs_arg(args, nargs, 1), &uri) != NGX_OK) {
-        njs_vm_error(vm, "failed to convert uri arg");
+        njs_vm_type_error(vm, "failed to convert uri arg");
         return NJS_ERROR;
     }
 
     if (uri.length == 0) {
-        njs_vm_error(vm, "uri is empty");
+        njs_vm_type_error(vm, "uri is empty");
         return NJS_ERROR;
     }
 
@@ -3744,7 +3746,7 @@ ngx_http_js_form_to_value(njs_vm_t *vm, ngx_http_request_t *r,
     }
 
     if (rc == NGX_JS_FORM_PARSE_ERROR) {
-        njs_vm_error(vm, "%V", &error);
+        njs_vm_type_error(vm, "%V", &error);
         return NJS_ERROR;
     }
 
@@ -3888,7 +3890,7 @@ ngx_http_js_ext_read_request_body(njs_vm_t *vm, njs_value_t *args,
     r = njs_vm_external(vm, ngx_http_js_request_proto_id,
                         njs_argument(args, 0));
     if (r == NULL) {
-        njs_vm_error(vm, "\"this\" is not an external");
+        njs_vm_type_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
     }
 
@@ -3912,7 +3914,7 @@ ngx_http_js_ext_read_request_body(njs_vm_t *vm, njs_value_t *args,
     }
 
     if (ctx->body_read_event) {
-        njs_vm_error(vm, "request body is already being read");
+        njs_vm_type_error(vm, "request body is already being read");
         return NJS_ERROR;
     }
 
@@ -3937,7 +3939,7 @@ ngx_http_js_ext_read_request_body(njs_vm_t *vm, njs_value_t *args,
 resolve:
 
     if (ngx_http_js_collect_body(r, ctx) != NGX_OK) {
-        njs_vm_memory_error(vm);
+        njs_vm_internal_error(vm, "failed to read request body");
         return NJS_ERROR;
     }
 
@@ -3999,7 +4001,7 @@ ngx_http_js_ext_read_request_form(njs_vm_t *vm, njs_value_t *args,
     r = njs_vm_external(vm, ngx_http_js_request_proto_id,
                         njs_argument(args, 0));
     if (r == NULL) {
-        njs_vm_error(vm, "\"this\" is not an external");
+        njs_vm_type_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
     }
 
@@ -4017,7 +4019,7 @@ ngx_http_js_ext_read_request_form(njs_vm_t *vm, njs_value_t *args,
     }
 
     if (ctx->body_read_event) {
-        njs_vm_error(vm, "request body is already being read");
+        njs_vm_type_error(vm, "request body is already being read");
         return NJS_ERROR;
     }
 
@@ -4051,7 +4053,7 @@ ngx_http_js_ext_read_request_form(njs_vm_t *vm, njs_value_t *args,
 resolve:
 
     if (ngx_http_js_collect_body(r, ctx) != NGX_OK) {
-        njs_vm_memory_error(vm);
+        njs_vm_internal_error(vm, "failed to read request body");
         return NJS_ERROR;
     }
 
@@ -4073,7 +4075,7 @@ ngx_http_js_ext_request_form_get(njs_vm_t *vm, njs_value_t *args,
     form = njs_vm_external(vm, ngx_http_js_request_form_proto_id,
                            njs_argument(args, 0));
     if (form == NULL) {
-        njs_vm_error(vm, "\"this\" is not a RequestForm");
+        njs_vm_type_error(vm, "\"this\" is not a RequestForm");
         return NJS_ERROR;
     }
 
@@ -4135,7 +4137,7 @@ ngx_http_js_ext_request_form_has(njs_vm_t *vm, njs_value_t *args,
     form = njs_vm_external(vm, ngx_http_js_request_form_proto_id,
                            njs_argument(args, 0));
     if (form == NULL) {
-        njs_vm_error(vm, "\"this\" is not a RequestForm");
+        njs_vm_type_error(vm, "\"this\" is not a RequestForm");
         return NJS_ERROR;
     }
 
@@ -4177,13 +4179,13 @@ ngx_http_js_ext_request_form_for_each(njs_vm_t *vm, njs_value_t *args,
 
     form = njs_vm_external(vm, ngx_http_js_request_form_proto_id, this);
     if (form == NULL) {
-        njs_vm_error(vm, "\"this\" is not a RequestForm");
+        njs_vm_type_error(vm, "\"this\" is not a RequestForm");
         return NJS_ERROR;
     }
 
     callback = njs_arg(args, nargs, 1);
     if (!njs_value_is_function(callback)) {
-        njs_vm_error(vm, "\"callback\" is not a function");
+        njs_vm_type_error(vm, "\"callback\" is not a function");
         return NJS_ERROR;
     }
 
@@ -4261,7 +4263,7 @@ ngx_http_js_ext_request_form_has_files(njs_vm_t *vm, njs_value_t *args,
     form = njs_vm_external(vm, ngx_http_js_request_form_proto_id,
                            njs_argument(args, 0));
     if (form == NULL) {
-        njs_vm_error(vm, "\"this\" is not a RequestForm");
+        njs_vm_type_error(vm, "\"this\" is not a RequestForm");
         return NJS_ERROR;
     }
 
@@ -4490,7 +4492,7 @@ ngx_http_js_ext_js_var_names(njs_vm_t *vm, njs_value_t *args,
     r = njs_vm_external(vm, ngx_http_js_request_proto_id,
                         njs_argument(args, 0));
     if (r == NULL) {
-        njs_vm_error(vm, "\"this\" is not an external");
+        njs_vm_type_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
     }
 
@@ -4634,7 +4636,7 @@ ngx_http_js_request_variables(njs_vm_t *vm, njs_object_prop_t *prop,
     v = ngx_hash_find(&cmcf->variables_hash, key, name.data, val.length);
 
     if (v == NULL) {
-        njs_vm_error(vm, "variable not found");
+        njs_vm_type_error(vm, "variable not found");
         return NJS_ERROR;
     }
 
@@ -4645,7 +4647,7 @@ ngx_http_js_request_variables(njs_vm_t *vm, njs_object_prop_t *prop,
     if (v->set_handler != NULL) {
         vv = ngx_pcalloc(r->pool, sizeof(ngx_http_variable_value_t));
         if (vv == NULL) {
-            njs_vm_error(vm, "internal error");
+            njs_vm_memory_error(vm);
             return NJS_ERROR;
         }
 
@@ -4660,7 +4662,7 @@ ngx_http_js_request_variables(njs_vm_t *vm, njs_object_prop_t *prop,
     }
 
     if (!(v->flags & NGX_HTTP_VAR_INDEXED)) {
-        njs_vm_error(vm, "variable is not writable");
+        njs_vm_type_error(vm, "variable is not writable");
         return NJS_ERROR;
     }
 
@@ -4672,7 +4674,7 @@ ngx_http_js_request_variables(njs_vm_t *vm, njs_object_prop_t *prop,
     vv->data = ngx_pnalloc(r->pool, s.length);
     if (vv->data == NULL) {
         vv->valid = 0;
-        njs_vm_error(vm, "internal error");
+        njs_vm_memory_error(vm);
         return NJS_ERROR;
     }
 
@@ -4742,25 +4744,25 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     r = njs_vm_external(vm, ngx_http_js_request_proto_id,
                         njs_argument(args, 0));
     if (r == NULL) {
-        njs_vm_error(vm, "\"this\" is not an external");
+        njs_vm_type_error(vm, "\"this\" is not an external");
         return NJS_ERROR;
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
     if (r->subrequest_in_memory) {
-        njs_vm_error(vm, "subrequest can only be created for "
-                         "the primary request");
+        njs_vm_type_error(vm, "subrequest can only be created for "
+                          "the primary request");
         return NJS_ERROR;
     }
 
     if (ngx_js_string(vm, njs_arg(args, nargs, 1), &uri_arg) != NGX_OK) {
-        njs_vm_error(vm, "failed to convert uri arg");
+        njs_vm_type_error(vm, "failed to convert uri arg");
         return NJS_ERROR;
     }
 
     if (uri_arg.length == 0) {
-        njs_vm_error(vm, "uri is empty");
+        njs_vm_type_error(vm, "uri is empty");
         return NJS_ERROR;
     }
 
@@ -4779,7 +4781,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     if (njs_value_is_string(arg)) {
         if (ngx_js_string(vm, arg, &args_arg) != NJS_OK) {
-            njs_vm_error(vm, "failed to convert args");
+            njs_vm_type_error(vm, "failed to convert args");
             return NJS_ERROR;
         }
 
@@ -4790,7 +4792,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         options = arg;
 
     } else if (!njs_value_is_null_or_undefined(arg)) {
-        njs_vm_error(vm, "failed to convert args");
+        njs_vm_type_error(vm, "failed to convert args");
         return NJS_ERROR;
     }
 
@@ -4798,7 +4800,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         value = njs_vm_object_prop(vm, options, &args_key, &lvalue);
         if (value != NULL) {
             if (ngx_js_string(vm, value, &args_arg) != NGX_OK) {
-                njs_vm_error(vm, "failed to convert options.args");
+                njs_vm_type_error(vm, "failed to convert options.args");
                 return NJS_ERROR;
             }
         }
@@ -4811,7 +4813,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         value = njs_vm_object_prop(vm, options, &method_key, &lvalue);
         if (value != NULL) {
             if (ngx_js_string(vm, value, &method_name) != NGX_OK) {
-                njs_vm_error(vm, "failed to convert options.method");
+                njs_vm_type_error(vm, "failed to convert options.method");
                 return NJS_ERROR;
             }
 
@@ -4832,7 +4834,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         value = njs_vm_object_prop(vm, options, &body_key, &lvalue);
         if (value != NULL) {
             if (ngx_js_string(vm, value, &body_arg) != NGX_OK) {
-                njs_vm_error(vm, "failed to convert options.body");
+                njs_vm_type_error(vm, "failed to convert options.body");
                 return NJS_ERROR;
             }
 
@@ -4841,7 +4843,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (ngx_http_js_parse_unsafe_uri(r, &uri_arg, &args_arg) != NGX_OK) {
-        njs_vm_error(vm, "unsafe uri");
+        njs_vm_type_error(vm, "unsafe uri");
         return NJS_ERROR;
     }
 
@@ -4849,7 +4851,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     if (callback == NULL && !njs_value_is_undefined(arg)) {
         if (!njs_value_is_function(arg)) {
-            njs_vm_error(vm, "callback is not a function");
+            njs_vm_type_error(vm, "callback is not a function");
             return NJS_ERROR;
 
         } else {
@@ -4858,7 +4860,8 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (detached && callback != NULL) {
-        njs_vm_error(vm, "detached flag and callback are mutually exclusive");
+        njs_vm_type_error(vm, "detached flag and callback are mutually "
+                          "exclusive");
         return NJS_ERROR;
     }
 
@@ -4916,7 +4919,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     if (ngx_http_subrequest(r, &uri, rargs.len ? &rargs : NULL, &sr, ps, flags)
         != NGX_OK)
     {
-        njs_vm_error(vm, "subrequest creation failed");
+        njs_vm_internal_error(vm, "subrequest creation failed");
         return NJS_ERROR;
     }
 
@@ -4971,7 +4974,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 memory_error:
 
-    njs_vm_error(vm, "internal error");
+    njs_vm_memory_error(vm);
 
     return NJS_ERROR;
 }
@@ -5575,8 +5578,8 @@ ngx_http_js_content_length(njs_vm_t *vm, ngx_http_request_t *r,
             n = ngx_atoi(h->value.data, h->value.len);
             if (n == NGX_ERROR) {
                 h->hash = 0;
-                njs_vm_error(vm, "failed converting argument "
-                             "to positive integer");
+                njs_vm_type_error(vm, "failed converting argument "
+                                  "to positive integer");
                 return NJS_ERROR;
             }
 
@@ -6159,7 +6162,7 @@ ngx_http_qjs_ext_args(JSContext *cx, JSValueConst this_val)
 
     req = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_HTTP_REQUEST);
     if (req == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a request object");
     }
 
     if (!JS_IsUndefined(req->args)) {
@@ -6297,7 +6300,7 @@ ngx_http_qjs_ext_done(JSContext *cx, JSValueConst this_val,
 
     r = ngx_http_qjs_request(this_val);
     if (r == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a request object");
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
@@ -6321,7 +6324,7 @@ ngx_http_qjs_ext_finish(JSContext *cx, JSValueConst this_val,
 
     r = ngx_http_qjs_request(this_val);
     if (r == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a request object");
     }
 
     if (ngx_http_send_special(r, NGX_HTTP_LAST) == NGX_ERROR) {
@@ -6344,7 +6347,7 @@ ngx_http_qjs_ext_headers_in(JSContext *cx, JSValueConst this_val)
 
     r = ngx_http_qjs_request(this_val);
     if (r == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a request object");
     }
 
     obj = JS_NewObjectProtoClass(cx, JS_NULL, NGX_QJS_CLASS_ID_HTTP_HEADERS_IN);
@@ -6363,7 +6366,7 @@ ngx_http_qjs_ext_headers_out(JSContext *cx, JSValueConst this_val)
 
     r = ngx_http_qjs_request(this_val);
     if (r == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a request object");
     }
 
     obj = JS_NewObjectProtoClass(cx, JS_NULL,
@@ -6383,7 +6386,7 @@ ngx_http_qjs_ext_http_version(JSContext *cx, JSValueConst this_val)
 
     r = ngx_http_qjs_request(this_val);
     if (r == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a request object");
     }
 
     switch (r->http_version) {
@@ -6425,7 +6428,7 @@ ngx_http_qjs_ext_internal(JSContext *cx, JSValueConst this_val)
 
     r = ngx_http_qjs_request(this_val);
     if (r == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a request object");
     }
 
     return JS_NewBool(cx, r->internal);
@@ -6441,7 +6444,7 @@ ngx_http_qjs_ext_internal_redirect(JSContext *cx, JSValueConst this_val,
 
     r = ngx_http_qjs_request(this_val);
     if (r == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a request object");
     }
 
     if (r->parent != NULL) {
@@ -6476,7 +6479,7 @@ ngx_http_qjs_ext_log(JSContext *cx, JSValueConst this_val, int argc,
 
     r = ngx_http_qjs_request(this_val);
     if (r == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a request object");
     }
 
     for (n = 0; n < argc; n++) {
@@ -6503,7 +6506,7 @@ ngx_http_qjs_ext_periodic_variables(JSContext *cx,
 
     req = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_HTTP_PERIODIC);
     if (req == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a periodic object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a periodic object");
     }
 
     obj = JS_NewObjectProtoClass(cx, JS_NULL, NGX_QJS_CLASS_ID_HTTP_VARS);
@@ -6526,7 +6529,7 @@ ngx_http_qjs_ext_parent(JSContext *cx, JSValueConst this_val)
 
     r = ngx_http_qjs_request(this_val);
     if (r == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a request object");
     }
 
     ctx = r->parent ? ngx_http_get_module_ctx(r->parent, ngx_http_js_module)
@@ -6548,7 +6551,7 @@ ngx_http_qjs_ext_remote_address(JSContext *cx, JSValueConst this_val)
 
     r = ngx_http_qjs_request(this_val);
     if (r == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a request object");
     }
 
     c = r->connection;
@@ -6570,7 +6573,7 @@ ngx_http_qjs_ext_response_body(JSContext *cx, JSValueConst this_val, int type)
 
     req = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_HTTP_REQUEST);
     if (req == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a request object");
     }
 
     buffer_type = ngx_js_buffer_type(type);
@@ -6622,7 +6625,7 @@ ngx_http_qjs_ext_request_body(JSContext *cx, JSValueConst this_val, int type)
 
     req = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_HTTP_REQUEST);
     if (req == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a request object");
     }
 
     buffer_type = ngx_js_buffer_type(type);
@@ -6753,7 +6756,7 @@ ngx_http_qjs_ext_read_request_body(JSContext *cx, JSValueConst this_val,
 
     req = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_HTTP_REQUEST);
     if (req == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a request object");
     }
 
     r = req->request;
@@ -6764,7 +6767,7 @@ ngx_http_qjs_ext_read_request_body(JSContext *cx, JSValueConst this_val,
     }
 
     if (ctx->body_read_event) {
-        return JS_ThrowInternalError(cx, "request body is already being read");
+        return JS_ThrowTypeError(cx, "request body is already being read");
     }
 
     event = ngx_pcalloc(r->pool, sizeof(ngx_qjs_event_t) + sizeof(JSValue) * 2);
@@ -6795,7 +6798,7 @@ ngx_http_qjs_ext_read_request_body(JSContext *cx, JSValueConst this_val,
 resolve:
 
     if (ngx_http_js_collect_body(r, ctx) != NGX_OK) {
-        return JS_ThrowOutOfMemory(cx);
+        return JS_ThrowInternalError(cx, "failed to read request body");
     }
 
     return ngx_http_qjs_body_to_value(cx, ctx, (ngx_uint_t) magic);
@@ -6882,7 +6885,7 @@ ngx_http_qjs_form_to_value(JSContext *cx, ngx_http_request_t *r,
     }
 
     if (rc == NGX_JS_FORM_PARSE_ERROR) {
-        return JS_ThrowInternalError(cx, "%.*s", (int) error.len, error.data);
+        return JS_ThrowTypeError(cx, "%.*s", (int) error.len, error.data);
     }
 
     return JS_ThrowOutOfMemory(cx);
@@ -6902,7 +6905,7 @@ ngx_http_qjs_ext_read_request_form(JSContext *cx, JSValueConst this_val,
 
     req = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_HTTP_REQUEST);
     if (req == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a request object");
     }
 
     if (ngx_http_qjs_request_form_max_keys(cx, argv[0], &max_keys) != NGX_OK) {
@@ -6917,7 +6920,7 @@ ngx_http_qjs_ext_read_request_form(JSContext *cx, JSValueConst this_val,
     }
 
     if (ctx->body_read_event) {
-        return JS_ThrowInternalError(cx, "request body is already being read");
+        return JS_ThrowTypeError(cx, "request body is already being read");
     }
 
     event = ngx_pcalloc(r->pool, sizeof(ngx_qjs_event_t) + sizeof(JSValue) * 2);
@@ -6949,7 +6952,7 @@ ngx_http_qjs_ext_read_request_form(JSContext *cx, JSValueConst this_val,
 resolve:
 
     if (ngx_http_js_collect_body(r, ctx) != NGX_OK) {
-        return JS_ThrowOutOfMemory(cx);
+        return JS_ThrowInternalError(cx, "failed to read request body");
     }
 
     return ngx_http_qjs_form_to_value(cx, r, ctx, max_keys);
@@ -6969,7 +6972,7 @@ ngx_http_qjs_ext_request_form_get(JSContext *cx, JSValueConst this_val,
 
     form = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_HTTP_FORM);
     if (form == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a RequestForm");
+        return JS_ThrowTypeError(cx, "\"this\" is not a RequestForm");
     }
 
     name = JS_ToCStringLen(cx, &name_len, argv[0]);
@@ -7042,7 +7045,7 @@ ngx_http_qjs_ext_request_form_has(JSContext *cx, JSValueConst this_val,
 
     form = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_HTTP_FORM);
     if (form == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a RequestForm");
+        return JS_ThrowTypeError(cx, "\"this\" is not a RequestForm");
     }
 
     name = JS_ToCStringLen(cx, &name_len, argv[0]);
@@ -7078,7 +7081,7 @@ ngx_http_qjs_ext_request_form_for_each(JSContext *cx, JSValueConst this_val,
 
     form = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_HTTP_FORM);
     if (form == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a RequestForm");
+        return JS_ThrowTypeError(cx, "\"this\" is not a RequestForm");
     }
 
     if (!JS_IsFunction(cx, argv[0])) {
@@ -7157,7 +7160,7 @@ ngx_http_qjs_ext_request_form_has_files(JSContext *cx, JSValueConst this_val,
 
     form = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_HTTP_FORM);
     if (form == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a RequestForm");
+        return JS_ThrowTypeError(cx, "\"this\" is not a RequestForm");
     }
 
     return JS_NewBool(cx, form->has_files);
@@ -7189,7 +7192,7 @@ ngx_http_qjs_ext_return(JSContext *cx, JSValueConst this_val,
 
     r = ngx_http_qjs_request(this_val);
     if (r == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a request object");
     }
 
     if (ngx_qjs_integer(cx, argv[0], &status) != NGX_OK) {
@@ -7217,7 +7220,7 @@ ngx_http_qjs_ext_return(JSContext *cx, JSValueConst this_val,
         ctx->status = ngx_http_send_response(r, status, NULL, &cv);
 
         if (ctx->status == NGX_ERROR) {
-            return JS_ThrowTypeError(cx, "failed to send response");
+            return JS_ThrowInternalError(cx, "failed to send response");
         }
 
     } else {
@@ -7237,7 +7240,7 @@ ngx_http_qjs_ext_decline(JSContext *cx, JSValueConst this_val,
 
     r = ngx_http_qjs_request(this_val);
     if (r == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a request object");
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
@@ -7255,7 +7258,7 @@ ngx_http_qjs_ext_status_get(JSContext *cx, JSValueConst this_val)
 
     r = ngx_http_qjs_request(this_val);
     if (r == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a request object");
     }
 
     return JS_NewInt32(cx, r->headers_out.status);
@@ -7271,7 +7274,7 @@ ngx_http_qjs_ext_status_set(JSContext *cx, JSValueConst this_val,
 
     r = ngx_http_qjs_request(this_val);
     if (r == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a request object");
     }
 
     if (ngx_qjs_integer(cx, value, &n) != NGX_OK) {
@@ -7293,7 +7296,7 @@ ngx_http_qjs_ext_string(JSContext *cx, JSValueConst this_val, int offset)
 
     r = ngx_http_qjs_request(this_val);
     if (r == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a request object");
     }
 
     field = (ngx_str_t *) ((u_char *) r + offset);
@@ -7315,7 +7318,7 @@ ngx_http_qjs_ext_send(JSContext *cx, JSValueConst this_val,
 
     r = ngx_http_qjs_request(this_val);
     if (r == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a request object");
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
@@ -7338,7 +7341,7 @@ ngx_http_qjs_ext_send(JSContext *cx, JSValueConst this_val,
 
         b = ngx_calloc_buf(r->pool);
         if (b == NULL) {
-            return JS_ThrowInternalError(cx, "failed to allocate buffer");
+            return JS_ThrowOutOfMemory(cx);
         }
 
         b->start = s.data;
@@ -7349,7 +7352,7 @@ ngx_http_qjs_ext_send(JSContext *cx, JSValueConst this_val,
 
         cl = ngx_alloc_chain_link(r->pool);
         if (cl == NULL) {
-            return JS_ThrowInternalError(cx, "failed to allocate chain link");
+            return JS_ThrowOutOfMemory(cx);
         }
 
         cl->buf = b;
@@ -7384,7 +7387,7 @@ ngx_http_qjs_ext_send_buffer(JSContext *cx, JSValueConst this_val,
 
     r = ngx_http_qjs_request(this_val);
     if (r == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a request object");
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
@@ -7527,7 +7530,7 @@ ngx_http_qjs_ext_send_header(JSContext *cx, JSValueConst this_val,
 
     r = ngx_http_qjs_request(this_val);
     if (r == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a request object");
     }
 
     if (ngx_http_set_content_type(r) != NGX_OK) {
@@ -7553,7 +7556,7 @@ ngx_http_qjs_ext_set_return_value(JSContext *cx, JSValueConst this_val,
 
     r = ngx_http_qjs_request(this_val);
     if (r == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a request object");
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
@@ -7660,7 +7663,7 @@ ngx_http_qjs_ext_subrequest(JSContext *cx, JSValueConst this_val,
 
     r = ngx_http_qjs_request(this_val);
     if (r == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a request object");
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
@@ -7920,7 +7923,7 @@ ngx_http_qjs_ext_raw_headers(JSContext *cx, JSValueConst this_val, int out)
 
     r = ngx_http_qjs_request(this_val);
     if (r == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a request object");
     }
 
     headers = (out) ? &r->headers_out.headers : &r->headers_in.headers;
@@ -8003,7 +8006,7 @@ ngx_http_qjs_ext_variables(JSContext *cx, JSValueConst this_val, int type)
 
     r = ngx_http_qjs_request(this_val);
     if (r == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a request object");
     }
 
     obj = JS_NewObjectProtoClass(cx, JS_NULL, NGX_QJS_CLASS_ID_HTTP_VARS);
@@ -8033,7 +8036,7 @@ ngx_http_qjs_ext_js_var_names(JSContext *cx, JSValueConst this_val, int argc,
 
     r = ngx_http_qjs_request(this_val);
     if (r == NULL) {
-        return JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        return JS_ThrowTypeError(cx, "\"this\" is not a request object");
     }
 
     prefix = NULL;
@@ -8110,7 +8113,7 @@ ngx_http_qjs_variables_own_property(JSContext *cx, JSPropertyDescriptor *pdesc,
     r = (ngx_http_request_t *) ((uintptr_t) r & ~(uintptr_t) 1);
 
     if (r == NULL) {
-        (void) JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        (void) JS_ThrowTypeError(cx, "\"this\" is not a request object");
         return -1;
     }
 
@@ -8204,7 +8207,7 @@ ngx_http_qjs_variables_set_property(JSContext *cx, JSValueConst obj,
     r = (ngx_http_request_t *) ((uintptr_t) r & ~(uintptr_t) 1);
 
     if (r == NULL) {
-        (void) JS_ThrowInternalError(cx, "\"this\" is not a request object");
+        (void) JS_ThrowTypeError(cx, "\"this\" is not a request object");
         return -1;
     }
 
@@ -8235,7 +8238,7 @@ ngx_http_qjs_variables_set_property(JSContext *cx, JSValueConst obj,
     JS_FreeCString(cx, (char *) name.data);
 
     if (v == NULL) {
-        (void) JS_ThrowInternalError(cx, "variable not found");
+        (void) JS_ThrowTypeError(cx, "variable not found");
         return -1;
     }
 
@@ -8339,7 +8342,7 @@ ngx_http_qjs_headers_in_own_property_names(JSContext *cx,
 
     r = JS_GetOpaque(obj, NGX_QJS_CLASS_ID_HTTP_HEADERS_IN);
     if (r == NULL) {
-        (void) JS_ThrowInternalError(cx, "\"this\" is not a headers_in object");
+        (void) JS_ThrowTypeError(cx, "\"this\" is not a headers_in object");
         return -1;
     }
 
@@ -8547,7 +8550,7 @@ ngx_http_qjs_headers_in_own_property(JSContext *cx, JSPropertyDescriptor *pdesc,
 
     r = JS_GetOpaque(obj, NGX_QJS_CLASS_ID_HTTP_HEADERS_IN);
     if (r == NULL) {
-        (void) JS_ThrowInternalError(cx, "\"this\" is not a headers_in object");
+        (void) JS_ThrowTypeError(cx, "\"this\" is not a headers_in object");
         return -1;
     }
 
@@ -8587,8 +8590,7 @@ ngx_http_qjs_headers_out_own_property_names(JSContext *cx,
 
     r = JS_GetOpaque(obj, NGX_QJS_CLASS_ID_HTTP_HEADERS_OUT);
     if (r == NULL) {
-        (void) JS_ThrowInternalError(cx, "\"this\" is not a headers_out"
-                                     " object");
+        (void) JS_ThrowTypeError(cx, "\"this\" is not a headers_out object");
         return -1;
     }
 
@@ -8957,8 +8959,8 @@ ngx_http_qjs_headers_out_content_length(JSContext *cx, ngx_http_request_t *r,
             n = ngx_atoi(h->value.data, h->value.len);
             if (n == NGX_ERROR) {
                 h->hash = 0;
-                (void) JS_ThrowInternalError(cx, "failed converting argument "
-                                             "to positive integer");
+                (void) JS_ThrowTypeError(cx, "failed converting argument "
+                                         "to positive integer");
                 return -1;
             }
 
@@ -9193,8 +9195,7 @@ ngx_http_qjs_headers_out_own_property(JSContext *cx,
 
     r = JS_GetOpaque(obj, NGX_QJS_CLASS_ID_HTTP_HEADERS_OUT);
     if (r == NULL) {
-        (void) JS_ThrowInternalError(cx, "\"this\" is not a headers_out"
-                                     " object");
+        (void) JS_ThrowTypeError(cx, "\"this\" is not a headers_out object");
         return -1;
     }
 
@@ -9233,8 +9234,7 @@ ngx_http_qjs_headers_out_define_own_property(JSContext *cx,
 
     r = JS_GetOpaque(obj, NGX_QJS_CLASS_ID_HTTP_HEADERS_OUT);
     if (r == NULL) {
-        (void) JS_ThrowInternalError(cx, "\"this\" is not a headers_out"
-                                     " object");
+        (void) JS_ThrowTypeError(cx, "\"this\" is not a headers_out object");
         return -1;
     }
 
@@ -9273,8 +9273,7 @@ ngx_http_qjs_headers_out_delete_property(JSContext *cx,
 
     r = JS_GetOpaque(obj, NGX_QJS_CLASS_ID_HTTP_HEADERS_OUT);
     if (r == NULL) {
-        (void) JS_ThrowInternalError(cx, "\"this\" is not a headers_out"
-                                     " object");
+        (void) JS_ThrowTypeError(cx, "\"this\" is not a headers_out object");
         return -1;
     }
 
