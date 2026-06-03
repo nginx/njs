@@ -1951,6 +1951,8 @@ ngx_stream_js_session_variables(njs_vm_t *vm, njs_object_prop_t *prop,
 
     vv->data = ngx_pnalloc(s->connection->pool, val.length);
     if (vv->data == NULL) {
+        vv->valid = 0;
+        njs_vm_memory_error(vm);
         return NJS_ERROR;
     }
 
