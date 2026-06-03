@@ -558,12 +558,15 @@ ngx_qjs_request_ctor(JSContext *cx, ngx_js_request_t *request,
     if (JS_IsString(input)) {
         rc = ngx_qjs_string(cx, pool, input, &request->url);
         if (rc != NGX_OK) {
-            JS_ThrowInternalError(cx, "failed to convert url arg");
+            if (!JS_HasException(cx)) {
+                JS_ThrowOutOfMemory(cx);
+            }
+
             return NGX_ERROR;
         }
 
     } else {
-        orig = JS_GetOpaque2(cx, input, NGX_QJS_CLASS_ID_FETCH_REQUEST);
+        orig = JS_GetOpaque(input, NGX_QJS_CLASS_ID_FETCH_REQUEST);
         if (orig == NULL) {
             JS_ThrowInternalError(cx,
                                   "input is not string or a Request object");
@@ -632,7 +635,10 @@ ngx_qjs_request_ctor(JSContext *cx, ngx_js_request_t *request,
             JS_FreeValue(cx, value);
 
             if (rc != NGX_OK) {
-                JS_ThrowInternalError(cx, "invalid Request method");
+                if (!JS_HasException(cx)) {
+                    JS_ThrowOutOfMemory(cx);
+                }
+
                 return NGX_ERROR;
             }
         }
@@ -673,6 +679,7 @@ ngx_qjs_request_ctor(JSContext *cx, ngx_js_request_t *request,
 
         if (!JS_IsUndefined(value)) {
             if (!JS_IsObject(value)) {
+                JS_FreeValue(cx, value);
                 JS_ThrowInternalError(cx, "Headers is not an object");
                 return NGX_ERROR;
             }
@@ -710,7 +717,10 @@ ngx_qjs_request_ctor(JSContext *cx, ngx_js_request_t *request,
         if (!JS_IsUndefined(value)) {
             if (ngx_qjs_string(cx, pool, value, &request->body) != NGX_OK) {
                 JS_FreeValue(cx, value);
-                JS_ThrowInternalError(cx, "invalid Request body");
+                if (!JS_HasException(cx)) {
+                    JS_ThrowOutOfMemory(cx);
+                }
+
                 return NGX_ERROR;
             }
 
@@ -806,6 +816,10 @@ ngx_qjs_fetch_response_ctor(JSContext *cx, JSValueConst new_target, int argc,
             JS_FreeValue(cx, value);
 
             if (ret < 0) {
+                if (!JS_HasException(cx)) {
+                    JS_ThrowOutOfMemory(cx);
+                }
+
                 return JS_EXCEPTION;
             }
 
@@ -1033,12 +1047,20 @@ ngx_qjs_headers_fill_header_free(JSContext *cx, ngx_js_headers_t *headers,
     pool = ngx_qjs_external_pool(cx, JS_GetContextOpaque(cx));
 
     if (ngx_qjs_string(cx, pool, prop_name, &name) != NGX_OK) {
+        if (!JS_HasException(cx)) {
+            JS_ThrowOutOfMemory(cx);
+        }
+
         JS_FreeValue(cx, prop_name);
         JS_FreeValue(cx, prop_value);
         return NGX_ERROR;
     }
 
     if (ngx_qjs_string(cx, pool, prop_value, &value) != NGX_OK) {
+        if (!JS_HasException(cx)) {
+            JS_ThrowOutOfMemory(cx);
+        }
+
         JS_FreeValue(cx, prop_name);
         JS_FreeValue(cx, prop_value);
         return NGX_ERROR;
@@ -1063,7 +1085,7 @@ ngx_qjs_headers_fill(JSContext *cx, ngx_js_headers_t *headers, JSValue init)
     JSPropertyEnum    *tab;
     ngx_js_headers_t  *hh;
 
-    hh = JS_GetOpaque2(cx, init, NGX_QJS_CLASS_ID_FETCH_HEADERS);
+    hh = JS_GetOpaque(init, NGX_QJS_CLASS_ID_FETCH_HEADERS);
     if (hh != NULL) {
         return ngx_qjs_headers_inherit(cx, headers, hh);
     }
