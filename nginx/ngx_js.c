@@ -1896,7 +1896,7 @@ ngx_qjs_ext_log(JSContext *cx, JSValueConst this_val, int argc,
 
     p = JS_GetContextOpaque(cx);
     if (p == NULL) {
-        return JS_ThrowInternalError(cx, "external is not set");
+        return JS_ThrowTypeError(cx, "external is not set");
     }
 
     level = magic & NGX_JS_LOG_MASK;
@@ -2466,7 +2466,7 @@ ngx_js_integer(njs_vm_t *vm, njs_value_t *value, ngx_int_t *n)
     double  num;
 
     if (!njs_value_is_valid_number(value)) {
-        njs_vm_error(vm, "is not a number");
+        njs_vm_type_error(vm, "invalid number");
         return NGX_ERROR;
     }
 
@@ -2828,7 +2828,7 @@ ngx_js_ext_log(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     p = njs_vm_external(vm, NJS_PROTO_ID_ANY, njs_argument(args, 0));
     if (p == NULL) {
-        njs_vm_error(vm, "\"this\" is not an external");
+        njs_vm_type_error(vm, "external is not set");
         return NJS_ERROR;
     }
 
