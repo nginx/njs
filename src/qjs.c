@@ -742,7 +742,7 @@ qjs_text_decoder_decode(JSContext *cx, JSValueConst this_val, int argc,
 
     td = JS_GetOpaque(this_val, QJS_CORE_CLASS_ID_TEXT_DECODER);
     if (td == NULL) {
-        return JS_ThrowInternalError(cx, "'this' is not a TextDecoder");
+        return JS_ThrowTypeError(cx, "'this' is not a TextDecoder");
     }
 
     ret = qjs_typed_array_data(cx, argv[0], &data);
@@ -802,7 +802,7 @@ qjs_text_decoder_encoding(JSContext *ctx, JSValueConst this_val)
 
     td = JS_GetOpaque(this_val, QJS_CORE_CLASS_ID_TEXT_DECODER);
     if (td == NULL) {
-        return JS_ThrowInternalError(ctx, "'this' is not a TextDecoder");
+        return JS_ThrowTypeError(ctx, "'this' is not a TextDecoder");
     }
 
     switch (td->encoding) {
@@ -821,7 +821,7 @@ qjs_text_decoder_fatal(JSContext *ctx, JSValueConst this_val)
 
     td = JS_GetOpaque(this_val, QJS_CORE_CLASS_ID_TEXT_DECODER);
     if (td == NULL) {
-        return JS_ThrowInternalError(ctx, "'this' is not a TextDecoder");
+        return JS_ThrowTypeError(ctx, "'this' is not a TextDecoder");
     }
 
     return JS_NewBool(ctx, td->fatal);
@@ -835,7 +835,7 @@ qjs_text_decoder_ignore_bom(JSContext *ctx, JSValueConst this_val)
 
     td = JS_GetOpaque(this_val, QJS_CORE_CLASS_ID_TEXT_DECODER);
     if (td == NULL) {
-        return JS_ThrowInternalError(ctx, "'this' is not a TextDecoder");
+        return JS_ThrowTypeError(ctx, "'this' is not a TextDecoder");
     }
 
     return JS_NewBool(ctx, td->ignore_bom);
@@ -915,7 +915,7 @@ qjs_text_encoder_encode(JSContext *cx, JSValueConst this_val, int argc,
 
     te = JS_GetOpaque(this_val, QJS_CORE_CLASS_ID_TEXT_ENCODER);
     if (te == NULL) {
-        return JS_ThrowInternalError(cx, "'this' is not a TextEncoder");
+        return JS_ThrowTypeError(cx, "'this' is not a TextEncoder");
     }
 
     if (!JS_IsString(argv[0])) {
@@ -986,7 +986,7 @@ qjs_text_encoder_encode_into(JSContext *cx, JSValueConst this_val, int argc,
 
     te = JS_GetOpaque(this_val, QJS_CORE_CLASS_ID_TEXT_ENCODER);
     if (te == NULL) {
-        return JS_ThrowInternalError(cx, "'this' is not a TextEncoder");
+        return JS_ThrowTypeError(cx, "'this' is not a TextEncoder");
     }
 
     if (!JS_IsString(argv[0])) {

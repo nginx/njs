@@ -1939,7 +1939,7 @@ ngx_qjs_ext_console_time(JSContext *cx, JSValueConst this_val, int argc,
 
     console = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_CONSOLE);
     if (console == NULL) {
-        return JS_ThrowInternalError(cx, "this is not a console object");
+        return JS_ThrowTypeError(cx, "this is not a console object");
     }
 
     if (console == (void *) 1) {
@@ -2026,7 +2026,7 @@ ngx_qjs_ext_console_time_end(JSContext *cx, JSValueConst this_val, int argc,
 
     console = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_CONSOLE);
     if (console == NULL) {
-        return JS_ThrowInternalError(cx, "this is not a console object");
+        return JS_ThrowTypeError(cx, "this is not a console object");
     }
 
     if (!JS_IsUndefined(argv[0])) {
