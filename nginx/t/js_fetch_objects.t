@@ -239,6 +239,21 @@ $t->write_file('test.js', <<EOF);
                 h.forEach((v, k) => { r.push(`\${v}:\${k}`)})
                 return r.join('|');
              }, 'a:0, 4|c:2|q:5|z:3'],
+            ['receiver', () => {
+                try {
+                    (new Headers()).append.call({}, 'a', 'b');
+                    throw new Error('no error');
+
+                } catch (e) {
+                    if (!(e instanceof TypeError)
+                        || e.message != '"this" is not fetch headers object')
+                    {
+                        throw e;
+                    }
+                }
+
+                return 'OK';
+             }, 'OK'],
             ['set', () => {
                 var h = new Headers([['A', 'x'], ['a', 'y'], ['a', 'z']]);
                 h.set('a', '#');
@@ -376,7 +391,9 @@ $t->write_file('test.js', <<EOF);
                         throw new Error('no error');
 
                     } catch (e) {
-                        if (!e.message.startsWith(`forbidden method: \${m}`)) {
+                        if (!(e instanceof TypeError)
+                            || !e.message.startsWith(`forbidden method: \${m}`))
+                        {
                             throw e;
                         }
                     }
@@ -388,7 +405,9 @@ $t->write_file('test.js', <<EOF);
                         throw new Error('no error');
 
                     } catch (e) {
-                        if (e.message != 'invalid Request method') {
+                        if (!(e instanceof TypeError)
+                            || e.message != 'invalid Request method')
+                        {
                             throw e;
                         }
                     }
@@ -542,6 +561,22 @@ $t->write_file('test.js', <<EOF);
 
                 } catch (e) {
                     if (!e.message.startsWith('invalid Response statusText')) {
+                        throw e;
+                    }
+                }
+
+                return 'OK';
+
+             }, 'OK'],
+            ['status range', () => {
+                try {
+                    new Response(null, {status: 199});
+                    throw new Error('no error');
+
+                } catch (e) {
+                    if (!(e instanceof RangeError)
+                        || !e.message.startsWith('status provided (199) is'))
+                    {
                         throw e;
                     }
                 }

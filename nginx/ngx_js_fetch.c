@@ -540,7 +540,7 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (u.host.len >= NGX_JS_HOST_MAX_LEN) {
-        njs_vm_error(vm, "Host name too long");
+        njs_vm_type_error(vm, "Host name too long");
         goto fail;
     }
 
@@ -608,7 +608,7 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                                            &http->proxy.url, &http->proxy.auth)
                 != NGX_OK)
             {
-                njs_vm_error(vm, "failed to evaluate proxy URL");
+                njs_vm_internal_error(vm, "failed to evaluate proxy URL");
                 goto fail;
             }
 
@@ -628,7 +628,7 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (ngx_js_check_request_line_component(u.uri.data, u.uri.len) != NGX_OK) {
-        njs_vm_error(vm, "invalid url");
+        njs_vm_type_error(vm, "invalid url");
         goto fail;
     }
 
@@ -649,7 +649,7 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
 
         if (ctx == NGX_NO_RESOLVER) {
-            njs_vm_error(vm, "no resolver defined");
+            njs_vm_internal_error(vm, "no resolver defined");
             goto fail;
         }
 
@@ -801,13 +801,12 @@ ngx_js_ext_response_constructor(njs_vm_t *vm, njs_value_t *args,
         value = njs_vm_object_prop(vm, init, &status, &lvalue);
         if (value != NULL) {
             if (ngx_js_integer(vm, value, &response->code) != NGX_OK) {
-                njs_vm_error(vm, "invalid Response status");
                 return NJS_ERROR;
             }
 
             if (response->code < 200 || response->code > 599) {
-                njs_vm_error(vm, "status provided (%i) is outside of "
-                             "[200, 599] range", response->code);
+                njs_vm_range_error(vm, "status provided (%i) is outside of "
+                                   "[200, 599] range", response->code);
                 return NJS_ERROR;
             }
         }
@@ -815,7 +814,6 @@ ngx_js_ext_response_constructor(njs_vm_t *vm, njs_value_t *args,
         value = njs_vm_object_prop(vm, init, &status_text, &lvalue);
         if (value != NULL) {
             if (ngx_js_ngx_string(vm, value, &response->status_text) != NGX_OK) {
-                njs_vm_error(vm, "invalid Response statusText");
                 return NJS_ERROR;
             }
 
@@ -824,7 +822,7 @@ ngx_js_ext_response_constructor(njs_vm_t *vm, njs_value_t *args,
 
             while (p < end) {
                 if (*p != '\t' && *p < ' ') {
-                    njs_vm_error(vm, "invalid Response statusText");
+                    njs_vm_type_error(vm, "invalid Response statusText");
                     return NJS_ERROR;
                 }
 
@@ -835,7 +833,7 @@ ngx_js_ext_response_constructor(njs_vm_t *vm, njs_value_t *args,
         value = njs_vm_object_prop(vm, init, &headers, &lvalue);
         if (value != NULL) {
             if (!njs_value_is_object(value)) {
-                njs_vm_error(vm, "Headers is not an object");
+                njs_vm_type_error(vm, "Headers is not an object");
                 return NJS_ERROR;
             }
 
@@ -852,7 +850,6 @@ ngx_js_ext_response_constructor(njs_vm_t *vm, njs_value_t *args,
 
     if (!njs_value_is_null_or_undefined(body)) {
         if (ngx_js_string(vm, body, &bd) != NGX_OK) {
-            njs_vm_error(vm, "invalid Response body");
             return NJS_ERROR;
         }
 
@@ -908,13 +905,13 @@ ngx_js_method_process(njs_vm_t *vm, ngx_js_request_t *request)
                                                request->method.len)
            != NGX_OK)
     {
-        njs_vm_error(vm, "invalid Request method");
+        njs_vm_type_error(vm, "invalid Request method");
         return NJS_ERROR;
     }
 
     for (m = &forbidden[0]; m->length != 0; m++) {
         if (njs_strstr_case_eq(&str, m)) {
-            njs_vm_error(vm, "forbidden method: %V", m);
+            njs_vm_type_error(vm, "forbidden method: %V", m);
             return NJS_ERROR;
         }
     }
@@ -1012,7 +1009,8 @@ ngx_js_headers_fill(njs_vm_t *vm, ngx_js_headers_t *headers, njs_value_t *init)
             start++;
 
             if (len != 2) {
-                njs_vm_error(vm, "header does not contain exactly two items");
+                njs_vm_type_error(vm,
+                                  "header does not contain exactly two items");
                 return NJS_ERROR;
             }
 
@@ -1143,7 +1141,7 @@ ngx_js_fetch_alloc(njs_vm_t *vm, ngx_pool_t *pool, ngx_log_t *log,
 
 failed:
 
-    njs_vm_error(vm, "internal error");
+    njs_vm_internal_error(vm, "internal error");
 
     return NULL;
 }
@@ -1220,7 +1218,7 @@ ngx_js_fetch_promissified_result(njs_vm_t *vm, njs_value_t *result,
 
 error:
 
-    njs_vm_error(vm, "internal error");
+    njs_vm_internal_error(vm, "internal error");
 
     return NJS_ERROR;
 }
@@ -1299,7 +1297,7 @@ ngx_js_request_constructor(njs_vm_t *vm, ngx_js_request_t *request,
 
     input = njs_arg(args, nargs, 1);
     if (njs_value_is_undefined(input)) {
-        njs_vm_error(vm, "1st argument is required");
+        njs_vm_type_error(vm, "1st argument is required");
         return NJS_ERROR;
     }
 
@@ -1334,14 +1332,13 @@ ngx_js_request_constructor(njs_vm_t *vm, ngx_js_request_t *request,
     if (njs_value_is_string(input)) {
         ret = ngx_js_ngx_string(vm, input, &request->url);
         if (ret != NJS_OK) {
-            njs_vm_error(vm, "failed to convert url arg");
             return NJS_ERROR;
         }
 
     } else {
         orig = njs_vm_external(vm, ngx_http_js_fetch_request_proto_id, input);
         if (orig == NULL) {
-            njs_vm_error(vm, "input is not string or a Request object");
+            njs_vm_type_error(vm, "input is not string or a Request object");
             return NJS_ERROR;
         }
 
@@ -1385,13 +1382,13 @@ ngx_js_request_constructor(njs_vm_t *vm, ngx_js_request_t *request,
 #endif
 
     } else {
-        njs_vm_error(vm, "unsupported URL schema (only http or https are"
-                     " supported)");
+        njs_vm_type_error(vm, "unsupported URL schema (only http or https are"
+                          " supported)");
         return NJS_ERROR;
     }
 
     if (ngx_parse_url(pool, u) != NGX_OK) {
-        njs_vm_error(vm, "invalid url");
+        njs_vm_type_error(vm, "invalid url");
         return NJS_ERROR;
     }
 
@@ -1402,7 +1399,6 @@ ngx_js_request_constructor(njs_vm_t *vm, ngx_js_request_t *request,
         if (value != NULL && ngx_js_ngx_string(vm, value, &request->method)
             != NGX_OK)
         {
-            njs_vm_error(vm, "invalid Request method");
             return NJS_ERROR;
         }
 
@@ -1446,7 +1442,7 @@ ngx_js_request_constructor(njs_vm_t *vm, ngx_js_request_t *request,
         headers = njs_vm_object_prop(vm, init, &headers_key, &lvalue);
         if (headers != NULL) {
             if (!njs_value_is_object(headers)) {
-                njs_vm_error(vm, "Headers is not an object");
+                njs_vm_type_error(vm, "Headers is not an object");
                 return NJS_ERROR;
             }
 
@@ -1474,7 +1470,6 @@ ngx_js_request_constructor(njs_vm_t *vm, ngx_js_request_t *request,
         value = njs_vm_object_prop(vm, init, &body_key, &lvalue);
         if (value != NULL) {
             if (ngx_js_ngx_string(vm, value, &request->body) != NGX_OK) {
-                njs_vm_error(vm, "invalid Request body");
                 return NJS_ERROR;
             }
 
@@ -1543,18 +1538,18 @@ ngx_js_headers_append(njs_vm_t *vm, ngx_js_headers_t *headers,
 
     ret = ngx_js_check_header_name(name, len);
     if (ret != NGX_OK) {
-        njs_vm_error(vm, "invalid header name");
+        njs_vm_type_error(vm, "invalid header name");
         return NJS_ERROR;
     }
 
     ret = ngx_js_check_header_value(value, vlen);
     if (ret != NGX_OK) {
-        njs_vm_error(vm, "invalid header value");
+        njs_vm_type_error(vm, "invalid header value");
         return NJS_ERROR;
     }
 
     if (headers->guard == GUARD_IMMUTABLE) {
-        njs_vm_error(vm, "cannot append to immutable object");
+        njs_vm_type_error(vm, "cannot append to immutable object");
         return NJS_ERROR;
     }
 
@@ -1724,7 +1719,7 @@ ngx_headers_js_ext_append(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     headers = njs_vm_external(vm, ngx_http_js_fetch_headers_proto_id,
                               njs_argument(args, 0));
     if (headers == NULL) {
-        njs_vm_error(vm, "\"this\" is not fetch headers object");
+        njs_vm_type_error(vm, "\"this\" is not fetch headers object");
         return NJS_ERROR;
     }
 
@@ -1764,7 +1759,7 @@ ngx_headers_js_ext_delete(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     headers = njs_vm_external(vm, ngx_http_js_fetch_headers_proto_id,
                               njs_argument(args, 0));
     if (headers == NULL) {
-        njs_vm_error(vm, "\"this\" is not fetch headers object");
+        njs_vm_type_error(vm, "\"this\" is not fetch headers object");
         return NJS_ERROR;
     }
 
@@ -1827,14 +1822,14 @@ ngx_headers_js_ext_for_each(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     headers = njs_vm_external(vm, ngx_http_js_fetch_headers_proto_id, this);
     if (headers == NULL) {
-        njs_vm_error(vm, "\"this\" is not fetch headers object");
+        njs_vm_type_error(vm, "\"this\" is not fetch headers object");
         return NJS_ERROR;
     }
 
     callback = njs_arg(args, nargs, 1);
 
     if (!njs_value_is_function(callback)) {
-        njs_vm_error(vm, "\"callback\" is not a function");
+        njs_vm_type_error(vm, "\"callback\" is not a function");
         return NJS_ERROR;
     }
 
@@ -2064,7 +2059,7 @@ ngx_headers_js_ext_set(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     headers = njs_vm_external(vm, ngx_http_js_fetch_headers_proto_id,
                               njs_argument(args, 0));
     if (headers == NULL) {
-        njs_vm_error(vm, "\"this\" is not fetch headers object");
+        njs_vm_type_error(vm, "\"this\" is not fetch headers object");
         return NJS_ERROR;
     }
 
@@ -2145,7 +2140,7 @@ ngx_request_js_ext_body(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (request->body_used) {
-        njs_vm_error(vm, "body stream already read");
+        njs_vm_type_error(vm, "body stream already read");
         return NJS_ERROR;
     }
 
@@ -2258,7 +2253,7 @@ ngx_request_js_ext_headers(njs_vm_t *vm, njs_object_prop_t *prop,
                                      ngx_http_js_fetch_headers_proto_id,
                                      &request->headers, 0);
         if (ret != NJS_OK) {
-            njs_vm_error(vm, "fetch header creation failed");
+            njs_vm_memory_error(vm);
             return NJS_ERROR;
         }
     }
@@ -2303,7 +2298,7 @@ ngx_response_js_ext_body(njs_vm_t *vm, njs_value_t *args,
     }
 
     if (response->body_used) {
-        njs_vm_error(vm, "body stream already read");
+        njs_vm_type_error(vm, "body stream already read");
         return NJS_ERROR;
     }
 
@@ -2385,7 +2380,7 @@ ngx_response_js_ext_headers(njs_vm_t *vm, njs_object_prop_t *prop,
                                      ngx_http_js_fetch_headers_proto_id,
                                      &response->headers, 0);
         if (ret != NJS_OK) {
-            njs_vm_error(vm, "fetch header creation failed");
+            njs_vm_memory_error(vm);
             return NJS_ERROR;
         }
     }
@@ -2509,7 +2504,7 @@ ngx_fetch_flag_set(njs_vm_t *vm, const ngx_js_entry_t *entries,
         }
     }
 
-    njs_vm_error(vm, "unknown %s type: %V", type, &flag);
+    njs_vm_type_error(vm, "unknown %s type: %V", type, &flag);
 
     return NJS_ERROR;
 }
