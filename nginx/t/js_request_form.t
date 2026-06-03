@@ -208,7 +208,7 @@ $t->write_file('test.js', <<'EOF');
             r.return(200, 'no_error');
 
         } catch (e) {
-            r.return(500, e.message);
+            r.return(500, `${e.constructor.name}:${e.message}`);
         }
     }
 
@@ -375,19 +375,19 @@ unlike(http_post_form('/content_form', $fake_boundary),
     'fake multipart boundary does not restart header parsing');
 
 like(http_post_form('/content_form_error', urlencoded_form('a=%')),
-    qr/500.*malformed percent escape/s,
+    qr/500.*TypeError:malformed percent escape/s,
     'urlencoded bare % at end is rejected');
 
 like(http_post_form('/content_form_error', urlencoded_form('a=%4')),
-    qr/500.*malformed percent escape/s,
+    qr/500.*TypeError:malformed percent escape/s,
     'urlencoded %X with missing second digit is rejected');
 
 like(http_post_form('/content_form_error', urlencoded_form('a=%gg')),
-    qr/500.*malformed percent escape/s,
+    qr/500.*TypeError:malformed percent escape/s,
     'urlencoded non-hex percent escape is rejected');
 
 like(http_post_form('/content_form_error', urlencoded_form('%Z=1')),
-    qr/500.*malformed percent escape/s,
+    qr/500.*TypeError:malformed percent escape/s,
     'urlencoded malformed percent escape in name is rejected');
 
 like(http_post_form('/content_form_error', ['text/plain', 'a=1']),
@@ -404,7 +404,7 @@ like(http_post_raw('/content_form_error', 'a=1'),
 
 like(http_post_form('/content_form_error',
     ['application/x-www-form-urlencoded; =x', 'a=1']),
-    qr/500.*malformed parameter/s,
+    qr/500.*TypeError:malformed parameter/s,
     'malformed content type parameter is rejected');
 
 like(http_post_form('/content_form_error', ['multipart/form-data', 'a=1']),
@@ -413,39 +413,39 @@ like(http_post_form('/content_form_error', ['multipart/form-data', 'a=1']),
 
 like(http_post_form('/content_form_error',
     ['multipart/form-data; boundary=""', '']),
-    qr/500.*(invalid multipart boundary|empty parameter value)/s,
+    qr/500.*TypeError:(invalid multipart boundary|empty parameter value)/s,
     'empty quoted multipart boundary is rejected');
 
 like(http_post_form('/content_form_error',
     ["multipart/form-data; boundary=" . 'x' x 201, '']),
-    qr/500.*invalid multipart boundary/s,
+    qr/500.*TypeError:invalid multipart boundary/s,
     'multipart boundary over 200 bytes is rejected');
 
 like(http_post_form('/content_form_error',
     ['multipart/form-data; boundary=X; boundary=Y', '--X--']),
-    qr/500.*duplicate boundary parameter/s,
+    qr/500.*TypeError:duplicate boundary parameter/s,
     'duplicate multipart boundary parameter is rejected');
 
 like(http_post_form('/content_form_error',
     ['multipart/form-data; boundary=X junk', '--X--']),
-    qr/500.*(malformed content type|malformed parameter)/s,
+    qr/500.*TypeError:(malformed content type|malformed parameter)/s,
     'malformed trailing content type parameter data is rejected');
 
 like(http_post_form('/content_form_error',
     ['multipart/form-data; boundary=XXX', '--XXXjunk']),
-    qr/500.*malformed multipart boundary/s,
+    qr/500.*TypeError:malformed multipart boundary/s,
     'multipart opening delimiter without CRLF is rejected');
 
 like(http_post_form('/content_form_error',
     ['multipart/form-data; boundary=XXX', '-']),
-    qr/500.*malformed multipart body/s,
+    qr/500.*TypeError:malformed multipart body/s,
     'short multipart body without boundary marker is rejected');
 
 like(http_post_form('/content_form_error',
     ['multipart/form-data; boundary=X',
      '--X' . CRLF
      . 'Content-Disposition: form-data; name="a"']),
-    qr/500.*missing multipart header separator/s,
+    qr/500.*TypeError:missing multipart header separator/s,
     'multipart part without header separator is rejected');
 
 like(http_post_form('/content_form_error',
@@ -454,7 +454,7 @@ like(http_post_form('/content_form_error',
      . 'X-Large: ' . ('a' x 17000) . CRLF . CRLF
      . 'data' . CRLF
      . '--X--']),
-    qr/500.*multipart headers are too large/s,
+    qr/500.*TypeError:multipart headers are too large/s,
     'multipart header block size limit is enforced');
 
 like(http_post_form('/content_form_error',
@@ -464,7 +464,7 @@ like(http_post_form('/content_form_error',
      . 'Content-Disposition: form-data; name="a"' . CRLF . CRLF
      . 'data' . CRLF
      . '--X--']),
-    qr/500.*multipart header line is too long/s,
+    qr/500.*TypeError:multipart header line is too long/s,
     'multipart header line size limit is enforced');
 
 my $many_headers = join('', map { "X-$_: v" . CRLF } 1 .. 33);
@@ -476,7 +476,7 @@ like(http_post_form('/content_form_error',
      . 'Content-Disposition: form-data; name="a"' . CRLF . CRLF
      . 'data' . CRLF
      . '--X--']),
-    qr/500.*too many multipart headers/s,
+    qr/500.*TypeError:too many multipart headers/s,
     'multipart header count limit is enforced');
 
 like(http_post_form('/content_form_error',
@@ -485,7 +485,7 @@ like(http_post_form('/content_form_error',
      . 'X-Other: foo' . CRLF . CRLF
      . 'data' . CRLF
      . '--X--']),
-    qr/500.*missing Content-Disposition header/s,
+    qr/500.*TypeError:missing Content-Disposition header/s,
     'multipart part without Content-Disposition is rejected');
 
 like(http_post_form('/content_form_error',
@@ -495,7 +495,7 @@ like(http_post_form('/content_form_error',
      . 'Content-Disposition: form-data; name="b"' . CRLF . CRLF
      . 'data' . CRLF
      . '--X--']),
-    qr/500.*duplicate Content-Disposition header/s,
+    qr/500.*TypeError:duplicate Content-Disposition header/s,
     'duplicate multipart Content-Disposition header is rejected');
 
 like(http_post_form('/content_form_error',
@@ -504,7 +504,7 @@ like(http_post_form('/content_form_error',
      . 'Content-Disposition: attachment; name="a"' . CRLF . CRLF
      . 'data' . CRLF
      . '--X--']),
-    qr/500.*unsupported disposition type/s,
+    qr/500.*TypeError:unsupported disposition type/s,
     'unsupported multipart disposition type is rejected');
 
 like(http_post_form('/content_form_error',
@@ -513,7 +513,7 @@ like(http_post_form('/content_form_error',
      . 'Content-Disposition: form-data' . CRLF . CRLF
      . 'data' . CRLF
      . '--X--']),
-    qr/500.*multipart field name is required/s,
+    qr/500.*TypeError:multipart field name is required/s,
     'multipart Content-Disposition without name is rejected');
 
 like(http_post_form('/content_form_error',
@@ -523,7 +523,7 @@ like(http_post_form('/content_form_error',
      . CRLF . CRLF
      . 'data' . CRLF
      . '--X--']),
-    qr/500.*malformed Content-Disposition/s,
+    qr/500.*TypeError:malformed Content-Disposition/s,
     'multipart Content-Disposition trailing data is rejected');
 
 like(http_post_form('/content_form_error',
@@ -533,7 +533,7 @@ like(http_post_form('/content_form_error',
      . CRLF . CRLF
      . 'data' . CRLF
      . '--X--']),
-    qr/500.*duplicate name parameter/s,
+    qr/500.*TypeError:duplicate name parameter/s,
     'duplicate multipart name parameter is rejected');
 
 like(http_post_form('/content_form_error',
@@ -543,7 +543,7 @@ like(http_post_form('/content_form_error',
      . 'filename="y"' . CRLF . CRLF
      . 'data' . CRLF
      . '--X--']),
-    qr/500.*duplicate filename parameter/s,
+    qr/500.*TypeError:duplicate filename parameter/s,
     'duplicate multipart filename parameter is rejected');
 
 like(http_post_form('/content_form_error',
@@ -552,7 +552,7 @@ like(http_post_form('/content_form_error',
      . 'Content-Disposition: form-data; name' . CRLF . CRLF
      . 'data' . CRLF
      . '--X--']),
-    qr/500.*malformed parameter/s,
+    qr/500.*TypeError:malformed parameter/s,
     'multipart parameter without equals is rejected');
 
 like(http_post_form('/content_form_error',
@@ -561,7 +561,7 @@ like(http_post_form('/content_form_error',
      . 'Content-Disposition: form-data; name=' . CRLF . CRLF
      . 'data' . CRLF
      . '--X--']),
-    qr/500.*empty parameter value/s,
+    qr/500.*TypeError:empty parameter value/s,
     'multipart parameter with empty unquoted value is rejected');
 
 like(http_post_form('/content_form_error',
@@ -571,7 +571,7 @@ like(http_post_form('/content_form_error',
      . CRLF . CRLF
      . 'data' . CRLF
      . '--X--']),
-    qr/500.*unterminated quoted parameter/s,
+    qr/500.*TypeError:unterminated quoted parameter/s,
     'multipart trailing backslash in quoted parameter is rejected');
 
 like(http_post_form('/content_form_error',
@@ -581,7 +581,7 @@ like(http_post_form('/content_form_error',
      . 'Content-Disposition: form-data; name="a"' . CRLF . CRLF
      . 'data' . CRLF
      . '--X--']),
-    qr/500.*malformed multipart header/s,
+    qr/500.*TypeError:malformed multipart header/s,
     'multipart header line without colon is rejected');
 
 like(http_post_form('/content_form_error',
@@ -590,12 +590,12 @@ like(http_post_form('/content_form_error',
      . 'Content-Disposition: form-data; name="a"' . CRLF . CRLF
      . 'data' . CRLF
      . '--Xjunk']),
-    qr/500.*malformed multipart boundary/s,
+    qr/500.*TypeError:malformed multipart boundary/s,
     'malformed multipart boundary after part is rejected');
 
 like(http_post_form('/content_form_error',
     ['multipart/form-data; boundary=XXX', 'no boundary here at all']),
-    qr/500.*malformed multipart body/s,
+    qr/500.*TypeError:malformed multipart body/s,
     'multipart body without boundary marker is rejected');
 
 like(http_post_form('/content_form_error',
@@ -603,11 +603,11 @@ like(http_post_form('/content_form_error',
      '--X' . CRLF
      . 'Content-Disposition: form-data; name="a"' . CRLF . CRLF
      . 'value with no terminating boundary']),
-    qr/500.*truncated multipart body/s,
+    qr/500.*TypeError:truncated multipart body/s,
     'multipart body without closing boundary is rejected');
 
 like(http_post_form('/content_form_limit', urlencoded_form('a=1&b=2')),
-    qr/500.*maxKeys limit exceeded/s, 'maxKeys limit breach rejects');
+    qr/500.*TypeError:maxKeys limit exceeded/s, 'maxKeys limit breach rejects');
 
 like(http_post_form('/content_form_limit', urlencoded_form('&a=1&&')),
     qr/200.*no_error/s, 'urlencoded empty fields do not count for maxKeys');
@@ -615,7 +615,7 @@ like(http_post_form('/content_form_limit', urlencoded_form('&a=1&&')),
 like(http_post_form('/content_form_limit',
     multipart_form({ name => 'a', value => '1' },
                    { name => 'b', value => '2' })),
-    qr/500.*maxKeys limit exceeded/s,
+    qr/500.*TypeError:maxKeys limit exceeded/s,
     'multipart maxKeys limit breach rejects');
 
 ###############################################################################

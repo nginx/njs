@@ -219,7 +219,7 @@ $t->write_file('test.js', <<EOF);
             r.variables.foo = 'no_error';
 
         } catch (e) {
-            r.variables.foo = e.message;
+            r.variables.foo = e.constructor.name + ':' + e.message;
         }
     }
 
@@ -280,7 +280,7 @@ like(http_post('/buffer_twice'), qr/var:same/,
 like(http_post('/text_then_buffer'), qr/var:same/,
 	'readRequestText then readRequestArrayBuffer same content');
 like(http_post('/concurrent_text_buffer'),
-	qr/var:request body is already being read/,
+	qr/var:TypeError:request body is already being read/,
 	'concurrent body read throws error');
 
 like(http_post_big('/big'), qr/var:10240/,
