@@ -2755,8 +2755,8 @@ njs_sort_indexed_properties(njs_vm_t *vm, njs_value_t *obj, int64_t length,
 {
     int64_t                i, ilength, nlen;
     njs_int_t              ret;
-    njs_array_t            *array, *keys;
-    njs_value_t            *start, *strings, key;
+    njs_array_t            *keys;
+    njs_value_t            *strings;
     njs_array_sort_ctx_t   ctx;
     njs_array_sort_slot_t  *p, *end, *slots, *newslots;
 
@@ -2771,9 +2771,6 @@ njs_sort_indexed_properties(njs_vm_t *vm, njs_value_t *obj, int64_t length,
     ctx.exception = 0;
 
     if (njs_fast_path(njs_is_fast_array(obj))) {
-        array = njs_array(obj);
-        start = array->start;
-
         slots = njs_mp_alloc(vm->mem_pool,
                              sizeof(njs_array_sort_slot_t) * length);
         if (njs_slow_path(slots == NULL)) {
@@ -2785,24 +2782,13 @@ njs_sort_indexed_properties(njs_vm_t *vm, njs_value_t *obj, int64_t length,
         p = slots;
 
         for (i = 0; i < length; i++) {
-            if (njs_fast_path(njs_is_valid(&start[i]))) {
-                /* not an empty value at index i. */
-                njs_value_assign(&p->value, &start[i]);
+            ret = njs_value_property_i64(vm, obj, i, &p->value);
+            if (njs_slow_path(ret == NJS_ERROR)) {
+                goto exception;
+            }
 
-            } else {
-                ret = njs_uint32_to_string(vm, &key, i);
-                if (njs_slow_path(ret != NJS_OK)) {
-                    goto exception;
-                }
-
-                ret = njs_value_property_val(vm, obj, &key, &p->value);
-                if (njs_slow_path(ret == NJS_ERROR)) {
-                    goto exception;
-                }
-
-                if (ret == NJS_DECLINED && skip_holes) {
-                    continue;
-                }
+            if (ret == NJS_DECLINED && skip_holes) {
+                continue;
             }
 
             if (njs_slow_path(njs_is_undefined(&p->value))) {
