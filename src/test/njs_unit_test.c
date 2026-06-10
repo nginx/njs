@@ -7970,6 +7970,16 @@ static njs_unit_test_t  njs_test[] =
               "njs.dump([undefined, 3, /*hole*/, 2, undefined, /*hole*/, 1].sort())"),
       njs_str("[1,2,3,4,undefined,undefined,<empty>]") },
 
+    /* A prototype getter for a hole reallocates the array being sorted. */
+
+    { njs_str("Object.defineProperty(Array.prototype, 1, {configurable: true,"
+              "  get() { for (var i = 0; i < 1024; i++) { this.push(i); }"
+              "          return 5; }});"
+              "var a = [3]; a[2] = 7; a.length = 3;"
+              "a.sort(function(x, y) { return x - y; });"
+              "a[0] === 3 && a[1] === 5 && a[2] === 7"),
+      njs_str("true") },
+
     { njs_str("var a = [3,2,1]; [a.toSorted(), a]"),
       njs_str("1,2,3,3,2,1") },
 
