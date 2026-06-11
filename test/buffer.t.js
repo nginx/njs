@@ -896,7 +896,8 @@ let toString_tsuite = {
     name: "Buffer.toString() tests",
     skip: () => (!has_buffer()),
     T: async (params) => {
-        let r = Buffer.from(params.value).toString(params.fmt);
+        let r = Buffer.from(params.value).toString(params.fmt, params.start,
+                                                   params.end);
 
         if (r.length !== params.expected.length) {
             throw Error(`unexpected "${r}" length ${r.length} != ${params.expected.length}`);
@@ -921,6 +922,11 @@ let toString_tsuite = {
         { value: "ABCD", fmt: "base64", expected: 'QUJDRA==' },
         { value: "ABCD", fmt: "base64url", expected: 'QUJDRA' },
         { value: '', fmt: "utf-128", exception: 'TypeError: "utf-128" encoding is not supported' },
+        { value: "hello", fmt: "utf-8", start: 1, end: 4, expected: 'ell' },
+        { value: "hello", fmt: "utf-8", start: 3, end: 3, expected: '' },
+        { value: "hello", fmt: "utf-8", start: 10, end: 5, expected: '' },
+        { value: "hello", fmt: "utf-8", start: 4, end: 2, expected: '' },
+        { value: "hello", fmt: "hex", start: 4, end: 2, expected: '' },
 ]};
 
 

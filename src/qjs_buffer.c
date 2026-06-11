@@ -198,7 +198,7 @@ static const JSCFunctionListEntry qjs_buffer_proto[] = {
     JS_CFUNC_MAGIC_DEF("swap32", 0, qjs_buffer_prototype_swap, 4),
     JS_CFUNC_MAGIC_DEF("swap64", 0, qjs_buffer_prototype_swap, 8),
     JS_CFUNC_DEF("toJSON", 0, qjs_buffer_prototype_to_json),
-    JS_CFUNC_DEF("toString", 1, qjs_buffer_prototype_to_string),
+    JS_CFUNC_DEF("toString", 3, qjs_buffer_prototype_to_string),
     JS_CFUNC_DEF("write", 4, qjs_buffer_prototype_write),
     JS_CFUNC_MAGIC_DEF("writeInt8", 1, qjs_buffer_prototype_write_int,
                        qjs_buffer_magic(1, 1, 1)),
@@ -1419,6 +1419,7 @@ static JSValue
 qjs_buffer_prototype_to_string(JSContext *ctx, JSValueConst this_val,
     int argc, JSValueConst *argv)
 {
+    uint64_t                     start, end;
     JSValue                      ret;
     njs_str_t                    src, data;
     const qjs_buffer_encoding_t  *encoding;
@@ -1427,6 +1428,33 @@ qjs_buffer_prototype_to_string(JSContext *ctx, JSValueConst this_val,
     if (JS_IsException(ret)) {
         return JS_ThrowTypeError(ctx, "method toString() called on incompatible"
                                  " object");
+    }
+
+    start = 0;
+    end = src.length;
+
+    if (!JS_IsUndefined(argv[1])) {
+        if (JS_ToIndex(ctx, &start, argv[1])) {
+            return JS_EXCEPTION;
+        }
+
+        start = njs_min(start, src.length);
+    }
+
+    if (!JS_IsUndefined(argv[2])) {
+        if (JS_ToIndex(ctx, &end, argv[2])) {
+            return JS_EXCEPTION;
+        }
+
+        end = njs_min(end, src.length);
+    }
+
+    if (start >= end) {
+        src.length = 0;
+
+    } else {
+        src.start += start;
+        src.length = end - start;
     }
 
     if (JS_IsUndefined(argv[0]) || src.length == 0) {
