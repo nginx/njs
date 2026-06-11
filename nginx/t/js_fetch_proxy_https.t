@@ -63,6 +63,12 @@ http {
             js_content test.https_fetch;
         }
 
+        location /https_via_proxy_no_auth {
+            js_fetch_proxy http://forward.proxy.net:%%PORT_8084%%;
+            js_fetch_timeout 2s;
+            js_content test.https_fetch;
+        }
+
         location /https_no_proxy {
             js_content test.https_fetch;
         }
@@ -85,6 +91,7 @@ EOF
 
 my $p2 = port(8082);
 my $p3 = port(8083);
+my $p4 = port(8084);
 
 $t->write_file('test.js', <<EOF);
     function engine(r) {
@@ -185,11 +192,13 @@ foreach my $name ('example.com') {
 		. $t->read_file('intermediate.crt'));
 }
 
-$t->try_run('no js_fetch_proxy')->plan(8);
+$t->try_run('no js_fetch_proxy')->plan(9);
 
-$t->run_daemon(\&https_proxy_daemon, $p2);
+$t->run_daemon(\&https_proxy_daemon, $p2, 1);
+$t->run_daemon(\&https_proxy_daemon, $p4, 0);
 $t->run_daemon(\&dns_daemon, port(8981), $t);
 $t->waitforsocket('127.0.0.1:' . $p2);
+$t->waitforsocket('127.0.0.1:' . $p4);
 $t->waitforfile($t->testdir . '/' . port(8981));
 
 ###############################################################################
@@ -203,6 +212,9 @@ $resp = http_post('/https_via_proxy?domain=example.com');
 like($resp, qr/METHOD: POST/, 'https through proxy received POST method');
 like($resp, qr/BODY: REQ-BODY/, 'https through proxy received request body');
 
+like(http_get('/https_via_proxy_no_auth?domain=example.com'), qr/ORIGIN/,
+	'https through proxy without auth');
+
 like(http_get('/https_no_proxy?domain=example.com'), qr/ORIGIN/,
 	'https without proxy');
 
@@ -214,7 +226,7 @@ like(http_get('/https_via_broken_proxy?domain=example.com'),
 ###############################################################################
 
 sub https_proxy_daemon {
-	my ($port) = @_;
+	my ($port, $auth) = @_;
 
 	my $server = IO::Socket::INET->new(
 		Proto     => 'tcp',
@@ -311,9 +323,11 @@ sub https_proxy_daemon {
 						}
 					}
 
-					if (uc($method) eq 'CONNECT'
-						&& $proxy_auth =~ /^Basic\s+dXNlcjpwYXNz$/i)
-					{
+					my $auth_ok = $auth
+						? $proxy_auth =~ /^Basic\s+dXNlcjpwYXNz$/i
+						: $proxy_auth eq '';
+
+					if (uc($method) eq 'CONNECT' && $auth_ok) {
 						print $sock "HTTP/1.1 200 established" . CRLF . CRLF;
 
 						my ($host, $port) = split(/:/, $target);
