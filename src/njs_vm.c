@@ -1182,7 +1182,7 @@ njs_vm_value_enumerate(njs_vm_t *vm, njs_value_t *value, uint32_t flags,
         }
 
         val = njs_array_push(vm, keys);
-        if (njs_slow_path(value == NULL)) {
+        if (njs_slow_path(val == NULL)) {
             return NULL;
         }
 
