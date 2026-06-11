@@ -3552,7 +3552,9 @@ ngx_js_parse_proxy_url(ngx_pool_t *pool, ngx_log_t *log, ngx_str_t *url,
         return NGX_OK;
     }
 
-    if (ngx_strncmp(url->data, "http://", sizeof("http://") - 1) != 0) {
+    if (url->len < sizeof("http://") - 1
+        || ngx_strncmp(url->data, "http://", sizeof("http://") - 1) != 0)
+    {
         ngx_log_error(NGX_LOG_ERR, log, 0,
                       "js_fetch_proxy URL must use http:// scheme");
         return NGX_ERROR;
