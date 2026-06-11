@@ -1975,13 +1975,13 @@ njs_buffer_prototype_to_string(njs_vm_t *vm, njs_value_t *args,
         return NJS_ERROR;
     }
 
-    str.start = &njs_typed_array_buffer(array)->u.u8[array->offset + start];
-    str.length = end - start;
-
-    if (njs_slow_path(str.length == 0)) {
+    if (njs_slow_path(start >= end)) {
         njs_set_empty_string(vm, retval);
         return NJS_OK;
     }
+
+    str.start = &njs_typed_array_buffer(array)->u.u8[array->offset + start];
+    str.length = end - start;
 
     return encoding->encode(vm, retval, &str);
 }
