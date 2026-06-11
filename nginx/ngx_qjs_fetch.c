@@ -346,7 +346,7 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
                 != NGX_OK)
             {
                 JS_ThrowInternalError(cx, "failed to evaluate proxy URL");
-                return JS_EXCEPTION;
+                goto fail;
             }
 
         } else {
