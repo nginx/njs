@@ -2714,10 +2714,12 @@ ngx_js_dict_load(ngx_js_dict_t *dict)
 
     len = size;
 
-    buf = ngx_pnalloc(pool, len);
+    buf = ngx_pnalloc(pool, len + 1);
     if (buf == NULL) {
         goto failed;
     }
+
+    buf[len] = '\0';
 
     n = ngx_read_fd(fd, buf, len);
 
