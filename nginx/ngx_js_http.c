@@ -2263,8 +2263,10 @@ ngx_js_fetch_build_request(ngx_js_http_t *http, ngx_js_request_t *request,
     }
 
     if (request->body.len != 0) {
-        njs_chb_sprintf(&http->chain, 32, "Content-Length: %uz" CRLF CRLF,
-                        request->body.len);
+        njs_chb_sprintf(&http->chain,
+                        sizeof("Content-Length: " CRLF CRLF) - 1
+                        + NGX_SIZE_T_LEN,
+                        "Content-Length: %uz" CRLF CRLF, request->body.len);
         njs_chb_append(&http->chain, request->body.data, request->body.len);
 
     } else {
