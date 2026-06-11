@@ -6684,6 +6684,7 @@ static JSValue
 ngx_http_qjs_body_to_value(JSContext *cx, ngx_http_js_ctx_t *ctx,
     ngx_uint_t type)
 {
+    size_t       cstr_len;
     JSValue      str;
     const char  *cstr;
 
@@ -6704,14 +6705,14 @@ ngx_http_qjs_body_to_value(JSContext *cx, ngx_http_js_ctx_t *ctx,
             return str;
         }
 
-        cstr = JS_ToCString(cx, str);
+        cstr = JS_ToCStringLen(cx, &cstr_len, str);
         JS_FreeValue(cx, str);
 
         if (cstr == NULL) {
             return JS_EXCEPTION;
         }
 
-        str = JS_ParseJSON(cx, cstr, ctx->body_read_len, "<body>");
+        str = JS_ParseJSON(cx, cstr, cstr_len, "<body>");
         JS_FreeCString(cx, cstr);
 
         return str;
