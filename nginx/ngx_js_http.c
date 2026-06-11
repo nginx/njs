@@ -522,8 +522,9 @@ ngx_js_http_build_connect_request(ngx_js_http_t *http)
     if (http->proxy.auth.len != 0) {
         njs_chb_append(&http->chain, http->proxy.auth.data,
                        http->proxy.auth.len);
-        njs_chb_append_literal(&http->chain, CRLF);
     }
+
+    njs_chb_append_literal(&http->chain, CRLF);
 }
 
 
