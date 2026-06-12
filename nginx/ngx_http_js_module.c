@@ -389,8 +389,8 @@ static njs_int_t ngx_http_js_header_out_special(njs_vm_t *vm,
     ngx_http_request_t *r, njs_str_t *v, njs_value_t *setval,
     njs_value_t *retval, ngx_table_elt_t **hh);
 static njs_int_t ngx_http_js_header_generic(njs_vm_t *vm,
-    ngx_http_request_t *r, ngx_list_t *headers, ngx_table_elt_t **ph,
-    unsigned flags, njs_str_t *name, njs_value_t *retval);
+    ngx_http_request_t *r, ngx_list_t *headers, unsigned flags,
+    njs_str_t *name, njs_value_t *retval);
 #endif
 static njs_int_t ngx_http_js_content_encoding(njs_vm_t *vm,
     ngx_http_request_t *r, unsigned flags, njs_str_t *name,
@@ -4393,20 +4393,24 @@ static njs_int_t
 ngx_http_js_ext_header_in(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t atom_id,
     njs_value_t *value, njs_value_t *unused, njs_value_t *retval)
 {
-    unsigned             flags;
-    njs_int_t            rc;
-    njs_str_t            name, *h;
-    ngx_http_request_t  *r;
+    unsigned               flags;
+    njs_int_t              rc;
+    njs_str_t              name;
+    ngx_http_request_t    *r;
+    ngx_http_js_header_t  *h;
 
-    static njs_str_t single_headers_in[] = {
-        njs_str("Content-Type"),
-        njs_str("ETag"),
-        njs_str("From"),
-        njs_str("Max-Forwards"),
-        njs_str("Referer"),
-        njs_str("Proxy-Authorization"),
-        njs_str("User-Agent"),
-        njs_str(""),
+    static ngx_http_js_header_t  headers_in[] = {
+#define header(name, fl)  { njs_str(name), fl, 0 }
+        header("Content-Type",        NJS_HEADER_SINGLE),
+        header("ETag",                NJS_HEADER_SINGLE),
+        header("From",                NJS_HEADER_SINGLE),
+        header("Max-Forwards",        NJS_HEADER_SINGLE),
+        header("Referer",             NJS_HEADER_SINGLE),
+        header("Proxy-Authorization", NJS_HEADER_SINGLE),
+        header("User-Agent",          NJS_HEADER_SINGLE),
+        header("Cookie",              NJS_HEADER_SEMICOLON),
+        header("",                    0),
+#undef header
     };
 
     r = njs_vm_external(vm, ngx_http_js_request_proto_id, value);
@@ -4429,11 +4433,11 @@ ngx_http_js_ext_header_in(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t atom_i
 
     flags = 0;
 
-    for (h = single_headers_in; h->length > 0; h++) {
-        if (h->length == name.length
-            && ngx_strncasecmp(h->start, name.start, name.length) == 0)
+    for (h = headers_in; h->name.len > 0; h++) {
+        if (h->name.len == name.length
+            && ngx_strncasecmp(h->name.data, name.start, name.length) == 0)
         {
-            flags |= NJS_HEADER_SINGLE;
+            flags = h->flags;
             break;
         }
     }
@@ -5142,48 +5146,11 @@ static njs_int_t
 ngx_http_js_header_in(njs_vm_t *vm, ngx_http_request_t *r, unsigned flags,
     njs_str_t *name, njs_value_t *retval)
 {
-    u_char                      *lowcase_key;
-    ngx_uint_t                   hash;
-    ngx_table_elt_t            **ph;
-    ngx_http_header_t           *hh;
-    ngx_http_core_main_conf_t   *cmcf;
-    u_char                       storage[128];
-
     if (retval == NULL) {
         return NJS_OK;
     }
 
-    /* look up hashed headers */
-
-    if (name->length < sizeof(storage)) {
-        lowcase_key = storage;
-
-    } else {
-        lowcase_key = ngx_pnalloc(r->pool, name->length);
-        if (lowcase_key == NULL) {
-            njs_vm_memory_error(vm);
-            return NJS_ERROR;
-        }
-    }
-
-    hash = ngx_hash_strlow(lowcase_key, name->start, name->length);
-
-    cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
-
-    hh = ngx_hash_find(&cmcf->headers_in_hash, hash, lowcase_key,
-                       name->length);
-
-    ph = NULL;
-
-    if (hh) {
-        if (hh->offset == offsetof(ngx_http_headers_in_t, cookie)) {
-            flags |= NJS_HEADER_SEMICOLON;
-        }
-
-        ph = (ngx_table_elt_t **) ((char *) &r->headers_in + hh->offset);
-    }
-
-    return ngx_http_js_header_generic(vm, r, &r->headers_in.headers, ph, flags,
+    return ngx_http_js_header_generic(vm, r, &r->headers_in.headers, flags,
                                       name, retval);
 }
 
@@ -5203,9 +5170,8 @@ ngx_http_js_header_out(njs_vm_t *vm, ngx_http_request_t *r, unsigned flags,
     njs_opaque_value_t   lvalue;
 
     if (retval != NULL && setval == NULL) {
-        return ngx_http_js_header_generic(vm, r, &r->headers_out.headers, NULL,
-                                          flags, name, retval);
-
+        return ngx_http_js_header_generic(vm, r, &r->headers_out.headers, flags,
+                                          name, retval);
     }
 
     part = &r->headers_out.headers.part;
@@ -5430,8 +5396,7 @@ done:
 
 static njs_int_t
 ngx_http_js_header_generic(njs_vm_t *vm, ngx_http_request_t *r,
-    ngx_list_t *headers, ngx_table_elt_t **ph, unsigned flags, njs_str_t *name,
-    njs_value_t *retval)
+    ngx_list_t *headers, unsigned flags, njs_str_t *name, njs_value_t *retval)
 {
     u_char            sep;
     njs_chb_t         chain;
@@ -5439,42 +5404,37 @@ ngx_http_js_header_generic(njs_vm_t *vm, ngx_http_request_t *r,
     ngx_uint_t        i;
     njs_value_t      *value;
     ngx_list_part_t  *part;
-    ngx_table_elt_t  *header, *h;
+    ngx_table_elt_t  *header, *h, **ph;
 
-    if (ph == NULL) {
-        /* iterate over all headers */
+    ph = &header;
+    part = &headers->part;
+    h = part->elts;
 
-        ph = &header;
-        part = &headers->part;
-        h = part->elts;
+    for (i = 0; /* void */ ; i++) {
 
-        for (i = 0; /* void */ ; i++) {
-
-            if (i >= part->nelts) {
-                if (part->next == NULL) {
-                    break;
-                }
-
-                part = part->next;
-                h = part->elts;
-                i = 0;
+        if (i >= part->nelts) {
+            if (part->next == NULL) {
+                break;
             }
 
-            if (h[i].hash == 0
-                || name->length != h[i].key.len
-                || ngx_strncasecmp(name->start, h[i].key.data, name->length)
-                   != 0)
-            {
-                continue;
-            }
-
-            *ph = &h[i];
-            ph = &h[i].next;
+            part = part->next;
+            h = part->elts;
+            i = 0;
         }
 
-        *ph = NULL;
-        ph = &header;
+        if (h[i].hash == 0
+            || name->length != h[i].key.len
+            || ngx_strncasecmp(name->start, h[i].key.data, name->length) != 0)
+        {
+            continue;
+        }
+
+        *ph = &h[i];
+        ph = &h[i].next;
     }
+
+    *ph = NULL;
+    ph = &header;
 
     if (*ph == NULL) {
         njs_value_undefined_set(retval);
@@ -8375,50 +8335,45 @@ ngx_http_qjs_headers_in_own_property_names(JSContext *cx,
 
 static njs_int_t
 ngx_http_qjs_header_generic(JSContext *cx, ngx_http_request_t *r,
-    ngx_list_t *headers, ngx_table_elt_t **ph, ngx_str_t *name,
-    JSPropertyDescriptor *pdesc, unsigned flags)
+    ngx_list_t *headers, ngx_str_t *name, JSPropertyDescriptor *pdesc,
+    unsigned flags)
 {
     u_char            sep;
     JSValue           val;
     njs_chb_t         chain;
     ngx_uint_t        i;
     ngx_list_part_t  *part;
-    ngx_table_elt_t  *header, *h;
+    ngx_table_elt_t  *header, *h, **ph;
 
-    if (ph == NULL) {
-        /* iterate over all headers */
+    ph = &header;
+    part = &headers->part;
+    h = part->elts;
 
-        ph = &header;
-        part = &headers->part;
-        h = part->elts;
+    for (i = 0; /* void */ ; i++) {
 
-        for (i = 0; /* void */ ; i++) {
-
-            if (i >= part->nelts) {
-                if (part->next == NULL) {
-                    break;
-                }
-
-                part = part->next;
-                h = part->elts;
-                i = 0;
+        if (i >= part->nelts) {
+            if (part->next == NULL) {
+                break;
             }
 
-            if (h[i].hash == 0
-                || name->len != h[i].key.len
-                || ngx_strncasecmp(name->data, h[i].key.data, name->len)
-                   != 0)
-            {
-                continue;
-            }
-
-            *ph = &h[i];
-            ph = &h[i].next;
+            part = part->next;
+            h = part->elts;
+            i = 0;
         }
 
-        *ph = NULL;
-        ph = &header;
+        if (h[i].hash == 0
+            || name->len != h[i].key.len
+            || ngx_strncasecmp(name->data, h[i].key.data, name->len) != 0)
+        {
+            continue;
+        }
+
+        *ph = &h[i];
+        ph = &h[i].next;
     }
+
+    *ph = NULL;
+    ph = &header;
 
     if (*ph == NULL) {
         return 0;
@@ -8500,44 +8455,7 @@ static int
 ngx_http_qjs_header_in(JSContext *cx, ngx_http_request_t *r, unsigned flags,
     ngx_str_t *name, JSPropertyDescriptor *pdesc)
 {
-    u_char                      *lowcase_key;
-    ngx_uint_t                   hash;
-    ngx_table_elt_t            **ph;
-    ngx_http_header_t           *hh;
-    ngx_http_core_main_conf_t   *cmcf;
-    u_char                       storage[128];
-
-    /* look up hashed headers */
-
-    if (name->len < sizeof(storage)) {
-        lowcase_key = storage;
-
-    } else {
-        lowcase_key = ngx_pnalloc(r->pool, name->len);
-        if (lowcase_key == NULL) {
-            (void) JS_ThrowOutOfMemory(cx);
-            return -1;
-        }
-    }
-
-    hash = ngx_hash_strlow(lowcase_key, name->data, name->len);
-
-    cmcf = ngx_http_get_module_main_conf(r, ngx_http_core_module);
-
-    hh = ngx_hash_find(&cmcf->headers_in_hash, hash, lowcase_key,
-                       name->len);
-
-    ph = NULL;
-
-    if (hh) {
-        if (hh->offset == offsetof(ngx_http_headers_in_t, cookie)) {
-            flags |= NJS_HEADER_SEMICOLON;
-        }
-
-        ph = (ngx_table_elt_t **) ((char *) &r->headers_in + hh->offset);
-    }
-
-    return ngx_http_qjs_header_generic(cx, r, &r->headers_in.headers, ph, name,
+    return ngx_http_qjs_header_generic(cx, r, &r->headers_in.headers, name,
                                        pdesc, flags);
 }
 
@@ -8546,20 +8464,24 @@ static int
 ngx_http_qjs_headers_in_own_property(JSContext *cx, JSPropertyDescriptor *pdesc,
     JSValueConst obj, JSAtom prop)
 {
-    int                  ret;
-    unsigned             flags;
-    ngx_str_t            name, *h;
-    ngx_http_request_t  *r;
+    int                    ret;
+    unsigned               flags;
+    ngx_str_t              name;
+    ngx_http_request_t    *r;
+    ngx_http_js_header_t  *h;
 
-    static ngx_str_t single_headers_in[] = {
-        ngx_string("Content-Type"),
-        ngx_string("ETag"),
-        ngx_string("From"),
-        ngx_string("Max-Forwards"),
-        ngx_string("Referer"),
-        ngx_string("Proxy-Authorization"),
-        ngx_string("User-Agent"),
-        ngx_string(""),
+    static ngx_http_js_header_t  headers_in[] = {
+#define header(name, fl)  { ngx_string(name), fl, 0 }
+        header("Content-Type",        NJS_HEADER_SINGLE),
+        header("ETag",                NJS_HEADER_SINGLE),
+        header("From",                NJS_HEADER_SINGLE),
+        header("Max-Forwards",        NJS_HEADER_SINGLE),
+        header("Referer",             NJS_HEADER_SINGLE),
+        header("Proxy-Authorization", NJS_HEADER_SINGLE),
+        header("User-Agent",          NJS_HEADER_SINGLE),
+        header("Cookie",              NJS_HEADER_SEMICOLON),
+        header("",                    0),
+#undef header
     };
 
     r = JS_GetOpaque(obj, NGX_QJS_CLASS_ID_HTTP_HEADERS_IN);
@@ -8577,11 +8499,11 @@ ngx_http_qjs_headers_in_own_property(JSContext *cx, JSPropertyDescriptor *pdesc,
 
     flags = 0;
 
-    for (h = single_headers_in; h->len > 0; h++) {
-        if (h->len == name.len
-            && ngx_strncasecmp(h->data, name.data, name.len) == 0)
+    for (h = headers_in; h->name.len > 0; h++) {
+        if (h->name.len == name.len
+            && ngx_strncasecmp(h->name.data, name.data, name.len) == 0)
         {
-            flags |= NJS_HEADER_SINGLE;
+            flags = h->flags;
             break;
         }
     }
@@ -8670,7 +8592,7 @@ ngx_http_qjs_headers_out_handler(JSContext *cx, ngx_http_request_t *r,
     ngx_table_elt_t  *header, *h, **ph;
 
     if (flags & NJS_HEADER_GET) {
-        return ngx_http_qjs_header_generic(cx, r, &r->headers_out.headers, NULL,
+        return ngx_http_qjs_header_generic(cx, r, &r->headers_out.headers,
                                            name, pdesc, flags);
     }
 
