@@ -645,7 +645,7 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
         if (ctx == NULL) {
             njs_vm_memory_error(vm);
-            return NJS_ERROR;
+            goto fail;
         }
 
         if (ctx == NGX_NO_RESOLVER) {
