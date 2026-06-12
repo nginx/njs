@@ -7326,6 +7326,28 @@ static njs_unit_test_t  njs_test[] =
               "           return [a.toReversed(), a].toString() === '1,2,3,3,2,1'})"),
       njs_str("true") },
 
+    /* Same-type copies must honor the source view offset. */
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = (new v([0,1,2,3,4])).subarray(2);"
+              "           return (new v(a)).toString() === '2,3,4'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = (new v([0,1,2,3,4])).subarray(2);"
+              "           return a.slice(1, 3).toString() === '3,4'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = (new v([0,1,2,3,4])).subarray(2);"
+              "           return a.toReversed().toString() === '4,3,2'})"),
+      njs_str("true") },
+
+    { njs_str(NJS_TYPED_ARRAY_LIST
+              ".every(v=>{var a = (new v([0,3,2,1,4])).subarray(2);"
+              "           return a.toSorted().toString() === '1,2,4'})"),
+      njs_str("true") },
+
     { njs_str("Uint8Array.prototype.sort.call(1)"),
       njs_str("TypeError: this is not a typed array") },
 
