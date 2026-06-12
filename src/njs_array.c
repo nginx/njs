@@ -788,6 +788,7 @@ static njs_int_t
 njs_array_prototype_slice_copy(njs_vm_t *vm, njs_value_t *this,
     int64_t start, int64_t length, njs_value_t *retval)
 {
+    double             idx;
     size_t             size;
     uint32_t           n;
     njs_int_t          ret;
@@ -871,39 +872,24 @@ njs_array_prototype_slice_copy(njs_vm_t *vm, njs_value_t *this,
 
     njs_set_array(&self, array);
 
-    if (njs_fast_object(length)) {
-        do {
-            ret = njs_value_property_i64(vm, this, start++, &val);
-            if (njs_slow_path(ret == NJS_ERROR)) {
-                return NJS_ERROR;
-            }
-
-            if (ret == NJS_OK) {
-                ret = njs_value_property_i64_set(vm, &self, start, &val);
-                if (njs_slow_path(ret == NJS_ERROR)) {
-                    return ret;
-                }
-            }
-
-            length--;
-        } while (length != 0);
-
-        ret = NJS_OK;
-        goto done;
-    }
-
     keys = njs_array_indices(vm, this);
     if (njs_slow_path(keys == NULL)) {
         return NJS_ERROR;
     }
 
     for (n = 0; n < keys->length; n++) {
+        idx = njs_string_to_index(&keys->start[n]);
+
+        if (idx < start || idx >= start + length) {
+            continue;
+        }
+
         ret = njs_value_property(vm, this, keys->start[n].atom_id, &val);
         if (njs_slow_path(ret == NJS_ERROR)) {
             goto done;
         }
 
-        ret = njs_value_property_set(vm, &self, keys->start[n].atom_id, &val);
+        ret = njs_value_property_i64_set(vm, &self, idx - start, &val);
         if (njs_slow_path(ret == NJS_ERROR)) {
             goto done;
         }
