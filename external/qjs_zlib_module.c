@@ -415,6 +415,11 @@ qjs_zlib_ext_inflate(JSContext *ctx, JSValueConst this_val, int argc,
             goto fail;
         }
 
+        if (rc == Z_NEED_DICT) {
+            JS_ThrowTypeError(ctx, "failed to inflate, dictionary is required");
+            goto fail;
+        }
+
         njs_chb_written(&chain, chunk_size - stream.avail_out);
     }
 
