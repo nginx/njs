@@ -5315,6 +5315,13 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("Array.prototype.slice.call({ length: Object.create(null) })"),
       njs_str("TypeError: Cannot convert object to primitive value") },
 
+    /* Large sparse slice goes through the non-fast keys path. */
+
+    { njs_str("var a = []; a[10] = 'a'; a[40000] = 'b'; a.length = 50000;"
+              "var s = a.slice(5, 45000);"
+              "[s.length, s[5], s[39995], (10 in s), (40000 in s)].join(',')"),
+      njs_str("44995,a,b,false,false") },
+
     { njs_str("Array.prototype.slice.call({length:-1})"),
       njs_str("") },
 
