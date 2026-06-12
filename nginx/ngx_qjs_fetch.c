@@ -385,8 +385,8 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
                                ngx_qjs_external_resolver_timeout(cx, external));
 
         if (rs == NULL) {
-            JS_FreeValue(cx, promise);
-            return JS_ThrowOutOfMemory(cx);
+            JS_ThrowOutOfMemory(cx);
+            goto fail;
         }
 
         if (rs == NGX_NO_RESOLVER) {
