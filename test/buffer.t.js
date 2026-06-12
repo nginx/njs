@@ -340,6 +340,8 @@ let fill_tsuite = {
         { buf: Buffer.from('abc'), value: Buffer.from('def'), expected: 'def' },
         { buf: Buffer.from('abc'), value: Buffer.from('def'), detach_value: true,
           exception: 'TypeError: detached buffer' },
+        { buf: Buffer.from('abc'), value: Buffer.from(''), expected: '\0\0\0' },
+        { buf: Buffer.from('abc'), value_from_buf: [1, 1], expected: '\0\0\0' },
         { buf: Buffer.from('def'),
           value: Buffer.from(new Uint8Array([0x60, 0x61, 0x62, 0x63]).buffer, 1),
           expected: 'abc' },
