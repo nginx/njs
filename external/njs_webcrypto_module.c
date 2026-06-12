@@ -2166,6 +2166,11 @@ njs_export_base64url_bignum(njs_vm_t *vm, njs_opaque_value_t *retval,
         size = BN_num_bytes(v);
     }
 
+    if (njs_slow_path(size > sizeof(buf))) {
+        njs_vm_range_error(vm, "JWK key too long: %uz > 512", size);
+        return NJS_ERROR;
+    }
+
     if (njs_bn_bn2binpad(v, &buf[0], size) <= 0) {
         return NJS_ERROR;
     }
@@ -3177,6 +3182,7 @@ njs_import_base64url_bignum(njs_vm_t *vm, njs_opaque_value_t *value)
     (void) njs_decode_base64url_length(&data, &decoded.length);
 
     if (njs_slow_path(decoded.length > sizeof(buf))) {
+        njs_vm_range_error(vm, "JWK key too long: %uz > 512", decoded.length);
         return NULL;
     }
 

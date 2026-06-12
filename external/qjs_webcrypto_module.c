@@ -1405,6 +1405,11 @@ qjs_export_base64url_bignum(JSContext *cx, const BIGNUM *v, size_t size)
         size = BN_num_bytes(v);
     }
 
+    if (size > sizeof(buf)) {
+        JS_ThrowRangeError(cx, "JWK key too long: %zu > 512", size);
+        return JS_EXCEPTION;
+    }
+
     if (njs_bn_bn2binpad(v, &buf[0], size) <= 0) {
         JS_ThrowInternalError(cx, "njs_bn_bn2binpad() failed");
         return JS_EXCEPTION;
@@ -3076,6 +3081,7 @@ qjs_import_base64url_bignum(JSContext *cx, JSValue value)
 
     if (decoded.length > sizeof(buf)) {
         JS_ThrowRangeError(cx, "JWK key too long: %zu > 512", decoded.length);
+        JS_FreeCString(cx, (char *) data.start);
         return NULL;
     }
 
