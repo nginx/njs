@@ -287,8 +287,10 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
         }
 
         if (!JS_IsUndefined(value)) {
-            if (JS_ToInt64(cx, (int64_t *) &http->buffer_size, value) < 0) {
-                JS_FreeValue(cx, value);
+            rc = JS_ToInt64(cx, (int64_t *) &http->buffer_size, value);
+            JS_FreeValue(cx, value);
+
+            if (rc < 0) {
                 goto fail;
             }
         }
@@ -299,10 +301,11 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
         }
 
         if (!JS_IsUndefined(value)) {
-            if (JS_ToInt64(cx, (int64_t *) &http->max_response_body_size,
-                           value) < 0)
-            {
-                JS_FreeValue(cx, value);
+            rc = JS_ToInt64(cx, (int64_t *) &http->max_response_body_size,
+                            value);
+            JS_FreeValue(cx, value);
+
+            if (rc < 0) {
                 goto fail;
             }
         }
@@ -315,6 +318,7 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
 
         if (!JS_IsUndefined(value)) {
             http->ssl_verify = JS_ToBool(cx, value);
+            JS_FreeValue(cx, value);
         }
 #endif
     }
