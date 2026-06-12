@@ -1178,8 +1178,9 @@ qjs_buffer_prototype_read_int(JSContext *ctx, JSValueConst this_val,
             return JS_EXCEPTION;
         }
 
-        if (size > 6) {
-            return JS_ThrowRangeError(ctx, "\"byteLength\" must be <= 6");
+        if (size == 0 || size > 6) {
+            return JS_ThrowRangeError(ctx,
+                                      "\"byteLength\" must be >= 1 and <= 6");
         }
     }
 
@@ -1615,8 +1616,9 @@ qjs_buffer_prototype_write_int(JSContext *ctx, JSValueConst this_val,
             return JS_EXCEPTION;
         }
 
-        if (size > 6) {
-            return JS_ThrowRangeError(ctx, "\"byteLength\" must be <= 6");
+        if (size == 0 || size > 6) {
+            return JS_ThrowRangeError(ctx,
+                                      "\"byteLength\" must be >= 1 and <= 6");
         }
     }
 
