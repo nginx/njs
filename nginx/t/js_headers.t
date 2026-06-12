@@ -496,7 +496,7 @@ $t->write_file('test.js', <<EOF);
 
 EOF
 
-$t->try_run('no njs')->plan(51);
+$t->try_run('no njs')->plan(53);
 
 ###############################################################################
 
@@ -599,6 +599,19 @@ like(http(
 	. 'Foo: bar2' . CRLF
 	. 'Host: localhost' . CRLF . CRLF
 ), qr/foo: bar1,\s?bar2/, 'r.headersIn duplicate generic');
+
+like(http(
+	'GET /hdr_in HTTP/1.0' . CRLF
+	. 'Proxy-Connection: keep-alive' . CRLF
+	. 'Host: localhost' . CRLF . CRLF
+), qr/proxy-connection: keep-alive/, 'r.headersIn no slot header');
+
+like(http(
+	'GET /hdr_in HTTP/1.0' . CRLF
+	. 'Proxy-Connection: foo1' . CRLF
+	. 'Proxy-Connection: foo2' . CRLF
+	. 'Host: localhost' . CRLF . CRLF
+), qr/proxy-connection: foo1,\s?foo2/, 'r.headersIn no slot header duplicate');
 
 like(http_get('/in_lowkey'), qr/X{16}/, 'r.headersIn name is not overwritten');
 
