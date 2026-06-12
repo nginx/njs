@@ -5044,7 +5044,14 @@ ngx_http_js_subrequest_done(ngx_http_request_t *r, void *data, ngx_int_t rc)
 
     ngx_js_del_event(ctx, event);
 
-    ngx_http_js_event_finalize(r->parent, NGX_OK);
+    /*
+     * A post_subrequest handler runs inside ngx_http_finalize_request()
+     * of the subrequest; do not run posted requests here: the parent may
+     * terminate the main request and free the shared request pool.
+     */
+    if (ngx_http_post_request(r->parent, NULL) != NGX_OK) {
+        return NGX_ERROR;
+    }
 
     return NGX_OK;
 }
@@ -7604,7 +7611,14 @@ ngx_http_qjs_subrequest_done(ngx_http_request_t *r, void *data, ngx_int_t rc)
     JS_FreeValue(cx, reply);
     ngx_js_del_event(ctx, event);
 
-    ngx_http_js_event_finalize(r->parent, NGX_OK);
+    /*
+     * A post_subrequest handler runs inside ngx_http_finalize_request()
+     * of the subrequest; do not run posted requests here: the parent may
+     * terminate the main request and free the shared request pool.
+     */
+    if (ngx_http_post_request(r->parent, NULL) != NGX_OK) {
+        return NGX_ERROR;
+    }
 
     return NGX_OK;
 }
