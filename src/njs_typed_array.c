@@ -155,7 +155,7 @@ njs_typed_array_alloc(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             }
 
         } else {
-            memcpy(&buffer->u.u8[0], &src_tarray->buffer->u.u8[0], size);
+            memcpy(&buffer->u.u8[0], njs_typed_array_start(src_tarray), size);
         }
 
     } else if (!njs_is_array_buffer(value) && njs_is_object(value)) {
@@ -1008,7 +1008,9 @@ njs_typed_array_prototype_slice(njs_vm_t *vm, njs_value_t *args,
             start = start * element_size;
             count = count * element_size;
 
-            njs_slice_memcpy(&new_buffer->u.u8[0], &buffer->u.u8[start], count);
+            njs_slice_memcpy(&new_buffer->u.u8[0],
+                             &buffer->u.u8[njs_typed_array_offset(array) + start],
+                             count);
 
         } else {
             for (i = 0; i < count; i++) {
@@ -1647,7 +1649,7 @@ njs_typed_array_prototype_reverse(njs_vm_t *vm, njs_value_t *args,
             return NJS_ERROR;
         }
 
-        memcpy(&array->buffer->u.u8[0], &self->buffer->u.u8[0],
+        memcpy(&array->buffer->u.u8[0], njs_typed_array_start(self),
                self->byte_length);
     }
 
@@ -1951,7 +1953,7 @@ njs_typed_array_prototype_sort(njs_vm_t *vm, njs_value_t *args,
             return NJS_ERROR;
         }
 
-        memcpy(&array->buffer->u.u8[0], &self->buffer->u.u8[0],
+        memcpy(&array->buffer->u.u8[0], njs_typed_array_start(self),
                self->byte_length);
     }
 
