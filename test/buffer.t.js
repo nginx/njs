@@ -98,6 +98,59 @@ let concat_tsuite = {
 };
 
 
+let concatRevalidate_tsuite = {
+    name: "Buffer.concat() element revalidation tests",
+    skip: () => (!has_buffer()),
+    T: async (params) => {
+        let stage = 0;
+        let ta = Buffer.from('abcdef');
+
+        /*
+         * A real but non-fast array (accessor on index 0) whose getter
+         * returns a valid typed array during the length pass and something
+         * else during the copy pass (TOCTOU).
+         */
+        let list = [];
+        Object.defineProperty(list, 0, {
+            enumerable: true,
+            configurable: true,
+            get() {
+                if (stage++ === 0) {
+                    return ta;
+                }
+
+                if (params.detach) {
+                    detach(ta.buffer);
+                    return ta;
+                }
+
+                return params.evil;
+            },
+        });
+
+        try {
+            Buffer.concat(list);
+
+        } catch (e) {
+            if (e instanceof TypeError) {
+                return 'SUCCESS';
+            }
+
+            throw e;
+        }
+
+        throw Error('concat() did not revalidate the swapped element');
+    },
+
+    tests: [
+        { evil: {} },
+        { evil: "not a typed array" },
+        { evil: [0, 1, 2] },
+        { skip: () => !is_detach_available(), detach: true },
+    ],
+};
+
+
 let compare_tsuite = {
     name: "Buffer.compare() tests",
     skip: () => (!has_buffer()),
@@ -1069,6 +1122,7 @@ run([
     alloc_tsuite,
     byteLength_tsuite,
     concat_tsuite,
+    concatRevalidate_tsuite,
     compare_tsuite,
     comparePrototype_tsuite,
     copy_tsuite,
