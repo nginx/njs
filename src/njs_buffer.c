@@ -1919,6 +1919,11 @@ njs_buffer_fill_typed_array(njs_vm_t *vm, const njs_value_t *value,
     byte_length = arr_from->byte_length;
     from = &njs_typed_array_buffer(arr_from)->u.u8[arr_from->offset];
 
+    if (byte_length == 0) {
+        memset(to, 0, end - to);
+        return NJS_OK;
+    }
+
     if (njs_typed_array_buffer(arr_from)->u.u8 == buffer->u.u8) {
         while (to < end) {
             n = njs_min(byte_length, (size_t) (end - to));
