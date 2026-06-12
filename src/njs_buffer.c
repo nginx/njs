@@ -1010,8 +1010,8 @@ njs_buffer_prototype_read_int(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
 
         size = (size_t) njs_number(value);
-        if (njs_slow_path(size > 6)) {
-            njs_type_error(vm, "\"byteLength\" must be <= 6");
+        if (njs_slow_path(size == 0 || size > 6)) {
+            njs_type_error(vm, "\"byteLength\" must be >= 1 and <= 6");
             return NJS_ERROR;
         }
     }
@@ -1296,8 +1296,8 @@ njs_buffer_prototype_write_int(njs_vm_t *vm, njs_value_t *args,
         }
 
         size = (size_t) njs_number(value);
-        if (njs_slow_path(size > 6)) {
-            njs_type_error(vm, "\"byteLength\" must be <= 6");
+        if (njs_slow_path(size == 0 || size > 6)) {
+            njs_type_error(vm, "\"byteLength\" must be >= 1 and <= 6");
             return NJS_ERROR;
         }
     }
