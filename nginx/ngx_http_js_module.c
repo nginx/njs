@@ -5044,7 +5044,16 @@ ngx_http_js_subrequest_done(ngx_http_request_t *r, void *data, ngx_int_t rc)
 
     ngx_js_del_event(ctx, event);
 
-    ngx_http_js_event_finalize(r->parent, NGX_OK);
+    /*
+     * Using direct ngx_http_post_request() and not ngx_http_js_event_finalize()
+     * as the latter calls ngx_http_run_posted_requests() which is not safe to
+     * call from subrequest done handler due to re-entrancy issue when
+     * subrequest done handler is called from ngx_http_finalize_request().
+     */
+
+    if (ngx_http_post_request(r->parent, NULL) != NGX_OK) {
+        return NGX_ERROR;
+    }
 
     return NGX_OK;
 }
@@ -7604,7 +7613,16 @@ ngx_http_qjs_subrequest_done(ngx_http_request_t *r, void *data, ngx_int_t rc)
     JS_FreeValue(cx, reply);
     ngx_js_del_event(ctx, event);
 
-    ngx_http_js_event_finalize(r->parent, NGX_OK);
+    /*
+     * Using direct ngx_http_post_request() and not ngx_http_js_event_finalize()
+     * as the latter calls ngx_http_run_posted_requests() which is not safe to
+     * call from subrequest done handler due to re-entrancy issue when
+     * subrequest done handler is called from ngx_http_finalize_request().
+     */
+
+    if (ngx_http_post_request(r->parent, NULL) != NGX_OK) {
+        return NGX_ERROR;
+    }
 
     return NGX_OK;
 }
