@@ -1,3 +1,100 @@
+Changes with njs 1.0.0                                       23 Jun 2026
+
+    nginx modules:
+
+    *) Improvement: aligned HTTP, Stream, and Fetch exception classes
+       between the njs and QuickJS engines.  API misuse is now reported
+       as TypeError and status bounds violations as RangeError.
+
+    *) Improvement: rejected unsafe request targets, methods, and header
+       values in ngx.fetch() before request serialization.
+
+    *) Bugfix: fixed a heap use-after-free in r.subrequest() when the
+       client closed the connection before the background subrequest
+       completed.  The issue was introduced in 75d6b61 (0.9.5).
+       This closes #1077 issue on Github.
+
+    *) Bugfix: fixed a worker segfault while reading a request header
+       that nginx registers without a dedicated slot, such as
+       "Proxy-Connection", via r.headersIn.
+       This closes #1071 issue on Github.
+
+    *) Bugfix: excluded unverified-TLS and dynamic-proxy connections
+       from the ngx.fetch() keepalive cache and validated cached
+       connections before reuse.
+
+    *) Bugfix: fixed Content-Length truncation for very large request
+       bodies and a missing CONNECT terminator for proxies configured
+       without credentials in ngx.fetch().
+
+    *) Bugfix: fixed leaks of promises, events, and init property values
+       on ngx.fetch() failure paths in the QuickJS engine.
+
+    *) Bugfix: fixed missing fetch event cleanup when the resolver
+       failed to start.
+
+    *) Bugfix: fixed an out-of-bounds read of a short fetch proxy URL.
+
+    *) Bugfix: fixed request body truncation in r.readRequestJSON() for
+       bodies containing invalid UTF-8 in the QuickJS engine.
+
+    *) Bugfix: fixed an out-of-bounds read while loading a shared
+       dictionary state file.
+
+    *) Bugfix: set a pending exception when sendHeader(), send(), and
+       finish() fail in the njs HTTP handlers.
+
+    *) Bugfix: fixed the variable value state after a stream variable
+       storage allocation failure.
+
+    Core:
+
+    *) Improvement: bounded string-producing chained-buffer growth, so
+       that exceeding the maximum string length raises a catchable
+       RangeError("invalid string length") instead of exhausting worker
+       memory.
+
+    *) Improvement: aligned built-in exception classes (XML, console,
+       TextEncoder, TextDecoder, Buffer, fs.Stats) between the
+       njs and QuickJS engines.
+
+    *) Bugfix: fixed an infinite loop while inflating a zlib stream
+       that requires a dictionary in the QuickJS engine.
+
+    *) Bugfix: fixed an infinite loop in Buffer.prototype.fill() with
+       a zero-length typed array source.
+
+    *) Bugfix: fixed a use-after-free in Array.prototype.sort() when a
+       getter invoked for a hole grows the array.
+
+    *) Bugfix: fixed type confusion in Buffer.concat() when a list
+       element getter returns a typed array during validation but not
+       during the copy.
+
+    *) Bugfix: fixed an out-of-bounds access in the variable-length
+       Buffer readInt/writeInt methods with a zero byteLength.
+
+    *) Bugfix: fixed an out-of-bounds read in Buffer.prototype.toString()
+       when start was greater than end.
+
+    *) Bugfix: fixed Array.prototype.slice() of large arrays returning
+       wrong results in the non-fast keys path.
+
+    *) Bugfix: fixed the typed array constructor, slice(), toReversed(),
+       and toSorted() ignoring the source view byte offset in the
+       same-type fast path.
+
+    *) Bugfix: fixed Buffer allocation length checks for lengths greater
+       than or equal to 2^32 on 32-bit platforms.
+
+    *) Bugfix: fixed the Buffer.from() typed-array source offset for
+       multi-byte element types in the QuickJS engine.
+
+    *) Bugfix: fixed Buffer float access alignment.
+
+    *) Bugfix: fixed an out-of-bounds read in a parser string escape
+       lookahead.
+
 Changes with njs 0.9.9                                       19 May 2026
 
     nginx modules:
