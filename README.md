@@ -4,10 +4,11 @@
 ![NGINX JavaScript Banner](NGINX-js-1660x332.png "NGINX JavaScript Banner")
 
 # NGINX JavaScript
-NGINX JavaScript, also known as [NJS](https://nginx.org/en/docs/njs/), is a dynamic module for [NGINX](https://nginx.org/en/download.html) that enables the extension of built-in functionality using familiar JavaScript syntax. The NJS language is a subset of JavaScript, compliant with [ES5](https://262.ecma-international.org/5.1/) (ECMAScript 5.1 [Strict Variant](https://262.ecma-international.org/5.1/#sec-4.2.2)) with some [ES6](https://262.ecma-international.org/6.0/) (ECMAScript 6) and newer extensions. See [compatibility](https://nginx.org/en/docs/njs/compatibility.html) for more details.
+NGINX JavaScript, also known as [NJS](https://nginx.org/en/docs/njs/), is a dynamic module for [NGINX](https://nginx.org/en/download.html) that enables the extension of built-in functionality using familiar JavaScript syntax. NJS supports modern JavaScript through its recommended [QuickJS engine](#javascript-engines) (ES2023). See [JavaScript engines](#javascript-engines) and [compatibility](https://nginx.org/en/docs/njs/compatibility.html) for more details.
 
 # Table of Contents
 - [How it works](#how-it-works)
+- [JavaScript engines](#javascript-engines)
 - [Downloading and installing](#downloading-and-installing)
   - [Provisioning the NGINX package repository](#provisioning-the-nginx-package-repository)
   - [Installing the NGINX JavaScript modules](#installing-the-nginx-javascipt-modules)
@@ -55,6 +56,14 @@ Exposes Prometheus metrics endpoint directly from NGINX Plus.
 
 > [!TIP]
 > NJS can also be used with the [NGINX Unit](https://unit.nginx.org/) application server. Learn more about NGINX Unit's [Control API](https://unit.nginx.org/controlapi/) and how to [define function calls with NJS](https://unit.nginx.org/scripting/).
+
+# JavaScript engines
+NJS provides two interchangeable JavaScript engines, selectable with the [js_engine](https://nginx.org/en/docs/http/ngx_http_js_module.html#js_engine) directive:
+
+- **QuickJS (recommended)** — a modern engine compliant with [ES2023](https://262.ecma-international.org/14.0/). Enable it with `js_engine qjs;`. Building from source requires the QuickJS library (see [Building from source](#building-from-source)). Read more: [QuickJS engine support for NJS](https://blog.nginx.org/blog/quickjs-engine-support-for-njs).
+- **Built-in njs engine (deprecated since 1.0.0)** — the original engine, a JavaScript subset compliant with [ES5.1](https://262.ecma-international.org/5.1/) ([Strict Variant](https://262.ecma-international.org/5.1/#sec-4.2.2)) plus a curated set of [ES6](https://262.ecma-international.org/6.0/) and newer extensions. It is currently the default and will continue to be supported and have its bugs fixed for the foreseeable future. We recommend migrating to QuickJS; eventually QuickJS will become the default, while the njs engine remains available as an option for compatibility.
+
+See [engine selection](https://nginx.org/en/docs/njs/engine.html) and [compatibility](https://nginx.org/en/docs/njs/compatibility.html) for details.
 
 # Downloading and installing
 Follow these steps to download and install precompiled NGINX and NGINX JavaScript Linux binaries. You may also choose to [build the module locally from source code](#building-from-source).
