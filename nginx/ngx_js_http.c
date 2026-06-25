@@ -73,8 +73,13 @@ ngx_js_http_error(ngx_js_http_t *http, const char *fmt, ...)
 
     va_start(args, fmt);
     p = njs_vsprintf(err, end, fmt, args);
-    *p = '\0';
     va_end(args);
+
+    if (p > end) {
+        p = end;
+    }
+
+    *p = '\0';
 
     http->error_handler(http, (const char *) err);
 }
