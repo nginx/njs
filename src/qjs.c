@@ -48,6 +48,12 @@ typedef struct {
 extern char  **environ;
 
 
+static int qjs_add_intrinsic_btoa_atob(JSContext *cx, JSValueConst global);
+static JSValue qjs_global_btoa(JSContext *ctx, JSValueConst this_val, int argc,
+    JSValueConst *argv);
+static JSValue qjs_global_atob(JSContext *ctx, JSValueConst this_val, int argc,
+    JSValueConst *argv);
+
 static int qjs_add_intrinsic_njs(JSContext *cx, JSValueConst global);
 static JSValue qjs_njs_on(JSContext *ctx, JSValueConst this_val, int argc,
     JSValueConst *argv);
@@ -159,6 +165,69 @@ static JSClassDef qjs_text_decoder_class = {
 };
 
 
+static int
+qjs_add_intrinsic_btoa_atob(JSContext *cx, JSValueConst global)
+{
+    JSValue  func;
+
+    func = JS_NewCFunction(cx, qjs_global_btoa, "btoa", 1);
+    if (JS_IsException(func)) {
+        return -1;
+    }
+
+    if (JS_SetPropertyStr(cx, global, "btoa", func) < 0) {
+        return -1;
+    }
+
+    func = JS_NewCFunction(cx, qjs_global_atob, "atob", 1);
+    if (JS_IsException(func)) {
+        return -1;
+    }
+
+    return JS_SetPropertyStr(cx, global, "atob", func);
+}
+
+
+static JSValue
+qjs_global_btoa(JSContext *cx, JSValueConst this_val, int argc,
+    JSValueConst *argv)
+{
+    JSValue    ret;
+    njs_str_t  str;
+
+    str.start = (u_char *) JS_ToCStringLen(cx, &str.length, argv[0]);
+    if (str.start == NULL) {
+        return JS_EXCEPTION;
+    }
+
+    ret = qjs_string_btoa(cx, &str);
+
+    JS_FreeCString(cx, (char *) str.start);
+
+    return ret;
+}
+
+
+static JSValue
+qjs_global_atob(JSContext *cx, JSValueConst this_val, int argc,
+    JSValueConst *argv)
+{
+    JSValue    ret;
+    njs_str_t  str;
+
+    str.start = (u_char *) JS_ToCStringLen(cx, &str.length, argv[0]);
+    if (str.start == NULL) {
+        return JS_EXCEPTION;
+    }
+
+    ret = qjs_string_atob(cx, &str);
+
+    JS_FreeCString(cx, (char *) str.start);
+
+    return ret;
+}
+
+
 JSContext *
 qjs_new_context(JSRuntime *rt, qjs_module_t **addons)
 {
@@ -211,6 +280,10 @@ qjs_new_context(JSRuntime *rt, qjs_module_t **addons)
     }
 
     if (qjs_add_intrinsic_text_encoder(ctx, global_obj) < 0) {
+        return NULL;
+    }
+
+    if (qjs_add_intrinsic_btoa_atob(ctx, global_obj) < 0) {
         return NULL;
     }
 
