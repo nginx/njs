@@ -131,6 +131,8 @@ JSValue qjs_promise_result(JSContext *cx, JSValue result);
 JSValue qjs_string_hex(JSContext *cx, const njs_str_t *src);
 JSValue qjs_string_base64(JSContext *cx, const njs_str_t *src);
 JSValue qjs_string_base64url(JSContext *cx, const njs_str_t *src);
+JSValue qjs_string_btoa(JSContext *cx, const njs_str_t *src);
+JSValue qjs_string_atob(JSContext *cx, const njs_str_t *src);
 
 static inline JS_BOOL JS_IsNullOrUndefined(JSValueConst v)
 {

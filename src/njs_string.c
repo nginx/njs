@@ -4016,7 +4016,7 @@ njs_string_btoa(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 error:
 
-    njs_type_error(vm, "invalid character (>= U+00FF)");
+    njs_type_error(vm, "invalid character (> U+00FF)");
 
     return NJS_ERROR;
 }
@@ -4034,14 +4034,14 @@ njs_int_t
 njs_string_atob(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
 {
-    size_t        i, n, len, pad;
-    u_char        *dst, *tmp, *p;
-    ssize_t       size;
+    u_char        c, v;
+    uint32_t      acc, bits;
+    size_t        i, total, pad;
     njs_str_t     str;
     njs_int_t     ret;
     njs_chb_t     chain;
     njs_value_t   *value, lvalue;
-    const u_char  *b64, *s;
+    const u_char  *b64;
 
     value = njs_lvalue_arg(&lvalue, args, nargs, 1);
 
@@ -4055,113 +4055,85 @@ njs_string_atob(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     b64 = njs_basis64;
     njs_string_get(vm, value, &str);
 
-    tmp = njs_mp_alloc(vm->mem_pool, str.length);
-    if (tmp == NULL) {
-        njs_memory_error(vm);
-        return NJS_ERROR;
-    }
-
-    p = tmp;
-
-    for (i = 0; i < str.length; i++) {
-        if (njs_slow_path(str.start[i] == ' ')) {
-            continue;
-        }
-
-        *p++ = str.start[i];
-    }
-
-    pad = 0;
-    str.start = tmp;
-    str.length = p - tmp;
-
-    if (str.length % 4 == 0) {
-        if (str.length > 0) {
-            if (str.start[str.length - 1] == '=') {
-                pad += 1;
-            }
-
-            if (str.start[str.length - 2] == '=') {
-                pad += 1;
-            }
-        }
-
-    } else if (str.length % 4 == 1) {
-        goto error;
-    }
-
-    for (i = 0; i < str.length - pad; i++) {
-        if (njs_slow_path(b64[str.start[i]] == 77)) {
-            goto error;
-        }
-    }
-
-    len = str.length;
-
-    if (len % 4 != 0) {
-        pad = 4 - (len % 4);
-        len += pad;
-    }
-
-    len = njs_base64_decoded_length(len, pad);
-
     /*
-     * The chain holds a single reservation of at most twice the decoded
-     * length, which is bounded by the input string size, so it cannot
-     * grow unbounded and needs no byte cap.
+     * Each significant character contributes six bits; even when every
+     * decoded byte expands to two UTF-8 bytes, the output is bounded by the
+     * input length, so the chain needs no byte cap.
      */
     NJS_CHB_MP_INIT(&chain, njs_vm_memory_pool(vm));
 
-    dst = njs_chb_reserve(&chain, len * 2);
-    if (njs_slow_path(dst == NULL)) {
+    if (njs_slow_path(njs_chb_reserve(&chain, str.length * 2) == NULL)) {
         njs_memory_error(vm);
         return NJS_ERROR;
     }
 
-    n = len;
-    s = str.start;
+    acc = 0;
+    bits = 0;
+    total = 0;
+    pad = 0;
 
-    while (n >= 3) {
-        njs_chb_write_byte_as_utf8(&chain, b64[s[0]] << 2 | b64[s[1]] >> 4);
-        njs_chb_write_byte_as_utf8(&chain, b64[s[1]] << 4 | b64[s[2]] >> 2);
-        njs_chb_write_byte_as_utf8(&chain, b64[s[2]] << 6 | b64[s[3]]);
+    for (i = 0; i < str.length; i++) {
+        c = str.start[i];
 
-        s += 4;
-        n -= 3;
+        switch (c) {
+        case ' ':
+        case '\t':
+        case '\n':
+        case '\f':
+        case '\r':
+            continue;
+
+        case '=':
+            pad++;
+            continue;
+        }
+
+        if (njs_slow_path(pad > 0)) {
+            /* A significant character following the padding. */
+            goto error;
+        }
+
+        v = b64[c];
+        if (njs_slow_path(v == 77)) {
+            goto error;
+        }
+
+        acc = (acc << 6) | v;
+        bits += 6;
+        total++;
+
+        if (bits >= 8) {
+            bits -= 8;
+            njs_chb_write_byte_as_utf8(&chain, (acc >> bits) & 0xff);
+        }
     }
 
-    if (n >= 1) {
-        njs_chb_write_byte_as_utf8(&chain, b64[s[0]] << 2 | b64[s[1]] >> 4);
+    /*
+     * Padding may only complete the final quad: a remainder of one
+     * character is malformed and padding is allowed only when the cleaned
+     * input length is a multiple of four.
+     */
+    if (njs_slow_path(pad > 2
+                      || (total + pad) % 4 == 1
+                      || (pad > 0 && (total + pad) % 4 != 0)))
+    {
+        goto error;
     }
 
-    if (n >= 2) {
-        njs_chb_write_byte_as_utf8(&chain, b64[s[1]] << 4 | b64[s[2]] >> 2);
-    }
-
-    size = njs_chb_size(&chain);
-    if (njs_slow_path(size < 0)) {
-        njs_memory_error(vm);
-        return NJS_ERROR;
-    }
-
-    if (size == 0) {
+    if (total == 0) {
+        njs_chb_destroy(&chain);
         njs_set_empty_string(vm, retval);
         return NJS_OK;
     }
 
-    dst = njs_string_alloc(vm, retval, size, len);
-    if (njs_slow_path(dst == NULL)) {
-        return NJS_ERROR;
-    }
-
-    njs_chb_join_to(&chain, dst);
+    ret = njs_string_create_chb(vm, retval, &chain);
     njs_chb_destroy(&chain);
 
-    njs_mp_free(vm->mem_pool, tmp);
-
-    return NJS_OK;
+    return ret;
 
 error:
+
+    njs_chb_destroy(&chain);
 
     njs_type_error(vm, "the string to be decoded is not correctly encoded");
 
