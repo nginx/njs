@@ -1062,6 +1062,10 @@ ngx_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
             ngx_log_debug1(NGX_LOG_DEBUG_HTTP, ctx->log, 0,
                            "js reused context: %p", engine->u.qjs.ctx);
             JS_SetContextOpaque(engine->u.qjs.ctx, external);
+
+            JS_SetHostPromiseRejectionTracker(
+                                         JS_GetRuntime(engine->u.qjs.ctx),
+                                         ngx_qjs_rejection_tracker, ctx);
             return engine;
         }
     }
