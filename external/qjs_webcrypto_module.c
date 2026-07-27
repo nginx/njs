@@ -624,10 +624,20 @@ qjs_cipher_pkey(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
     u_char                  *dst;
     size_t                  outlen;
     JSValue                 ret;
+#if (NJS_OPENSSL_HAS_RSA_OAEP_MD)
     const EVP_MD            *md;
+#endif
     EVP_PKEY_CTX            *ctx;
     EVP_PKEY_cipher_t       cipher;
     EVP_PKEY_cipher_init_t  init;
+
+#if (!NJS_OPENSSL_HAS_RSA_OAEP_MD)
+    if (key->hash != QJS_HASH_SHA1) {
+        JS_ThrowTypeError(cx, "RSA-OAEP with \"%s\" digest is not supported",
+                          qjs_algorithm_hash_name(key->hash));
+        return JS_EXCEPTION;
+    }
+#endif
 
     ctx = EVP_PKEY_CTX_new(key->u.a.pkey, NULL);
     if (ctx == NULL) {
@@ -652,11 +662,30 @@ qjs_cipher_pkey(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
         goto fail;
     }
 
+    rc = EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_OAEP_PADDING);
+    if (rc <= 0) {
+        qjs_webcrypto_error(cx, "EVP_PKEY_CTX_set_rsa_padding() failed");
+        ret = JS_EXCEPTION;
+        goto fail;
+    }
+
+#if (NJS_OPENSSL_HAS_RSA_OAEP_MD)
     md = qjs_algorithm_hash_digest(key->hash);
 
-    EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_OAEP_PADDING);
-    EVP_PKEY_CTX_set_signature_md(ctx, md);
-    EVP_PKEY_CTX_set_rsa_mgf1_md(ctx, md);
+    rc = EVP_PKEY_CTX_set_rsa_oaep_md(ctx, md);
+    if (rc <= 0) {
+        qjs_webcrypto_error(cx, "EVP_PKEY_CTX_set_rsa_oaep_md() failed");
+        ret = JS_EXCEPTION;
+        goto fail;
+    }
+
+    rc = EVP_PKEY_CTX_set_rsa_mgf1_md(ctx, md);
+    if (rc <= 0) {
+        qjs_webcrypto_error(cx, "EVP_PKEY_CTX_set_rsa_mgf1_md() failed");
+        ret = JS_EXCEPTION;
+        goto fail;
+    }
+#endif
 
     rc = cipher(ctx, NULL, &outlen, data->start, data->length);
     if (rc <= 0) {
