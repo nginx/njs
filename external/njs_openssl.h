@@ -37,6 +37,15 @@
 #endif
 
 
+#if (OPENSSL_VERSION_NUMBER >= 0x10002000L                            \
+     && (!defined LIBRESSL_VERSION_NUMBER                            \
+         || LIBRESSL_VERSION_NUMBER >= 0x3010000fL))
+#define NJS_OPENSSL_HAS_RSA_OAEP_MD  1
+#else
+#define NJS_OPENSSL_HAS_RSA_OAEP_MD  0
+#endif
+
+
 #if (OPENSSL_VERSION_NUMBER >= 0x10100000L)
 #define njs_evp_md_ctx_new()  EVP_MD_CTX_new()
 #define njs_evp_md_ctx_free(_ctx)  EVP_MD_CTX_free(_ctx)

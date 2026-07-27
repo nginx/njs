@@ -12,7 +12,7 @@ async function test(params) {
     let enc = base64decode(fs.readFileSync(`test/webcrypto/${params.src}`));
 
     let key = await crypto.subtle.importKey("pkcs8", pem_to_der(pem, "PRIVATE"),
-                                            {name:"RSA-OAEP", hash:"SHA-1"},
+                                            {name:"RSA-OAEP", hash:params.hash},
                                             false, ["decrypt"]);
 
     let plaintext = await crypto.subtle.decrypt({name: "RSA-OAEP"}, key, enc);
@@ -28,10 +28,17 @@ async function test(params) {
 let rsa_tsuite = {
     name: "RSA-OAEP decoding",
     T: test,
-    prepare_args: (v) => v,
+
+    opts: {
+        pem: "rsa.pkcs8",
+        hash: "SHA-1",
+        expected: "WAKAWAKA",
+    },
 
     tests: [
-        { pem: "rsa.pkcs8", src: "text.base64.rsa-oaep.enc", expected: "WAKAWAKA" },
+        { src: "text.base64.rsa-oaep.enc" },
+        { src: "text.base64.rsa-oaep-sha256.enc", hash: "SHA-256" },
+        { src: "text.base64.rsa-oaep-sha384.enc", hash: "SHA-384" },
 ]};
 
 run([rsa_tsuite])
