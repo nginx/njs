@@ -356,7 +356,7 @@ EOF
 
 $t->try_run('no js_shared_dict_zone');
 
-$t->plan(59);
+$t->plan(61);
 
 ###############################################################################
 
@@ -482,6 +482,11 @@ ok($ttl_incr_def >= 900000 && $ttl_incr_def <= 1000000,
 
 like(http_get('/pop?dict=bar&key=FOO'), qr/zzz/, 'pop bar.FOO');
 like(http_get('/pop?dict=bar&key=FOO'), qr/undefined/, 'pop deleted bar.FOO');
+
+http_get('/set?dict=foo&key=POP&value=alive');
+like(http_get('/pop?dict=foo&key=POP'), qr/alive/, 'pop unexpired foo.POP');
+like(http_get('/pop?dict=foo&key=POP'), qr/undefined/, 'pop deleted foo.POP');
+
 http_get('/set?dict=foo&key=BAR&value=xxx');
 like(http_get('/clear?dict=foo'), qr/undefined/, 'clear foo');
 
