@@ -1429,6 +1429,20 @@ ngx_js_dict_node_free(ngx_js_dict_t *dict, ngx_js_dict_node_t *node)
 }
 
 
+static ngx_rbtree_key_t
+ngx_js_dict_expire_unlink(ngx_js_dict_t *dict, ngx_js_dict_node_t *node)
+{
+    ngx_rbtree_key_t  expire;
+
+    /* ngx_rbtree_delete() clears the node key. */
+    expire = node->expire.key;
+
+    ngx_rbtree_delete(&dict->sh->rbtree_expire, &node->expire);
+
+    return expire;
+}
+
+
 static ngx_int_t
 ngx_js_dict_set(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_str_t *key,
     njs_value_t *value, ngx_msec_t timeout, unsigned flags)
@@ -1618,6 +1632,7 @@ ngx_js_dict_delete(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_str_t *key,
     ngx_int_t            rc;
     ngx_msec_t           now;
     ngx_time_t          *tp;
+    ngx_rbtree_key_t     expire;
     ngx_js_dict_node_t  *node;
 
     ngx_rwlock_wlock(&dict->sh->rwlock);
@@ -1629,8 +1644,10 @@ ngx_js_dict_delete(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_str_t *key,
         return NGX_DECLINED;
     }
 
+    expire = 0;
+
     if (dict->timeout) {
-        ngx_rbtree_delete(&dict->sh->rbtree_expire, &node->expire);
+        expire = ngx_js_dict_expire_unlink(dict, node);
     }
 
     ngx_rbtree_delete(&dict->sh->rbtree, (ngx_rbtree_node_t *) node);
@@ -1639,7 +1656,7 @@ ngx_js_dict_delete(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_str_t *key,
         tp = ngx_timeofday();
         now = tp->sec * 1000 + tp->msec;
 
-        if (!dict->timeout || now < node->expire.key) {
+        if (!dict->timeout || now < expire) {
             rc = ngx_js_dict_copy_value_locked(vm, dict, node, retval);
 
         } else {
@@ -4041,6 +4058,7 @@ ngx_qjs_dict_delete(JSContext *cx, ngx_js_dict_t *dict, ngx_str_t *key,
     JSValue              ret;
     ngx_msec_t           now;
     ngx_time_t          *tp;
+    ngx_rbtree_key_t     expire;
     ngx_js_dict_node_t  *node;
 
     ngx_rwlock_wlock(&dict->sh->rwlock);
@@ -4052,8 +4070,10 @@ ngx_qjs_dict_delete(JSContext *cx, ngx_js_dict_t *dict, ngx_str_t *key,
         return JS_UNDEFINED;
     }
 
+    expire = 0;
+
     if (dict->timeout) {
-        ngx_rbtree_delete(&dict->sh->rbtree_expire, &node->expire);
+        expire = ngx_js_dict_expire_unlink(dict, node);
     }
 
     ngx_rbtree_delete(&dict->sh->rbtree, (ngx_rbtree_node_t *) node);
@@ -4062,7 +4082,7 @@ ngx_qjs_dict_delete(JSContext *cx, ngx_js_dict_t *dict, ngx_str_t *key,
         tp = ngx_timeofday();
         now = tp->sec * 1000 + tp->msec;
 
-        if (!dict->timeout || now < node->expire.key) {
+        if (!dict->timeout || now < expire) {
             ret = ngx_qjs_dict_copy_value_locked(cx, dict, node);
 
         } else {
