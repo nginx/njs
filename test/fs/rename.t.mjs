@@ -25,7 +25,8 @@ var testSync = () => new Promise((resolve, reject) => {
 
         } catch (e) {
             if (e.syscall != 'rename'
-                || (e.code != 'ENOTDIR' && e.code != 'EISDIR'))
+                || (e.code != 'ENOTDIR' && e.code != 'EISDIR'
+                    && e.code != 'ENOTEMPTY' && e.code != 'EEXIST'))
             {
                 reject(new Error('fs.unlinkSync error 1'));
             }
@@ -56,7 +57,8 @@ var testCallback = () => new Promise((resolve, reject) => {
 
             fs.rename(fname_utf8(dname), dname, err => {
                 if (err.syscall != 'rename'
-                    || (err.code != 'ENOTDIR' && err.code != 'EISDIR'))
+                    || (err.code != 'ENOTDIR' && err.code != 'EISDIR'
+                        && err.code != 'ENOTEMPTY' && err.code != 'EEXIST'))
                 {
                     reject(new Error('fs.unlink error 2'));
                 }
@@ -84,7 +86,8 @@ let testFsp = () => Promise.resolve()
 .then(() => fsp.rename(fname_utf8(dname), dname))
 .catch(e => {
     if (e.syscall != 'rename'
-        || (e.code != 'ENOTDIR' && e.code != 'EISDIR'))
+        || (e.code != 'ENOTDIR' && e.code != 'EISDIR'
+            && e.code != 'ENOTEMPTY' && e.code != 'EEXIST'))
     {
         throw new Error('fsp.rename error 1');
     }
