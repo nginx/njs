@@ -186,7 +186,7 @@ http {
   js_path "/etc/nginx/njs/";
 
   # Import our JavaScript file into the variable "main"
-  js_import main from http/hello.js;
+  js_import main from example.js;
 
   server {
     listen 80;
