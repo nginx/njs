@@ -1,0 +1,10 @@
+# The files below are development infrastructure, they are excluded
+# from source archives created by "git archive", see misc/GNUmakefile.
+
+/.gitattributes export-ignore
+/.github        export-ignore
+/.gitignore     export-ignore
+/AGENTS.md      export-ignore
+/CLAUDE.md      export-ignore
+/docs/agent     export-ignore
+/misc           export-ignore
