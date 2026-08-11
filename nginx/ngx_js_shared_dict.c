@@ -1443,6 +1443,16 @@ ngx_js_dict_expire_unlink(ngx_js_dict_t *dict, ngx_js_dict_node_t *node)
 }
 
 
+static void
+ngx_js_dict_expire_link(ngx_js_dict_t *dict, ngx_js_dict_node_t *node,
+    ngx_rbtree_key_t expire)
+{
+    node->expire.key = expire;
+
+    ngx_rbtree_insert(&dict->sh->rbtree_expire, &node->expire);
+}
+
+
 static ngx_int_t
 ngx_js_dict_set(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_str_t *key,
     njs_value_t *value, ngx_msec_t timeout, unsigned flags)
@@ -1577,51 +1587,75 @@ ngx_js_dict_add(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_str_t *key,
 
 
 static ngx_int_t
-ngx_js_dict_update(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_js_dict_node_t *node,
-    njs_value_t *value, ngx_msec_t timeout, ngx_msec_t now)
+ngx_js_dict_update_value(ngx_js_dict_t *dict, ngx_js_dict_node_t *node,
+    ngx_js_dict_value_t *value, ngx_msec_t timeout, ngx_msec_t now)
 {
-    u_char     *p;
-    njs_str_t   string;
+    u_char            *p;
+    ngx_rbtree_key_t   expire;
+
+    expire = 0;
 
     if (dict->timeout) {
         /*
-         * Remove the node from the expire tree before allocating
-         * memory for the new value.  This serves two purposes:
-         * it prevents ngx_js_dict_evict() from freeing this node
-         * during allocation, and it allows the node to be reinserted
-         * with the updated expiry time below.
+         * Keep the node out of the expire tree while allocation may
+         * evict entries.  This prevents self-eviction and allows the
+         * old expiration to be restored if allocation fails.
          */
-        ngx_rbtree_delete(&dict->sh->rbtree_expire, &node->expire);
+        expire = ngx_js_dict_expire_unlink(dict, node);
     }
+
+    if (dict->type == NGX_JS_DICT_TYPE_STRING) {
+        p = ngx_js_dict_alloc(dict, value->str.len);
+        if (p == NULL) {
+            goto failed;
+        }
+
+        ngx_slab_free_locked(dict->shpool, node->value.str.data);
+        ngx_memcpy(p, value->str.data, value->str.len);
+
+        node->value.str.data = p;
+        node->value.str.len = value->str.len;
+
+    } else {
+        node->value.number = value->number;
+    }
+
+    if (dict->timeout) {
+        ngx_js_dict_expire_link(dict, node, now + timeout);
+    }
+
+    return NGX_OK;
+
+failed:
+
+    if (dict->timeout) {
+        ngx_js_dict_expire_link(dict, node, expire);
+    }
+
+    return NGX_ERROR;
+}
+
+
+static ngx_int_t
+ngx_js_dict_update(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_js_dict_node_t *node,
+    njs_value_t *value, ngx_msec_t timeout, ngx_msec_t now)
+{
+    njs_str_t            string;
+    ngx_js_dict_value_t  entry;
 
     if (dict->type == NGX_JS_DICT_TYPE_STRING) {
         njs_value_string_get(vm, value, &string);
 
-        p = ngx_js_dict_alloc(dict, string.length);
-        if (p == NULL) {
-            if (dict->timeout) {
-                ngx_rbtree_insert(&dict->sh->rbtree_expire, &node->expire);
-            }
-
-            return NGX_ERROR;
-        }
-
-        ngx_slab_free_locked(dict->shpool, node->value.str.data);
-        ngx_memcpy(p, string.start, string.length);
-
-        node->value.str.data = p;
-        node->value.str.len = string.length;
+        entry.str.data = string.start;
+        entry.str.len = string.length;
 
     } else {
-        node->value.number = njs_value_number(value);
+        /* GCC complains about uninitialized entry.str.data. */
+        entry.str.data = NULL;
+        entry.number = njs_value_number(value);
     }
 
-    if (dict->timeout) {
-        node->expire.key = now + timeout;
-        ngx_rbtree_insert(&dict->sh->rbtree_expire, &node->expire);
-    }
-
-    return NGX_OK;
+    return ngx_js_dict_update_value(dict, node, &entry, timeout, now);
 }
 
 
@@ -4258,65 +4292,31 @@ static ngx_int_t
 ngx_qjs_dict_update(JSContext *cx, ngx_js_dict_t *dict,
     ngx_js_dict_node_t *node, JSValue value, ngx_msec_t timeout, ngx_msec_t now)
 {
-    u_char     *p;
-    ngx_str_t   string;
-
-    if (dict->timeout) {
-        /*
-         * Remove the node from the expire tree before allocating
-         * memory for the new value.  This serves two purposes:
-         * it prevents ngx_js_dict_evict() from freeing this node
-         * during allocation, and it allows the node to be reinserted
-         * with the updated expiry time below.
-         */
-        ngx_rbtree_delete(&dict->sh->rbtree_expire, &node->expire);
-    }
+    ngx_int_t            rc;
+    ngx_js_dict_value_t  entry;
 
     if (dict->type == NGX_JS_DICT_TYPE_STRING) {
-        string.data = (u_char *) JS_ToCStringLen(cx, &string.len, value);
-        if (string.data == NULL) {
-            if (dict->timeout) {
-                ngx_rbtree_insert(&dict->sh->rbtree_expire, &node->expire);
-            }
-
+        entry.str.data = (u_char *) JS_ToCStringLen(cx, &entry.str.len, value);
+        if (entry.str.data == NULL) {
             return NGX_ERROR;
         }
-
-        p = ngx_js_dict_alloc(dict, string.len);
-        if (p == NULL) {
-            JS_FreeCString(cx, (char *) string.data);
-
-            if (dict->timeout) {
-                ngx_rbtree_insert(&dict->sh->rbtree_expire, &node->expire);
-            }
-
-            return NGX_ERROR;
-        }
-
-        ngx_slab_free_locked(dict->shpool, node->value.str.data);
-        ngx_memcpy(p, string.data, string.len);
-
-        node->value.str.data = p;
-        node->value.str.len = string.len;
-
-        JS_FreeCString(cx, (char *) string.data);
 
     } else {
-        if (JS_ToFloat64(cx, &node->value.number, value) < 0) {
-            if (dict->timeout) {
-                ngx_rbtree_insert(&dict->sh->rbtree_expire, &node->expire);
-            }
+        /* GCC complains about uninitialized entry.str.data. */
+        entry.str.data = NULL;
 
+        if (JS_ToFloat64(cx, &entry.number, value) < 0) {
             return NGX_ERROR;
         }
     }
 
-    if (dict->timeout) {
-        node->expire.key = now + timeout;
-        ngx_rbtree_insert(&dict->sh->rbtree_expire, &node->expire);
+    rc = ngx_js_dict_update_value(dict, node, &entry, timeout, now);
+
+    if (dict->type == NGX_JS_DICT_TYPE_STRING) {
+        JS_FreeCString(cx, (char *) entry.str.data);
     }
 
-    return NGX_OK;
+    return rc;
 }
 
 
