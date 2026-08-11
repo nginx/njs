@@ -76,4 +76,3 @@ It's the same strategy as used in [DefinitelyTyped](https://github.com/Definitel
 The reason is that npmjs enforces [SemVer](https://semver.org/) which doesn't allow four-part version number nor provide post-release suffixes.
 
 You can find from which commit the package was built in file `COMMITHASH` inside the published package.
-It contains global revision id in the upstream repository https://hg.nginx.org/njs/ (Mercurial).
