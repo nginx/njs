@@ -43,6 +43,7 @@ http {
     js_shared_dict_zone zone=waka:32k timeout=1000s type=number;
     js_shared_dict_zone zone=no_timeout:32k;
     js_shared_dict_zone zone=overflow:32k;
+    js_shared_dict_zone zone=rollback:32k timeout=1000s;
 
     server {
         listen       127.0.0.1:8080;
@@ -126,6 +127,10 @@ http {
 
         location /ttl {
             js_content test.ttl;
+        }
+
+        location /update_failed {
+            js_content test.update_failed;
         }
 
         location /zones {
@@ -344,6 +349,29 @@ $t->write_file('test.js', <<'EOF');
         r.return(200, val === undefined ? 'undefined' : val);
     }
 
+    function update_failed(r) {
+        var dict = ngx.shared.rollback;
+        var failed = false;
+
+        dict.clear();
+        dict.set('target', 'old', 30000);
+
+        try {
+            dict.set('target', 'x'.repeat(dict.capacity * 2));
+
+        } catch (e) {
+            failed = e instanceof SharedMemoryError;
+        }
+
+        dict.set('probe', 'ok');
+
+        var ttl = dict.ttl('target');
+        var valid = ttl !== undefined && ttl > 0;
+
+        r.return(200, `failed:${failed},value:${dict.get('target')},`
+                      + `ttl:${valid}`);
+    }
+
     function zones(r) {
         r.return(200, Object.keys(ngx.shared).sort());
     }
@@ -351,12 +379,12 @@ $t->write_file('test.js', <<'EOF');
     export default { add, capacity, chain, clear, del, free_space, get,
                      has, incr, items, keys, name, njs: test_njs, pop,
                      replace, set, set_clear, size, ttl, zones,
-                     overflow };
+                     overflow, update_failed };
 EOF
 
 $t->try_run('no js_shared_dict_zone');
 
-$t->plan(61);
+$t->plan(64);
 
 ###############################################################################
 
@@ -493,6 +521,17 @@ like(http_get('/clear?dict=foo'), qr/undefined/, 'clear foo');
 like(http_get('/size?dict=foo'), qr/size: 0/, 'no of items in foo after clear');
 like(http_get('/set_clear'), qr/size: 0/,
 	'no of items in no_timeout after clear');
+
+my $update_failed = http_get('/update_failed');
+like($update_failed, qr/failed:true/, 'failed update throws');
+
+TODO: {
+local $TODO = 'not yet' unless has_version('1.0.3');
+
+like($update_failed, qr/value:old/, 'failed update preserves value');
+like($update_failed, qr/ttl:true/, 'failed update preserves ttl');
+
+}
 
 TODO: {
 local $TODO = 'not yet' unless has_version('0.8.8');
