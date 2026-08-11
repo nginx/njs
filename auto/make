@@ -324,13 +324,6 @@ benchmark: $NJS_BUILD_DIR/njs_auto_config.h \\
 	$NJS_BUILD_DIR/njs_benchmark
 
 	$NJS_BUILD_DIR/njs_benchmark
-
-dist:
-	rm -rf njs-\$(NJS_VER) \\
-	&& hg archive njs-\$(NJS_VER).tar.gz \\
-		-p njs-\$(NJS_VER) \\
-		-X ".hg*" \\
-	&& echo njs-\$(NJS_VER).tar.gz done
 END
 
 if [ $NJS_HAVE_QUICKJS = YES ]; then
@@ -372,7 +365,9 @@ $NJS_BUILD_DIR/ts/node_modules: $NJS_BUILD_DIR/ts/package.json
 	touch $NJS_BUILD_DIR/ts/node_modules
 
 $NJS_BUILD_DIR/njs-types-\$(NJS_TYPES_VER).tgz: $NJS_BUILD_DIR/ts/package.json
-	hg id -i > $NJS_BUILD_DIR/ts/COMMITHASH || true
+	git ls-files --error-unmatch ts/package.json > /dev/null 2>&1 \\
+		&& git rev-parse --short HEAD > $NJS_BUILD_DIR/ts/COMMITHASH \\
+		|| true
 	cd $NJS_BUILD_DIR && \$(NPM) pack ./ts
 
 .PHONY: ts
