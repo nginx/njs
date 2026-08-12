@@ -211,6 +211,44 @@ let concatRevalidate_tsuite = {
 };
 
 
+let detachCoercion_tsuite = {
+    name: "Buffer detach during argument coercion tests",
+    skip: () => (!has_buffer() || !is_detach_available()),
+    T: async (params) => {
+        let b = Buffer.alloc(16);
+        let o = Buffer.alloc(16);
+        let d = (buf, v) => ({ valueOf() { detach(buf.buffer); return v; } });
+
+        try {
+            params.run(b, o, d);
+
+        } catch (e) {
+            if (e instanceof TypeError) {
+                return 'SUCCESS';
+            }
+
+            throw e;
+        }
+
+        throw Error('detached buffer was not detected');
+    },
+
+    tests: [
+        { run: (b, o, d) => b.readUInt32LE(d(b, 0)) },
+        { run: (b, o, d) => b.readFloatLE(d(b, 0)) },
+        { run: (b, o, d) => b.writeUInt32LE(d(b, 1), 0) },
+        { run: (b, o, d) => b.writeFloatLE(1, d(b, 0)) },
+        { run: (b, o, d) => b.write('a', d(b, 0)) },
+        { run: (b, o, d) => b.toString('utf8', d(b, 0)) },
+        { run: (b, o, d) => b.indexOf(1, d(b, 0)) },
+        { run: (b, o, d) => b.compare(o, d(b, 0)) },
+        { run: (b, o, d) => b.compare(o, 0, 16, d(o, 0)) },
+        { run: (b, o, d) => b.copy(o, d(b, 0)) },
+        { run: (b, o, d) => b.copy(o, 0, d(o, 0)) },
+    ],
+};
+
+
 let compare_tsuite = {
     name: "Buffer.compare() tests",
     skip: () => (!has_buffer()),
@@ -990,7 +1028,21 @@ let toJSON_tsuite = {
     name: "Buffer.toJSON() tests",
     skip: () => (!has_buffer()),
     T: async (params) => {
-        let r = Buffer.from(params.value).toJSON();
+        let b = Buffer.from(params.value);
+
+        if (params.detach) {
+            Object.defineProperty(Array.prototype, '0', { configurable: true,
+                                  set() { detach(b.buffer); } });
+        }
+
+        let r;
+
+        try {
+            r = b.toJSON();
+
+        } finally {
+            delete Array.prototype[0];
+        }
 
         if (!compare_object(r, params.expected)) {
             throw Error(`unexpected output "${JSON.stringify(r)}" != "${JSON.stringify(params.expected)}"`);
@@ -1003,6 +1055,8 @@ let toJSON_tsuite = {
         { value: '', expected: { type: 'Buffer', data: [] } },
         { value: 'αβγ', expected: { type: 'Buffer', data: [0xCE, 0xB1, 0xCE, 0xB2, 0xCE, 0xB3] } },
         { value: new Uint8Array([0xff, 0xde, 0xba]), expected: { type: 'Buffer', data: [0xFF, 0xDE, 0xBA] } },
+        { value: 'ab', detach: true, skip: () => !is_detach_available(),
+          expected: { type: 'Buffer', data: [0x61, 0x62] } },
     ],
 };
 
@@ -1188,6 +1242,7 @@ run([
     byteLength_tsuite,
     concat_tsuite,
     concatRevalidate_tsuite,
+    detachCoercion_tsuite,
     compare_tsuite,
     comparePrototype_tsuite,
     copy_tsuite,

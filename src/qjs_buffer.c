@@ -731,31 +731,28 @@ qjs_buffer_is_encoding(JSContext *ctx, JSValueConst this_val,
 }
 
 
-static JSValue
-qjs_buffer_array_range(JSContext *ctx, njs_str_t *array, JSValueConst start,
-    JSValueConst end, const char *name)
+static int
+qjs_buffer_range_arg(JSContext *ctx, JSValueConst value, int64_t *num)
 {
-    int64_t  num_start, num_end;
-
-    num_start = 0;
-
-    if (!JS_IsUndefined(start)) {
-        if (JS_ToInt64(ctx, &num_start, start)) {
-            return JS_EXCEPTION;
-        }
+    if (JS_IsUndefined(value)) {
+        return 0;
     }
 
+    return JS_ToInt64(ctx, num, value);
+}
+
+
+static JSValue
+qjs_buffer_array_range(JSContext *ctx, njs_str_t *array, int64_t num_start,
+    int64_t num_end, const char *name)
+{
     if (num_start < 0 || (size_t) num_start > array->length) {
         return JS_ThrowRangeError(ctx, "\"%sStart\" is out of range: %" PRId64,
                                   name, num_start);
     }
 
-    num_end = array->length;
-
-    if (!JS_IsUndefined(end)) {
-        if (JS_ToInt64(ctx, &num_end, end)) {
-            return JS_EXCEPTION;
-        }
+    if (num_end == INT64_MAX) {
+        num_end = array->length;
     }
 
     if (num_end < 0 || (size_t) num_end > array->length) {
@@ -782,7 +779,30 @@ qjs_buffer_compare_array(JSContext *ctx, JSValue val1, JSValue val2,
     int        rc;
     size_t     size;
     JSValue    ret;
+    int64_t    num_source_start, num_source_end, num_target_start,
+               num_target_end;
     njs_str_t  src, target;
+
+    num_source_start = 0;
+    num_source_end = INT64_MAX;
+    num_target_start = 0;
+    num_target_end = INT64_MAX;
+
+    if (qjs_buffer_range_arg(ctx, source_start, &num_source_start)) {
+        return JS_EXCEPTION;
+    }
+
+    if (qjs_buffer_range_arg(ctx, source_end, &num_source_end)) {
+        return JS_EXCEPTION;
+    }
+
+    if (qjs_buffer_range_arg(ctx, target_start, &num_target_start)) {
+        return JS_EXCEPTION;
+    }
+
+    if (qjs_buffer_range_arg(ctx, target_end, &num_target_end)) {
+        return JS_EXCEPTION;
+    }
 
     ret = qjs_typed_array_data(ctx, val1, &src);
     if (JS_IsException(ret)) {
@@ -794,13 +814,14 @@ qjs_buffer_compare_array(JSContext *ctx, JSValue val1, JSValue val2,
         return ret;
     }
 
-    ret = qjs_buffer_array_range(ctx, &src, source_start, source_end, "source");
+    ret = qjs_buffer_array_range(ctx, &src, num_source_start, num_source_end,
+                                 "source");
     if (JS_IsException(ret)) {
         return ret;
     }
 
-    ret = qjs_buffer_array_range(ctx, &target, target_start, target_end,
-                                 "target");
+    ret = qjs_buffer_array_range(ctx, &target, num_target_start,
+                                 num_target_end, "target");
     if (JS_IsException(ret)) {
         return ret;
     }
@@ -839,7 +860,24 @@ qjs_buffer_prototype_copy(JSContext *ctx, JSValueConst this_val, int argc,
 {
     size_t     size;
     JSValue    ret;
+    int64_t    num_target_start, num_source_start, num_source_end;
     njs_str_t  src, target;
+
+    num_target_start = 0;
+    num_source_start = 0;
+    num_source_end = INT64_MAX;
+
+    if (qjs_buffer_range_arg(ctx, argv[1], &num_target_start)) {
+        return JS_EXCEPTION;
+    }
+
+    if (qjs_buffer_range_arg(ctx, argv[2], &num_source_start)) {
+        return JS_EXCEPTION;
+    }
+
+    if (qjs_buffer_range_arg(ctx, argv[3], &num_source_end)) {
+        return JS_EXCEPTION;
+    }
 
     ret = qjs_typed_array_data(ctx, this_val, &src);
     if (JS_IsException(ret)) {
@@ -851,12 +889,14 @@ qjs_buffer_prototype_copy(JSContext *ctx, JSValueConst this_val, int argc,
         return ret;
     }
 
-    ret = qjs_buffer_array_range(ctx, &target, argv[1], JS_UNDEFINED, "target");
+    ret = qjs_buffer_array_range(ctx, &target, num_target_start, INT64_MAX,
+                                 "target");
     if (JS_IsException(ret)) {
         return ret;
     }
 
-    ret = qjs_buffer_array_range(ctx, &src, argv[2], argv[3], "source");
+    ret = qjs_buffer_array_range(ctx, &src, num_source_start, num_source_end,
+                                 "source");
     if (JS_IsException(ret)) {
         return ret;
     }
@@ -965,8 +1005,26 @@ qjs_buffer_prototype_index_of(JSContext *ctx, JSValueConst this_val, int argc,
     JSValue                      ret, buffer, encode, value;
     int64_t                      from, to, increment, length, i;
     uint32_t                     byte;
+    njs_bool_t                   has_from;
     njs_str_t                    self, str;
     const qjs_buffer_encoding_t  *encoding;
+
+    from = 0;
+    has_from = 0;
+    encode = argv[2];
+
+    if (!JS_IsUndefined(argv[1])) {
+        if (JS_IsString(argv[0]) && JS_IsString(argv[1])) {
+            encode = argv[1];
+
+        } else {
+            if (JS_ToInt64(ctx, &from, argv[1])) {
+                return JS_EXCEPTION;
+            }
+
+            has_from = 1;
+        }
+    }
 
     ret = qjs_typed_array_data(ctx, this_val, &self);
     if (JS_IsException(ret)) {
@@ -976,34 +1034,22 @@ qjs_buffer_prototype_index_of(JSContext *ctx, JSValueConst this_val, int argc,
     length = self.length;
 
     if (last) {
-        from = length - 1;
         to = -1;
         increment = -1;
 
     } else {
-        from = 0;
         to = length;
         increment = 1;
     }
 
-    encode = argv[2];
+    if (!has_from) {
+        from = last ? length - 1 : 0;
 
-    if (!JS_IsUndefined(argv[1])) {
-        if (JS_IsString(argv[0]) && JS_IsString(argv[1])) {
-            encode = argv[1];
-            goto encoding;
-        }
+    } else if (from >= 0) {
+        from = njs_min(from, length);
 
-        if (JS_ToInt64(ctx, &from, argv[1])) {
-            return JS_EXCEPTION;
-        }
-
-        if (from >= 0) {
-            from = njs_min(from, length);
-
-        } else {
-            from = njs_max(0, length + from);
-        }
+    } else {
+        from = njs_max(0, length + from);
     }
 
     if (JS_IsNumber(argv[0])) {
@@ -1023,8 +1069,6 @@ qjs_buffer_prototype_index_of(JSContext *ctx, JSValueConst this_val, int argc,
 
         return JS_NewInt32(ctx, -1);
     }
-
-encoding:
 
     buffer = JS_UNDEFINED;
     value = argv[0];
@@ -1097,13 +1141,13 @@ qjs_buffer_prototype_read_float(JSContext *ctx, JSValueConst this_val,
     njs_conv_f32_t  conv_f32;
     njs_conv_f64_t  conv_f64;
 
+    if (JS_ToIndex(ctx, &index, argv[0])) {
+        return JS_EXCEPTION;
+    }
+
     ret = qjs_typed_array_data(ctx, this_val, &self);
     if (JS_IsException(ret)) {
         return ret;
-    }
-
-    if (JS_ToIndex(ctx, &index, argv[0])) {
-        return JS_EXCEPTION;
     }
 
     size = magic >> 2;
@@ -1159,11 +1203,6 @@ qjs_buffer_prototype_read_int(JSContext *ctx, JSValueConst this_val,
     njs_str_t   self;
     njs_bool_t  little, swap, sign;
 
-    ret = qjs_typed_array_data(ctx, this_val, &self);
-    if (JS_IsException(ret)) {
-        return ret;
-    }
-
     if (JS_ToIndex(ctx, &index, argv[0])) {
         return JS_EXCEPTION;
     }
@@ -1183,6 +1222,11 @@ qjs_buffer_prototype_read_int(JSContext *ctx, JSValueConst this_val,
             return JS_ThrowRangeError(ctx,
                                       "\"byteLength\" must be >= 1 and <= 6");
         }
+    }
+
+    ret = qjs_typed_array_data(ctx, this_val, &self);
+    if (JS_IsException(ret)) {
+        return ret;
     }
 
     if (size + index > self.length) {
@@ -1357,7 +1401,9 @@ qjs_buffer_prototype_to_json(JSContext *ctx, JSValueConst this_val, int argc,
     }
 
     for (i = 0; i < src.length; i++) {
-        rc = JS_SetPropertyUint32(ctx, data, i, JS_NewInt32(ctx, src.start[i]));
+        rc = JS_DefinePropertyValueUint32(ctx, data, i,
+                                          JS_NewInt32(ctx, src.start[i]),
+                                          JS_PROP_C_W_E);
         if (rc == -1) {
             JS_FreeValue(ctx, obj);
             return JS_EXCEPTION;
@@ -1426,30 +1472,29 @@ qjs_buffer_prototype_to_string(JSContext *ctx, JSValueConst this_val,
     njs_str_t                    src, data;
     const qjs_buffer_encoding_t  *encoding;
 
-    ret = qjs_typed_array_data(ctx, this_val, &src);
-    if (JS_IsException(ret)) {
-        return JS_ThrowTypeError(ctx, "method toString() called on incompatible"
-                                 " object");
-    }
-
     start = 0;
-    end = src.length;
+    end = UINT64_MAX;
 
     if (!JS_IsUndefined(argv[1])) {
         if (JS_ToIndex(ctx, &start, argv[1])) {
             return JS_EXCEPTION;
         }
-
-        start = njs_min(start, src.length);
     }
 
     if (!JS_IsUndefined(argv[2])) {
         if (JS_ToIndex(ctx, &end, argv[2])) {
             return JS_EXCEPTION;
         }
-
-        end = njs_min(end, src.length);
     }
+
+    ret = qjs_typed_array_data(ctx, this_val, &src);
+    if (JS_IsException(ret)) {
+        return JS_ThrowTypeError(ctx, "method toString() called on incompatible"
+                                 " object");
+    }
+
+    start = njs_min(start, src.length);
+    end = njs_min(end, src.length);
 
     if (start >= end) {
         src.length = 0;
@@ -1503,13 +1548,8 @@ qjs_buffer_prototype_write(JSContext *ctx, JSValueConst this_val,
     const uint8_t                *p, *end, *prev;
     const qjs_buffer_encoding_t  *encoding;
 
-    ret = qjs_typed_array_data(ctx, this_val, &self);
-    if (JS_IsException(ret)) {
-        return ret;
-    }
-
     offset = 0;
-    max_length = self.length;
+    max_length = UINT64_MAX;
     encode = argv[3];
 
     if (!JS_IsUndefined(argv[1])) {
@@ -1521,8 +1561,6 @@ qjs_buffer_prototype_write(JSContext *ctx, JSValueConst this_val,
         if (JS_ToIndex(ctx, &offset, argv[1])) {
             return JS_EXCEPTION;
         }
-
-        max_length = self.length - offset;
     }
 
     if (!JS_IsUndefined(argv[2])) {
@@ -1537,6 +1575,11 @@ qjs_buffer_prototype_write(JSContext *ctx, JSValueConst this_val,
     }
 
 write:
+
+    ret = qjs_typed_array_data(ctx, this_val, &self);
+    if (JS_IsException(ret)) {
+        return ret;
+    }
 
     encoding = qjs_buffer_encoding(ctx, encode, 1);
     if (encoding == NULL) {
@@ -1553,6 +1596,10 @@ write:
     if (offset > self.length) {
         JS_FreeValue(ctx, buffer);
         return JS_ThrowRangeError(ctx, "\"offset\" is out of range");
+    }
+
+    if (max_length == UINT64_MAX) {
+        max_length = self.length - offset;
     }
 
     if (src.length == 0) {
@@ -1601,11 +1648,6 @@ qjs_buffer_prototype_write_int(JSContext *ctx, JSValueConst this_val,
     njs_str_t   self;
     njs_bool_t  little, swap, sign;
 
-    ret = qjs_typed_array_data(ctx, this_val, &self);
-    if (JS_IsException(ret)) {
-        return ret;
-    }
-
     if (JS_ToIndex(ctx, &index, argv[1])) {
         return JS_EXCEPTION;
     }
@@ -1623,6 +1665,15 @@ qjs_buffer_prototype_write_int(JSContext *ctx, JSValueConst this_val,
         }
     }
 
+    if (JS_ToInt64(ctx, &i64, argv[0])) {
+        return JS_EXCEPTION;
+    }
+
+    ret = qjs_typed_array_data(ctx, this_val, &self);
+    if (JS_IsException(ret)) {
+        return ret;
+    }
+
     if (size + index > self.length) {
         return JS_ThrowRangeError(ctx, "index %" PRIu64 " is outside the bound"
                                   " of the buffer", index);
@@ -1635,10 +1686,6 @@ qjs_buffer_prototype_write_int(JSContext *ctx, JSValueConst this_val,
 #if NJS_HAVE_LITTLE_ENDIAN
     swap = !swap;
 #endif
-
-    if (JS_ToInt64(ctx, &i64, argv[0])) {
-        return JS_EXCEPTION;
-    }
 
     switch (size) {
     case 1:
@@ -1814,17 +1861,17 @@ qjs_buffer_prototype_write_float(JSContext *ctx, JSValueConst this_val,
     njs_conv_f32_t  conv_f32;
     njs_conv_f64_t  conv_f64;
 
-    ret = qjs_typed_array_data(ctx, this_val, &self);
-    if (JS_IsException(ret)) {
-        return ret;
-    }
-
     if (JS_ToFloat64(ctx, &v, argv[0])) {
         return JS_EXCEPTION;
     }
 
     if (JS_ToIndex(ctx, &index, argv[1])) {
         return JS_EXCEPTION;
+    }
+
+    ret = qjs_typed_array_data(ctx, this_val, &self);
+    if (JS_IsException(ret)) {
+        return ret;
     }
 
     size = magic >> 2;
