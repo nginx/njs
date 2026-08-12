@@ -2401,7 +2401,6 @@ free:
 #else
         (void) pctx;
         (void) olen;
-        (void) &string_info;
         (void) &info;
 #endif
 
@@ -4484,11 +4483,11 @@ qjs_convert_der_to_p1363(JSContext *cx, EVP_PKEY *pkey, const u_char *der,
     s = ec_sig->s;
 #endif
 
-    if (BN_bn2binpad(r, data, n) <= 0) {
+    if (njs_bn_bn2binpad(r, data, n) <= 0) {
         goto fail;
     }
 
-    if (BN_bn2binpad(s, &data[n], n) <= 0) {
+    if (njs_bn_bn2binpad(s, &data[n], n) <= 0) {
         goto fail;
     }
 
@@ -4548,7 +4547,7 @@ qjs_convert_p1363_to_der(JSContext *cx, EVP_PKEY *pkey, u_char *p1363,
         goto fail;
     }
 
-    if (ECDSA_SIG_set0(ec_sig, r, s) != 1) {
+    if (njs_ecdsa_sig_set0(ec_sig, r, s) != 1) {
         BN_free(r);
         BN_free(s);
         JS_ThrowOutOfMemory(cx);
