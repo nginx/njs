@@ -22131,6 +22131,10 @@ static njs_unit_test_t  njs_externals_test[] =
       njs_str("129,144,145") },
 
     { njs_str("var b = $r.buffer; "
+              "[Buffer.from('@#').copy(b, 4), $r.buffer[4], b[4]]"),
+      njs_str("2,208,64") },
+
+    { njs_str("var b = $r.buffer; "
               "var v = new DataView(b.buffer, b.byteOffset);"
               "v.setUint8(0, '@'.codePointAt(0));"
               "[b[0], $r.buffer[0]]"),
