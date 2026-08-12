@@ -1991,6 +1991,23 @@ ngx_qjs_ext_fetch_headers_set(JSContext *cx, JSValueConst this_val,
         return JS_EXCEPTION;
     }
 
+    ngx_js_http_trim_ows(&value.data, &value.len);
+
+    if (ngx_js_check_header_name(name.data, name.len) != NGX_OK) {
+        JS_FreeCString(cx, (const char *) name.data);
+        return JS_ThrowTypeError(cx, "invalid header name");
+    }
+
+    if (ngx_js_check_header_value(value.data, value.len) != NGX_OK) {
+        JS_FreeCString(cx, (const char *) name.data);
+        return JS_ThrowTypeError(cx, "invalid header value");
+    }
+
+    if (headers->guard == GUARD_IMMUTABLE) {
+        JS_FreeCString(cx, (const char *) name.data);
+        return JS_ThrowTypeError(cx, "cannot append to immutable object");
+    }
+
     part = &headers->header_list.part;
     h = part->elts;
 

@@ -2073,6 +2073,23 @@ ngx_headers_js_ext_set(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
+    ngx_js_http_trim_ows(&value.start, &value.length);
+
+    if (ngx_js_check_header_name(name.start, name.length) != NGX_OK) {
+        njs_vm_type_error(vm, "invalid header name");
+        return NJS_ERROR;
+    }
+
+    if (ngx_js_check_header_value(value.start, value.length) != NGX_OK) {
+        njs_vm_type_error(vm, "invalid header value");
+        return NJS_ERROR;
+    }
+
+    if (headers->guard == GUARD_IMMUTABLE) {
+        njs_vm_type_error(vm, "cannot append to immutable object");
+        return NJS_ERROR;
+    }
+
     part = &headers->header_list.part;
     h = part->elts;
 
