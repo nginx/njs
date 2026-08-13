@@ -1638,6 +1638,24 @@ string:
 }
 
 
+ngx_int_t
+ngx_qjs_header_value(JSContext *cx, ngx_pool_t *pool, JSValueConst val,
+    ngx_str_t *dst)
+{
+    if (ngx_qjs_string(cx, pool, val, dst) != NGX_OK) {
+        return NGX_ERROR;
+    }
+
+    if (ngx_js_check_header_value(dst->data, dst->len) != NGX_OK) {
+        (void) JS_ThrowTypeError(cx, "%s",
+                            ngx_js_headers_error(NGX_JS_HEADERS_INVALID_VALUE));
+        return NGX_ERROR;
+    }
+
+    return NGX_OK;
+}
+
+
 static void
 ngx_qjs_timer_handler(ngx_event_t *ev)
 {
@@ -2515,6 +2533,23 @@ ngx_js_ngx_string(njs_vm_t *vm, njs_value_t *value, ngx_str_t *str)
 
     str->data = s.start;
     str->len = s.length;
+
+    return NGX_OK;
+}
+
+
+ngx_int_t
+ngx_js_header_value(njs_vm_t *vm, njs_value_t *value, njs_str_t *str)
+{
+    if (ngx_js_string(vm, value, str) != NGX_OK) {
+        return NGX_ERROR;
+    }
+
+    if (ngx_js_check_header_value(str->start, str->length) != NGX_OK) {
+        njs_vm_type_error(vm, "%s",
+                          ngx_js_headers_error(NGX_JS_HEADERS_INVALID_VALUE));
+        return NGX_ERROR;
+    }
 
     return NGX_OK;
 }

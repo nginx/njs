@@ -10,6 +10,7 @@
 #include <ngx_core.h>
 #include <ngx_http.h>
 #include "ngx_js.h"
+#include "ngx_js_http.h"
 #include "ngx_js_modules.h"
 #include "ngx_js_form.h"
 
@@ -2463,6 +2464,14 @@ ngx_http_js_ext_header_out(njs_vm_t *vm, njs_object_prop_t *prop,
         return NJS_DECLINED;
     }
 
+    if (setval != NULL
+        && ngx_js_check_header_name(name.start, name.length) != NGX_OK)
+    {
+        njs_vm_type_error(vm, "%s",
+                          ngx_js_headers_error(NGX_JS_HEADERS_INVALID_NAME));
+        return NJS_ERROR;
+    }
+
     if (r->header_sent && setval != NULL) {
         ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
                       "ignored setting of response header \"%V\" because"
@@ -2544,7 +2553,7 @@ ngx_http_js_header_out_special(njs_vm_t *vm, ngx_http_request_t *r,
         setval = njs_vm_array_prop(vm, setval, length - 1, &lvalue);
     }
 
-    if (ngx_js_string(vm, setval, &s) != NGX_OK) {
+    if (ngx_js_header_value(vm, setval, &s) != NGX_OK) {
         return NJS_ERROR;
     }
 
@@ -2790,7 +2799,7 @@ ngx_http_js_header_generic(njs_vm_t *vm, ngx_http_request_t *r,
             setval = njs_vm_array_prop(vm, array, i, &lvalue);
         }
 
-        if (ngx_js_string(vm, setval, &s) != NGX_OK) {
+        if (ngx_js_header_value(vm, setval, &s) != NGX_OK) {
             return NJS_ERROR;
         }
 
@@ -5239,7 +5248,7 @@ ngx_http_js_header_out(njs_vm_t *vm, ngx_http_request_t *r, unsigned flags,
             setval = njs_vm_array_prop(vm, array, i, &lvalue);
         }
 
-        if (ngx_js_string(vm, setval, &s) != NGX_OK) {
+        if (ngx_js_header_value(vm, setval, &s) != NGX_OK) {
             return NJS_ERROR;
         }
 
@@ -5319,7 +5328,7 @@ ngx_http_js_header_out_special(njs_vm_t *vm, ngx_http_request_t *r,
         setval = njs_vm_array_prop(vm, setval, length - 1, &lvalue);
     }
 
-    if (ngx_js_string(vm, setval, &s) != NGX_OK) {
+    if (ngx_js_header_value(vm, setval, &s) != NGX_OK) {
         return NJS_ERROR;
     }
 
@@ -5594,7 +5603,7 @@ ngx_http_js_content_type(njs_vm_t *vm, ngx_http_request_t *r,
         setval = njs_vm_array_prop(vm, setval, length - 1, &lvalue);
     }
 
-    if (ngx_js_string(vm, setval, &s) != NGX_OK) {
+    if (ngx_js_header_value(vm, setval, &s) != NGX_OK) {
         return NJS_ERROR;
     }
 
@@ -8674,7 +8683,7 @@ ngx_http_qjs_headers_out_handler(JSContext *cx, ngx_http_request_t *r,
             }
         }
 
-        rc = ngx_qjs_string(cx, r->pool, v, &s);
+        rc = ngx_qjs_header_value(cx, r->pool, v, &s);
 
         if (qjs_is_array(cx, *value)) {
             JS_FreeValue(cx, v);
@@ -8766,7 +8775,7 @@ ngx_http_qjs_headers_out_special_handler(JSContext *cx, ngx_http_request_t *r,
         setval = JS_UNDEFINED;
     }
 
-    rc = ngx_qjs_string(cx, r->pool, setval, &s);
+    rc = ngx_qjs_header_value(cx, r->pool, setval, &s);
 
     if (value != NULL && qjs_is_array(cx, *value)) {
         JS_FreeValue(cx, setval);
@@ -8992,7 +9001,7 @@ ngx_http_qjs_headers_out_content_type(JSContext *cx, ngx_http_request_t *r,
         setval = *value;
     }
 
-    rc = ngx_qjs_string(cx, r->pool, setval, &s);
+    rc = ngx_qjs_header_value(cx, r->pool, setval, &s);
 
     if (qjs_is_array(cx, *value)) {
         JS_FreeValue(cx, setval);
@@ -9203,6 +9212,13 @@ ngx_http_qjs_headers_out_define_own_property(JSContext *cx,
     }
 
     name.len = ngx_strlen(name.data);
+
+    if (ngx_js_check_header_name(name.data, name.len) != NGX_OK) {
+        JS_FreeCString(cx, (char *) name.data);
+        (void) JS_ThrowTypeError(cx, "%s",
+                            ngx_js_headers_error(NGX_JS_HEADERS_INVALID_NAME));
+        return -1;
+    }
 
     if (r->header_sent) {
         ngx_log_error(NGX_LOG_WARN, r->connection->log, 0,
