@@ -255,15 +255,51 @@ $t->write_file('test.js', <<EOF);
                 return 'OK';
              }, 'OK'],
             ['set', () => {
-                var h = new Headers([['A', 'x'], ['a', 'y'], ['a', 'z']]);
-                h.set('a', '#');
-                return h.get('a');
-             }, '#'],
-             ['set on empty', () => {
+                var h = new Headers();
+
+                for (var i = 0; i < 10; i++) {
+                    h.append(i == 0 ? 'A' : 'a', String(i));
+                }
+
+                h.set('a', ' \t#\t ');
+                var h2 = new Headers(h);
+                var key;
+                h.forEach((k) => key = k);
+                return `\${key} \${JSON.stringify(h.getAll('a'))} `
+                       + JSON.stringify(h2.getAll('a'));
+             }, 'A ["#"] ["#"]'],
+            ['set invalid value', () => {
+                var h = new Headers({a: 'x'});
+                h.set('a', 'a\\r\\nb');
+             }, 'invalid header value'],
+            ['set on empty', () => {
                 var h = new Headers([]);
                 h.set('x-test', '1234');
                 return h.get('x-test');
              }, '1234'],
+            ['invalid empty name', () => {
+                var h = new Headers({a: 'x'});
+                var tests = [
+                    () => new Headers({'': 'x'}),
+                    () => h.append('', 'x'),
+                    () => h.delete(''),
+                    () => h.set('', 'x'),
+                ];
+
+                for (var i = 0; i < tests.length; i++) {
+                    try {
+                        tests[i]();
+                        throw new Error('no error');
+
+                    } catch (e) {
+                        if (e.message != 'invalid header name') {
+                            throw e;
+                        }
+                    }
+                }
+
+                return 'OK';
+             }, 'OK'],
         ];
 
         run(r, tests);
@@ -629,6 +665,35 @@ $t->write_file('test.js', <<EOF);
                 var body = await r.text();
                 return `\${r.status} \${body}`;
              }, '200 /target%0D%0A?q=%00%20'],
+            ['immutable headers', async () => {
+                var r = await ngx.fetch('http://127.0.0.1:$p0/method');
+                var errors = [];
+
+                try {
+                    r.headers.append('X-Test', 'test');
+
+                } catch (e) {
+                    errors.push(e.message);
+                }
+
+                try {
+                    r.headers.set('Content-Type', 'text/html');
+
+                } catch (e) {
+                    errors.push(e.message);
+                }
+
+                try {
+                    r.headers.delete('Content-Type');
+
+                } catch (e) {
+                    errors.push(e.message);
+                }
+
+                return errors.join('|');
+             }, 'cannot modify immutable object|'
+                + 'cannot modify immutable object|'
+                + 'cannot modify immutable object'],
         ];
 
         run(r, tests);
@@ -645,6 +710,14 @@ $t->write_file('test.js', <<EOF);
                 var body = await r.text();
                 return `\${r.url}: \${r.status} \${body}`;
              }, 'http://127.0.0.1:$p0/header: 200 X, Z'],
+            ['set request multi header', async () => {
+                var h = new Headers([['a', 'X'], ['a', 'Y'], ['a', 'Z']]);
+                h.set('a', '#');
+                var r = await ngx.fetch('http://127.0.0.1:$p0/header',
+                                        {headers: h});
+                var body = await r.text();
+                return `\${r.url}: \${r.status} \${body}`;
+             }, 'http://127.0.0.1:$p0/header: 200 #'],
         ];
 
         run(r, tests);

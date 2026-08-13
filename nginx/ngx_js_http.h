@@ -63,8 +63,16 @@ typedef struct {
         GUARD_RESPONSE,
     }                              guard;
     ngx_list_t                     header_list;
-    ngx_js_tb_elt_t               *content_type;
 } ngx_js_headers_t;
+
+
+typedef enum {
+    NGX_JS_HEADERS_OK = 0,
+    NGX_JS_HEADERS_INVALID_NAME,
+    NGX_JS_HEADERS_INVALID_VALUE,
+    NGX_JS_HEADERS_IMMUTABLE,
+    NGX_JS_HEADERS_NOMEM,
+} ngx_js_headers_rc_t;
 
 
 typedef struct {
@@ -184,6 +192,13 @@ void ngx_js_http_trim_ows(u_char **value, size_t *len);
 ngx_int_t ngx_js_check_header_name(u_char *name, size_t len);
 ngx_int_t ngx_js_check_request_line_component(u_char *value, size_t len);
 ngx_int_t ngx_js_check_header_value(u_char *value, size_t len);
+const char *ngx_js_headers_error(ngx_js_headers_rc_t rc);
+ngx_js_headers_rc_t ngx_js_headers_modify(ngx_js_headers_t *headers,
+    u_char *name, size_t len, u_char *value, size_t vlen, njs_bool_t replace);
+ngx_js_headers_rc_t ngx_js_headers_remove(ngx_js_headers_t *headers,
+    u_char *name, size_t len);
+njs_bool_t ngx_js_headers_has(ngx_js_headers_t *headers, u_char *name,
+    size_t len);
 
 ngx_buf_t *ngx_js_chain_to_buf(ngx_pool_t *pool, njs_chb_t *chain);
 
