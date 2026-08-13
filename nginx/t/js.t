@@ -244,7 +244,7 @@ $t->write_file('test.js', <<EOF);
 
 EOF
 
-$t->try_run('no njs available')->plan(25);
+$t->try_run('no njs available')->plan(28);
 
 ###############################################################################
 
@@ -271,6 +271,12 @@ like(http_get('/return_method?c=200&t=SEE-THIS'), qr/200 OK.*^SEE-THIS$/ms,
 	'return text');
 like(http_get('/return_method?c=301&t=path'), qr/ 301 .*Location: path/s,
 	'return redirect');
+like(http_get('/return_method?c=301&t=p%0d%0aInjected:%201'), qr/ 500 /,
+	'return invalid redirect');
+unlike(http_get('/return_method?c=301&t=p%0d%0aInjected:%201'), qr/^Injected/m,
+	'return no response splitting');
+like(http_get('/return_method?c=200&t=a%0d%0ab'), qr/200 OK.*^a\r?$/ms,
+	'return body with control characters');
 like(http_get('/return_method?c=404'), qr/404 Not.*html/s, 'return error page');
 like(http_get('/return_method?c=inv'), qr/ 500 /, 'return invalid');
 

@@ -536,6 +536,7 @@ static void *ngx_http_js_create_loc_conf(ngx_conf_t *cf);
 static char *ngx_http_js_merge_loc_conf(ngx_conf_t *cf, void *parent,
     void *child);
 
+static ngx_int_t ngx_http_js_status_is_redirect(ngx_int_t status);
 static ngx_int_t ngx_http_js_parse_unsafe_uri(ngx_http_request_t *r,
     njs_str_t *uri, njs_str_t *args);
 
@@ -3276,7 +3277,15 @@ ngx_http_js_ext_return(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     if (status < NGX_HTTP_BAD_REQUEST
         || !njs_value_is_null_or_undefined(njs_arg(args, nargs, 2)))
     {
-        if (ngx_js_string(vm, njs_arg(args, nargs, 2), &text) != NGX_OK) {
+        if (ngx_http_js_status_is_redirect(status)) {
+            if (ngx_js_header_value(vm, njs_arg(args, nargs, 2), &text)
+                != NGX_OK)
+            {
+                return NJS_ERROR;
+            }
+
+        } else if (ngx_js_string(vm, njs_arg(args, nargs, 2), &text) != NGX_OK)
+        {
             njs_vm_memory_error(vm);
             return NJS_ERROR;
         }
@@ -7201,7 +7210,12 @@ ngx_http_qjs_ext_return(JSContext *cx, JSValueConst this_val,
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
     if (status < NGX_HTTP_BAD_REQUEST || !JS_IsNullOrUndefined(argv[1])) {
-        if (ngx_qjs_string(cx, r->pool, argv[1], &body) != NGX_OK) {
+        if (ngx_http_js_status_is_redirect(status)) {
+            if (ngx_qjs_header_value(cx, r->pool, argv[1], &body) != NGX_OK) {
+                return JS_EXCEPTION;
+            }
+
+        } else if (ngx_qjs_string(cx, r->pool, argv[1], &body) != NGX_OK) {
             return JS_ThrowOutOfMemory(cx);
         }
 
@@ -10163,6 +10177,22 @@ ngx_http_js_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child)
     }
 
     return NGX_CONF_OK;
+}
+
+
+/*
+ * ngx_http_send_response() turns the text into the Location header
+ * for these statuses, so the text is a header value there.
+ */
+
+static ngx_int_t
+ngx_http_js_status_is_redirect(ngx_int_t status)
+{
+    return status == NGX_HTTP_MOVED_PERMANENTLY
+           || status == NGX_HTTP_MOVED_TEMPORARILY
+           || status == NGX_HTTP_SEE_OTHER
+           || status == NGX_HTTP_TEMPORARY_REDIRECT
+           || status == NGX_HTTP_PERMANENT_REDIRECT;
 }
 
 
