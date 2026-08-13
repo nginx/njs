@@ -1755,6 +1755,10 @@ ngx_js_check_header_name(u_char *name, size_t len)
 {
     u_char  *p, *end;
 
+    if (len == 0) {
+        return NGX_ERROR;
+    }
+
     p = name;
     end = p + len;
 
@@ -1807,6 +1811,193 @@ ngx_js_check_header_value(u_char *value, size_t len)
     }
 
     return NGX_OK;
+}
+
+
+const char *
+ngx_js_headers_error(ngx_js_headers_rc_t rc)
+{
+    switch (rc) {
+    case NGX_JS_HEADERS_INVALID_NAME:
+        return "invalid header name";
+
+    case NGX_JS_HEADERS_INVALID_VALUE:
+        return "invalid header value";
+
+    case NGX_JS_HEADERS_IMMUTABLE:
+        return "cannot modify immutable object";
+
+    default:
+        return "unknown headers error";
+    }
+}
+
+
+ngx_js_headers_rc_t
+ngx_js_headers_modify(ngx_js_headers_t *headers, u_char *name, size_t len,
+    u_char *value, size_t vlen, njs_bool_t replace)
+{
+    ngx_uint_t        i;
+    ngx_list_part_t  *part;
+    ngx_js_tb_elt_t  *first, *h, **ph;
+
+    ngx_js_http_trim_ows(&value, &vlen);
+
+    if (ngx_js_check_header_name(name, len) != NGX_OK) {
+        return NGX_JS_HEADERS_INVALID_NAME;
+    }
+
+    if (ngx_js_check_header_value(value, vlen) != NGX_OK) {
+        return NGX_JS_HEADERS_INVALID_VALUE;
+    }
+
+    if (headers->guard == GUARD_IMMUTABLE) {
+        return NGX_JS_HEADERS_IMMUTABLE;
+    }
+
+    first = NULL;
+    part = &headers->header_list.part;
+    h = part->elts;
+
+    for (i = 0; /* void */; i++) {
+
+        if (i >= part->nelts) {
+            if (part->next == NULL) {
+                break;
+            }
+
+            part = part->next;
+            h = part->elts;
+            i = 0;
+        }
+
+        if (h[i].hash == 0 || len != h[i].key.len
+            || ngx_strncasecmp(name, h[i].key.data, len) != 0)
+        {
+            continue;
+        }
+
+        if (first == NULL) {
+            first = &h[i];
+
+            if (replace) {
+                first->value.data = value;
+                first->value.len = vlen;
+            }
+
+            continue;
+        }
+
+        if (replace) {
+            h[i].hash = 0;
+            h[i].next = NULL;
+        }
+    }
+
+    if (replace && first != NULL) {
+        first->next = NULL;
+        return NGX_JS_HEADERS_OK;
+    }
+
+    ph = NULL;
+
+    if (first != NULL) {
+        ph = &first->next;
+        while (*ph) { ph = &(*ph)->next; }
+    }
+
+    h = ngx_list_push(&headers->header_list);
+    if (h == NULL) {
+        return NGX_JS_HEADERS_NOMEM;
+    }
+
+    if (ph != NULL) {
+        *ph = h;
+    }
+
+    h->hash = 1;
+    h->key.data = name;
+    h->key.len = len;
+    h->value.data = value;
+    h->value.len = vlen;
+    h->next = NULL;
+
+    return NGX_JS_HEADERS_OK;
+}
+
+
+ngx_js_headers_rc_t
+ngx_js_headers_remove(ngx_js_headers_t *headers, u_char *name, size_t len)
+{
+    ngx_uint_t        i;
+    ngx_list_part_t  *part;
+    ngx_js_tb_elt_t  *h;
+
+    if (ngx_js_check_header_name(name, len) != NGX_OK) {
+        return NGX_JS_HEADERS_INVALID_NAME;
+    }
+
+    if (headers->guard == GUARD_IMMUTABLE) {
+        return NGX_JS_HEADERS_IMMUTABLE;
+    }
+
+    part = &headers->header_list.part;
+    h = part->elts;
+
+    for (i = 0; /* void */; i++) {
+
+        if (i >= part->nelts) {
+            if (part->next == NULL) {
+                break;
+            }
+
+            part = part->next;
+            h = part->elts;
+            i = 0;
+        }
+
+        if (h[i].hash != 0 && len == h[i].key.len
+            && ngx_strncasecmp(name, h[i].key.data, len) == 0)
+        {
+            h[i].hash = 0;
+            h[i].next = NULL;
+        }
+    }
+
+    return NGX_JS_HEADERS_OK;
+}
+
+
+njs_bool_t
+ngx_js_headers_has(ngx_js_headers_t *headers, u_char *name, size_t len)
+{
+    ngx_uint_t        i;
+    ngx_list_part_t  *part;
+    ngx_js_tb_elt_t  *h;
+
+    part = &headers->header_list.part;
+    h = part->elts;
+
+    for (i = 0; /* void */; i++) {
+
+        if (i >= part->nelts) {
+            if (part->next == NULL) {
+                break;
+            }
+
+            part = part->next;
+            h = part->elts;
+            i = 0;
+        }
+
+        if (h[i].hash != 0 && len == h[i].key.len
+            && ngx_strncasecmp(name, h[i].key.data, len) == 0)
+        {
+            return 1;
+        }
+    }
+
+    return 0;
 }
 
 

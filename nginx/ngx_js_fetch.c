@@ -55,6 +55,8 @@ static ngx_int_t ngx_js_fetch_append_headers(ngx_js_http_t *http,
     ngx_js_headers_t *headers, u_char *name, size_t len, u_char *value,
     size_t vlen);
 static void ngx_js_fetch_process_done(ngx_js_http_t *http);
+static njs_int_t ngx_js_headers_result(njs_vm_t *vm,
+    ngx_js_headers_rc_t rc);
 static njs_int_t ngx_js_headers_append(njs_vm_t *vm, ngx_js_headers_t *headers,
     u_char *name, size_t len, u_char *value, size_t vlen);
 
@@ -1309,7 +1311,6 @@ ngx_js_request_constructor(njs_vm_t *vm, ngx_js_request_t *request,
      *  request->cache_mode = CACHE_MODE_DEFAULT;
      *  request->credentials = CREDENTIALS_SAME_ORIGIN;
      *  request->mode = MODE_NO_CORS;
-     *  request->headers.content_type = NULL;
      */
 
     ngx_memzero(request, sizeof(ngx_js_request_t));
@@ -1473,7 +1474,9 @@ ngx_js_request_constructor(njs_vm_t *vm, ngx_js_request_t *request,
                 return NJS_ERROR;
             }
 
-            if (request->headers.content_type == NULL
+            if (!ngx_js_headers_has(&request->headers,
+                                    (u_char *) "Content-Type",
+                                    njs_length("Content-Type"))
                 && njs_value_is_string(value))
             {
                 ret = ngx_js_headers_append(vm, &request->headers,
@@ -1526,86 +1529,32 @@ ngx_js_fetch_process_done(ngx_js_http_t *http)
 
 
 static njs_int_t
+ngx_js_headers_result(njs_vm_t *vm, ngx_js_headers_rc_t rc)
+{
+    if (rc == NGX_JS_HEADERS_OK) {
+        return NJS_OK;
+    }
+
+    if (rc == NGX_JS_HEADERS_NOMEM) {
+        njs_vm_memory_error(vm);
+
+    } else {
+        njs_vm_type_error(vm, "%s", ngx_js_headers_error(rc));
+    }
+
+    return NJS_ERROR;
+}
+
+
+static njs_int_t
 ngx_js_headers_append(njs_vm_t *vm, ngx_js_headers_t *headers,
     u_char *name, size_t len, u_char *value, size_t vlen)
 {
-    ngx_int_t         ret;
-    ngx_uint_t        i;
-    ngx_js_tb_elt_t  *h, **ph;
-    ngx_list_part_t  *part;
+    ngx_js_headers_rc_t  rc;
 
-    ngx_js_http_trim_ows(&value, &vlen);
+    rc = ngx_js_headers_modify(headers, name, len, value, vlen, 0);
 
-    ret = ngx_js_check_header_name(name, len);
-    if (ret != NGX_OK) {
-        njs_vm_type_error(vm, "invalid header name");
-        return NJS_ERROR;
-    }
-
-    ret = ngx_js_check_header_value(value, vlen);
-    if (ret != NGX_OK) {
-        njs_vm_type_error(vm, "invalid header value");
-        return NJS_ERROR;
-    }
-
-    if (headers->guard == GUARD_IMMUTABLE) {
-        njs_vm_type_error(vm, "cannot append to immutable object");
-        return NJS_ERROR;
-    }
-
-    ph = NULL;
-    part = &headers->header_list.part;
-    h = part->elts;
-
-    for (i = 0; /* void */; i++) {
-
-        if (i >= part->nelts) {
-            if (part->next == NULL) {
-                break;
-            }
-
-            part = part->next;
-            h = part->elts;
-            i = 0;
-        }
-
-        if (h[i].hash == 0) {
-            continue;
-        }
-
-        if (len == h[i].key.len
-            && (njs_strncasecmp(name, h[i].key.data, len) == 0))
-        {
-            ph = &h[i].next;
-            while (*ph) { ph = &(*ph)->next; }
-            break;
-        }
-    }
-
-    h = ngx_list_push(&headers->header_list);
-    if (h == NULL) {
-        njs_vm_memory_error(vm);
-        return NJS_ERROR;
-    }
-
-    if (ph != NULL) {
-        *ph = h;
-    }
-
-    h->hash = 1;
-    h->key.data = name;
-    h->key.len = len;
-    h->value.data = value;
-    h->value.len = vlen;
-    h->next = NULL;
-
-    if (len == njs_strlen("Content-Type")
-        && ngx_strncasecmp(name, (u_char *) "Content-Type", len) == 0)
-    {
-        headers->content_type = h;
-    }
-
-    return NJS_OK;
+    return ngx_js_headers_result(vm, rc);
 }
 
 
@@ -1749,12 +1698,10 @@ static njs_int_t
 ngx_headers_js_ext_delete(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
 {
-    njs_int_t          ret;
-    njs_str_t          name;
-    ngx_uint_t         i;
-    ngx_list_part_t   *part;
-    ngx_js_tb_elt_t   *h;
-    ngx_js_headers_t  *headers;
+    njs_int_t            ret;
+    njs_str_t            name;
+    ngx_js_headers_t    *headers;
+    ngx_js_headers_rc_t  rc;
 
     headers = njs_vm_external(vm, ngx_http_js_fetch_headers_proto_id,
                               njs_argument(args, 0));
@@ -1768,37 +1715,9 @@ ngx_headers_js_ext_delete(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    part = &headers->header_list.part;
-    h = part->elts;
-
-    for (i = 0; /* void */; i++) {
-
-        if (i >= part->nelts) {
-            if (part->next == NULL) {
-                break;
-            }
-
-            part = part->next;
-            h = part->elts;
-            i = 0;
-        }
-
-        if (h[i].hash == 0) {
-            continue;
-        }
-
-        if (name.length == h[i].key.len
-            && (njs_strncasecmp(name.start, h[i].key.data, name.length) == 0))
-        {
-            h[i].hash = 0;
-        }
-    }
-
-    if (name.length == njs_strlen("Content-Type")
-        && ngx_strncasecmp(name.start, (u_char *) "Content-Type", name.length)
-           == 0)
-    {
-        headers->content_type = NULL;
+    rc = ngx_js_headers_remove(headers, name.start, name.length);
+    if (ngx_js_headers_result(vm, rc) != NJS_OK) {
+        return NJS_ERROR;
     }
 
     njs_value_undefined_set(retval);
@@ -2049,12 +1968,10 @@ static njs_int_t
 ngx_headers_js_ext_set(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
 {
-    njs_int_t          ret;
-    njs_str_t          name, value;
-    ngx_uint_t         i;
-    ngx_list_part_t   *part;
-    ngx_js_tb_elt_t   *h, **ph, **pp;
-    ngx_js_headers_t  *headers;
+    njs_int_t            ret;
+    njs_str_t            name, value;
+    ngx_js_headers_t    *headers;
+    ngx_js_headers_rc_t  rc;
 
     headers = njs_vm_external(vm, ngx_http_js_fetch_headers_proto_id,
                               njs_argument(args, 0));
@@ -2073,50 +1990,11 @@ ngx_headers_js_ext_set(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    part = &headers->header_list.part;
-    h = part->elts;
-
-    for (i = 0; /* void */; i++) {
-
-        if (i >= part->nelts) {
-            if (part->next == NULL) {
-                break;
-            }
-
-            part = part->next;
-            h = part->elts;
-            i = 0;
-        }
-
-        if (h[i].hash == 0) {
-            continue;
-        }
-
-        if (name.length == h[i].key.len
-            && (njs_strncasecmp(name.start, h[i].key.data, name.length) == 0))
-        {
-            h[i].value.len = value.length;
-            h[i].value.data = value.start;
-
-            ph = &h[i].next;
-
-            while (*ph) {
-                pp = ph;
-                ph = &(*ph)->next;
-                *pp = NULL;
-            }
-
-            goto done;
-        }
-    }
-
-    ret = ngx_js_headers_append(vm, headers, name.start, name.length,
-                                value.start, value.length);
-    if (ret != NJS_OK) {
+    rc = ngx_js_headers_modify(headers, name.start, name.length, value.start,
+                               value.length, 1);
+    if (ngx_js_headers_result(vm, rc) != NJS_OK) {
         return NJS_ERROR;
     }
-
-done:
 
     njs_value_undefined_set(retval);
 
