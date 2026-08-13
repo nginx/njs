@@ -300,6 +300,21 @@ $t->write_file('test.js', <<EOF);
 
                 return 'OK';
              }, 'OK'],
+            ['set computed names', () => {
+                var h = new Headers();
+
+                for (var i = 0; i < 2; i++) {
+                    h.set('x-computed-header-name-' + i, 'value-' + i);
+                }
+
+                for (var i = 0; i < 2; i++) {
+                    if (h.get('x-computed-header-name-' + i) != 'value-' + i) {
+                        throw new Error('header name is corrupted');
+                    }
+                }
+
+                return 'OK';
+             }, 'OK'],
         ];
 
         run(r, tests);
