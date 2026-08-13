@@ -10,6 +10,7 @@
 #include <ngx_core.h>
 #include <ngx_http.h>
 #include "ngx_js.h"
+#include "ngx_js_http.h"
 #include "ngx_js_modules.h"
 #include "ngx_js_form.h"
 
@@ -2548,6 +2549,11 @@ ngx_http_js_header_out_special(njs_vm_t *vm, ngx_http_request_t *r,
         return NJS_ERROR;
     }
 
+    if (ngx_js_check_header_value(s.start, s.length) != NGX_OK) {
+        njs_vm_error(vm, "invalid header value");
+        return NJS_ERROR;
+    }
+
     h = ngx_http_js_get_header(&headers->part, v->start, v->length);
 
     if (h != NULL && s.length == 0) {
@@ -2791,6 +2797,11 @@ ngx_http_js_header_generic(njs_vm_t *vm, ngx_http_request_t *r,
         }
 
         if (ngx_js_string(vm, setval, &s) != NGX_OK) {
+            return NJS_ERROR;
+        }
+
+        if (ngx_js_check_header_value(s.start, s.length) != NGX_OK) {
+            njs_vm_error(vm, "invalid header value");
             return NJS_ERROR;
         }
 
@@ -5243,6 +5254,11 @@ ngx_http_js_header_out(njs_vm_t *vm, ngx_http_request_t *r, unsigned flags,
             return NJS_ERROR;
         }
 
+        if (ngx_js_check_header_value(s.start, s.length) != NGX_OK) {
+            njs_vm_error(vm, "invalid header value");
+            return NJS_ERROR;
+        }
+
         if (s.length == 0) {
             continue;
         }
@@ -5320,6 +5336,11 @@ ngx_http_js_header_out_special(njs_vm_t *vm, ngx_http_request_t *r,
     }
 
     if (ngx_js_string(vm, setval, &s) != NGX_OK) {
+        return NJS_ERROR;
+    }
+
+    if (ngx_js_check_header_value(s.start, s.length) != NGX_OK) {
+        njs_vm_error(vm, "invalid header value");
         return NJS_ERROR;
     }
 
@@ -5595,6 +5616,11 @@ ngx_http_js_content_type(njs_vm_t *vm, ngx_http_request_t *r,
     }
 
     if (ngx_js_string(vm, setval, &s) != NGX_OK) {
+        return NJS_ERROR;
+    }
+
+    if (ngx_js_check_header_value(s.start, s.length) != NGX_OK) {
+        njs_vm_error(vm, "invalid header value");
         return NJS_ERROR;
     }
 
@@ -8684,6 +8710,11 @@ ngx_http_qjs_headers_out_handler(JSContext *cx, ngx_http_request_t *r,
             return -1;
         }
 
+        if (ngx_js_check_header_value(s.data, s.len) != NGX_OK) {
+            (void) JS_ThrowTypeError(cx, "invalid header value");
+            return -1;
+        }
+
         if (s.len == 0) {
             continue;
         }
@@ -8773,6 +8804,11 @@ ngx_http_qjs_headers_out_special_handler(JSContext *cx, ngx_http_request_t *r,
     }
 
     if (rc != NGX_OK) {
+        return -1;
+    }
+
+    if (ngx_js_check_header_value(s.data, s.len) != NGX_OK) {
+        (void) JS_ThrowTypeError(cx, "invalid header value");
         return -1;
     }
 
@@ -8999,6 +9035,11 @@ ngx_http_qjs_headers_out_content_type(JSContext *cx, ngx_http_request_t *r,
     }
 
     if (rc != NGX_OK) {
+        return -1;
+    }
+
+    if (ngx_js_check_header_value(s.data, s.len) != NGX_OK) {
+        (void) JS_ThrowTypeError(cx, "invalid header value");
         return -1;
     }
 
