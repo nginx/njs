@@ -1552,7 +1552,7 @@ ngx_js_headers_append(njs_vm_t *vm, ngx_js_headers_t *headers,
 {
     ngx_js_headers_rc_t  rc;
 
-    rc = ngx_js_headers_modify(headers, name, len, value, vlen, 0);
+    rc = ngx_js_headers_modify(NULL, headers, name, len, value, vlen, 0);
 
     return ngx_js_headers_result(vm, rc);
 }
@@ -1990,8 +1990,8 @@ ngx_headers_js_ext_set(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    rc = ngx_js_headers_modify(headers, name.start, name.length, value.start,
-                               value.length, 1);
+    rc = ngx_js_headers_modify(NULL, headers, name.start, name.length,
+                               value.start, value.length, 1);
     if (ngx_js_headers_result(vm, rc) != NJS_OK) {
         return NJS_ERROR;
     }

@@ -1834,9 +1834,10 @@ ngx_js_headers_error(ngx_js_headers_rc_t rc)
 
 
 ngx_js_headers_rc_t
-ngx_js_headers_modify(ngx_js_headers_t *headers, u_char *name, size_t len,
-    u_char *value, size_t vlen, njs_bool_t replace)
+ngx_js_headers_modify(ngx_pool_t *pool, ngx_js_headers_t *headers,
+    u_char *name, size_t len, u_char *value, size_t vlen, njs_bool_t replace)
 {
+    u_char           *p;
     ngx_uint_t        i;
     ngx_list_part_t  *part;
     ngx_js_tb_elt_t  *first, *h, **ph;
@@ -1904,6 +1905,20 @@ ngx_js_headers_modify(ngx_js_headers_t *headers, u_char *name, size_t len,
     if (first != NULL) {
         ph = &first->next;
         while (*ph) { ph = &(*ph)->next; }
+    }
+
+    /*
+     * A pool is needed for QuickJS because the provided name is freed after
+     * this call.
+     */
+    if (pool != NULL) {
+        p = ngx_pnalloc(pool, len);
+        if (p == NULL) {
+            return NGX_JS_HEADERS_NOMEM;
+        }
+
+        ngx_memcpy(p, name, len);
+        name = p;
     }
 
     h = ngx_list_push(&headers->header_list);

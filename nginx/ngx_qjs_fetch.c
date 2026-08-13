@@ -1384,7 +1384,7 @@ ngx_qjs_headers_append(JSContext *cx, ngx_js_headers_t *headers,
 {
     ngx_js_headers_rc_t  rc;
 
-    rc = ngx_js_headers_modify(headers, name, len, value, vlen, 0);
+    rc = ngx_js_headers_modify(NULL, headers, name, len, value, vlen, 0);
 
     return ngx_qjs_headers_result(cx, rc);
 }
@@ -1914,7 +1914,7 @@ ngx_qjs_ext_fetch_headers_set(JSContext *cx, JSValueConst this_val,
         return JS_EXCEPTION;
     }
 
-    rc = ngx_js_headers_modify(headers, name.data, name.len, value.data,
+    rc = ngx_js_headers_modify(pool, headers, name.data, name.len, value.data,
                                value.len, 1);
     JS_FreeCString(cx, (const char *) name.data);
     if (ngx_qjs_headers_result(cx, rc) != NGX_OK) {
