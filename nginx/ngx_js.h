@@ -400,6 +400,8 @@ ngx_int_t ngx_qjs_log_exception(ngx_engine_t *e, ngx_log_t *log,
 ngx_int_t ngx_qjs_integer(JSContext *cx, JSValueConst val, ngx_int_t *n);
 ngx_int_t ngx_qjs_string(JSContext *cx, ngx_pool_t *pool, JSValueConst val,
     ngx_str_t *dst);
+ngx_int_t ngx_qjs_header_value(JSContext *cx, ngx_pool_t *pool,
+    JSValueConst val, ngx_str_t *dst);
 
 JSValue ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
      JSValueConst *argv);
@@ -484,6 +486,8 @@ njs_int_t ngx_js_ext_flags(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unuse
 
 ngx_int_t ngx_js_string(njs_vm_t *vm, njs_value_t *value, njs_str_t *str);
 ngx_int_t ngx_js_ngx_string(njs_vm_t *vm, njs_value_t *value, ngx_str_t *str);
+ngx_int_t ngx_js_header_value(njs_vm_t *vm, njs_value_t *value,
+    njs_str_t *str);
 ngx_int_t ngx_js_integer(njs_vm_t *vm, njs_value_t *value, ngx_int_t *n);
 const char *ngx_js_errno_string(int errnum);
 

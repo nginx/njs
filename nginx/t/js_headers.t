@@ -144,6 +144,14 @@ http {
             js_content test.hdr_out_array;
         }
 
+        location /hdr_out_invalid {
+            js_content test.hdr_out_invalid;
+        }
+
+        location /hdr_out_valid {
+            js_content test.hdr_out_valid;
+        }
+
         location /hdr_out_set_cookie {
             js_content test.hdr_out_set_cookie;
         }
@@ -415,6 +423,32 @@ $t->write_file('test.js', <<EOF);
         r.return(200, `B:\${r.headersOut.foo}`);
     }
 
+    function hdr_out_invalid(r) {
+        var v = 'a\\r\\nInjected: 1';
+
+        try {
+            if (r.args.h == 'arr') {
+                r.headersOut['Foo'] = ['good', v];
+
+            } else if (r.args.h == 'name') {
+                r.headersOut['X\\r\\nInjected: 1'] = 'val';
+
+            } else {
+                r.headersOut[r.args.h] = v;
+            }
+
+            r.return(200, 'no_error');
+
+        } catch (e) {
+            r.return(500, `\${e.constructor.name}:\${e.message}`);
+        }
+    }
+
+    function hdr_out_valid(r) {
+        r.headersOut['Foo'] = 'a\\tb\\u00e9';
+        r.return(200, 'ok');
+    }
+
     function hdr_out_single(r) {
         r.headersOut.ETag = ['a', 'b'];
         r.return(200, `B:\${r.headersOut.etag}`);
@@ -489,6 +523,7 @@ $t->write_file('test.js', <<EOF);
                     content_encoding, content_encoding_arr, headers_list,
                     hdr_in, raw_hdr_in, hdr_sorted_keys, foo_in, ifoo_in,
                     hdr_out, raw_hdr_out, hdr_out_array, hdr_out_single,
+                    hdr_out_invalid, hdr_out_valid,
                     hdr_out_set_cookie, ihdr_out, hdr_out_special_set,
                     copy_subrequest_hdrs, subrequest, date, last_modified,
                     location, location_sr, server, in_lowkey};
@@ -496,7 +531,7 @@ $t->write_file('test.js', <<EOF);
 
 EOF
 
-$t->try_run('no njs')->plan(53);
+$t->try_run('no njs')->plan(61);
 
 ###############################################################################
 
@@ -546,6 +581,26 @@ like(http_get('/hdr_out_single'), qr/ETag: a\r\nETag: b/,
 	'r.headersOut single');
 like(http_get('/hdr_out_single'), qr/B:a/,
 	'r.headersOut single get');
+like(http_get('/hdr_out_invalid?h=Foo'),
+	qr/500.*TypeError:invalid header value/s, 'r.headersOut invalid value');
+like(http_get('/hdr_out_invalid?h=Location'),
+	qr/500.*TypeError:invalid header value/s,
+	'r.headersOut invalid special value');
+like(http_get('/hdr_out_invalid?h=Content-Type'),
+	qr/500.*TypeError:invalid header value/s,
+	'r.headersOut invalid Content-Type value');
+like(http_get('/hdr_out_invalid?h=arr'),
+	qr/500.*TypeError:invalid header value/s,
+	'r.headersOut invalid value in array');
+like(http_get('/hdr_out_invalid?h=name'),
+	qr/500.*TypeError:invalid header name/s, 'r.headersOut invalid name');
+unlike(http_get('/hdr_out_invalid?h=Foo'), qr/^Injected/m,
+	'r.headersOut no response splitting');
+unlike(http_get('/hdr_out_invalid?h=name'), qr/^Injected/m,
+	'r.headersOut no response splitting by name');
+like(http_get('/hdr_out_valid'), qr/Foo: a\tb\xc3\xa9/,
+	'r.headersOut obs-text value');
+
 like(http_get('/hdr_out_set_cookie'), qr/Set-Cookie: c\r\nSet-Cookie: d/,
 	'set_cookie');
 like(http_get('/hdr_out_set_cookie'), qr/B:c,d,f true/,
