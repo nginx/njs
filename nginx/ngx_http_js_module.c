@@ -494,6 +494,8 @@ static int ngx_http_qjs_headers_out_delete_property(JSContext *cx,
 static ngx_http_request_t *ngx_http_qjs_request(JSValueConst val);
 static JSValue ngx_http_qjs_request_make(JSContext *cx, ngx_int_t proto_id,
     ngx_http_request_t *r);
+static void ngx_http_qjs_request_mark(JSRuntime *rt, JSValueConst val,
+    JS_MarkFunc *mark_func);
 static void ngx_http_qjs_request_finalizer(JSRuntime *rt, JSValue val);
 static void ngx_http_qjs_periodic_finalizer(JSRuntime *rt, JSValue val);
 #endif
@@ -1469,6 +1471,7 @@ static const JSCFunctionListEntry ngx_http_qjs_ext_request_form[] = {
 static JSClassDef ngx_http_qjs_request_class = {
     "Request",
     .finalizer = ngx_http_qjs_request_finalizer,
+    .gc_mark = ngx_http_qjs_request_mark,
 };
 
 
@@ -9415,6 +9418,21 @@ ngx_http_qjs_request_make(JSContext *cx, ngx_int_t proto_id,
     JS_SetOpaque(request, req);
 
     return request;
+}
+
+
+static void
+ngx_http_qjs_request_mark(JSRuntime *rt, JSValueConst val,
+    JS_MarkFunc *mark_func)
+{
+    ngx_http_qjs_request_t  *req;
+
+    req = JS_GetOpaque(val, NGX_QJS_CLASS_ID_HTTP_REQUEST);
+    if (req != NULL) {
+        JS_MarkValue(rt, req->args, mark_func);
+        JS_MarkValue(rt, req->request_body, mark_func);
+        JS_MarkValue(rt, req->response_body, mark_func);
+    }
 }
 
 

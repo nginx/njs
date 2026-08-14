@@ -194,6 +194,8 @@ static ngx_int_t ngx_stream_qjs_body_filter(ngx_stream_session_t *s,
 static ngx_stream_session_t *ngx_stream_qjs_session(JSValueConst val);
 static JSValue ngx_stream_qjs_session_make(JSContext *cx, ngx_int_t proto_id,
     ngx_stream_session_t *s);
+static void ngx_stream_qjs_session_mark(JSRuntime *rt, JSValueConst val,
+    JS_MarkFunc *mark_func);
 static void ngx_stream_qjs_session_finalizer(JSRuntime *rt, JSValue val);
 static void ngx_stream_qjs_periodic_finalizer(JSRuntime *rt, JSValue val);
 
@@ -882,6 +884,7 @@ static const JSCFunctionListEntry ngx_stream_qjs_ext_flags[] = {
 static JSClassDef ngx_stream_qjs_session_class = {
     "Session",
     .finalizer = ngx_stream_qjs_session_finalizer,
+    .gc_mark = ngx_stream_qjs_session_mark,
 };
 
 
@@ -3043,6 +3046,22 @@ ngx_stream_qjs_session_make(JSContext *cx, ngx_int_t proto_id,
 
 
 static void
+ngx_stream_qjs_session_mark(JSRuntime *rt, JSValueConst val,
+    JS_MarkFunc *mark_func)
+{
+    ngx_uint_t                 i;
+    ngx_stream_qjs_session_t  *ses;
+
+    ses = JS_GetOpaque(val, NGX_QJS_CLASS_ID_STREAM_SESSION);
+    if (ses != NULL) {
+        for (i = 0; i < NGX_JS_EVENT_MAX; i++) {
+            JS_MarkValue(rt, ses->callbacks[i], mark_func);
+        }
+    }
+}
+
+
+static void
 ngx_stream_qjs_session_finalizer(JSRuntime *rt, JSValue val)
 {
     ngx_uint_t                 i;
@@ -3170,33 +3189,6 @@ ngx_engine_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf,
 }
 
 
-static void
-ngx_stream_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
-    ngx_js_loc_conf_t *conf)
-{
-    ngx_uint_t                 i;
-    JSValue                    cb;
-    ngx_stream_qjs_session_t  *ses;
-
-    if (ctx != NULL) {
-        /*
-         * explicitly freeing the callback functions
-         * to avoid circular references with the session object.
-         */
-        ses = JS_GetOpaque(ngx_qjs_arg(ctx->args[0]),
-                           NGX_QJS_CLASS_ID_STREAM_SESSION);
-        if (ses != NULL) {
-            for (i = 0; i < NGX_JS_EVENT_MAX; i++) {
-                cb = ses->callbacks[i];
-                ses->callbacks[i] = JS_UNDEFINED;
-                JS_FreeValue(e->u.qjs.ctx, cb);
-            }
-        }
-    }
-
-    ngx_engine_qjs_destroy(e, ctx, conf);
-}
-
 #endif
 
 
@@ -3224,7 +3216,6 @@ ngx_stream_js_init_conf_vm(ngx_conf_t *cf, ngx_js_loc_conf_t *conf)
         options.u.qjs.metas = ngx_stream_js_uptr;
         options.u.qjs.addons = njs_stream_qjs_addon_modules;
         options.clone = ngx_engine_qjs_clone;
-        options.destroy = ngx_stream_qjs_destroy;
 
         options.core_conf = (ngx_js_core_conf_t *)
                  ngx_get_conf(cf->cycle->conf_ctx, ngx_stream_js_core_module);
