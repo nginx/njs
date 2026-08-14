@@ -2183,10 +2183,8 @@ ngx_http_js_init_vm(ngx_http_request_t *r, njs_int_t proto_id)
 static void
 ngx_http_js_cleanup_ctx(void *data)
 {
-    ngx_http_request_t      *r;
-    ngx_http_js_loc_conf_t  *jlcf;
-
-    ngx_http_js_ctx_t        *ctx = data;
+    ngx_http_request_t  *r;
+    ngx_http_js_ctx_t   *ctx = data;
 
     if (ngx_js_ctx_pending(ctx)) {
         ngx_log_error(NGX_LOG_ERR, ctx->log, 0, "pending events");
@@ -2198,13 +2196,11 @@ ngx_http_js_cleanup_ctx(void *data)
     r = ngx_js_ctx_external(ctx);
 
     /*
-     * Restoring the original module context, because it can be reset
-     * by internalRedirect() method. Proper ctx is required for
-     * ngx_http_qjs_request_finalizer() to work correctly.
+     * Restoring the original module context, because it can be reset by
+     * internalRedirect().  Exit hooks and event destructors must resolve the
+     * context being destroyed.
      */
     ngx_http_set_ctx(r, ctx, ngx_http_js_module);
-
-    jlcf = ngx_http_get_module_loc_conf(r, ngx_http_js_module);
 
     /*
      * r->pool set to NULL by ngx_http_free_request().
@@ -2213,7 +2209,7 @@ ngx_http_js_cleanup_ctx(void *data)
      */
     r->pool = ngx_create_pool(128, ctx->log);
 
-    ngx_js_ctx_destroy((ngx_js_ctx_t *) ctx, (ngx_js_loc_conf_t *) jlcf);
+    ngx_js_ctx_destroy((ngx_js_ctx_t *) ctx);
 
     ngx_destroy_pool(r->pool);
 }

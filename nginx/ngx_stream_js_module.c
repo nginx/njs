@@ -1275,8 +1275,7 @@ ngx_stream_js_drop_events(ngx_stream_js_ctx_t *ctx)
 static void
 ngx_stream_js_cleanup(void *data)
 {
-    ngx_stream_js_ctx_t       *ctx;
-    ngx_stream_js_srv_conf_t  *jscf;
+    ngx_stream_js_ctx_t  *ctx;
 
     ngx_stream_session_t *s = data;
 
@@ -1289,9 +1288,7 @@ ngx_stream_js_cleanup(void *data)
     ngx_log_debug1(NGX_LOG_DEBUG_STREAM, ctx->log, 0,
                    "stream js vm destroy: %p", ctx->engine);
 
-    jscf = ngx_stream_get_module_srv_conf(s, ngx_stream_js_module);
-
-    ngx_js_ctx_destroy((ngx_js_ctx_t *) ctx, (ngx_js_loc_conf_t *) jscf);
+    ngx_js_ctx_destroy((ngx_js_ctx_t *) ctx);
 }
 
 
