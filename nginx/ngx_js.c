@@ -1240,11 +1240,12 @@ void
 ngx_engine_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
     ngx_js_loc_conf_t *conf)
 {
+    JSValue               ret;
     uint32_t              i, length;
     JSRuntime            *rt;
-    JSValue               ret;
     JSContext            *cx;
     JSClassID             class_id;
+    ngx_uint_t            reusable;
     JSMemoryUsage         stats;
     ngx_qjs_event_t      *event;
     ngx_js_opaque_t      *opaque;
@@ -1253,6 +1254,7 @@ ngx_engine_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
     ngx_js_code_entry_t  *pc;
 
     cx = e->u.qjs.ctx;
+    reusable = 1;
 
     if (ctx != NULL) {
         ret = qjs_call_exit_hook(cx);
@@ -1260,7 +1262,9 @@ ngx_engine_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
             ngx_qjs_log_exception(e, ctx->log, "exit hook exception");
         }
 
-        (void) ngx_qjs_execute_pending_jobs(cx, ctx->log);
+        if (ngx_qjs_execute_pending_jobs(cx, ctx->log) != NGX_OK) {
+            reusable = 0;
+        }
 
         node = njs_rbtree_min(&ctx->waiting_events);
 
@@ -1288,6 +1292,13 @@ ngx_engine_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
         JS_FreeValue(cx, ngx_qjs_arg(ctx->args[0]));
         JS_FreeValue(cx, ngx_qjs_arg(ctx->retval));
 
+        if (JS_IsJobPending(JS_GetRuntime(cx))) {
+            ngx_log_error(NGX_LOG_ERR, ctx->log, 0,
+                          "js pending jobs after context teardown, "
+                          "not reusing context");
+            reusable = 0;
+        }
+
     } else if (e->precompiled != NULL) {
         pc = e->precompiled->start;
         length = e->precompiled->items;
@@ -1299,7 +1310,7 @@ ngx_engine_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
 
     njs_mp_destroy(e->pool);
 
-    if (conf != NULL && conf->reuse != 0) {
+    if (conf != NULL && conf->reuse != 0 && reusable) {
         if (conf->reuse_queue == NULL) {
             conf->reuse_queue = ngx_js_queue_create(ngx_cycle->pool,
                                                     conf->reuse);
