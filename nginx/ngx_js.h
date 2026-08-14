@@ -364,6 +364,7 @@ ngx_int_t ngx_js_call(njs_vm_t *vm, njs_function_t *func,
 ngx_int_t ngx_js_log_exception(njs_vm_t *vm, ngx_log_t *log, const char *txt);
 ngx_engine_t *ngx_njs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf,
     void *external);
+void ngx_js_clone_abort(ngx_js_ctx_t *ctx, ngx_engine_t *engine);
 
 #define NGX_CHB_CTX_INIT(chain, pool)                                        \
     njs_chb_init(chain, pool, (njs_chb_alloc_t) ngx_palloc, NULL)

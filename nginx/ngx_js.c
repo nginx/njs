@@ -55,10 +55,13 @@ static void *ngx_engine_njs_external(ngx_engine_t *engine);
 static ngx_int_t ngx_engine_njs_pending(ngx_engine_t *engine);
 static ngx_int_t ngx_engine_njs_string(ngx_engine_t *e,
     njs_opaque_value_t *value, ngx_str_t *str);
+static void ngx_njs_clear_events(ngx_js_ctx_t *ctx);
 static void ngx_engine_njs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
     ngx_js_loc_conf_t *conf);
 static ngx_int_t ngx_js_init_preload_vm(njs_vm_t *vm, ngx_js_loc_conf_t *conf);
 static ngx_int_t ngx_js_integer_in_range(double num);
+static intptr_t ngx_js_event_rbtree_compare(njs_rbtree_node_t *node1,
+    njs_rbtree_node_t *node2);
 
 static ngx_int_t ngx_njs_execute_pending_jobs(njs_vm_t *vm, ngx_log_t *log);
 static njs_int_t ngx_njs_await(njs_vm_t *vm, ngx_log_t *log,
@@ -78,6 +81,8 @@ static void *ngx_engine_qjs_external(ngx_engine_t *engine);
 static ngx_int_t ngx_engine_qjs_pending(ngx_engine_t *engine);
 static ngx_int_t ngx_engine_qjs_string(ngx_engine_t *e,
     njs_opaque_value_t *value, ngx_str_t *str);
+static void ngx_qjs_clear_events(ngx_js_ctx_t *ctx);
+static void ngx_qjs_detach_ctx(ngx_js_ctx_t *ctx, JSContext *cx);
 
 static JSValue ngx_qjs_process_getter(JSContext *ctx, JSValueConst this_val);
 static JSValue ngx_qjs_ext_set_timeout(JSContext *cx, JSValueConst this_val,
@@ -529,6 +534,7 @@ ngx_create_engine(ngx_engine_opts_t *opts)
 
     engine = njs_mp_zalloc(mp, sizeof(ngx_engine_t));
     if (engine == NULL) {
+        njs_mp_destroy(mp);
         return NULL;
     }
 
@@ -543,7 +549,7 @@ ngx_create_engine(ngx_engine_opts_t *opts)
     case NGX_ENGINE_NJS:
         rc = ngx_engine_njs_init(engine, opts);
         if (rc != NGX_OK) {
-            return NULL;
+            goto failed;
         }
 
         engine->name = "njs";
@@ -561,7 +567,7 @@ ngx_create_engine(ngx_engine_opts_t *opts)
     case NGX_ENGINE_QJS:
         rc = ngx_engine_qjs_init(engine, opts);
         if (rc != NGX_OK) {
-            return NULL;
+            goto failed;
         }
 
         engine->name = "QuickJS";
@@ -579,10 +585,16 @@ ngx_create_engine(ngx_engine_opts_t *opts)
 #endif
 
     default:
-        return NULL;
+        goto failed;
     }
 
     return engine;
+
+failed:
+
+    njs_mp_destroy(mp);
+
+    return NULL;
 }
 
 
@@ -773,15 +785,21 @@ ngx_njs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
 
     if (njs_vm_start(vm, njs_value_arg(&retval)) == NJS_ERROR) {
         ngx_js_log_exception(vm, ctx->log, "exception");
-        goto destroy;
+        goto failed;
     }
 
     ret = ngx_njs_await(vm, ctx->log, njs_value_arg(&retval));
     if (ret == NGX_ERROR) {
-        goto destroy;
+        goto failed;
     }
 
     return engine;
+
+failed:
+
+    ngx_js_clone_abort(ctx, engine);
+
+    return NULL;
 
 destroy:
 
@@ -859,12 +877,34 @@ ngx_engine_njs_string(ngx_engine_t *e, njs_opaque_value_t *value,
 
 
 static void
+ngx_njs_clear_events(ngx_js_ctx_t *ctx)
+{
+    ngx_js_event_t     *event;
+    njs_rbtree_node_t  *node;
+
+    node = njs_rbtree_min(&ctx->waiting_events);
+
+    while (njs_rbtree_is_there_successor(&ctx->waiting_events, node)) {
+        event = (ngx_js_event_t *) ((u_char *) node
+                                    - offsetof(ngx_js_event_t, node));
+
+        if (event->destructor != NULL) {
+            event->destructor(event);
+        }
+
+        node = njs_rbtree_node_successor(&ctx->waiting_events, node);
+    }
+
+    ctx->event_id = 0;
+    njs_rbtree_init(&ctx->waiting_events, ngx_js_event_rbtree_compare);
+}
+
+
+static void
 ngx_engine_njs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
     ngx_js_loc_conf_t *conf)
 {
-    njs_int_t           ret;
-    ngx_js_event_t     *event;
-    njs_rbtree_node_t  *node;
+    njs_int_t  ret;
 
     if (ctx != NULL) {
         ret = njs_vm_call_exit_hook(e->u.njs.vm);
@@ -874,18 +914,7 @@ ngx_engine_njs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
 
         (void) ngx_njs_execute_pending_jobs(e->u.njs.vm, ctx->log);
 
-        node = njs_rbtree_min(&ctx->waiting_events);
-
-        while (njs_rbtree_is_there_successor(&ctx->waiting_events, node)) {
-            event = (ngx_js_event_t *) ((u_char *) node
-                                        - offsetof(ngx_js_event_t, node));
-
-            if (event->destructor != NULL) {
-                event->destructor(event);
-            }
-
-            node = njs_rbtree_node_successor(&ctx->waiting_events, node);
-        }
+        ngx_njs_clear_events(ctx);
 
         if (ngx_js_unhandled_rejection(ctx)) {
             ngx_js_log_exception(e->u.njs.vm, ctx->log, "unhandled rejection");
@@ -902,6 +931,40 @@ ngx_engine_njs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
     if (ctx == NULL) {
         njs_mp_destroy(e->pool);
     }
+}
+
+
+void
+ngx_js_clone_abort(ngx_js_ctx_t *ctx, ngx_engine_t *engine)
+{
+    /* The clone must not be published in ctx->engine before this call. */
+
+    if (engine->type == NGX_ENGINE_NJS) {
+        ngx_njs_clear_events(ctx);
+        ctx->rejected_promises = NULL;
+        njs_vm_destroy(engine->u.njs.vm);
+        return;
+    }
+
+#if (NJS_HAVE_QUICKJS)
+    JSRuntime  *rt;
+    JSContext  *cx;
+
+    ngx_qjs_clear_events(ctx);
+    cx = engine->u.qjs.ctx;
+
+    if (cx != NULL) {
+        rt = JS_GetRuntime(cx);
+
+        JS_SetHostPromiseRejectionTracker(rt, NULL, NULL);
+        ngx_qjs_detach_ctx(ctx, cx);
+
+        JS_FreeContext(cx);
+        JS_FreeRuntime(rt);
+    }
+
+    njs_mp_destroy(engine->pool);
+#endif
 }
 
 
@@ -979,6 +1042,7 @@ ngx_engine_qjs_init(ngx_engine_t *engine, ngx_engine_opts_t *opts)
 
     engine->u.qjs.ctx = qjs_new_context(rt, opts->u.qjs.addons);
     if (engine->u.qjs.ctx == NULL) {
+        JS_FreeRuntime(rt);
         return NGX_ERROR;
     }
 
@@ -1051,11 +1115,13 @@ ngx_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
 
     engine = njs_mp_alloc(mp, sizeof(ngx_engine_t));
     if (engine == NULL) {
+        njs_mp_destroy(mp);
         return NULL;
     }
 
     memcpy(engine, cf->engine, sizeof(ngx_engine_t));
     engine->pool = mp;
+    engine->u.qjs.ctx = NULL;
     ctx->conf = cf;
 
     if (cf->reuse_queue != NULL) {
@@ -1074,7 +1140,7 @@ ngx_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
 
     rt = JS_NewRuntime();
     if (rt == NULL) {
-        return NULL;
+        goto failed;
     }
 
     JS_SetRuntimeOpaque(rt, JS_GetRuntimeOpaque(
@@ -1083,7 +1149,7 @@ ngx_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
     cx = qjs_new_context(rt, JS_GetContextOpaque(cf->engine->u.qjs.ctx));
     if (cx == NULL) {
         JS_FreeRuntime(rt);
-        return NULL;
+        goto failed;
     }
 
     engine->u.qjs.ctx = cx;
@@ -1099,7 +1165,7 @@ ngx_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
             if (mod[i].init(cx, mod[i].name) == NULL) {
                 ngx_log_error(NGX_LOG_ERR, ctx->log, 0,
                               "js native module init failed: %s", mod[i].name);
-                goto destroy;
+                goto failed;
             }
         }
     }
@@ -1113,7 +1179,7 @@ ngx_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
                            JS_READ_OBJ_BYTECODE);
         if (JS_IsException(rv)) {
             ngx_qjs_log_exception(engine, ctx->log, "load module exception");
-            goto destroy;
+            goto failed;
         }
 
         if (i != length - 1) {
@@ -1124,30 +1190,29 @@ ngx_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
 
     if (JS_ResolveModule(cx, rv) < 0) {
         ngx_log_error(NGX_LOG_ERR, ctx->log, 0, "js resolve module failed");
-        goto destroy;
+        JS_FreeValue(cx, rv);
+        goto failed;
     }
 
     rv = JS_EvalFunction(cx, rv);
 
     if (JS_IsException(rv)) {
         ngx_qjs_log_exception(engine, ctx->log, "eval exception");
-        goto destroy;
+        goto failed;
     }
 
     rc = ngx_qjs_await(cx, ctx->log, &rv);
     JS_FreeValue(cx, rv);
     if (rc == NGX_ERROR) {
         ngx_qjs_log_exception(engine, ctx->log, "await exception");
-        goto destroy;
+        goto failed;
     }
 
     return engine;
 
-destroy:
+failed:
 
-    JS_FreeContext(cx);
-    JS_FreeRuntime(rt);
-    njs_mp_destroy(mp);
+    ngx_js_clone_abort(ctx, engine);
 
     return NULL;
 }
@@ -1216,6 +1281,55 @@ ngx_engine_qjs_string(ngx_engine_t *e, njs_opaque_value_t *value,
 
 
 static void
+ngx_qjs_detach_ctx(ngx_js_ctx_t *ctx, JSContext *cx)
+{
+    JSClassID        class_id;
+    ngx_js_opaque_t  *opaque;
+
+    if (JS_IsObject(ngx_qjs_arg(ctx->args[0]))) {
+        class_id = JS_GetClassID(ngx_qjs_arg(ctx->args[0]));
+        opaque = JS_GetOpaque(ngx_qjs_arg(ctx->args[0]), class_id);
+
+        if (opaque != NULL) {
+            opaque->external = NULL;
+        }
+    }
+
+    JS_FreeValue(cx, ngx_qjs_arg(ctx->args[0]));
+    JS_FreeValue(cx, ngx_qjs_arg(ctx->retval));
+
+    ngx_qjs_arg(ctx->args[0]) = JS_UNDEFINED;
+    ngx_qjs_arg(ctx->retval) = JS_UNDEFINED;
+
+    JS_SetContextOpaque(cx, NULL);
+}
+
+
+static void
+ngx_qjs_clear_events(ngx_js_ctx_t *ctx)
+{
+    ngx_qjs_event_t    *event;
+    njs_rbtree_node_t  *node;
+
+    node = njs_rbtree_min(&ctx->waiting_events);
+
+    while (njs_rbtree_is_there_successor(&ctx->waiting_events, node)) {
+        event = (ngx_qjs_event_t *) ((u_char *) node
+                                     - offsetof(ngx_qjs_event_t, node));
+
+        if (event->destructor != NULL) {
+            event->destructor(event);
+        }
+
+        node = njs_rbtree_node_successor(&ctx->waiting_events, node);
+    }
+
+    ctx->event_id = 0;
+    njs_rbtree_init(&ctx->waiting_events, ngx_js_event_rbtree_compare);
+}
+
+
+static void
 ngx_js_cleanup_reuse_ctx(void *data)
 {
     JSRuntime  *rt;
@@ -1244,12 +1358,8 @@ ngx_engine_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
     uint32_t              i, length;
     JSRuntime            *rt;
     JSContext            *cx;
-    JSClassID             class_id;
     ngx_uint_t            reusable;
     JSMemoryUsage         stats;
-    ngx_qjs_event_t      *event;
-    ngx_js_opaque_t      *opaque;
-    njs_rbtree_node_t    *node;
     ngx_pool_cleanup_t   *cln;
     ngx_js_code_entry_t  *pc;
 
@@ -1266,31 +1376,14 @@ ngx_engine_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
             reusable = 0;
         }
 
-        node = njs_rbtree_min(&ctx->waiting_events);
-
-        while (njs_rbtree_is_there_successor(&ctx->waiting_events, node)) {
-            event = (ngx_qjs_event_t *) ((u_char *) node
-                                         - offsetof(ngx_qjs_event_t, node));
-
-            if (event->destructor != NULL) {
-                event->destructor(event);
-            }
-
-            node = njs_rbtree_node_successor(&ctx->waiting_events, node);
-        }
+        ngx_qjs_clear_events(ctx);
 
         if (ngx_qjs_unhandled_rejection(ctx)) {
             ngx_qjs_log_exception(e, ctx->log, "unhandled rejection");
         }
 
         JS_SetHostPromiseRejectionTracker(JS_GetRuntime(cx), NULL, NULL);
-
-        class_id = JS_GetClassID(ngx_qjs_arg(ctx->args[0]));
-        opaque = JS_GetOpaque(ngx_qjs_arg(ctx->args[0]), class_id);
-        opaque->external = NULL;
-
-        JS_FreeValue(cx, ngx_qjs_arg(ctx->args[0]));
-        JS_FreeValue(cx, ngx_qjs_arg(ctx->retval));
+        ngx_qjs_detach_ctx(ctx, cx);
 
         if (JS_IsJobPending(JS_GetRuntime(cx))) {
             ngx_log_error(NGX_LOG_ERR, ctx->log, 0,

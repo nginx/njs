@@ -2132,6 +2132,7 @@ ngx_http_js_variable_var(ngx_http_request_t *r, ngx_http_variable_value_t *v,
 static ngx_int_t
 ngx_http_js_init_vm(ngx_http_request_t *r, njs_int_t proto_id)
 {
+    ngx_engine_t            *engine;
     ngx_http_js_ctx_t       *ctx;
     ngx_pool_cleanup_t      *cln;
     ngx_http_js_loc_conf_t  *jlcf;
@@ -2158,20 +2159,23 @@ ngx_http_js_init_vm(ngx_http_request_t *r, njs_int_t proto_id)
         return NGX_OK;
     }
 
-    ctx->engine = jlcf->engine->clone((ngx_js_ctx_t *) ctx,
-                                      (ngx_js_loc_conf_t *) jlcf, proto_id, r);
-    if (ctx->engine == NULL) {
+    engine = jlcf->engine->clone((ngx_js_ctx_t *) ctx,
+                                 (ngx_js_loc_conf_t *) jlcf, proto_id, r);
+    if (engine == NULL) {
         return NGX_ERROR;
     }
+
+    cln = ngx_pool_cleanup_add(r->pool, 0);
+    if (cln == NULL) {
+        ngx_js_clone_abort((ngx_js_ctx_t *) ctx, engine);
+        return NGX_ERROR;
+    }
+
+    ctx->engine = engine;
 
     ngx_log_debug3(NGX_LOG_DEBUG_HTTP, ctx->log, 0,
                    "http js vm clone %s: %p from: %p", jlcf->engine->name,
                    ctx->engine, jlcf->engine);
-
-    cln = ngx_pool_cleanup_add(r->pool, 0);
-    if (cln == NULL) {
-        return NGX_ERROR;
-    }
 
     cln->handler = ngx_http_js_cleanup_ctx;
     cln->data = ctx;
@@ -6038,6 +6042,7 @@ ngx_engine_njs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf,
                                 proto_id, njs_vm_external_ptr(engine->u.njs.vm),
                                 0);
     if (rc != NJS_OK) {
+        ngx_js_clone_abort(ctx, engine);
         return NULL;
     }
 
@@ -9403,6 +9408,7 @@ ngx_http_qjs_request_make(JSContext *cx, ngx_int_t proto_id,
 
     req = js_malloc(cx, sizeof(ngx_http_qjs_request_t));
     if (req == NULL) {
+        JS_FreeValue(cx, request);
         return JS_ThrowOutOfMemory(cx);
     }
 
@@ -9486,12 +9492,12 @@ ngx_engine_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf,
         if (JS_NewClass(JS_GetRuntime(cx), NGX_QJS_CLASS_ID_HTTP_REQUEST,
                         &ngx_http_qjs_request_class) < 0)
         {
-            return NULL;
+            goto failed;
         }
 
         proto = JS_NewObject(cx);
         if (JS_IsException(proto)) {
-            return NULL;
+            goto failed;
         }
 
         JS_SetPropertyFunctionList(cx, proto, ngx_http_qjs_ext_request,
@@ -9502,12 +9508,12 @@ ngx_engine_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf,
         if (JS_NewClass(JS_GetRuntime(cx), NGX_QJS_CLASS_ID_HTTP_FORM,
                         &ngx_http_qjs_request_form_class) < 0)
         {
-            return NULL;
+            goto failed;
         }
 
         proto = JS_NewObject(cx);
         if (JS_IsException(proto)) {
-            return NULL;
+            goto failed;
         }
 
         JS_SetPropertyFunctionList(cx, proto, ngx_http_qjs_ext_request_form,
@@ -9518,12 +9524,12 @@ ngx_engine_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf,
         if (JS_NewClass(JS_GetRuntime(cx), NGX_QJS_CLASS_ID_HTTP_PERIODIC,
                         &ngx_http_qjs_periodic_class) < 0)
         {
-            return NULL;
+            goto failed;
         }
 
         proto = JS_NewObject(cx);
         if (JS_IsException(proto)) {
-            return NULL;
+            goto failed;
         }
 
         JS_SetPropertyFunctionList(cx, proto, ngx_http_qjs_ext_periodic,
@@ -9534,24 +9540,21 @@ ngx_engine_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf,
         if (JS_NewClass(JS_GetRuntime(cx), NGX_QJS_CLASS_ID_HTTP_VARS,
                         &ngx_http_qjs_variables_class) < 0)
         {
-            return NULL;
+            goto failed;
         }
 
         if (JS_NewClass(JS_GetRuntime(cx), NGX_QJS_CLASS_ID_HTTP_HEADERS_IN,
                         &ngx_http_qjs_headers_in_class) < 0)
         {
-            return NULL;
+            goto failed;
         }
 
         if (JS_NewClass(JS_GetRuntime(cx), NGX_QJS_CLASS_ID_HTTP_HEADERS_OUT,
                         &ngx_http_qjs_headers_out_class) < 0)
         {
-            return NULL;
+            goto failed;
         }
     }
-
-    hctx = (ngx_http_js_ctx_t *) ctx;
-    hctx->body_filter = ngx_http_qjs_body_filter;
 
     if (proto_id == ngx_http_js_request_proto_id) {
         proto_id = NGX_QJS_CLASS_ID_HTTP_REQUEST;
@@ -9560,13 +9563,22 @@ ngx_engine_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf,
         proto_id = NGX_QJS_CLASS_ID_HTTP_PERIODIC;
     }
 
-    ngx_qjs_arg(hctx->args[0]) = ngx_http_qjs_request_make(cx, proto_id,
-                                                           external);
-    if (JS_IsException(ngx_qjs_arg(hctx->args[0]))) {
-        return NULL;
+    ngx_qjs_arg(ctx->args[0]) = ngx_http_qjs_request_make(cx, proto_id,
+                                                          external);
+    if (JS_IsException(ngx_qjs_arg(ctx->args[0]))) {
+        goto failed;
     }
 
+    hctx = (ngx_http_js_ctx_t *) ctx;
+    hctx->body_filter = ngx_http_qjs_body_filter;
+
     return engine;
+
+failed:
+
+    ngx_js_clone_abort(ctx, engine);
+
+    return NULL;
 }
 
 #endif
