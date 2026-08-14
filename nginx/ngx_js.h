@@ -189,6 +189,7 @@ typedef struct {
 
 #define NGX_JS_COMMON_CTX                                                     \
     ngx_engine_t          *engine;                                            \
+    ngx_js_loc_conf_t     *conf;                                              \
     ngx_log_t             *log;                                               \
     njs_opaque_value_t     args[3];                                           \
     njs_opaque_value_t     retval;                                            \
@@ -357,7 +358,7 @@ void ngx_js_ctx_init(ngx_js_ctx_t *ctx, ngx_log_t *log);
     ((ctx)->engine->external(ctx->engine))
 
 
-void ngx_js_ctx_destroy(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *conf);
+void ngx_js_ctx_destroy(ngx_js_ctx_t *ctx);
 ngx_int_t ngx_js_call(njs_vm_t *vm, njs_function_t *func,
     njs_opaque_value_t *args, njs_uint_t nargs);
 ngx_int_t ngx_js_log_exception(njs_vm_t *vm, ngx_log_t *log, const char *txt);

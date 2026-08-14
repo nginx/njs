@@ -769,6 +769,7 @@ ngx_njs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
     memcpy(engine, cf->engine, sizeof(ngx_engine_t));
     engine->pool = njs_vm_memory_pool(vm);
     engine->u.njs.vm = vm;
+    ctx->conf = cf;
 
     if (njs_vm_start(vm, njs_value_arg(&retval)) == NJS_ERROR) {
         ngx_js_log_exception(vm, ctx->log, "exception");
@@ -1055,6 +1056,7 @@ ngx_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
 
     memcpy(engine, cf->engine, sizeof(ngx_engine_t));
     engine->pool = mp;
+    ctx->conf = cf;
 
     if (cf->reuse_queue != NULL) {
         engine->u.qjs.ctx = ngx_js_queue_pop(cf->reuse_queue);
@@ -2606,9 +2608,9 @@ ngx_js_ctx_init(ngx_js_ctx_t *ctx, ngx_log_t *log)
 
 
 void
-ngx_js_ctx_destroy(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *conf)
+ngx_js_ctx_destroy(ngx_js_ctx_t *ctx)
 {
-    ctx->engine->destroy(ctx->engine, ctx, conf);
+    ctx->engine->destroy(ctx->engine, ctx, ctx->conf);
 }
 
 
