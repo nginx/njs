@@ -242,6 +242,8 @@ qjs_new_context(JSRuntime *rt, qjs_module_t **addons)
         return NULL;
     }
 
+    global_obj = JS_UNDEFINED;
+
     JS_AddIntrinsicBaseObjects(ctx);
     JS_AddIntrinsicDate(ctx);
     JS_AddIntrinsicRegExp(ctx);
@@ -257,14 +259,14 @@ qjs_new_context(JSRuntime *rt, qjs_module_t **addons)
 
     for (module = qjs_modules; *module != NULL; module++) {
         if ((*module)->init(ctx, (*module)->name) == NULL) {
-            return NULL;
+            goto failed;
         }
     }
 
     if (addons != NULL) {
         for (module = addons; *module != NULL; module++) {
             if ((*module)->init(ctx, (*module)->name) == NULL) {
-                return NULL;
+                goto failed;
             }
         }
     }
@@ -272,46 +274,53 @@ qjs_new_context(JSRuntime *rt, qjs_module_t **addons)
     global_obj = JS_GetGlobalObject(ctx);
 
     if (qjs_add_intrinsic_njs(ctx, global_obj) < 0) {
-        return NULL;
+        goto failed;
     }
 
     if (qjs_add_intrinsic_text_decoder(ctx, global_obj) < 0) {
-        return NULL;
+        goto failed;
     }
 
     if (qjs_add_intrinsic_text_encoder(ctx, global_obj) < 0) {
-        return NULL;
+        goto failed;
     }
 
     if (qjs_add_intrinsic_btoa_atob(ctx, global_obj) < 0) {
-        return NULL;
+        goto failed;
     }
 
     prop = JS_NewAtom(ctx, "eval");
     if (prop == JS_ATOM_NULL) {
-        return NULL;
+        goto failed;
     }
 
     ret = JS_DeleteProperty(ctx, global_obj, prop, 0);
     JS_FreeAtom(ctx, prop);
     if (ret < 0) {
-        return NULL;
+        goto failed;
     }
 
     prop = JS_NewAtom(ctx, "Function");
     if (prop == JS_ATOM_NULL) {
-        return NULL;
+        goto failed;
     }
 
     ret = JS_DeleteProperty(ctx, global_obj, prop, 0);
     JS_FreeAtom(ctx, prop);
     if (ret < 0) {
-        return NULL;
+        goto failed;
     }
 
     JS_FreeValue(ctx, global_obj);
 
     return ctx;
+
+failed:
+
+    JS_FreeValue(ctx, global_obj);
+    JS_FreeContext(ctx);
+
+    return NULL;
 }
 
 
