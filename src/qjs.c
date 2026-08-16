@@ -1252,6 +1252,21 @@ qjs_typed_array_data(JSContext *ctx, JSValueConst value, njs_str_t *data)
 }
 
 
+#ifdef NJS_HAVE_QUICKJS_SIZED_NEW_ARRAY_BUFFER
+static void *
+js_array_buffer_realloc(JSRuntime *rt, void *opaque, void *ptr, size_t size)
+{
+    return js_realloc_rt(rt, ptr, size);
+}
+
+
+JSValue
+qjs_new_array_buffer(JSContext *cx, uint8_t *src, size_t len)
+{
+    return JS_NewArrayBuffer(cx, src, len, len, js_array_buffer_realloc,
+                             NULL, 0);
+}
+#else
 static void
 js_array_buffer_free(JSRuntime *rt, void *opaque, void *ptr)
 {
@@ -1264,6 +1279,7 @@ qjs_new_array_buffer(JSContext *cx, uint8_t *src, size_t len)
 {
     return JS_NewArrayBuffer(cx, src, len, js_array_buffer_free, NULL, 0);
 }
+#endif
 
 
 JSValue
