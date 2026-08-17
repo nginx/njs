@@ -214,33 +214,6 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
 
         . auto/feature
 
-        njs_feature="QuickJS JS_NewError() attaches stack"
-        njs_feature_run=value
-        njs_feature_name=NJS_HAVE_QUICKJS_NEW_ERROR_STACK
-        njs_feature_test="#include <quickjs_compat.h>
-
-                          int main() {
-                              int       rc;
-                              JSAtom    atom;
-                              JSValue   err;
-                              JSRuntime *rt;
-                              JSContext *ctx;
-
-                              rt = JS_NewRuntime();
-                              ctx = JS_NewContext(rt);
-                              err = JS_NewError(ctx);
-                              atom = JS_NewAtom(ctx, \"stack\");
-                              rc = JS_HasProperty(ctx, err, atom);
-                              printf(\"%d\", rc);
-                              JS_FreeAtom(ctx, atom);
-                              JS_FreeValue(ctx, err);
-                              JS_FreeContext(ctx);
-                              JS_FreeRuntime(rt);
-                              return 0;
-                         }"
-
-        . auto/feature
-
         njs_feature="QuickJS version"
         njs_feature_name=NJS_QUICKJS_VERSION
         njs_feature_run=value
