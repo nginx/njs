@@ -2002,12 +2002,11 @@ ngx_qjs_ext_fetch_request_body(JSContext *cx, JSValueConst this_val,
     switch (magic) {
     case NGX_JS_BODY_ARRAY_BUFFER:
         /*
-         * no free_func for JS_NewArrayBuffer()
-         * because request->body is allocated from e->pool
+         * request->body is allocated from e->pool
          * and will be freed when context is freed.
          */
-        result = JS_NewArrayBuffer(cx, request->body.data, request->body.len,
-                                   NULL, NULL, 0);
+        result = qjs_new_external_array_buffer(cx, request->body.data,
+                                               request->body.len, 0);
         if (JS_IsException(result)) {
             return JS_ThrowOutOfMemory(cx);
         }
@@ -2331,12 +2330,11 @@ ngx_qjs_ext_fetch_response_body(JSContext *cx, JSValueConst this_val,
         }
 
         /*
-         * no free_func for JS_NewArrayBuffer()
-         * because string.start is allocated from e->pool
+         * string.start is allocated from e->pool
          * and will be freed when context is freed.
          */
-        result = JS_NewArrayBuffer(cx, string.start, string.length, NULL, NULL,
-                                   0);
+        result = qjs_new_external_array_buffer(cx, string.start,
+                                               string.length, 0);
         if (JS_IsException(result)) {
             return JS_ThrowOutOfMemory(cx);
         }

@@ -2081,9 +2081,8 @@ njs_qjs_agent(void *arg)
                 pthread_cond_signal(&console->agent_cond);
                 pthread_mutex_unlock(&console->agent_mutex);
 
-                args[0] = JS_NewArrayBuffer(ctx, agent->broadcast_sab_buf,
-                                            agent->broadcast_sab_size,
-                                            NULL, NULL, 1);
+                args[0] = qjs_new_external_array_buffer(ctx,
+                    agent->broadcast_sab_buf, agent->broadcast_sab_size, 1);
                 args[1] = JS_NewInt32(ctx, agent->broadcast_val);
 
                 ret_val = JS_Call(ctx, agent->broadcast_func, JS_UNDEFINED,

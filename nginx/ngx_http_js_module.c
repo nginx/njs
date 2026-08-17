@@ -6681,8 +6681,8 @@ ngx_http_qjs_body_to_value(JSContext *cx, ngx_http_js_ctx_t *ctx,
 
     switch (type) {
     case NGX_JS_BODY_ARRAY_BUFFER:
-        return JS_NewArrayBuffer(cx, ctx->body_read_data,
-                                 ctx->body_read_len, NULL, NULL, 0);
+        return qjs_new_external_array_buffer(cx, ctx->body_read_data,
+                                             ctx->body_read_len, 0);
 
     case NGX_JS_BODY_JSON:
         if (ctx->body_read_nul) {

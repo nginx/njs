@@ -2666,8 +2666,11 @@ qjs_buffer_builtin_init(JSContext *ctx)
     JSValue    global_obj, buffer, proto, ctor, ta, ta_proto, symbol, species;
     JSClassID  u8_ta_class_id;
 
-    JS_NewClass(JS_GetRuntime(ctx), QJS_CORE_CLASS_ID_BUFFER,
-                &qjs_buffer_class);
+    if (JS_NewClass(JS_GetRuntime(ctx), QJS_CORE_CLASS_ID_BUFFER,
+                    &qjs_buffer_class) < 0)
+    {
+        return -1;
+    }
 
     global_obj = JS_GetGlobalObject(ctx);
 
@@ -2683,8 +2686,12 @@ qjs_buffer_builtin_init(JSContext *ctx)
      * We use JS_SetClassProto()/JS_GetClassProto() as a key-value store
      * for fast value query by class ID without querying the global object.
      */
-    JS_NewClass(JS_GetRuntime(ctx), QJS_CORE_CLASS_ID_UINT8_ARRAY_CTOR,
-                &qjs_uint8_array_ctor_class);
+    if (JS_NewClass(JS_GetRuntime(ctx), QJS_CORE_CLASS_ID_UINT8_ARRAY_CTOR,
+                    &qjs_uint8_array_ctor_class) < 0)
+    {
+        return -1;
+    }
+
     JS_SetClassProto(ctx, QJS_CORE_CLASS_ID_UINT8_ARRAY_CTOR,
                      JS_DupValue(ctx, ctor));
 #endif

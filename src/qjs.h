@@ -22,8 +22,15 @@
 #include <quickjs_compat.h>
 
 
+/*
+ * The engine reserves class ids below JS_CLASS_INIT_COUNT for its own
+ * classes.  The value is internal and grows between releases, so the ids
+ * below start far enough above it.
+ */
+#define QJS_CORE_CLASS_ID_OFFSET   128
+
 enum {
-    QJS_CORE_CLASS_ID_BUFFER = 64,
+    QJS_CORE_CLASS_ID_BUFFER = QJS_CORE_CLASS_ID_OFFSET,
     QJS_CORE_CLASS_ID_UINT8_ARRAY_CTOR,
     QJS_CORE_CLASS_ID_TEXT_DECODER,
     QJS_CORE_CLASS_ID_TEXT_ENCODER,
@@ -55,6 +62,8 @@ JSValue qjs_call_exit_hook(JSContext *ctx);
 
 JSValue qjs_new_uint8_array(JSContext *ctx, int argc, JSValueConst *argv);
 JSValue qjs_new_array_buffer(JSContext *cx, uint8_t *src, size_t len);
+JSValue qjs_new_external_array_buffer(JSContext *cx, uint8_t *src, size_t len,
+    int is_shared);
 JSValue qjs_buffer_alloc(JSContext *ctx, size_t size);
 JSValue qjs_buffer_create(JSContext *ctx, u_char *start, size_t size);
 JSValue qjs_buffer_chb_alloc(JSContext *ctx, njs_chb_t *chain);
