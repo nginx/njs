@@ -59,8 +59,8 @@ jobs:
         run: |
           git clone https://github.com/quickjs-ng/quickjs quickjs-ng
           cd quickjs-ng
-          git checkout v0.11.0
-          CFLAGS="$CC_OPT -fPIC" LDFLAGS=$LD_OPT meson setup build --prefix=$HOME/.local --libdir=lib
+          git checkout v0.16.2
+          CFLAGS="$CC_OPT -fPIC" LDFLAGS=$LD_OPT meson setup build --prefix=$HOME/.local --libdir=lib -Ddefault_library=static
           meson compile -C build
           meson install -C build
           echo "PKG_CONFIG_PATH=$HOME/.local/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
