@@ -187,6 +187,33 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
 
         . auto/feature
 
+        njs_feature="QuickJS JS_NewArrayBuffer() with max_len"
+        njs_feature_name=NJS_HAVE_QUICKJS_ARRAY_BUFFER_MAX_LEN
+        njs_feature_run=no
+        njs_feature_test="#include <quickjs_compat.h>
+
+                          static void *
+                          realloc_func(JSRuntime *rt, void *opaque, void *ptr,
+                                       size_t size)
+                          {
+                              return NULL;
+                          }
+
+                          int main() {
+                              JSRuntime *rt;
+                              JSContext *ctx;
+
+                              rt = JS_NewRuntime();
+                              ctx = JS_NewContext(rt);
+                              (void) JS_NewArrayBuffer(ctx, NULL, 0, 0,
+                                                       realloc_func, NULL, 0);
+                              JS_FreeContext(ctx);
+                              JS_FreeRuntime(rt);
+                              return 0;
+                         }"
+
+        . auto/feature
+
         njs_feature="QuickJS JS_NewError() attaches stack"
         njs_feature_run=value
         njs_feature_name=NJS_HAVE_QUICKJS_NEW_ERROR_STACK
