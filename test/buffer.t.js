@@ -151,6 +151,88 @@ let concatRevalidate_tsuite = {
 };
 
 
+let detachDuringCoercion_tsuite = {
+    name: "buf methods detach-during-argument-coercion tests",
+    skip: () => (!has_buffer() || !is_detach_available()),
+    T: async (params) => {
+        try {
+            params.run();
+
+        } catch (e) {
+            if (e.toString().startsWith('TypeError:')) {
+                return 'SUCCESS';
+            }
+
+            throw e;
+        }
+
+        throw Error(`${params.name}() did not revalidate the buffer detached`
+                    + ` during argument coercion`);
+    },
+
+    tests: [
+        { name: 'readUInt32LE', run: () => {
+              let b = Buffer.alloc(16);
+              let evil = { valueOf: () => { detach(b.buffer); return 0; } };
+              b.readUInt32LE(evil);
+          } },
+        { name: 'readFloatLE', run: () => {
+              let b = Buffer.alloc(16);
+              let evil = { valueOf: () => { detach(b.buffer); return 0; } };
+              b.readFloatLE(evil);
+          } },
+        { name: 'writeUInt32LE (value)', run: () => {
+              let b = Buffer.alloc(16);
+              let evil = { valueOf: () => { detach(b.buffer); return 0x41424344; } };
+              b.writeUInt32LE(evil, 0);
+          } },
+        { name: 'writeUInt32LE (offset)', run: () => {
+              let b = Buffer.alloc(16);
+              let evil = { valueOf: () => { detach(b.buffer); return 0; } };
+              b.writeUInt32LE(0x11223344, evil);
+          } },
+        { name: 'writeFloatLE', run: () => {
+              let b = Buffer.alloc(16);
+              let evil = { valueOf: () => { detach(b.buffer); return 0; } };
+              b.writeFloatLE(1.5, evil);
+          } },
+        { name: 'write', run: () => {
+              let b = Buffer.alloc(16);
+              let evil = { valueOf: () => { detach(b.buffer); return 0; } };
+              b.write('hello world', evil);
+          } },
+        { name: 'toString', run: () => {
+              let b = Buffer.alloc(16, 0x41);
+              let evil = { valueOf: () => { detach(b.buffer); return 0; } };
+              b.toString('utf8', evil);
+          } },
+        { name: 'indexOf', run: () => {
+              let b = Buffer.alloc(16, 0x41);
+              let evil = { valueOf: () => { detach(b.buffer); return 0; } };
+              b.indexOf(0x41, evil);
+          } },
+        { name: 'compare (target)', run: () => {
+              let a = Buffer.alloc(16, 0x41);
+              let b = Buffer.alloc(16, 0x42);
+              let evil = { valueOf: () => { detach(b.buffer); return 0; } };
+              a.compare(b, evil);
+          } },
+        { name: 'copy (target)', run: () => {
+              let src = Buffer.alloc(16, 0x41);
+              let dst = Buffer.alloc(16);
+              let evil = { valueOf: () => { detach(dst.buffer); return 0; } };
+              src.copy(dst, evil);
+          } },
+        { name: 'copy (source)', run: () => {
+              let src = Buffer.alloc(16, 0x41);
+              let dst = Buffer.alloc(16);
+              let evil = { valueOf: () => { detach(src.buffer); return 0; } };
+              src.copy(dst, 0, evil);
+          } },
+    ],
+};
+
+
 let compare_tsuite = {
     name: "Buffer.compare() tests",
     skip: () => (!has_buffer()),
@@ -1125,6 +1207,7 @@ run([
     byteLength_tsuite,
     concat_tsuite,
     concatRevalidate_tsuite,
+    detachDuringCoercion_tsuite,
     compare_tsuite,
     comparePrototype_tsuite,
     copy_tsuite,
