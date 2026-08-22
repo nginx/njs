@@ -3000,7 +3000,9 @@ njs_string_get_substitution(njs_vm_t *vm, njs_value_t *matched,
             length = njs_string_prop(vm, &m, matched);
             (void) njs_string_prop(vm, &s, string);
 
-            tail = njs_string_offset(&s, pos + length) - s.start;
+            tail = njs_string_offset(&s, njs_min(pos + (int64_t) length,
+                                                 (int64_t) s.length))
+                   - s.start;
 
             njs_chb_append(&chain, &s.start[tail],
                            njs_max((int64_t) s.size - tail, 0));
