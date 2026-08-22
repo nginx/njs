@@ -10008,6 +10008,18 @@ static njs_unit_test_t  njs_test[] =
               "'ABC'.replaceAll(/B/g, '+')"),
       njs_str("A|+|C") },
 
+    { njs_str("var n = 0;"
+              "var re = { global: false, exec: function () {"
+              "    return n++ ? null : { 0: 'y'.repeat(100), index: 0 }; } };"
+              "RegExp.prototype[Symbol.replace].call(re, 'αβγ', \"[$']\")"),
+      njs_str("[]") },
+
+    { njs_str("var n = 0;"
+              "var re = { global: false, exec: function () {"
+              "    return n++ ? null : { 0: 'y'.repeat(1000), index: 2 }; } };"
+              "RegExp.prototype[Symbol.replace].call(re, 'αβγδε', \"<$'>\")"),
+      njs_str("αβ<>") },
+
     { njs_str("var O = RegExp.prototype.exec;"
               "function mangled(s) { var r = O.call(this, s);"
               "                      Object.defineProperty(r, '0', {enumerable:false}); "
