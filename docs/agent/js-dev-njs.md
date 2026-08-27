@@ -49,9 +49,10 @@ When porting an existing njs-engine module:
 3. Remove calls to `njs.dump()` / `console.dump()`; switch to
    `JSON.stringify` or a small helper.
 4. If you used `js_preload_object`, fold the data into a regular module
-   that the code `import`s. The shared dictionary
-   (`ngx.shared` + `js_shared_dict_zone`) is the equivalent of preload
-   for cross-worker shared state.
+   that the code `import`s. Mind the cost: a module body is evaluated per
+   new context, so the literal is re-materialized on every reuse-pool
+   miss. `ngx.shared` is the cross-worker alternative, but it stores only
+   strings and numbers, so structured data has to be serialized.
 5. Modernize syntax — destructuring, `class`, spread, `Map`/`Set` —
    freely. They are all available under QuickJS.
 6. Re-run the test suite under both engines until parity, then drop the

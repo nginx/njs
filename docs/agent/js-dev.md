@@ -66,10 +66,12 @@ For the full ECMAScript compatibility list of the njs engine, see the
 **JS code in njs does not run on its own.** There is no main loop, no
 background thread, no startup script. Every JS function executes because
 some `nginx.conf` directive bound it to a phase of request processing
-and nginx invoked it. You cannot register an event listener from JS,
-schedule work outside a directive-driven entry, or keep code running
-after the handler returns. The single near-exception is `js_periodic`,
-whose trigger is still nginx's timer — nothing self-starts from JS.
+and nginx invoked it. You cannot register an event listener from JS or
+schedule work outside a directive-driven entry. Async work started
+*inside* a handler is tracked by nginx and may outlive the initial
+function call, but not the request. The single near-exception is
+`js_periodic`, whose trigger is still nginx's timer — nothing
+self-starts from JS.
 
 Each directive below defines when the handler runs, what context object
 is exposed, and how it terminates.
@@ -79,55 +81,79 @@ is exposed, and how it terminates.
 | Directive | When | Context | Termination |
 |---|---|---|---|
 | `js_content module.fn` | content phase, replaces upstream | `r` | `r.return()` or `r.send()` + `r.finish()` |
-| `js_access module.fn` | access phase | `r` | `r.return(403\|...)` to deny; otherwise fall through |
+| `js_access module.fn` | access phase | `r` | `r.return(403\|...)` to deny, `r.decline()` to abstain, plain return to allow |
 | `js_header_filter module.fn` | response header filter | `r` (mutate `headersOut`) | synchronous return |
 | `js_body_filter module.fn [buffer_type=string\|buffer]` | response body filter | `r`, plus `(data, flags)` | `r.sendBuffer(out, flags)` |
-| `js_set $var module.fn [nocache]` | variable evaluation | `r` | return value (synchronous) |
-| `js_periodic module.fn interval=...` | timer, no request | none | implicit return |
+| `js_set $var module.fn [nocache]` | variable evaluation | `r` | return value |
+| `js_periodic module.fn interval=...` | timer, no client request | periodic session | implicit return |
 
 **Stream (`ngx_stream_js_module`)**
 
 | Directive | When | Context | Termination |
 |---|---|---|---|
-| `js_preread module.fn` | before upstream connects | `s` | `s.allow()` / `s.deny()` / `s.done()` |
-| `js_filter module.fn` | data filter, both directions | `s` (subscribe with `s.on()`) | `s.done()` |
-| `js_access module.fn` | access | `s` | `s.allow()` / `s.deny()` |
-| `js_set $var module.fn` | variable evaluation | `s` | return value (synchronous) |
-| `js_periodic module.fn interval=...` | timer, no session | none | implicit return |
+| `js_preread module.fn` | preread phase, before upstream connects | `s` (subscribe with `s.on()`) | `s.allow()` / `s.deny()` / `s.decline()` / `s.done()` |
+| `js_filter module.fn` | stream filter chain, both directions | `s` (subscribe with `s.on()`) | callbacks emit with `s.send()`; `s.done()` / `allow` / `deny` / `decline` throw once filtering started |
+| `js_access module.fn` | access phase | `s` | `s.allow()` / `s.deny()` / `s.decline()` |
+| `js_set $var module.fn` | variable evaluation | `s` | return value |
+| `js_periodic module.fn interval=...` | timer, no client session | periodic session | implicit return |
 
 Notes:
 
-- **Async support is not uniform.** `js_content` and `js_access` accept
-  fully async handlers (returning a `Promise` or using `await`). The
-  remaining HTTP handlers (`js_header_filter`, `js_body_filter`,
-  `js_set`) reject async work with `"async operation inside ... handler"`
-  if `await` hits the event loop. `js_set` may still return an
-  already-resolved `Promise`.
+- **Async support is not uniform.** What is rejected is a *pending nginx
+  event* left behind, not the `async` keyword: any handler may be `async`
+  as long as everything it awaits is already settled.
+  - May leave pending events: HTTP `js_content`, `js_access`,
+    `js_periodic`; stream `js_access`, `js_preread`, `js_periodic`.
+  - May not: HTTP `js_header_filter`, `js_body_filter`, `js_set`, and
+    stream `js_set` — they log `"async operation inside ... handler"` and
+    fail. `js_filter` must return after registering its `s.on()`
+    callbacks; those callbacks may be async.
 - **`js_body_filter`** is invoked once per response chunk; the last call
   has `flags.last === true`. Pick the chunk shape with
   `buffer_type=string|buffer`.
 - **`js_header_filter` / `js_body_filter`** see the *response*; they
-  cannot read the request body via `r.requestText` / `r.readRequest*()`.
-- **`js_periodic`** lives in a dedicated `location @name { }` block and
-  runs without a client request. Pin to specific workers with
-  `worker_affinity`.
+  cannot initiate an asynchronous request-body read. They may use
+  `r.requestText` / `r.readRequest*()` if an earlier phase has already
+  read the body.
+- **`js_periodic`** runs without a client request or session: HTTP puts
+  it in a dedicated `location @name { }`, stream in `server { }`. Its
+  first argument is a
+  [periodic session](https://nginx.org/en/docs/njs/reference.html#periodic_session),
+  which exposes only `variables` / `rawVariables`. Runs on worker 0
+  unless pinned with `worker_affinity`.
 
 ## Runtime model (common to both engines)
 
 - **Nginx drives the engine, not the JS.** Every execution begins at a
   directive-bound entry point (see
-  [Integration points](#integration-points-where-js-runs)) and ends when
-  that handler resolves. There is no top-level long-lived script; work
-  that escapes the handler's lifetime is on its own.
-- **Per-request isolation.** For each incoming HTTP request or stream
-  session, the JS module creates a fresh VM. State you put in module
-  scope is visible to subsequent requests on the same worker but cannot
-  be used to carry per-request data — it leaks across requests.
-- **Worker isolation.** nginx is multi-process. Module scope is not
-  shared across workers. To share state across workers, use
+  [Integration points](#integration-points-where-js-runs)). Registered
+  nginx events may keep its context active after the handler returns,
+  but no work can outlive the request or session. There is no top-level
+  long-lived script.
+- **Module bodies follow the context, not the worker.** `js_import` only
+  *compiles* at configuration time; imported module bodies run when a
+  context is created.
+  - njs engine: `ngx_njs_clone()` clones the configuration-time VM and
+    calls `njs_vm_start()` per request, so module bodies re-run and
+    module state resets every time.
+  - QuickJS: `ngx_qjs_clone()` evaluates the bytecode only when it builds
+    a context. One popped from the `js_context_reuse` pool (128 by
+    default) is neither re-evaluated nor reset, so it still carries what
+    the previous request left in module scope —
+    `nginx/t/js_context_reuse_redirect.t` asserts a module-level
+    `let visits = 0` reaching 4 over four requests.
+- **Never keep state in module scope.** It is neither a per-worker cache
+  nor a place for per-request data: it is wiped on the njs engine and
+  inherited from an unrelated request on QuickJS. Use locals or the `r` /
+  `s` object per request, and
   [`ngx.shared`](https://nginx.org/en/docs/njs/reference.html#ngx_shared)
-  (shared dictionary). For request-scoped per-worker state, use a `Map`
-  / object keyed by some request identifier, but mind eviction.
+  for anything that must outlive one.
+- **Module initialization is not free.** It is paid per new context:
+  every request on the njs engine, and on a reuse-pool miss under
+  QuickJS. Keep module scope to declarations.
+- **Worker isolation.** nginx is multi-process and workers do not share a
+  JavaScript heap, so `ngx.shared` — backed by an nginx shared memory
+  zone — is the only njs-provided way to coordinate between them.
 - **Event loop.** Async work is driven by nginx's event loop;
   `r.subrequest()`, `ngx.fetch()`, and `await` integrate with it.
   `setTimeout` / `clearTimeout` are available in both the CLI and
@@ -135,8 +161,6 @@ Notes:
 - **Top-level `await`** — QuickJS engine only. The njs engine requires
   `await` to appear inside an `async` function and reports
   `await is only valid in async functions` otherwise.
-- **Module imports load once per worker.** Don't perform expensive setup
-  in module scope unless it's truly initialization.
 
 ## NGINX bindings (common API surface)
 
@@ -146,31 +170,31 @@ TypeScript declaration files under [`ts/`](../../ts/) are the
 authoritative per-symbol description and apply to both engines.
 Highlights:
 
-- **`r` (HTTP request).** Inside `js_content` / `js_filter` /
-  `js_access` / `js_set` handlers.
+- **`r` (HTTP request).** Inside `js_content` / `js_access` /
+  `js_header_filter` / `js_body_filter` / `js_set` handlers.
   - Body:
-    - `js_content` only: `r.requestText`, `r.requestBuffer` (synchronous
-      accessors; require the body to be in memory — set
-      `client_max_body_size` and `client_body_buffer_size` accordingly).
-    - `js_access` and `js_content`:
+    - `r.requestText`, `r.requestBuffer`: synchronous accessors that
+      require the body to have already been read.
+    - `js_access` and `js_content` may initiate a body read with
       `await r.readRequestText()`, `await r.readRequestArrayBuffer()`,
       `await r.readRequestJSON()`,
       `await r.readRequestForm()` (parses form/multipart). The body
-      is read once and cached; subsequent reads resolve from cache.
+      is read once and cached; subsequent reads, including from response
+      filters, resolve from the cache.
   - Reply: `r.return(status, [body])`, `r.send(chunk)`, `r.finish()`,
     `r.error(msg)`, `r.warn(msg)`, `r.log(msg)`.
   - Subrequest: `await r.subrequest(uri[, options])`.
   - Headers/vars: `r.headersIn`, `r.headersOut`, `r.variables`,
     `r.rawHeadersIn/Out`.
   - Internal redirect: `r.internalRedirect(uri)`.
-- **`s` (Stream session).** Inside `js_preread` / `js_filter` /
-  `js_access` for the stream module.
-  - I/O: `s.send(data[, options])`, `s.on(event, cb)`,
-    `s.allow()` / `s.deny()`, `s.done()`.
+- **`s` (Stream session).** Inside `js_access` / `js_preread` /
+  `js_filter` / `js_set` for the stream module.
+  - I/O: `s.send(data[, options])`, `s.on(event, cb)`, `s.off(event)`.
+  - Verdict: `s.allow()` / `s.deny()` / `s.decline()` / `s.done()`.
 - **`ngx.fetch(url[, options])`** — async HTTP client (request body,
   headers, timeouts, TLS). Always set explicit timeouts.
-- **`ngx.shared`** — process-wide shared dictionary configured via
-  `js_shared_dict_zone`.
+- **`ngx.shared`** — cross-worker shared memory dictionary configured via
+  `js_shared_dict_zone`. Values are strings or numbers only.
 - **Built-in modules.** Import with `import`:
   - `crypto`, `buffer`, `fs`, `querystring`, `xml`, `zlib`.
   - `WebCrypto` is available at `crypto.subtle` (since 0.8.10).
@@ -266,8 +290,9 @@ stream handlers.
 
 ### `js_periodic` — timer jobs
 
-`js_periodic` lives in its own `location @name { }` block (no client
-request reaches it):
+`js_periodic` runs with no client request or session behind it. Under
+`stream { }` it goes in `server { }`; under `http { }` any location will
+do, but a named one keeps it unroutable:
 
 ```nginx
 location @cron {
@@ -335,21 +360,21 @@ Examples of well-shaped test files: anything under `nginx/t/js_*.t`.
 - Use `import` / `export` (ES modules); never `require()`.
 - Use `ngx.shared` for cross-worker state; document the zone's
   `keys`/`value` size in nginx.conf.
-- Use `await` in handlers — return a `Promise` (implicit via `async`) or
-  call `r.return()` / `r.finish()` to terminate.
-- Keep module-scope work to true one-time initialization
-  (configuration, schema compilation, etc.).
+- Use `await` only in handlers that may leave pending events; see
+  [Async support](#integration-points-where-js-runs).
+- Keep module scope to declarations; its body re-runs per context.
 
 **Don't**
 
-- Don't keep per-request state in module scope — it leaks across
-  requests handled by the same worker.
-- Don't assume workers share memory — they don't. Use `ngx.shared`.
-- Don't try to outlive the handler. A `Promise` you don't `await`, a
-  `setTimeout` you queue after `r.finish()`, an `ngx.fetch()` you fire
-  and forget — none of that is guaranteed to complete. Once the
-  handler resolves, the request context goes away and pending JS work
-  is dropped. If you need recurring work, use `js_periodic`.
+- Don't keep state in module scope at all — a module-level `Map` is not
+  a per-worker cache. It is wiped on the njs engine and, under QuickJS
+  `js_context_reuse`, may instead surface in an unrelated request.
+- Don't assume workers share a JavaScript heap — they don't. Use
+  `ngx.shared`.
+- Don't use request handlers for detached background work. Nginx tracks
+  timers, subrequests, and `ngx.fetch()` even when their promises are not
+  awaited, so they may delay request completion. Request teardown can
+  still cancel them; use `js_periodic` for recurring work.
 - Don't rely on engine-specific extensions in code that should run on
   both engines: `njs.dump()` / `console.dump()`, `js_preload_object`,
   native modules, top-level `await`, non-default imports.
