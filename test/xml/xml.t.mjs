@@ -127,6 +127,12 @@ let c14n_tsuite = {
           expected: `<n1:elem1 xmlns:n1="http://b">foo</n1:elem1>` },
         { call: (doc) => xml.exclusiveC14n(doc.pdu.elem1, null, false, 'a b c d e f g h i j'),
           expected: `<n1:elem1 xmlns:n1="http://b">foo</n1:elem1>` },
+        /* a prefix count that is a power of two exercises the namespace list
+           growth boundary, where the terminating NULL used to land one slot
+           past the buffer. */
+        { call: (doc) => xml.exclusiveC14n(doc.pdu.elem1, null, false,
+                                           Array(128).fill('n1').join(' ')),
+          expected: `<n1:elem1 xmlns:n1="http://b">foo</n1:elem1>` },
         { doc: `<note><to a="foo" b="bar">Tove</to><from>Jani</from></note>`,
           call: (doc) => xml.c14n(doc.note),
           expected: `<note><to a="foo" b="bar">Tove</to><from>Jani</from></note>` },

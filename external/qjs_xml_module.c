@@ -1740,7 +1740,7 @@ qjs_xml_parse_ns_list(JSContext *cx, u_char *src)
     while (*p != '\0') {
         idx = out - buf;
 
-        if (idx >= size) {
+        if (idx + 1 >= size) {
             size *= 2;
 
             buf = js_realloc(cx, buf, size * sizeof(char *));

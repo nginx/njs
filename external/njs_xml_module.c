@@ -1693,7 +1693,7 @@ njs_xml_parse_ns_list(njs_vm_t *vm, njs_str_t *src)
     while (*p != '\0') {
         idx = out - buf;
 
-        if (idx >= size) {
+        if (idx + 1 >= size) {
             size *= 2;
 
             n = njs_mp_alloc(njs_vm_memory_pool(vm), size * sizeof(char *));
