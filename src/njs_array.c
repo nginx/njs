@@ -2917,8 +2917,11 @@ static njs_int_t
 njs_array_prototype_sort(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
 {
+    double                 idx;
     int64_t                i, nslots, nunds, length;
+    uint32_t               n;
     njs_int_t              ret;
+    njs_array_t            *keys;
     njs_value_t            *this, *comparefn;
     njs_function_t         *compare;
     njs_array_sort_slot_t  *slots;
@@ -2982,11 +2985,35 @@ njs_array_prototype_sort(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    for (; i < length; i++) {
-        ret = njs_value_property_i64_delete(vm, this, i, NULL);
-        if (njs_slow_path(ret == NJS_ERROR)) {
+    if (njs_is_fast_array(this)) {
+        for (; i < length; i++) {
+            ret = njs_value_property_i64_delete(vm, this, i, NULL);
+            if (njs_slow_path(ret == NJS_ERROR)) {
+                goto exception;
+            }
+        }
+
+    } else {
+        keys = njs_array_indices(vm, this);
+        if (njs_slow_path(keys == NULL)) {
             goto exception;
         }
+
+        for (n = 0; n < keys->length; n++) {
+            idx = njs_string_to_index(&keys->start[n]);
+
+            if (idx >= i && idx < length) {
+                ret = njs_value_property_delete(vm, this,
+                                                 keys->start[n].atom_id,
+                                                 NULL, 1);
+                if (njs_slow_path(ret == NJS_ERROR)) {
+                    njs_array_destroy(vm, keys);
+                    goto exception;
+                }
+            }
+        }
+
+        njs_array_destroy(vm, keys);
     }
 
 done:

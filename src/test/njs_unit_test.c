@@ -5193,6 +5193,10 @@ static njs_unit_test_t  njs_test[] =
               "njs.dump(a2)"),
       njs_str("[3,1,<1111110 empty items>,2,4]") },
 
+    { njs_str("var a = []; a[2**32 - 7] = 2; a[2**32 - 2] = 1;"
+              "a.sort(); [a.length, a[0], a[1], Object.keys(a)]"),
+      njs_str("4294967295,1,2,0,1") },
+
     { njs_str("var a = []; a[100000] = 1;"
               "var b = [].concat(a, [,, 5]);"
               "[b.length, Object.keys(b), b[100001], b.sort().length]"),
