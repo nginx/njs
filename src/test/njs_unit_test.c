@@ -14367,6 +14367,15 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("false.__proto__ === Boolean.prototype"),
       njs_str("true") },
 
+    { njs_str("var o = {valueOf() { o = 0; return {}; },"
+              "         toString() { return '7'; }}; +o"),
+      njs_str("7") },
+
+    { njs_str("var original = {toString() { return '7'; }}, o = original;"
+              "Object.defineProperty(original, 'valueOf', {get() {"
+              "  o = 0; return () => ({}); }}); +o"),
+      njs_str("7") },
+
     { njs_str("var b = Boolean(1); b.__proto__ === Boolean.prototype"),
       njs_str("true") },
 
