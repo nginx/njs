@@ -32,7 +32,7 @@ typedef struct {
     int         backrefmax;
     int         nentries;
     int         entry_size;
-    char        *entries;
+    u_char      *entries;
 } njs_regex_t;
 
 
@@ -76,8 +76,8 @@ NJS_EXPORT njs_int_t njs_regex_compile(njs_regex_t *regex, u_char *source,
     size_t len, njs_regex_flags_t flags, njs_regex_compile_ctx_t *ctx,
     njs_trace_t *trace);
 NJS_EXPORT njs_bool_t njs_regex_is_valid(njs_regex_t *regex);
-NJS_EXPORT njs_int_t njs_regex_named_captures(njs_regex_t *regex,
-    njs_str_t *name, int n);
+NJS_EXPORT njs_int_t njs_regex_named_capture(njs_regex_t *regex,
+    njs_str_t *name, int n, uint32_t *capture);
 NJS_EXPORT njs_regex_match_data_t *njs_regex_match_data(njs_regex_t *regex,
     njs_regex_generic_ctx_t *ctx);
 NJS_EXPORT void njs_regex_match_data_free(njs_regex_match_data_t *match_data,

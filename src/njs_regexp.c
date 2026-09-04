@@ -383,7 +383,7 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
         goto fail;
     }
 
-    pattern->ngroups = njs_regex_named_captures(regex, NULL, 0);
+    pattern->ngroups = njs_regex_named_capture(regex, NULL, 0, NULL);
 
     if (pattern->ngroups != 0) {
         size = sizeof(njs_regexp_group_t) * pattern->ngroups;
@@ -399,7 +399,15 @@ njs_regexp_pattern_create(njs_vm_t *vm, u_char *start, size_t length,
         do {
             group = &pattern->groups[n];
 
-            group->capture = njs_regex_named_captures(regex, &group->name, n);
+            ret = njs_regex_named_capture(regex, &group->name, n,
+                                           &group->capture);
+            if (njs_slow_path(ret != NJS_OK
+                              || group->capture >= pattern->ncaptures))
+            {
+                njs_internal_error(vm, "invalid named capture index");
+                goto fail;
+            }
+
             group->hash = njs_djb_hash(group->name.start, group->name.length);
 
             n++;

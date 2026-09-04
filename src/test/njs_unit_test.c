@@ -10188,6 +10188,14 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'ABC'.replace(/(?<b>B)/, '|$<BB$$|>@')"),
       njs_str("A|@C") },
 
+    { njs_str("var s = '(?:' + '()'.repeat(127) + '){0}(?<x>a)';"
+              "new RegExp(s).exec('a').groups.x"),
+      njs_str("a") },
+
+    { njs_str("var s = '(?:' + '()'.repeat(383) + '){0}(?<x>a)';"
+              "new RegExp(s).exec('a').groups.x"),
+      njs_str("a") },
+
     { njs_str("'ABCB'.replaceAll(/(?<b>B)/g, '|$<BB$$|>@')"),
       njs_str("A|@C|@") },
 

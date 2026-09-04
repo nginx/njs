@@ -573,9 +573,10 @@ njs_regex_is_valid(njs_regex_t *regex)
 
 
 njs_int_t
-njs_regex_named_captures(njs_regex_t *regex, njs_str_t *name, int n)
+njs_regex_named_capture(njs_regex_t *regex, njs_str_t *name, int n,
+    uint32_t *capture)
 {
-    char  *entry;
+    u_char  *entry;
 
     if (name == NULL) {
         return regex->nentries;
@@ -587,10 +588,12 @@ njs_regex_named_captures(njs_regex_t *regex, njs_str_t *name, int n)
 
     entry = regex->entries + regex->entry_size * n;
 
-    name->start = (u_char *) entry + 2;
+    name->start = entry + 2;
     name->length = njs_strlen(name->start);
 
-    return (entry[0] << 8) + entry[1];
+    *capture = (entry[0] << 8) + entry[1];
+
+    return NJS_OK;
 }
 
 
@@ -743,5 +746,4 @@ njs_pcre_free(void *p)
 }
 
 #endif
-
 
