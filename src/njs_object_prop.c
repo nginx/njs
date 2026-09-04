@@ -139,24 +139,13 @@ njs_object_prop_define(njs_vm_t *vm, njs_value_t *object, unsigned atom_id,
     njs_array_t           *array;
     njs_value_t           key, retval;
     njs_object_prop_t     _prop;
-    njs_object_prop_t     *prop = &_prop, *prev, *obj_prop;
+    njs_object_prop_t     *prop, *prev, *obj_prop;
     njs_property_query_t  pq;
-
-again:
 
     set_enumerable = 1;
     set_configurable = 1;
     set_writable = 1;
-
-    njs_property_query_init(&pq, NJS_PROPERTY_QUERY_SET, 1);
-
-    ret = (flags & NJS_OBJECT_PROP_CREATE)
-                ? NJS_DECLINED
-                : njs_property_query(vm, &pq, object, atom_id);
-
-    if (njs_slow_path(ret == NJS_ERROR)) {
-        return ret;
-    }
+    prop = &_prop;
 
     switch (njs_prop_type(flags)) {
     case NJS_OBJECT_PROP_DESCRIPTOR:
@@ -206,6 +195,18 @@ again:
         }
 
         break;
+    }
+
+again:
+
+    njs_property_query_init(&pq, NJS_PROPERTY_QUERY_SET, 1);
+
+    ret = (flags & NJS_OBJECT_PROP_CREATE)
+                ? NJS_DECLINED
+                : njs_property_query(vm, &pq, object, atom_id);
+
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        return ret;
     }
 
     if (njs_fast_path(ret == NJS_DECLINED)) {

@@ -16002,6 +16002,18 @@ static njs_unit_test_t  njs_test[] =
               "njs.dump(arr)"),
       njs_str("[1,'[Getter]']") },
 
+    { njs_str("var a = [1], n = 0;"
+              "Object.defineProperty(a, 0, {"
+              "  get get() { n++; a.unshift(0); return function() {}; }});"
+              "n"),
+      njs_str("1") },
+
+    { njs_str("var a = [1], n = 0;"
+              "Object.defineProperty(a, 'length', {"
+              "  get writable() { n++; return false; }});"
+              "n"),
+      njs_str("1") },
+
     { njs_str("Object.defineProperties()"),
       njs_str("TypeError: Object.defineProperties is called on non-object") },
 
