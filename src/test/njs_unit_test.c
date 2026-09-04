@@ -6996,6 +6996,24 @@ static njs_unit_test_t  njs_test[] =
               "           try {a.set(init,Infinity)} catch (e) {return e.name == 'RangeError'};})"),
       njs_str("true") },
 
+    { njs_str("var a = new Uint8Array([1]);"
+              "Object.defineProperty(a, 'x', {enumerable: true,"
+              "  get() { return this === a && this[0]; }});"
+              "Object.values(a)"),
+      njs_str("1,1") },
+
+    { njs_str("var a = new Uint8Array([1]);"
+              "Object.defineProperty(a, 'x', {enumerable: true,"
+              "  get() { this[0] = 2; return this[0]; }});"
+              "Object.values(a); a[0]"),
+      njs_str("2") },
+
+    { njs_str("var a = Buffer.from([1]);"
+              "Object.defineProperty(a, 'x', {enumerable: true,"
+              "  get() { return this === a && this[0]; }});"
+              "Object.values(a)"),
+      njs_str("1,1") },
+
     { njs_str(NJS_INT_TYPED_ARRAY_LIST
               ".map(v=>{try { var a = new v(1); $262.detachArrayBuffer(a.buffer); Object.entries(a)} "
               "catch (e) {return e.name}}).every(v=>v === 'TypeError')"),
