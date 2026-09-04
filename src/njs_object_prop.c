@@ -136,6 +136,7 @@ njs_object_prop_define(njs_vm_t *vm, njs_value_t *object, unsigned atom_id,
     uint32_t              length, index, set_enumerable, set_configurable,
                           set_writable;
     njs_int_t             ret;
+    njs_str_t             string;
     njs_array_t           *array;
     njs_value_t           key, retval;
     njs_object_prop_t     _prop;
@@ -220,21 +221,37 @@ set_prop:
             return NJS_ERROR;
         }
 
-        if (njs_slow_path(njs_is_typed_array(object) &&
-           (flags & NJS_OBJECT_PROP_IS_STRING)))
-        {
+        if (njs_slow_path(njs_is_typed_array(object))) {
             /* Integer-Indexed Exotic Objects [[DefineOwnProperty]]. */
+
+            if (njs_atom_is_number(atom_id)) {
+                index = njs_atom_number(atom_id);
+
+                if (index < njs_typed_array_length(njs_typed_array(object))) {
+                    goto complete;
+                }
+
+                goto invalid_index;
+            }
 
             ret = njs_atom_to_value(vm, &key, atom_id);
             if (njs_slow_path(ret != NJS_OK)) {
                 return ret;
             }
 
-            if (!isnan(njs_string_to_index(&key))) {
-                njs_type_error(vm, "Invalid typed array index");
-                return NJS_ERROR;
+            if (njs_is_string(&key)) {
+                njs_string_get(vm, &key, &string);
+
+                if (!isnan(njs_string_to_index(&key))
+                    || (string.length == 3
+                        && memcmp(string.start, "NaN", 3) == 0))
+                {
+                    goto invalid_index;
+                }
             }
         }
+
+complete:
 
         /* 6.2.5.6 CompletePropertyDescriptor */
 
@@ -558,6 +575,12 @@ exception:
 
     njs_atom_string_get(vm, atom_id, &pq.fhq.key);
     njs_type_error(vm, "Cannot redefine property: \"%V\"", &pq.fhq.key);
+
+    return NJS_ERROR;
+
+invalid_index:
+
+    njs_type_error(vm, "Invalid typed array index");
 
     return NJS_ERROR;
 }

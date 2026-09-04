@@ -7013,6 +7013,17 @@ static njs_unit_test_t  njs_test[] =
               "Object.values(a); a[0]"),
       njs_str("2") },
 
+    { njs_str("[257, '257', NaN, 'NaN', Infinity, 'Infinity', -0, '-0']"
+              ".every(k => { try {"
+              "  Object.defineProperty(new Uint8Array(), k, {value: 1});"
+              "} catch (e) { return e.name == 'TypeError'; } })"),
+      njs_str("true") },
+
+    { njs_str("['01', ' 1', '0x10', '1e3'].every(k => {"
+              "var a = new Uint8Array();"
+              "Object.defineProperty(a, k, {value: 1}); return a[k] == 1; })"),
+      njs_str("true") },
+
     { njs_str("var a = Buffer.from([1]);"
               "Object.defineProperty(a, 'x', {enumerable: true,"
               "  get() { return this === a && this[0]; }});"
