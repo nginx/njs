@@ -1961,7 +1961,7 @@ njs_array_prototype_concat(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                             return NJS_ERROR;
                         }
 
-                        njs_set_invalid(&value);
+                        continue;
                     }
 
                     ret = njs_value_property_i64_set(vm, &this, length,
