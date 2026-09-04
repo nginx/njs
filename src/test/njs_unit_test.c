@@ -10060,6 +10060,22 @@ static njs_unit_test_t  njs_test[] =
               "r[Symbol.replace]('ABCD', 'b')"),
       njs_str("b") },
 
+    { njs_str("var r = /./; r.exec = () => globalThis;"
+              "r[Symbol.replace]('', '') === ''"),
+      njs_str("true") },
+
+    { njs_str("var exec = RegExp.prototype.exec, saved;"
+              "var r = /a/; r.exec = function(s) {"
+              "  saved = exec.call(this, s); return saved; };"
+              "r[Symbol.replace]('a', 'b'); saved[0]"),
+      njs_str("a") },
+
+    { njs_str("var exec = RegExp.prototype.exec, saved;"
+              "RegExp.prototype.exec = function(s) {"
+              "  saved = exec.call(this, s); return saved; };"
+              "'a'.split(/a/); saved[0]"),
+      njs_str("a") },
+
     { njs_str("'α'.replace(/(h*)/g, '$1βγ')"),
       njs_str("βγαβγ") },
 
