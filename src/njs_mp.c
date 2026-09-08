@@ -44,7 +44,8 @@ typedef struct {
     /* Number of free chunks of a chunked page. */
     uint8_t                     chunks;
 
-    uint8_t                     _unused;
+    /* Index of the pool slot the chunks of the page belong to. */
+    uint8_t                     slot;
 
     /* Chunk bitmap.  There can be no more than 32 chunks in a page. */
     uint8_t                     map[4];
@@ -464,6 +465,7 @@ njs_mp_alloc_small(njs_mp_t *mp, size_t size)
                 /* slot->chunks are already one less. */
                 page->chunks = slot->chunks;
                 page->size = size >> mp->chunk_size_shift;
+                page->slot = slot - mp->slots;
 
                 p = njs_mp_page_addr(mp, page);
             }
@@ -812,8 +814,9 @@ njs_mp_chunk_free(njs_mp_t *mp, njs_mp_block_t *cluster,
 
         njs_mp_chunk_set_free(page->map, chunk);
 
-        /* Find a slot with appropriate chunk size. */
-        for (slot = mp->slots; slot->size < size; slot++) { /* void */ }
+        slot = &mp->slots[page->slot];
+
+        njs_assert(slot->size == size);
 
         if (page->chunks != slot->chunks) {
             page->chunks++;
