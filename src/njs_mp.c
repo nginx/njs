@@ -120,8 +120,14 @@ struct njs_mp_s {
     map[chunk / 8] &= ~(0x80 >> (chunk & 7))
 
 
+#if (NJS_DEBUG)
 #define njs_mp_free_junk(p, size)                                             \
     njs_memset((p), 0x5A, size)
+
+#else
+#define njs_mp_free_junk(p, size)
+
+#endif
 
 
 #define njs_is_power_of_two(value)                                            \
