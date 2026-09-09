@@ -75,11 +75,6 @@ njs_typed_array_alloc(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
 
         if (njs_is_defined(njs_arg(args, nargs, 2))) {
-            ret = njs_value_to_index(vm, njs_argument(args, 2), &size);
-            if (njs_slow_path(ret != NJS_OK)) {
-                return NULL;
-            }
-
             size *= element_size;
 
             if (njs_slow_path((offset + size) > buffer->size)) {
