@@ -282,6 +282,30 @@ END
 
 done
 
+# test262 runner.
+
+njs_src="src/test/njs_test262.c"
+fname=$(basename $njs_src)
+njs_dep="test/${fname%.c}.dep"
+njs_bin="${fname%.c}"
+njs_dep_flags=`njs_gen_dep_flags $njs_dep $fname`
+njs_dep_post=`njs_gen_dep_post $njs_dep $fname`
+
+cat << END >> $NJS_MAKEFILE
+
+$NJS_BUILD_DIR/$njs_bin: $njs_src \\
+	$NJS_BUILD_DIR/libnjs.a
+	\$(NJS_LINK) -o $NJS_BUILD_DIR/$njs_bin \$(NJS_LIB_INCS) \\
+		\$(CFLAGS) \$(NJS_LIB_AUX_CFLAGS) \\
+		$njs_dep_flags \\
+		$njs_src $NJS_BUILD_DIR/libnjs.a \\
+		$NJS_LD_OPT -lm $NJS_LIBS $NJS_LIB_AUX_LIBS
+		$njs_dep_post
+
+-include $NJS_BUILD_DIR/$njs_dep
+
+END
+
 # main targets.
 
 cat << END >> $NJS_MAKEFILE
@@ -312,6 +336,20 @@ lib_test: $NJS_BUILD_DIR/njs_auto_config.h \\
 
 test262_njs: njs
 	test/test262 --binary=$NJS_BUILD_DIR/njs
+
+njs_test262: $NJS_BUILD_DIR/njs_auto_config.h \\
+	$NJS_BUILD_DIR/njs_test262
+
+njs_test262_test: njs_test262
+
+	@test -n "\$\$NJS_TEST262_DIR" || { \\
+		echo "NJS_TEST262_DIR is not set, it must point at a"; \\
+		echo "test262 checkout containing test/ and harness/"; \\
+		exit 1; \\
+	}
+	$NJS_BUILD_DIR/njs_test262 -c test/njs_test262.conf \\
+		--failures test/njs_test262.failures --isolation=process \\
+        --timeout=5
 
 unit_test: $NJS_BUILD_DIR/njs_auto_config.h \\
 	$NJS_BUILD_DIR/njs_unit_test

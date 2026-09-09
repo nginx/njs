@@ -1,0 +1,81 @@
+name: test262
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  test262:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout njs
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install clang-18 libssl-dev zlib1g-dev libpcre2-dev \
+              libxml2-dev
+
+      - name: Checkout test262
+        run: |
+          test262_sha=$(cat test/njs_test262.version)
+          git clone --depth=1 https://github.com/tc39/test262 test262
+          git -C test262 fetch --depth=1 origin "$test262_sha"
+          git -C test262 checkout --detach "$test262_sha"
+          test "$(git -C test262 rev-parse HEAD)" = "$test262_sha"
+
+      - name: Build test262
+        run: |
+          ./configure
+          make -j$(nproc) njs_test262
+
+      - name: Run test262
+        run: |
+          TZ=UTC timeout 15m build/njs_test262 \
+              --config test/njs_test262.conf \
+              --suite "$GITHUB_WORKSPACE/test262" \
+              --failures "$GITHUB_WORKSPACE/test/njs_test262.failures" \
+              --isolation=process \
+              --timeout=5
+
+      - name: Build test262 with UBSan
+        run: |
+          make clean
+          CC=clang-18 ./configure --cc-opt='-O2 -fsanitize=undefined' \
+              --ld-opt='-fsanitize=undefined'
+          make -j$(nproc) njs_test262
+
+      - name: Run test262 with UBSan
+        run: |
+          TZ=UTC UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+              timeout 15m build/njs_test262 \
+              --config test/njs_test262.conf \
+              --suite "$GITHUB_WORKSPACE/test262" \
+              --failures "$GITHUB_WORKSPACE/test/njs_test262.failures" \
+              --isolation=process \
+              --timeout=5
+
+      - name: Build test262 with ASan
+        run: |
+          make clean
+          CC=clang-18 ./configure --address-sanitizer=YES --cc-opt=-O2
+          make -j$(nproc) njs_test262
+
+      - name: Run test262 with ASan
+        run: |
+          TZ=UTC ASAN_OPTIONS=detect_leaks=0 timeout 15m build/njs_test262 \
+              --config test/njs_test262.conf \
+              --suite "$GITHUB_WORKSPACE/test262" \
+              --failures "$GITHUB_WORKSPACE/test/njs_test262.failures" \
+              --isolation=process \
+              --timeout=5
