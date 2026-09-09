@@ -294,9 +294,8 @@ NEXT_LBL;
 
         if (value2->atom_id == NJS_ATOM_STRING_unknown) {
             num = njs_number(value2);
-            u32 = (uint32_t) num;
 
-            if (njs_fast_path(u32 == num && (u32 < 0x80000000))) {
+            if (njs_fast_path(njs_number_is_atom_index(num, &u32))) {
                 value2->atom_id = njs_number_atom(u32);
 
             } else {
@@ -1368,9 +1367,8 @@ NEXT_LBL;
 
         if (value2->atom_id == NJS_ATOM_STRING_unknown) {
             num = njs_number(value2);
-            u32 = (uint32_t) num;
 
-            if (njs_fast_path(u32 == num && (u32 < 0x80000000))) {
+            if (njs_fast_path(njs_number_is_atom_index(num, &u32))) {
                 value2->atom_id = njs_number_atom(u32);
 
             } else {
