@@ -6717,6 +6717,16 @@ static njs_unit_test_t  njs_test[] =
               ".map(v=>{var a = new ArrayBuffer(8); return (new v(a).length)})"),
       njs_str("8,8,8,4,4,2,2,2,1") },
 
+    { njs_str("var b = new ArrayBuffer(64); var n = 0;"
+              "var a = new Int8Array(b, 0, {valueOf() { return ++n == 1"
+              " ? 8 : 16 }}); [a.length, n]"),
+      njs_str("8,1") },
+
+    { njs_str("var b = new ArrayBuffer(64);"
+              "new Int8Array(b, 0, {valueOf() { $262.detachArrayBuffer(b);"
+              " return 8 }})"),
+      njs_str("TypeError: detached buffer") },
+
     { njs_str(NJS_TYPED_ARRAY_LIST
               ".map(v=>{var a = new v(1); a[0]--; return a[0]})"),
       njs_str("255,0,-1,65535,-1,4294967295,-1,-1,-1") },
