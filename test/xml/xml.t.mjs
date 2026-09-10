@@ -253,6 +253,16 @@ let modify_tsuite = {
           },
           expected: `<note></note>` },
         { get: (doc) => {
+            try {
+                doc.note.setText('before\0after');
+            } catch (e) {
+                return [e instanceof TypeError, doc.note.$text].toString();
+            }
+
+            return 'missing exception';
+          },
+          expected: 'true,ToveJani' },
+        { get: (doc) => {
             doc.note.setText(null);
             return doc.note.$text;
           },

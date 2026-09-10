@@ -108,8 +108,6 @@ static njs_int_t njs_xml_str_to_c_string(njs_vm_t *vm, njs_str_t *str,
     u_char *dst, size_t size);
 static const u_char *njs_xml_value_to_c_string(njs_vm_t *vm, njs_value_t *value,
     u_char *dst, size_t size);
-static njs_int_t njs_xml_encode_special_chars(njs_vm_t *vm, njs_str_t *src,
-    njs_str_t *out);
 static njs_int_t njs_xml_replace_node(njs_vm_t *vm, njs_value_t *value,
     xmlNode *current);
 static void njs_xml_node_cleanup(void *data);
@@ -998,9 +996,9 @@ njs_xml_node_ext_text(njs_vm_t *vm, njs_object_prop_t *unused, uint32_t unused1,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
     u_char     *text;
-    xmlNode    *current, *copy;
+    xmlNode    *current, *copy, *node;
     njs_int_t  ret;
-    njs_str_t  content, enc;
+    njs_str_t  content;
 
     current = njs_vm_external(vm, njs_xml_node_proto_id, value);
     if (njs_slow_path(current == NULL)) {
@@ -1019,8 +1017,8 @@ njs_xml_node_ext_text(njs_vm_t *vm, njs_object_prop_t *unused, uint32_t unused1,
 
     /* set or delete. */
 
-    enc.start = NULL;
-    enc.length = 0;
+    content.start = NULL;
+    content.length = 0;
 
     if (retval != NULL
         && (setval != NULL && !njs_value_is_null_or_undefined(setval)))
@@ -1032,8 +1030,8 @@ njs_xml_node_ext_text(njs_vm_t *vm, njs_object_prop_t *unused, uint32_t unused1,
 
         njs_value_string_get(vm, setval, &content);
 
-        ret = njs_xml_encode_special_chars(vm, &content, &enc);
-        if (njs_slow_path(ret != NJS_OK)) {
+        if (njs_slow_path(memchr(content.start, '\0', content.length) != NULL)) {
+            njs_vm_type_error(vm, "setval contains NUL");
             return NJS_ERROR;
         }
     }
@@ -1044,7 +1042,25 @@ njs_xml_node_ext_text(njs_vm_t *vm, njs_object_prop_t *unused, uint32_t unused1,
         return NJS_ERROR;
     }
 
-    xmlNodeSetContentLen(copy, enc.start, enc.length);
+    node = NULL;
+    if (retval != NULL && setval != NULL) {
+        node = xmlNewDocTextLen(current->doc, content.start, content.length);
+        if (njs_slow_path(node == NULL)) {
+            xmlFreeNode(copy);
+            njs_vm_internal_error(vm, "xmlNewDocTextLen() failed");
+            return NJS_ERROR;
+        }
+    }
+
+    xmlFreeNodeList(copy->children);
+    copy->children = node;
+    copy->last = node;
+
+    if (node != NULL) {
+        node->parent = copy;
+        node->prev = NULL;
+        node->next = NULL;
+    }
 
     if (retval != NULL) {
         njs_value_undefined_set(retval);
@@ -1425,90 +1441,6 @@ njs_xml_value_to_c_string(njs_vm_t *vm, njs_value_t *value, u_char *dst,
     *p = '\0';
 
     return dst;
-}
-
-
-static njs_int_t
-njs_xml_encode_special_chars(njs_vm_t *vm, njs_str_t *src, njs_str_t *out)
-{
-    u_char  *p, *dst, *end;
-    size_t   len;
-
-    len = 0;
-    end = src->start + src->length;
-
-    for (p = src->start; p < end; p++) {
-        if (*p == '<' || *p == '>') {
-            len += njs_length("&lt");
-        }
-
-        if (*p == '&' || *p == '\r') {
-            len += njs_length("&amp");
-        }
-
-        if (*p == '"') {
-            len += njs_length("&quot");
-        }
-
-        len += 1;
-    }
-
-    if (njs_fast_path(len == src->length)) {
-        *out = *src;
-        return NJS_OK;
-    }
-
-    out->start = njs_mp_alloc(njs_vm_memory_pool(vm), len);
-    if (njs_slow_path(out->start == NULL)) {
-        njs_vm_memory_error(vm);
-        return NJS_ERROR;
-    }
-
-    dst = out->start;
-
-    for (p = src->start; p < end; p++) {
-        if (*p == '<') {
-            *dst++ = '&';
-            *dst++ = 'l';
-            *dst++ = 't';
-            *dst++ = ';';
-
-        } else if (*p == '>') {
-            *dst++ = '&';
-            *dst++ = 'g';
-            *dst++ = 't';
-            *dst++ = ';';
-
-        } else if (*p == '&') {
-            *dst++ = '&';
-            *dst++ = 'a';
-            *dst++ = 'm';
-            *dst++ = 'p';
-            *dst++ = ';';
-
-        } else if (*p == '"') {
-            *dst++ = '&';
-            *dst++ = 'q';
-            *dst++ = 'u';
-            *dst++ = 'o';
-            *dst++ = 't';
-            *dst++ = ';';
-
-        } else if (*p == '\r') {
-            *dst++ = '&';
-            *dst++ = '#';
-            *dst++ = '1';
-            *dst++ = '3';
-            *dst++ = ';';
-
-        } else {
-            *dst++ = *p;
-        }
-    }
-
-    out->length = len;
-
-    return NJS_OK;
 }
 
 

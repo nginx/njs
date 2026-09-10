@@ -109,8 +109,6 @@ static qjs_xml_nset_t *qjs_xml_nset_create(JSContext *cx, xmlDoc *doc,
 static qjs_xml_nset_t *qjs_xml_nset_add(qjs_xml_nset_t *nset,
     qjs_xml_nset_t *add);
 static void qjs_xml_nset_free(JSContext *cx, qjs_xml_nset_t *nset);
-static int qjs_xml_encode_special_chars(JSContext *cx, njs_str_t *src,
-    njs_str_t *out);
 static void qjs_xml_replace_node(JSContext *cx, qjs_xml_node_t *node,
     xmlNode *current);
 
@@ -864,12 +862,12 @@ error:
 static int
 qjs_xml_node_text_handler(JSContext *cx, JSValue current, JSValue setval)
 {
-    xmlNode         *copy;
-    njs_str_t       content, enc;
+    xmlNode         *copy, *text;
+    njs_str_t       content;
     qjs_xml_node_t  *node;
 
-    enc.start = NULL;
-    enc.length = 0;
+    content.start = NULL;
+    content.length = 0;
 
     node = JS_GetOpaque(current, QJS_CORE_CLASS_ID_XML_NODE);
     if (node == NULL) {
@@ -882,28 +880,42 @@ qjs_xml_node_text_handler(JSContext *cx, JSValue current, JSValue setval)
             return -1;
         }
 
-        if (qjs_xml_encode_special_chars(cx, &content, &enc) < 0) {
+        if (memchr(content.start, '\0', content.length) != NULL) {
             JS_FreeCString(cx, (char *) content.start);
+            JS_ThrowTypeError(cx, "setval contains NUL");
             return -1;
         }
-
-        JS_FreeCString(cx, (char *) content.start);
     }
 
     copy = xmlDocCopyNode(node->node, node->doc->doc, 1);
     if (copy == NULL) {
-        if (enc.start != NULL) {
-            js_free(cx, enc.start);
+        if (!JS_IsNullOrUndefined(setval)) {
+            JS_FreeCString(cx, (char *) content.start);
         }
 
         JS_ThrowInternalError(cx, "xmlDocCopyNode() failed");
         return -1;
     }
 
-    xmlNodeSetContentLen(copy, enc.start, enc.length);
+    text = NULL;
+    if (!JS_IsNullOrUndefined(setval)) {
+        text = xmlNewDocTextLen(node->doc->doc, content.start, content.length);
+        JS_FreeCString(cx, (char *) content.start);
+        if (text == NULL) {
+            xmlFreeNode(copy);
+            JS_ThrowInternalError(cx, "xmlNewDocTextLen() failed");
+            return -1;
+        }
+    }
 
-    if (enc.start != NULL) {
-        js_free(cx, enc.start);
+    xmlFreeNodeList(copy->children);
+    copy->children = text;
+    copy->last = text;
+
+    if (text != NULL) {
+        text->parent = copy;
+        text->prev = NULL;
+        text->next = NULL;
     }
 
     qjs_xml_replace_node(cx, node, copy);
@@ -1952,92 +1964,6 @@ qjs_xml_nset_free(JSContext *cx, qjs_xml_nset_t *nset)
     }
 
     js_free(cx, nset);
-}
-
-
-static int
-qjs_xml_encode_special_chars(JSContext *cx, njs_str_t *src, njs_str_t *out)
-{
-    size_t  len;
-    u_char  *p, *dst, *end;
-
-    len = 0;
-    end = src->start + src->length;
-
-    for (p = src->start; p < end; p++) {
-        if (*p == '<' || *p == '>') {
-            len += njs_length("&lt");
-        }
-
-        if (*p == '&' || *p == '\r') {
-            len += njs_length("&amp");
-        }
-
-        if (*p == '"') {
-            len += njs_length("&quot");
-        }
-
-        len += 1;
-    }
-
-    if (len == 0) {
-        out->start = NULL;
-        out->length = 0;
-
-        return 0;
-    }
-
-    out->start = js_malloc(cx, len);
-    if (out->start == NULL) {
-        JS_ThrowOutOfMemory(cx);
-        return -1;
-    }
-
-    dst = out->start;
-
-    for (p = src->start; p < end; p++) {
-        if (*p == '<') {
-            *dst++ = '&';
-            *dst++ = 'l';
-            *dst++ = 't';
-            *dst++ = ';';
-
-        } else if (*p == '>') {
-            *dst++ = '&';
-            *dst++ = 'g';
-            *dst++ = 't';
-            *dst++ = ';';
-
-        } else if (*p == '&') {
-            *dst++ = '&';
-            *dst++ = 'a';
-            *dst++ = 'm';
-            *dst++ = 'p';
-            *dst++ = ';';
-
-        } else if (*p == '"') {
-            *dst++ = '&';
-            *dst++ = 'q';
-            *dst++ = 'u';
-            *dst++ = 'o';
-            *dst++ = 't';
-            *dst++ = ';';
-
-        } else if (*p == '\r') {
-            *dst++ = '&';
-            *dst++ = '#';
-            *dst++ = '1';
-            *dst++ = '3';
-            *dst++ = ';';
-
-        } else {
-            *dst++ = *p;
-        }
-    }
-
-    out->length = len;
-
-    return 0;
 }
 
 
