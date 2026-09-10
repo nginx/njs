@@ -5,6 +5,10 @@ flags: [async]
 
 import xml from 'xml';
 
+function has_quickjs() {
+    return (typeof njs != 'undefined' && njs.engine == 'QuickJS');
+}
+
 let parse_tsuite = {
     name: "parse()",
     skip: () => (!has_njs()),
@@ -164,6 +168,19 @@ let c14n_tsuite = {
         { doc: `<note><to a="foo" b="bar">Tove</to><from>Jani</from></note>`,
           call: (doc) => xml.exclusiveC14n(doc.note, doc.note.to),
           expected: `<note><from>Jani</from></note>` },
+        { doc: `<r><a>A</a></r>`,
+          call: (doc) => {
+              let other = xml.parse(`<other></other>`);
+              return xml.exclusiveC14n(doc.r, other.other);
+          },
+          exception: 'TypeError: "excluding" is not in XMLNode tree' },
+        { doc: `<r><a>A</a></r>`,
+          call: (doc) => {
+              let a = doc.r.a;
+              doc.r.removeChildren('a');
+              return xml.exclusiveC14n(doc.r, a);
+          },
+          exception: 'TypeError: "excluding" is not in XMLNode tree' },
         { doc: `<r></r>`,
           call: (doc) => xml.exclusiveC14n(doc, 1),
           exception: 'TypeError: "excluding" argument is not a XMLNode object' },
@@ -212,6 +229,73 @@ let modify_tsuite = {
             return doc.note.$text;
           },
           expected: 'WAKA' },
+        { get: () => {
+            let mutations = [
+                (node) => node.setText('first'),
+                (node) => node.removeText(),
+                (node) => node.removeChildren(),
+                (node) => node.removeChildren('a'),
+                (node, doc) => node.addChild(doc.r.b),
+                (node) => { delete node.$tag$a; },
+                (node, doc) => { node.$tags = [doc.r.a]; },
+                (node) => { delete node.$tags; },
+            ];
+            let passed = 0;
+
+            for (let i = 0; i < mutations.length; i++) {
+                for (let j = 0; j < 2; j++) {
+                    let current = xml.parse(`<r><a>A</a><b>B</b></r>`);
+                    let first = current.r;
+                    let second = current.r;
+                    let mutate = mutations[i];
+                    let reverse = (j != 0);
+                    let target = reverse ? second : first;
+                    let alias = reverse ? first : second;
+
+                    mutate(target, current);
+                    alias.setText('final');
+
+                    if (first.$text != 'final'
+                        || second.$text != 'final'
+                        || current.r.$text != 'final')
+                    {
+                        return false;
+                    }
+
+                    passed++;
+                }
+            }
+
+            return passed;
+          },
+          expected: 16 },
+        { get: (doc) => {
+            let direct = doc.note;
+            let root = doc.$root;
+            let parent = doc.note.to.$parent;
+            let tag = doc.note.$tag$to.$parent;
+            let tags = doc.note.$tags$to[0].$parent;
+
+            direct.setText('direct');
+            root.setText('root');
+            parent.setText('parent');
+            tag.setText('tag');
+            tags.setText('tags');
+
+            return [direct.$text, root.$text, parent.$text, tag.$text,
+                    tags.$text, doc.note.$text].toString();
+          },
+          expected: 'tags,tags,tags,tags,tags,tags' },
+        { get: (doc) => {
+            let to = doc.note.to;
+            let attrs = to.$attrs;
+
+            to.setText('changed');
+            to.setAttribute('a', 'updated');
+
+            return [attrs.a, to.$text, doc.note.to.$text].toString();
+          },
+          expected: 'updated,changed,changed' },
         { get: (doc) => {
             doc.note.setText('WAKA');
             return xml.serializeToString(doc);
@@ -263,6 +347,24 @@ let modify_tsuite = {
           },
           expected: 'true,ToveJani' },
         { get: (doc) => {
+            let called = false;
+            let value = {toString: () => {
+                called = true;
+                doc.note.removeChildren();
+                return 'changed';
+            }};
+
+            try {
+                doc.note.setText(value);
+            } catch (e) {
+                return [called, e instanceof TypeError,
+                        xml.serializeToString(doc)].toString();
+            }
+
+            return 'missing exception';
+          },
+          expected: 'false,true,<note><to a="foo" b="bar">Tove</to><from>Jani</from></note>' },
+        { get: (doc) => {
             doc.note.setText(null);
             return doc.note.$text;
           },
@@ -290,15 +392,9 @@ let modify_tsuite = {
         { get: (doc) => {
             let to = doc.note.to;
             doc.$root.$text = '';
-            return to.$name;
+            return [to.$name, to.$text, to.$attr$b, to.$parent].toString();
           },
-          expected: 'to' },
-        { get: (doc) => {
-            let to = doc.note.to;
-            doc.$root.$text = '';
-            return [to.$name, to.$text, to.$attr$b, to.$parent.$name].toString();
-          },
-          expected: 'to,Tove,bar,note' },
+          expected: 'to,Tove,bar,' },
         { get: (doc) => {
             doc.note.to.setAttribute('aaa', 'foo');
             doc.note.to.setAttribute('bbb', '<bar\"');
@@ -322,6 +418,32 @@ let modify_tsuite = {
             return xml.serializeToString(doc.note.to);
           },
           expected: `<to a="foo" aaa="foo2" b="bar">Tove</to>` },
+        { get: (doc) => {
+            let value = 'x'.repeat(2048);
+            doc.note.to.setAttribute('aaa', value);
+            doc.note.to.$attr$bbb = value;
+            return [doc.note.to.$attr$aaa.length,
+                    doc.note.to.$attr$bbb.length].toString();
+          },
+          expected: '2048,2048' },
+        { get: (doc) => {
+            let called = false;
+            let value = {toString: () => {
+                called = true;
+                doc.note.removeChildren('to');
+                return 'changed';
+            }};
+
+            try {
+                doc.note.to.setAttribute('aaa', value);
+            } catch (e) {
+                return [called, e instanceof TypeError,
+                        xml.serializeToString(doc)].toString();
+            }
+
+            return 'missing exception';
+          },
+          expected: 'false,true,<note><to a="foo" b="bar">Tove</to><from>Jani</from></note>' },
         { get: (doc) => {
             doc.note.to.removeAttribute('a');
             return xml.serializeToString(doc.note.to);
@@ -365,22 +487,29 @@ let modify_tsuite = {
             doc.note.addChild(doc2);
             return xml.serializeToString(doc);
             },
-          expected: `<note xmlns:n0="http://a"><to a="foo" b="bar">Tove</to><from>Jani</from><n0:pdu></n0:pdu></note>` },
+          exception: 'TypeError: XMLNode has namespaces' },
         { get: (doc) => {
-            let doc2 = xml.parse(`<n0:pdu xmlns:n0=\"http://a\"></n0:pdu>`);
+            let doc2 = xml.parse(`<child>value</child>`);
             doc.note.addChild(doc2);
             doc.note.addChild(doc2);
             return xml.serializeToString(doc);
             },
-          expected: `<note xmlns:n0="http://a"><to a="foo" b="bar">Tove</to><from>Jani</from><n0:pdu></n0:pdu><n0:pdu></n0:pdu></note>` },
+          expected: '<note><to a="foo" b="bar">Tove</to><from>Jani</from>'
+                    + '<child>value</child><child>value</child></note>' },
+        { get: (doc) => {
+            let source = xml.parse(`<!DOCTYPE root [<!ENTITY e "text">]><root>&e;</root>`);
+
+            try {
+                doc.note.addChild(source.root);
+            } catch (e) {
+                return e instanceof TypeError;
+            }
+
+            return false;
+          },
+          expected: true },
         { get: (doc) => {
             doc.note.removeChildren('to');
-            return xml.serializeToString(doc);
-          },
-          expected: `<note><from>Jani</from></note>` },
-        { get: (doc) => {
-            let note = doc.note;
-            note.removeChildren('to');
             return xml.serializeToString(doc);
           },
           expected: `<note><from>Jani</from></note>` },
@@ -416,12 +545,16 @@ let modify_tsuite = {
             throw Error('unexpected exception');
           },
           expected: 'OK' },
-        { doc: `<root><a>A</a><b>B</b><a>C</a></root>`,
+        { doc: `<root><a>A</a><b>B</b><c>C</c><a>D</a></root>`,
           get: (doc) => {
+            let b = doc.root.b;
+            let c = doc.root.c;
             doc.$root.removeChildren('a');
+            b.setText('changed');
+            c.setAttribute('x', 'y');
             return xml.serializeToString(doc);
           },
-          expected: `<root><b>B</b></root>` },
+          expected: '<root><b>changed</b><c x="y">C</c></root>' },
         { doc: `<root><a>A</a><b>B</b><a>C</a></root>`,
           get: (doc) => {
             doc.$root.removeChildren();
@@ -440,6 +573,77 @@ let modify_tsuite = {
             return xml.serializeToString(doc);
           },
           expected: `<root></root>` },
+        { doc: `<root></root>`,
+          get: (doc) => {
+            delete doc.root.$tags;
+            return xml.serializeToString(doc);
+          },
+          expected: `<root></root>` },
+        { doc: `<root><a>A</a></root>`,
+          get: (doc) => {
+            delete doc.root.$tags;
+            return xml.serializeToString(doc);
+          },
+          expected: `<root></root>` },
+        { doc: `<root></root>`,
+          get: (doc) => {
+            let source = xml.parse(`<child>value</child>`);
+            doc.root.$tags = [source];
+            return xml.serializeToString(doc);
+          },
+          expected: `<root><child>value</child></root>` },
+        { doc: `<root><target><old>value</old></target></root>`,
+          skip: () => !has_quickjs(),
+          get: (doc) => {
+            let source = xml.parse(`<new></new>`);
+            let target = doc.root.target;
+            let values = [];
+
+            Object.defineProperty(values, '0', {
+                get: () => {
+                    doc.root.removeChildren('target');
+                    return source;
+                },
+            });
+            Object.defineProperty(values, 'length', {value: 1});
+
+            try {
+                target.$tags = values;
+            } catch (e) {
+                return [e instanceof TypeError, target.$parent,
+                        xml.serializeToString(doc),
+                        target.$name, target.$text].toString();
+            }
+
+            return 'missing exception';
+          },
+          expected: 'true,,<root></root>,target,value' },
+        { doc: `<root><a>A</a><b>B</b></root>`,
+          get: (doc) => {
+            let source = xml.parse(`<child/>`);
+
+            try {
+                doc.root.$tags$a = [source];
+            } catch (e) {
+                return [e instanceof TypeError, xml.serializeToString(doc)].toString();
+            }
+
+            return 'missing exception';
+          },
+          expected: 'true,<root><a>A</a><b>B</b></root>' },
+        { doc: `<root><a>A</a></root>`,
+          get: (doc) => {
+            let values = new Array(2147483648);
+
+            try {
+                doc.root.$tags = values;
+            } catch (e) {
+                return xml.serializeToString(doc);
+            }
+
+            return 'missing exception';
+          },
+          expected: '<root><a>A</a></root>' },
         { doc: `<root><a>A</a><b>B</b><a>C</a></root>`,
           get: (doc) => {
             delete doc.$root.$tag$a;
@@ -447,22 +651,130 @@ let modify_tsuite = {
           },
           expected: `<root><b>B</b></root>` },
         { get: (doc) => {
-            doc.note.$tags = [doc.note.to];
+            doc.note.$tags = [doc.note.to, doc.note.from];
             return xml.serializeToString(doc);
             },
-          expected: `<note><to a="foo" b="bar">Tove</to></note>` },
+          expected: '<note><to a="foo" b="bar">Tove</to>'
+                    + '<from>Jani</from></note>' },
         { get: (doc) => {
             let doc2 = xml.parse(`<n0:pdu xmlns:n0=\"http://a\"></n0:pdu>`);
             doc.note.$tags = [doc.note.to, doc2];
             return xml.serializeToString(doc);
             },
-          expected: `<note xmlns:n0="http://a"><to a="foo" b="bar">Tove</to><n0:pdu></n0:pdu></note>` },
+          exception: 'TypeError: setval[1] has namespaces' },
         { get: (doc) => {
             let doc2 = xml.parse(`<n0:pdu xmlns:n0=\"http://a\"></n0:pdu>`);
             doc.note.$tags = [doc2, doc.note.to];
             return xml.serializeToString(doc);
             },
-          expected: `<note xmlns:n0="http://a"><n0:pdu></n0:pdu><to a="foo" b="bar">Tove</to></note>` },
+          exception: 'TypeError: setval[0] has namespaces' },
+        { get: () => {
+            let mutations = [
+                (node) => node.addChild(xml.parse(`<new></new>`)),
+                (node) => node.removeChildren(),
+                (node) => node.removeChildren('child'),
+                (node) => { delete node.$tag$child; },
+                (node) => { node.$tags = []; },
+                (node) => { delete node.$tags; },
+            ];
+            let passed = 0;
+
+            for (let i = 0; i < mutations.length; i++) {
+                let current = xml.parse(
+                    `<r><target><child>C</child></target></r>`);
+                let target = current.r.target;
+                let mutate = mutations[i];
+                current.r.removeChildren('target');
+
+                try {
+                    mutate(target);
+
+                } catch (e) {
+                    if (e instanceof TypeError
+                        && target.$parent === undefined
+                        && xml.serializeToString(current) == '<r></r>'
+                        && target.$name == 'target'
+                        && target.$text == 'C')
+                    {
+                        passed++;
+                        continue;
+                    }
+                }
+
+                return false;
+            }
+
+            return passed;
+          },
+          expected: 6 },
+        { doc: `<r><a><b>B</b></a></r>`,
+          get: (doc) => {
+            let a = doc.r.a;
+            let b = a.b;
+            doc.r.removeChildren('a');
+
+            try {
+                b.setText('changed');
+            } catch (e) {
+                return [a.$parent, b.$parent.$name, b.$text,
+                        e instanceof TypeError].toString();
+            }
+
+            return 'missing exception';
+          },
+          expected: ',a,B,true' },
+        { get: (doc) => {
+            let to = doc.note.to;
+            doc.note.removeChildren('to');
+
+            try {
+                to.setText('changed');
+            } catch (e) {
+                return [to.$parent, to.$text, e instanceof TypeError].toString();
+            }
+
+            return 'missing exception';
+          },
+          expected: ',Tove,true' },
+        { get: (doc) => {
+            let to = doc.note.to;
+            doc.note.removeChildren('to');
+
+            try {
+                to.setAttribute('x', 'y');
+            } catch (e) {
+                return e instanceof TypeError;
+            }
+
+            return false;
+          },
+          expected: true },
+        { get: (doc) => {
+            let to = doc.note.to;
+            doc.note.removeChildren('to');
+
+            try {
+                to.removeAllAttributes();
+            } catch (e) {
+                return e instanceof TypeError;
+            }
+
+            return false;
+          },
+          expected: true },
+        { get: (doc) => {
+            let to = doc.note.to;
+            doc.note.removeChildren('to');
+
+            try {
+                xml.exclusiveC14n(to);
+            } catch (e) {
+                return e instanceof TypeError;
+            }
+
+            return false;
+          },
+          expected: true },
 ]};
 
 run([
