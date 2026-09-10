@@ -869,17 +869,19 @@ qjs_xml_node_tags_modify(JSContext *cx, JSValue obj, njs_str_t *name,
         }
 
         node = qjs_xml_node(cx, v, NULL);
-        JS_FreeValue(cx, v);
         if (node == NULL) {
+            JS_FreeValue(cx, v);
             goto error;
         }
 
         if (qjs_xml_tree_has_namespaces(node)) {
+            JS_FreeValue(cx, v);
             JS_ThrowTypeError(cx, "setval[%u] has namespaces", i);
             goto error;
         }
 
         node = xmlDocCopyNode(node, current->doc->doc, 1);
+        JS_FreeValue(cx, v);
         if (node == NULL) {
             JS_ThrowInternalError(cx, "xmlDocCopyNode() failed");
             goto error;

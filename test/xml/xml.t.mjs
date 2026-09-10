@@ -592,6 +592,20 @@ let modify_tsuite = {
             return xml.serializeToString(doc);
           },
           expected: `<root><child>value</child></root>` },
+        { doc: `<root></root>`,
+          skip: () => !has_quickjs(),
+          get: (doc) => {
+            let values = [];
+
+            Object.defineProperty(values, '0', {
+                get: () => xml.parse(`<child>value</child>`),
+            });
+            Object.defineProperty(values, 'length', {value: 1});
+
+            doc.root.$tags = values;
+            return xml.serializeToString(doc);
+          },
+          expected: `<root><child>value</child></root>` },
         { doc: `<root><target><old>value</old></target></root>`,
           skip: () => !has_quickjs(),
           get: (doc) => {
