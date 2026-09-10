@@ -1,7 +1,7 @@
 import fs from 'fs';
 import qs from 'querystring';
 import cr from 'crypto';
-import xml from 'xml';
+import xml, {XMLAttr, XMLDoc, XMLNode} from 'xml';
 import zlib from 'zlib';
 
 async function http_module(r: NginxHTTPRequest) {
@@ -161,9 +161,10 @@ function qs_module(str: string) {
 }
 
 function xml_module(str: string) {
-    let doc;
-    let node;
-    let children, selectedChildren;
+    let doc: XMLDoc;
+    let node: XMLNode;
+    let children: XMLNode[] | undefined;
+    let selectedChildren: XMLNode[] | undefined;
 
     doc = xml.parse(str);
     node = doc.$root;
@@ -172,24 +173,46 @@ function xml_module(str: string) {
     children = node.$tags;
     selectedChildren = node.$tags$xxx;
 
+    let attrs: XMLAttr | undefined = node.$attrs;
+    let parent: XMLNode | undefined = node.$parent;
+    let namespace: string | undefined = node.$ns;
+
     node?.$tag$xxx?.$tag$yyy?.$attr$zzz;
 
     let buf:Buffer = xml.exclusiveC14n(node);
     buf = xml.exclusiveC14n(doc, node.$tag$xxx, false);
     buf = xml.exclusiveC14n(node, null, true, "aa bb");
+    buf = xml.c14n(doc, node.$tag$xxx);
+    buf = xml.serialize(node, node.$tag$xxx);
+    let serialized: string = xml.serializeToString(node, node.$tag$xxx);
 
     node.setText("xxx");
     node.removeText();
     node.setText(null);
+    node.setText(undefined);
+    node.$text = null;
+    node.$text = undefined;
 
     node.addChild(node);
+    node.addChild(doc);
     node.removeChildren('xx');
+    node.removeChildren(null);
 
     node.removeAttribute('xx');
     node.removeAllAttributes();
     node.setAttribute('xx', 'yy');
     node.setAttribute('xx', null);
-    node.$tags = [node, node];
+    node.setAttribute('xx', undefined);
+    node.$attr$xx = null;
+    node.$attr$xx = undefined;
+    node.$tags = [node, doc];
+    node.$tags = null;
+    node.$tags = undefined;
+
+    delete node.$tag$xxx;
+    delete node.$tags$xxx;
+
+    doc = xml.parse(Buffer.from(str));
 }
 
 function zlib_module(str: string) {

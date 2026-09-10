@@ -16,17 +16,17 @@ declare module "xml" {
 
     export interface XMLNode {
         /**
-         * Adds a child node. Node is recursively copied before adding.
+         * Adds a recursive copy of a namespace-free child node.
          * @param node - XMLNode to be added.
          * @since 0.7.11.
          */
-        addChild(node: XMLNode): void;
+        addChild(node: XMLNode | XMLDoc): void;
 
         /**
          * node.$attr$xxx - value of the node's attribute "xxx".
-         * @since 0.7.11 the property is writable.
+         * Assigning null or undefined removes the attribute.
          */
-        [key: `$attr$${string}`]: string | undefined;
+        [key: `$attr$${string}`]: string | null | undefined;
 
         /**
          * Removes attribute by name.
@@ -36,7 +36,7 @@ declare module "xml" {
         removeAttribute(name: string): void;
 
         /**
-         * Removes all the attribute of the node.
+         * Removes all attributes of the node.
          * @since 0.7.11.
          */
         removeAllAttributes(): void;
@@ -47,7 +47,7 @@ declare module "xml" {
          * If tag_name is absent all children tags are removed.
          * @since 0.7.11.
          */
-        removeChildren(tag_name?:string): void;
+        removeChildren(tag_name?: string | null): void;
 
         /**
          * Removes the text value of the node.
@@ -58,35 +58,36 @@ declare module "xml" {
         /**
          * Sets a value for the attribute.
          * @param attr_name - name of the attribute to set.
-         * @param value - value of the attribute to set. When value is null
-         * the attribute is removed.
+         * @param value - value of the attribute to set. When value is null or
+         * undefined, the attribute is removed.
          * @since 0.7.11.
          */
-        setAttribute(attr_name: string, value: string | null): void;
+        setAttribute(attr_name: string, value: string | null | undefined): void;
 
         /**
          * Sets a text value for the node.
-         * @param text - a value to set as a text. If value is null the
-         * node's text is deleted.
+         * @param text - a value to set as text. If value is null or undefined,
+         * the node's text is deleted.
          * @since 0.7.11.
          */
-        setText(text:string | null): void;
+        setText(text: string | null | undefined): void;
 
         /**
-         * node.$attrs - an XMLAttr wrapper object for all the attributes
-         * of the node.
+         * node.$attrs - an XMLAttr wrapper object for all node attributes,
+         * or undefined when the node has no attributes.
          */
-        readonly $attrs: XMLAttr;
+        readonly $attrs: XMLAttr | undefined;
 
         /**
          * node.$tag$xxx - the node's first child tag named "xxx".
-         * @since 0.7.11 the property is writable.
+         * Assigning a value throws TypeError at runtime. Deleting the property
+         * removes matching child tags.
          */
         [key: `$tag$${string}`]: XMLNode | undefined;
 
         /**
          * node.$tags$xxx - all children tags named "xxx" of the node.
-         * @since 0.7.11 the property is writable.
+         * Assigning or deleting the property throws TypeError at runtime.
          */
         [key: `$tags$${string}`]: XMLNode[] | undefined;
 
@@ -96,25 +97,31 @@ declare module "xml" {
         readonly $name: string;
 
         /**
-         * node.$ns - the namespace of the node.
+         * node.$ns - the namespace URI of the node, or undefined when the
+         * node has no namespace.
          */
-        readonly $ns: string;
+        readonly $ns: string | undefined;
 
         /**
-         * node.$parent - the parent node of the current node.
+         * node.$parent - the parent node, or undefined for a document root
+         * or a detached node.
          */
-        readonly $parent: string;
+        readonly $parent: XMLNode | undefined;
 
         /**
          * node.$text - the content of the node.
-         * @since 0.7.11 the property is writable.
+         * Assigning null or undefined removes the text.
          */
-        $text: string;
+        get $text(): string;
+        set $text(value: string | null | undefined);
 
         /**
-         * node.$tags - all the node's children tags.
+         * node.$tags - all child tags. Assigning an array replaces all child
+         * nodes with recursive copies of namespace-free array elements.
+         * Assigning null or undefined removes all child nodes.
          */
-        $tags: XMLNode[] | undefined;
+        get $tags(): XMLNode[] | undefined;
+        set $tags(value: Array<XMLNode | XMLDoc> | null | undefined);
     }
 
     export interface XMLAttr {
@@ -126,50 +133,54 @@ declare module "xml" {
 
     interface Xml {
         /**
-         * Canonicalizes root_node and its children according to
+         * Canonicalizes root and its children according to
          * https://www.w3.org/TR/xml-c14n/.
          *
          * @param root - XMLDoc or XMLNode.
+         * @param excludingNode - a node to omit from the output.
          * @return Buffer object containing canonicalized output.
          */
-        c14n(root: XMLDoc | XMLNode): Buffer;
+        c14n(root: XMLDoc | XMLNode,
+             excludingNode?: XMLNode | null | undefined): Buffer;
 
         /**
-         * Parses src buffer for an XML document and returns a wrapper object.
+         * Parses src for an XML document and returns a wrapper object.
          *
-         * @param src a string or a buffer with an XML document.
-         * @return A XMLDoc wrapper object representing the parsed XML document.
+         * @param src - a string or Buffer with an XML document.
+         * @return An XMLDoc wrapper object representing the parsed XML document.
          */
-        parse(src: string): XMLDoc;
+        parse(src: string | Buffer): XMLDoc;
 
         /**
-         * Canonicalizes root_node and its children according to
-         * https://www.w3.org/tr/xml-exc-c14n/.
+         * Canonicalizes root and its children according to
+         * https://www.w3.org/TR/xml-exc-c14n/.
          *
          * @param root - XMLDoc or XMLNode.
-         * @param excluding_node - allows to omit from the output a part of the
-         * document corresponding to the excluding_node and its children.
-         * @param withComments - a boolean (false by default). when withComments
+         * @param excludingNode - allows omitting the node and its children.
+         * @param withComments - a boolean (false by default). When withComments
          * is true canonicalization corresponds to
          * http://www.w3.org/2001/10/xml-exc-c14n#WithComments.
-         * @param prefix_list - an optional string with a space separated namespace
+         * @param prefixList - an optional string with space-separated namespace
          * prefixes for namespaces that should also be included into the output.
-         * @return buffer object containing canonicalized output.
+         * @return Buffer object containing canonicalized output.
          */
-        exclusiveC14n(root: XMLDoc | XMLNode, excluding_node?: XMLNode | null | undefined,
-                      withComments?: boolean, prefix_list?: string): Buffer;
+        exclusiveC14n(root: XMLDoc | XMLNode,
+                       excludingNode?: XMLNode | null | undefined,
+                       withComments?: boolean, prefixList?: string): Buffer;
 
         /**
-         * The alias to xml.x14n()
+         * Alias for xml.c14n().
          * @since 0.7.11
          */
-        serialize(root: XMLDoc | XMLNode): Buffer;
+        serialize(root: XMLDoc | XMLNode,
+                  excludingNode?: XMLNode | null | undefined): Buffer;
 
         /**
-         * The same as xml.x14n() but returns the retval as a string.
+         * The same as xml.c14n() but returns the result as a string.
          * @since 0.7.11
          */
-        serializeToString(root: XMLDoc | XMLNode): string;
+        serializeToString(root: XMLDoc | XMLNode,
+                          excludingNode?: XMLNode | null | undefined): string;
     }
 
     const xml: Xml;
