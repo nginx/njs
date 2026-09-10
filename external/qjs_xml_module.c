@@ -83,6 +83,8 @@ static int qjs_xml_node_delete_property(JSContext *cx, JSValueConst obj,
 static int qjs_xml_node_define_own_property(JSContext *cx, JSValueConst obj,
     JSAtom atom, JSValueConst value, JSValueConst getter, JSValueConst setter,
     int flags);
+static int qjs_xml_node_property_modify(JSContext *cx, JSValueConst obj,
+    JSAtom atom, JSValueConst value, int delete);
 static JSValue qjs_xml_node_add_child(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv);
 static JSValue qjs_xml_node_remove_children(JSContext *cx,
@@ -761,7 +763,7 @@ qjs_xml_node_attr_modify(JSContext *cx, JSValue current, const u_char *name,
 
 static int
 qjs_xml_node_tag_modify(JSContext *cx, JSValue obj, njs_str_t *name,
-    JSValue setval)
+    int delete)
 {
     xmlNode         *node;
     qjs_xml_node_t  *current;
@@ -776,7 +778,7 @@ qjs_xml_node_tag_modify(JSContext *cx, JSValue obj, njs_str_t *name,
         return -1;
     }
 
-    if (!JS_IsNullOrUndefined(setval)) {
+    if (!delete) {
         JS_ThrowTypeError(cx, "XMLNode.$tag$xxx is not assignable, "
                           "use addChild() or node.$tags = [node1, node2, ..] "
                           "syntax");
@@ -1319,23 +1321,28 @@ static int
 qjs_xml_node_set_property(JSContext *cx, JSValueConst obj, JSAtom atom,
     JSValueConst value, JSValueConst receiver, int flags)
 {
-    return qjs_xml_node_define_own_property(cx, obj, atom, value,
-                                            JS_UNDEFINED, JS_UNDEFINED, flags);
+    return qjs_xml_node_property_modify(cx, obj, atom, value, 0);
 }
 
 
 static int
 qjs_xml_node_delete_property(JSContext *cx, JSValueConst obj, JSAtom prop)
 {
-    return qjs_xml_node_define_own_property(cx, obj, prop, JS_UNDEFINED,
-                                        JS_UNDEFINED, JS_UNDEFINED,
-                                        JS_PROP_THROW);
+    return qjs_xml_node_property_modify(cx, obj, prop, JS_UNDEFINED, 1);
 }
 
 
 static int
 qjs_xml_node_define_own_property(JSContext *cx, JSValueConst obj, JSAtom atom,
     JSValueConst value, JSValueConst getter, JSValueConst setter, int flags)
+{
+    return qjs_xml_node_property_modify(cx, obj, atom, value, 0);
+}
+
+
+static int
+qjs_xml_node_property_modify(JSContext *cx, JSValueConst obj, JSAtom atom,
+    JSValueConst value, int delete)
 {
     int        rc;
     njs_str_t  name, nm;
@@ -1366,7 +1373,7 @@ qjs_xml_node_define_own_property(JSContext *cx, JSValueConst obj, JSAtom atom,
             nm.start = name.start + njs_length("$tag$");
             nm.length = name.length - njs_length("$tag$");
 
-            rc = qjs_xml_node_tag_modify(cx, obj, &nm, value);
+            rc = qjs_xml_node_tag_modify(cx, obj, &nm, delete);
 
             JS_FreeCString(cx, (char *) name.start);
 
@@ -1408,7 +1415,7 @@ qjs_xml_node_define_own_property(JSContext *cx, JSValueConst obj, JSAtom atom,
         }
     }
 
-    rc = qjs_xml_node_tag_modify(cx, obj, &name, value);
+    rc = qjs_xml_node_tag_modify(cx, obj, &name, delete);
     JS_FreeCString(cx, (char *) name.start);
 
     return rc;
@@ -1487,7 +1494,7 @@ qjs_xml_node_remove_children(JSContext *cx, JSValueConst this_val,
         name.length = 0;
     }
 
-    rc = qjs_xml_node_tag_modify(cx, this_val, &name, JS_UNDEFINED);
+    rc = qjs_xml_node_tag_modify(cx, this_val, &name, 1);
 
     if (name.start != NULL) {
         JS_FreeCString(cx, (char *) name.start);

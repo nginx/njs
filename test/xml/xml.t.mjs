@@ -545,6 +545,37 @@ let modify_tsuite = {
             throw Error('unexpected exception');
           },
           expected: 'OK' },
+        { get: (doc) => {
+            try {
+                doc.note.$tag$to = null;
+            } catch (e) {
+                return [e instanceof TypeError, doc.note.to.$text].toString();
+            }
+
+            return 'missing exception';
+          },
+          expected: 'true,Tove' },
+        { get: (doc) => {
+            try {
+                doc.note.$tag$to = undefined;
+            } catch (e) {
+                return [e instanceof TypeError, doc.note.to.$text].toString();
+            }
+
+            return 'missing exception';
+          },
+          expected: 'true,Tove' },
+        { get: (doc) => {
+            try {
+                delete doc.note.$tags$to;
+            } catch (e) {
+                return [e instanceof TypeError,
+                        doc.note.$tags$to.length].toString();
+            }
+
+            return 'missing exception';
+          },
+          expected: 'true,1' },
         { doc: `<root><a>A</a><b>B</b><c>C</c><a>D</a></root>`,
           get: (doc) => {
             let b = doc.root.b;
