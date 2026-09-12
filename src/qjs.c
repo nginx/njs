@@ -324,6 +324,20 @@ failed:
 }
 
 
+void *
+qjs_chb_ctx_alloc(void *ctx, size_t size)
+{
+    return js_malloc(ctx, size);
+}
+
+
+void
+qjs_chb_ctx_free(void *ctx, void *p)
+{
+    js_free(ctx, p);
+}
+
+
 JSValue
 qjs_call_exit_hook(JSContext *ctx)
 {
