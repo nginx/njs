@@ -65,17 +65,17 @@ jobs:
           meson install -C build
           echo "PKG_CONFIG_PATH=$HOME/.local/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
 
-      - name: Configure and make njs
+      - name: Configure and make njs with UBSan
         run: |
           ./configure \
-                    --cc-opt="$CC_OPT" \
-                    --ld-opt="$LD_OPT" \
+                    --cc-opt="$CC_OPT -fsanitize=undefined" \
+                    --ld-opt="$LD_OPT -fsanitize=undefined" \
           || cat build/autoconf.err
           $MAKE_UTILITY -j$(nproc)
 
-      - name: Test njs
+      - name: Test njs with UBSan
         run: |
-          $MAKE_UTILITY test
+          UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 $MAKE_UTILITY test
           $MAKE_UTILITY clean
 
       - name: Configure and make njs, 32-bit
