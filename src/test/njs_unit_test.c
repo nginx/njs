@@ -22469,6 +22469,10 @@ static njs_unit_test_t  njs_tz_test[] =
                   "d.getTime()"),
        njs_str("1299733323625") },
 
+     { njs_str("var d = new Date(Date.UTC(2016, 6)); d.setUTCMonth(6, 6);"
+                  "d.getTime()"),
+       njs_str("1467763200000") },
+
      { njs_str("var d = new Date(1308895323625); d.setMonth(2);"
                   "d.getTime()"),
        njs_str("1300942923625") },

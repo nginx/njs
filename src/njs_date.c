@@ -262,10 +262,6 @@ njs_make_date(int64_t tm[], njs_bool_t local)
 
     time += days * 86400000.0;
 
-    if (time < -8.64e15 || time > 8.64e15) {
-        return NAN;
-    }
-
     if (local) {
         time += njs_tz_offset(time) * 60000;
     }
@@ -1488,7 +1484,7 @@ njs_date_prototype_set_fields(njs_vm_t *vm, njs_value_t *args,
 
     } while (--left);
 
-    time = njs_make_date(tm, 1);
+    time = njs_make_date(tm, magic & 0x40);
 
 done:
 
@@ -1726,4 +1722,3 @@ const njs_object_type_init_t  njs_date_type_init = {
    .prototype_props = &njs_date_prototype_init,
    .prototype_value = { .object = { .type = NJS_OBJECT } },
 };
-
