@@ -58,6 +58,8 @@ typedef struct {
 
 JSContext *qjs_new_context(JSRuntime *rt, qjs_module_t **addons);
 JSValue qjs_call_exit_hook(JSContext *ctx);
+void *qjs_chb_ctx_alloc(void *ctx, size_t size);
+void qjs_chb_ctx_free(void *ctx, void *p);
 
 
 JSValue qjs_new_uint8_array(JSContext *ctx, int argc, JSValueConst *argv);

@@ -41,12 +41,12 @@ typedef struct {
 
 void njs_chb_init(njs_chb_t *chain, void *pool, njs_chb_alloc_t alloc,
     njs_chb_free_t free);
+void *njs_chb_mp_alloc(void *pool, size_t size);
+void njs_chb_mp_free(void *pool, void *p);
 #define NJS_CHB_MP_INIT(chain, mp)                                           \
-    njs_chb_init(chain, mp, (njs_chb_alloc_t) njs_mp_alloc,                  \
-    (njs_chb_free_t) njs_mp_free)
+    njs_chb_init(chain, mp, njs_chb_mp_alloc, njs_chb_mp_free)
 #define NJS_CHB_CTX_INIT(chain, ctx)                                         \
-    njs_chb_init(chain, ctx, (njs_chb_alloc_t) js_malloc,                    \
-    (njs_chb_free_t) js_free)
+    njs_chb_init(chain, ctx, qjs_chb_ctx_alloc, qjs_chb_ctx_free)
 #define NJS_CHB_MP_INIT_MAX(chain, mp, max)                                  \
     (NJS_CHB_MP_INIT(chain, mp), (chain)->max_size = (max))
 #define NJS_CHB_CTX_INIT_MAX(chain, ctx, max)                                \

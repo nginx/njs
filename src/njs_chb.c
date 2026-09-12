@@ -26,6 +26,20 @@ njs_chb_init(njs_chb_t *chain, void *pool, njs_chb_alloc_t alloc,
 }
 
 
+void *
+njs_chb_mp_alloc(void *pool, size_t size)
+{
+    return njs_mp_alloc(pool, size);
+}
+
+
+void
+njs_chb_mp_free(void *pool, void *p)
+{
+    njs_mp_free(pool, p);
+}
+
+
 void
 njs_chb_append0(njs_chb_t *chain, const char *msg, size_t len)
 {
