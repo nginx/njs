@@ -335,7 +335,6 @@ njs_vm_compile_module(njs_vm_t *vm, njs_str_t *name, u_char **start,
     njs_function_lambda_t  *lambda;
 
     parser.mem_pool = NULL;
-    lambda = NULL;
     code_index = (vm->codes != NULL) ? vm->codes->items : 0;
 
     module = njs_module_find(vm, name, 1);
@@ -376,7 +375,7 @@ njs_vm_compile_module(njs_vm_t *vm, njs_str_t *name, u_char **start,
     }
 
     lambda = njs_mp_zalloc(vm->mem_pool, sizeof(njs_function_lambda_t));
-    if (njs_fast_path(lambda == NULL)) {
+    if (njs_slow_path(lambda == NULL)) {
         njs_memory_error(vm);
         goto failed;
     }
@@ -396,10 +395,6 @@ failed:
 
     if (parser.mem_pool != NULL) {
         njs_parser_destroy(&parser);
-    }
-
-    if (lambda != NULL) {
-        njs_mp_free(vm->mem_pool, lambda);
     }
 
     njs_generator_cleanup(vm, code_index);
