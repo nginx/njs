@@ -167,38 +167,49 @@ njs_make_day(int64_t yr, int64_t month, int64_t date)
 
 
 njs_inline int64_t
-njs_tz_offset(int64_t time)
+njs_tz_offset(double time)
 {
+    int64_t    seconds;
     time_t     ti;
     struct tm  tm;
 
     time /= 1000;
+
+    if (njs_slow_path(!isfinite(time) || time < NJS_INT64_DBL_MIN
+                      || time >= NJS_INT64_DBL_MAX))
+    {
+        return 0;
+    }
+
+    seconds = time;
 
 #if (NJS_TIME_T_SIZE < 8)
 
     /* Smart truncation. */
 
     if ((time_t) -1 < 0) {
-        if (time < INT32_MIN) {
-            time = INT32_MIN;
+        if (seconds < INT32_MIN) {
+            seconds = INT32_MIN;
 
-        } else if (time > INT32_MAX) {
-            time = INT32_MAX;
+        } else if (seconds > INT32_MAX) {
+            seconds = INT32_MAX;
         }
 
     } else {
-        if (time < 0) {
-            time = 0;
+        if (seconds < 0) {
+            seconds = 0;
 
-        } else if (time > UINT32_MAX) {
-            time = UINT32_MAX;
+        } else if (seconds > UINT32_MAX) {
+            seconds = UINT32_MAX;
         }
     }
 
 #endif
 
-    ti = time;
-    localtime_r(&ti, &tm);
+    ti = seconds;
+    if (njs_slow_path(localtime_r(&ti, &tm) == NULL)) {
+        return 0;
+    }
 
     /*
      * As njs_timezone(&tm) may return value which is not a multiple of 60
