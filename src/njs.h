@@ -44,8 +44,9 @@ typedef struct njs_external_s         njs_external_t;
  * sizeof(njs_opaque_value_t) == sizeof(njs_value_t).
  */
 
-typedef struct {
+typedef union {
     uint32_t                        filler[4];
+    uint64_t                        align;
 } njs_opaque_value_t;
 
 /* sizeof(njs_value_t) is 16 bytes. */
