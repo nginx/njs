@@ -55,7 +55,7 @@ stream {
     server {
         listen       127.0.0.1:8081;
 
-        js_periodic test.tick interval=30ms jitter=1ms;
+        js_periodic test.tick worker_affinity=1000 interval=30ms;
         js_periodic test.timer interval=1s worker_affinity=all;
         js_periodic test.overrun interval=30ms;
         js_periodic test.affinity interval=50ms worker_affinity=0101;
