@@ -3536,7 +3536,7 @@ ngx_stream_js_periodic(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     uint8_t             *mask;
     ngx_str_t           *value, s;
     ngx_msec_t           interval, jitter;
-    ngx_uint_t           i;
+    ngx_uint_t           i, j;
     ngx_core_conf_t     *ccf;
     ngx_js_periodic_t   *periodic;
     ngx_js_main_conf_t  *jmcf;
@@ -3628,20 +3628,20 @@ ngx_stream_js_periodic(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
                 return NGX_CONF_ERROR;
             }
 
-            for (i = 0; i < s.len; i++) {
-                if (s.data[i] == '0') {
-                    mask[i] = 0;
+            for (j = 0; j < s.len; j++) {
+                if (s.data[j] == '0') {
+                    mask[j] = 0;
                     continue;
                 }
 
-                if (s.data[i] == '1') {
-                    mask[i] = 1;
+                if (s.data[j] == '1') {
+                    mask[j] = 1;
                     continue;
                 }
 
                 ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
                           "invalid character \"%c\" in \"worker_affinity=\"",
-                          s.data[i]);
+                          s.data[j]);
 
                 return NGX_CONF_ERROR;
             }
