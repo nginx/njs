@@ -301,10 +301,10 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
         }
 
         if (!JS_IsUndefined(value)) {
-            rc = JS_ToInt64(cx, (int64_t *) &http->buffer_size, value);
+            rc = ngx_qjs_integer(cx, value, &http->buffer_size);
             JS_FreeValue(cx, value);
 
-            if (rc < 0) {
+            if (rc != NGX_OK) {
                 goto fail;
             }
         }
@@ -315,11 +315,10 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
         }
 
         if (!JS_IsUndefined(value)) {
-            rc = JS_ToInt64(cx, (int64_t *) &http->max_response_body_size,
-                            value);
+            rc = ngx_qjs_integer(cx, value, &http->max_response_body_size);
             JS_FreeValue(cx, value);
 
-            if (rc < 0) {
+            if (rc != NGX_OK) {
                 goto fail;
             }
         }
@@ -801,12 +800,11 @@ static JSValue
 ngx_qjs_fetch_response_ctor(JSContext *cx, JSValueConst new_target, int argc,
     JSValueConst *argv)
 {
-    int                 ret;
     size_t              byte_offset, byte_length;
     u_char             *p, *end;
     JSValue             init, value, body, proto, obj, buf;
     ngx_str_t           bd;
-    ngx_int_t           rc;
+    ngx_int_t           rc, ret;
     const char         *str;
     ngx_pool_t         *pool;
     ngx_js_ctx_t       *ctx;
@@ -843,10 +841,10 @@ ngx_qjs_fetch_response_ctor(JSContext *cx, JSValueConst new_target, int argc,
         }
 
         if (!JS_IsUndefined(value)) {
-            ret = JS_ToInt64(cx, (int64_t *) &response->code, value);
+            ret = ngx_qjs_integer(cx, value, &response->code);
             JS_FreeValue(cx, value);
 
-            if (ret < 0) {
+            if (ret != NGX_OK) {
                 return JS_EXCEPTION;
             }
 
