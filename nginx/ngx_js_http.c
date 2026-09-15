@@ -831,6 +831,7 @@ static ngx_int_t
 ngx_js_http_process_headers(ngx_js_http_t *http)
 {
     size_t                len, vlen;
+    off_t                 content_length_n;
     ngx_int_t             rc;
     ngx_js_http_parse_t  *hp;
 
@@ -892,13 +893,23 @@ ngx_js_http_process_headers(ngx_js_http_t *http)
 
             if (len == (sizeof("Content-Length") - 1)
                 && ngx_strncasecmp(hp->header_name_start,
-                                   (u_char *) "Content-Length", len) == 0)
+                                    (u_char *) "Content-Length", len) == 0)
             {
-                http->content_length_n = ngx_atoof(hp->header_start, vlen);
-                if (http->content_length_n == NGX_ERROR) {
+                content_length_n = ngx_atoof(hp->header_start, vlen);
+                if (content_length_n == NGX_ERROR) {
                     ngx_js_http_error(http, "invalid http content length");
                     return NGX_ERROR;
                 }
+
+                if (http->content_length
+                    && http->content_length_n != content_length_n)
+                {
+                    ngx_js_http_error(http, "conflicting http content length");
+                    return NGX_ERROR;
+                }
+
+                http->content_length = 1;
+                http->content_length_n = content_length_n;
 
                 if (!http->header_only
                     && http->content_length_n
@@ -926,6 +937,11 @@ ngx_js_http_process_headers(ngx_js_http_t *http)
 
         ngx_js_http_error(http, "invalid http header");
 
+        return NGX_ERROR;
+    }
+
+    if (http->chunked && http->content_length) {
+        ngx_js_http_error(http, "conflicting http response framing");
         return NGX_ERROR;
     }
 
