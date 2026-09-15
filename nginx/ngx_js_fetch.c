@@ -586,6 +586,11 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 #endif
     }
 
+    if (http->max_response_body_size < 0) {
+        njs_vm_type_error(vm, "max_response_body_size must be non-negative");
+        goto fail;
+    }
+
 #if (NGX_SSL)
     if (http->ssl != NULL && !http->ssl_verify) {
         http->keepalive = 0;

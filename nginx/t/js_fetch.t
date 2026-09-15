@@ -64,6 +64,10 @@ http {
             js_content test.broken_catch;
         }
 
+        location /body_size {
+            js_content test.body_size;
+        }
+
         location /body {
             js_content test.body;
         }
@@ -273,6 +277,19 @@ $t->write_file('test.js', <<EOF);
         return process_errors_catch(r, tests);
     }
 
+    async function body_size(r) {
+        try {
+            let reply = await ngx.fetch(
+                'http://127.0.0.1:$p2/no_content_length',
+                {max_response_body_size: -1});
+            let body = await reply.text();
+            r.return(200, `ok:\${body.length}`);
+
+        } catch (e) {
+            r.return(501, e.message);
+        }
+    }
+
     function chain(r) {
         var results = [];
         var reqs = [
@@ -467,15 +484,16 @@ $t->write_file('test.js', <<EOF);
         r.return(c, `\${v.request_method}:\${bar}:\${body}`);
     }
 
-     export default {njs: test_njs, body, broken, broken_response, broken_catch,
-                     body_special,chain, chunked_ok, chunked_fail, header,
-                     header_iter, host_header, multi, loc, property,
-                     body_content_length, user_agent_header };
+    export default {njs: test_njs, body, body_size, broken, broken_response,
+                    broken_catch, body_special, chain, chunked_ok,
+                    chunked_fail, header, header_iter, host_header,
+                    multi, loc, property, body_content_length,
+                    user_agent_header };
 EOF
 
 $t->try_run('no njs.fetch');
 
-$t->plan(45);
+$t->plan(46);
 
 $t->run_daemon(\&http_daemon, port(8082));
 $t->waitforsocket('127.0.0.1:' . port(8082));
@@ -544,6 +562,9 @@ like(http_get('/broken'), qr/200/s, 'fetch broken');
 like(http_get('/broken_response'), qr/200/s, 'fetch broken response');
 like(http_get('/broken_catch'), qr/\["async","async","async"]$/s,
         'fetch broken catch');
+like(http_get('/body_size'),
+	qr/501.*max_response_body_size must be non-negative/s,
+	'fetch negative response body size');
 like(http_get('/chunked_ok'), qr/200/s, 'fetch chunked ok');
 like(http_get('/chunked_fail'), qr/200/s, 'fetch chunked fail');
 like(http_get('/chain'), qr/200 OK.*SUCCESS$/s, 'fetch chain');

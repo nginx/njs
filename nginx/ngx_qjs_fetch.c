@@ -336,6 +336,11 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
 #endif
     }
 
+    if (http->max_response_body_size < 0) {
+        JS_ThrowTypeError(cx, "max_response_body_size must be non-negative");
+        goto fail;
+    }
+
 #if (NGX_SSL)
     if (http->ssl != NULL && !http->ssl_verify) {
         http->keepalive = 0;
