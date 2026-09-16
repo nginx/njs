@@ -22,7 +22,6 @@ struct qjs_xml_retired_s {
 
 typedef struct {
     xmlDoc             *doc;
-    xmlParserCtxt      *ctx;
     qjs_xml_retired_t  *retired;
     int                ref_count;
 } qjs_xml_doc_t;
@@ -138,7 +137,7 @@ static int qjs_xml_list_retire(JSContext *cx, qjs_xml_doc_t *doc,
 static void qjs_xml_list_append(xmlNode *parent, xmlNode *node);
 static int qjs_xml_tree_has_namespaces(xmlNode *node);
 
-static void qjs_xml_error(JSContext *cx, qjs_xml_doc_t *current,
+static void qjs_xml_error(JSContext *cx, xmlParserCtxt *ctx,
     const char *fmt, ...);
 static JSModuleDef *qjs_xml_init(JSContext *ctx, const char *name);
 
@@ -221,6 +220,7 @@ qjs_xml_parse(JSContext *cx, JSValueConst this_val, int argc,
 {
     JSValue        ret;
     qjs_bytes_t    data;
+    xmlParserCtxt  *ctx;
     qjs_xml_doc_t  *tree;
 
     if (qjs_to_bytes(cx, &data, argv[0]) < 0) {
@@ -236,23 +236,26 @@ qjs_xml_parse(JSContext *cx, JSValueConst this_val, int argc,
 
     tree->ref_count = 1;
 
-    tree->ctx = xmlNewParserCtxt();
-    if (tree->ctx == NULL) {
+    ctx = xmlNewParserCtxt();
+    if (ctx == NULL) {
         qjs_bytes_free(cx, &data);
         JS_ThrowInternalError(cx, "xmlNewParserCtxt() failed");
         qjs_xml_doc_free(JS_GetRuntime(cx), tree);
         return JS_EXCEPTION;
     }
 
-    tree->doc = xmlCtxtReadMemory(tree->ctx, (char *) data.start, data.length,
-                                  NULL, NULL, XML_PARSE_NOWARNING
-                                              | XML_PARSE_NOERROR);
+    tree->doc = xmlCtxtReadMemory(ctx, (char *) data.start, data.length,
+                                   NULL, NULL, XML_PARSE_NOWARNING
+                                               | XML_PARSE_NOERROR);
     qjs_bytes_free(cx, &data);
     if (tree->doc == NULL) {
-        qjs_xml_error(cx, tree, "failed to parse XML");
+        qjs_xml_error(cx, ctx, "failed to parse XML");
+        xmlFreeParserCtxt(ctx);
         qjs_xml_doc_free(JS_GetRuntime(cx), tree);
         return JS_EXCEPTION;
     }
+
+    xmlFreeParserCtxt(ctx);
 
     ret = JS_NewObjectClass(cx, QJS_CORE_CLASS_ID_XML_DOC);
     if (JS_IsException(ret)) {
@@ -558,10 +561,6 @@ qjs_xml_doc_free(JSRuntime *rt, qjs_xml_doc_t *current)
 
     if (current->doc != NULL) {
         xmlFreeDoc(current->doc);
-    }
-
-    if (current->ctx != NULL) {
-        xmlFreeParserCtxt(current->ctx);
     }
 
     js_free_rt(rt, current);
@@ -2427,7 +2426,7 @@ qjs_xml_tree_has_namespaces(xmlNode *node)
 
 
 static void
-qjs_xml_error(JSContext *cx, qjs_xml_doc_t *current, const char *fmt, ...)
+qjs_xml_error(JSContext *cx, xmlParserCtxt *ctx, const char *fmt, ...)
 {
     u_char          *p, *last;
     va_list         args;
@@ -2440,7 +2439,7 @@ qjs_xml_error(JSContext *cx, qjs_xml_doc_t *current, const char *fmt, ...)
     p = njs_vsprintf(errstr, last - 1, fmt, args);
     va_end(args);
 
-    err = xmlCtxtGetLastError(current->ctx);
+    err = xmlCtxtGetLastError(ctx);
 
     if (err != NULL) {
         p = njs_sprintf(p, last - 1, " (libxml2: \"%*s\" at %d:%d)",

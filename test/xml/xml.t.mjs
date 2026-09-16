@@ -188,6 +188,33 @@ let parse_tsuite = {
           exception: 'Error: failed to parse XML (libxml2: "Start tag expected, \'<\' not found" at 1:1)' },
 ]};
 
+let parse_failure_tsuite = {
+    name: "parse() failures",
+    skip: () => (!has_njs()),
+    T: async (params) => {
+        for (let i = 0; i < params.count; i++) {
+            try {
+                xml.parse(params.doc);
+            } catch (e) {
+                continue;
+            }
+
+            throw Error('missing exception');
+        }
+
+        return 'SUCCESS';
+    },
+
+    opts: {
+        count: 2,
+        doc: 'GARBAGE',
+    },
+
+    tests: [
+        {},
+    ],
+};
+
 let c14n_tsuite = {
     name: "c14n()",
     skip: () => (!has_njs()),
@@ -920,6 +947,7 @@ let modify_tsuite = {
 
 run([
     parse_tsuite,
+    parse_failure_tsuite,
     c14n_tsuite,
     modify_tsuite,
 ])
