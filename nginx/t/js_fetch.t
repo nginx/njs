@@ -362,8 +362,11 @@ $t->write_file('test.js', <<EOF);
     }
 
     async function framing(r) {
+        var opts = {max_response_body_size: 128};
+
         try {
-            var reply = await ngx.fetch(`http://127.0.0.1:$p2/\${r.args.loc}`);
+            var reply = await ngx.fetch(`http://127.0.0.1:$p2/\${r.args.loc}`,
+                                        opts);
             var body = await reply.text();
             r.return(200, `ok:\${body.length}`);
 
@@ -508,7 +511,7 @@ EOF
 
 $t->try_run('no njs.fetch');
 
-$t->plan(54);
+$t->plan(58);
 
 $t->run_daemon(\&http_daemon, port(8082));
 $t->waitforsocket('127.0.0.1:' . port(8082));
@@ -604,6 +607,16 @@ like(http_get('/framing?loc=no_body/304_large'), qr/200 OK.*ok:0$/s,
 like(http_get('/framing?loc=length'),
 	qr/501.*prematurely closed connection/s,
 	'fetch incomplete fixed-length response');
+like(http_get('/framing?loc=chunked/exact'), qr/200 OK.*ok:128$/s,
+	'fetch chunked exact limit');
+like(http_get('/framing?loc=chunked/over'),
+	qr/501.*http response body is too large/s,
+	'fetch chunked response too large');
+like(http_get('/framing?loc=chunked/multi'), qr/200 OK.*ok:128$/s,
+	'fetch chunked multi-part limit');
+like(http_get('/framing?loc=chunked/multi_over'),
+	qr/501.*http response body is too large/s,
+	'fetch chunked multi-part response too large');
 like(http_get('/header_iter?loc=duplicate_header_large'),
 	qr/\["A:a","B:a","C:a","D:a","E:a","F:a","G:a","H:a","Moo:a, ?b"]$/s,
 	'fetch header duplicate large');
@@ -938,6 +951,26 @@ sub http_daemon {
 			}
 
 		    print $client  "0" . CRLF . CRLF;
+
+		} elsif ($uri =~ m#^/chunked/(exact|over)$#) {
+			my $size = ($1 eq 'exact') ? 128 : 129;
+			print $client
+				"HTTP/1.1 200 OK" . CRLF .
+				"Transfer-Encoding: chunked" . CRLF .
+				"Connection: close" . CRLF .
+				CRLF . sprintf("%x", $size) . CRLF . ("X" x $size)
+				. CRLF . "0" . CRLF . CRLF;
+
+		} elsif ($uri =~ m#^/chunked/(multi|multi_over)$#) {
+			my $last = ($1 eq 'multi') ? 64 : 65;
+			print $client
+				"HTTP/1.1 200 OK" . CRLF .
+				"Transfer-Encoding: chunked" . CRLF .
+				"Connection: close" . CRLF .
+				CRLF . "40" . CRLF . ("X" x 64) . CRLF;
+			select undef, undef, undef, 0.01;
+			print $client sprintf("%x", $last) . CRLF . ("X" x $last)
+				. CRLF . "0" . CRLF . CRLF;
 
 		}
 	}
