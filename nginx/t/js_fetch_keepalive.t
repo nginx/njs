@@ -79,6 +79,11 @@ http {
             js_content test.keepalive;
         }
 
+        location /keepalive_head {
+            js_fetch_keepalive 4;
+            js_content test.keepalive_head;
+        }
+
         location /no_keepalive {
             js_fetch_keepalive 0;
             js_content test.keepalive;
@@ -158,7 +163,19 @@ $t->write_file('test.js', <<EOF);
         r.return(200, JSON.stringify(responses));
     }
 
-    export default {engine, keepalive, keepalive_simultaneous};
+    async function keepalive_head(r) {
+        let responses = [];
+
+        for (let i = 0; i < 3; i++) {
+            let reply = await ngx.fetch('http://127.0.0.1:$p1/count',
+                                        {method: 'HEAD'});
+            responses.push(reply.headers.get('Connection-ID'));
+        }
+
+        r.return(200, responses.toString());
+    }
+
+    export default {engine, keepalive, keepalive_head, keepalive_simultaneous};
 EOF
 
 $t->try_run('no js_fetch_keepalive');
@@ -166,7 +183,7 @@ $t->try_run('no js_fetch_keepalive');
 $t->run_daemon(\&http_daemon, $p2);
 $t->waitforsocket('127.0.0.1:' . $p2);
 
-$t->plan(16);
+$t->plan(17);
 
 ###############################################################################
 
@@ -180,6 +197,8 @@ like(http_get('/keepalive?path=count'), qr/1,2,3/,
 	'keepalive reuses connection');
 like(http_get('/keepalive?path=count'), qr/4,5,6/,
 	'keepalive reuses connection across requests');
+like(http_get('/keepalive_head'), qr/1,2,3/,
+	'keepalive reuses head response connection');
 like(http_get('/keepalive_simultaneous?n=8'), qr/1,1,1,1,1,1,1,1/,
 	'keepalive simultaneous requests');
 like(http_get('/keepalive_simultaneous?n=8'), qr/2,2,2,2,1,1,1,1/,

@@ -23,6 +23,14 @@ typedef struct {
 } ngx_js_http_keepalive_cache_t;
 
 
+enum {
+    NGX_JS_HTTP_BODY_NONE = 0,
+    NGX_JS_HTTP_BODY_LENGTH,
+    NGX_JS_HTTP_BODY_CHUNKED,
+    NGX_JS_HTTP_BODY_CLOSE,
+};
+
+
 #define ngx_js_http_version(major, minor)  ((major) * 1000 + (minor))
 #define NGX_JS_USER_AGENT  "nginx-js"
 
@@ -745,7 +753,7 @@ ngx_js_http_read_handler(ngx_event_t *rev)
             }
 
             if (rc == NGX_DONE) {
-                break;
+                return;
             }
 
             continue;
@@ -893,7 +901,7 @@ ngx_js_http_process_headers(ngx_js_http_t *http)
 
             if (len == (sizeof("Content-Length") - 1)
                 && ngx_strncasecmp(hp->header_name_start,
-                                    (u_char *) "Content-Length", len) == 0)
+                                   (u_char *) "Content-Length", len) == 0)
             {
                 content_length_n = ngx_atoof(hp->header_start, vlen);
                 if (content_length_n == NGX_ERROR) {
@@ -912,6 +920,8 @@ ngx_js_http_process_headers(ngx_js_http_t *http)
                 http->content_length_n = content_length_n;
 
                 if (!http->header_only
+                    && http->response.code != 204
+                    && http->response.code != 304
                     && http->content_length_n
                        > (off_t) http->max_response_body_size)
                 {
@@ -945,7 +955,27 @@ ngx_js_http_process_headers(ngx_js_http_t *http)
         return NGX_ERROR;
     }
 
+    if (http->response.code >= 100 && http->response.code < 200) {
+        ngx_js_http_error(http, "unsupported http response status");
+        return NGX_ERROR;
+    }
+
     njs_chb_destroy(&http->chain);
+
+    if (http->header_only || http->response.code == 204
+        || http->response.code == 304)
+    {
+        http->body = NGX_JS_HTTP_BODY_NONE;
+
+    } else if (http->chunked) {
+        http->body = NGX_JS_HTTP_BODY_CHUNKED;
+
+    } else if (http->content_length) {
+        http->body = NGX_JS_HTTP_BODY_LENGTH;
+
+    } else {
+        http->body = NGX_JS_HTTP_BODY_CLOSE;
+    }
 
     http->process = ngx_js_http_process_body;
 
@@ -970,18 +1000,19 @@ ngx_js_http_process_body(ngx_js_http_t *http)
             return NGX_ERROR;
         }
 
-        if (!http->header_only
-            && http->chunked
-            && http->content_length_n == -1)
+        if (http->body == NGX_JS_HTTP_BODY_NONE
+            || http->body == NGX_JS_HTTP_BODY_CLOSE)
         {
+            http->ready_handler(http);
+            return NGX_DONE;
+        }
+
+        if (http->body == NGX_JS_HTTP_BODY_CHUNKED) {
             ngx_js_http_error(http, "invalid http chunked response");
             return NGX_ERROR;
         }
 
-        if (http->header_only
-            || http->content_length_n == -1
-            || size == http->content_length_n)
-        {
+        if (size == http->content_length_n) {
             http->ready_handler(http);
             return NGX_DONE;
         }
@@ -996,7 +1027,12 @@ ngx_js_http_process_body(ngx_js_http_t *http)
 
     b = http->buffer;
 
-    if (http->chunked) {
+    if (http->body == NGX_JS_HTTP_BODY_NONE) {
+        http->ready_handler(http);
+        return NGX_DONE;
+    }
+
+    if (http->body == NGX_JS_HTTP_BODY_CHUNKED) {
         rc = ngx_js_http_parse_chunked(&http->http_chunk_parse, b,
                                        &http->response.chain);
         if (rc == NGX_ERROR) {
@@ -1005,9 +1041,16 @@ ngx_js_http_process_body(ngx_js_http_t *http)
         }
 
         size = njs_chb_size(&http->response.chain);
+        if (size < 0) {
+            ngx_js_http_error(http, "memory error");
+            return NGX_ERROR;
+        }
 
         if (rc == NGX_OK) {
-            http->content_length_n = size;
+            b->pos = http->http_chunk_parse.pos;
+
+            http->ready_handler(http);
+            return NGX_DONE;
         }
 
         if (size > http->max_response_body_size * 10) {
@@ -1019,20 +1062,27 @@ ngx_js_http_process_body(ngx_js_http_t *http)
 
     } else {
         size = njs_chb_size(&http->response.chain);
+        if (size < 0) {
+            ngx_js_http_error(http, "memory error");
+            return NGX_ERROR;
+        }
 
-        if (http->header_only) {
-            need = 0;
-
-        } else  if (http->content_length_n == -1) {
+        if (http->body == NGX_JS_HTTP_BODY_CLOSE) {
             need = http->max_response_body_size - size;
+
+            if (b->last - b->pos > need) {
+                ngx_js_http_error(http, "http response body is too large");
+                return NGX_ERROR;
+            }
+
+            chsize = b->last - b->pos;
 
         } else {
             need = http->content_length_n - size;
+            chsize = ngx_min(need, b->last - b->pos);
         }
 
-        chsize = ngx_min(need, b->last - b->pos);
-
-        if (size + chsize > http->max_response_body_size) {
+        if (need < 0) {
             ngx_js_http_error(http, "http response body is too large");
             return NGX_ERROR;
         }
@@ -1042,7 +1092,17 @@ ngx_js_http_process_body(ngx_js_http_t *http)
             b->pos += chsize;
         }
 
-        rc = (need > chsize) ? NGX_AGAIN : NGX_DONE;
+        if (http->body == NGX_JS_HTTP_BODY_CLOSE) {
+            rc = NGX_AGAIN;
+
+        } else {
+            rc = (need > chsize) ? NGX_AGAIN : NGX_DONE;
+
+            if (rc == NGX_DONE) {
+                http->ready_handler(http);
+                return NGX_DONE;
+            }
+        }
     }
 
     if (b->pos == b->end) {

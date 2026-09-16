@@ -508,7 +508,7 @@ EOF
 
 $t->try_run('no njs.fetch');
 
-$t->plan(49);
+$t->plan(54);
 
 $t->run_daemon(\&http_daemon, port(8082));
 $t->waitforsocket('127.0.0.1:' . port(8082));
@@ -592,6 +592,18 @@ like(http_get('/framing?loc=content_length_same'), qr/200 OK.*ok:5$/s,
 like(http_get('/framing?loc=transfer_content_length'),
 	qr/501.*conflicting http response framing/s,
 	'fetch transfer and content length');
+like(http_get('/body_special?loc=no_body/204'), qr/200 OK.*<empty>$/s,
+	'fetch 204 response body');
+like(http_get('/body_special?loc=no_body/304'), qr/200 OK.*<empty>$/s,
+	'fetch 304 response body');
+like(http_get('/framing?loc=continue'),
+	qr/501.*unsupported http response status/s,
+	'fetch interim response unsupported');
+like(http_get('/framing?loc=no_body/304_large'), qr/200 OK.*ok:0$/s,
+	'fetch 304 response large content length');
+like(http_get('/framing?loc=length'),
+	qr/501.*prematurely closed connection/s,
+	'fetch incomplete fixed-length response');
 like(http_get('/header_iter?loc=duplicate_header_large'),
 	qr/\["A:a","B:a","C:a","D:a","E:a","F:a","G:a","H:a","Moo:a, ?b"]$/s,
 	'fetch header duplicate large');
@@ -735,6 +747,12 @@ sub http_daemon {
 				"Connection: close" . CRLF .
 				CRLF;
 
+		} elsif ($uri eq '/continue') {
+			print $client
+				"HTTP/1.1 100 Continue" . CRLF .
+				"Content-Length: 0" . CRLF .
+				CRLF;
+
 		} elsif ($uri eq '/content_length_conflict') {
 			print $client
 				"HTTP/1.1 200 OK" . CRLF .
@@ -823,6 +841,17 @@ sub http_daemon {
 			print $client
 				"HTTP/1.1 200 OK" . CRLF .
 				"Content-Length: 1000000" . CRLF .
+				"Connection: close" . CRLF .
+				CRLF;
+
+		} elsif ($uri eq '/no_body/204' || $uri eq '/no_body/304'
+			|| $uri eq '/no_body/304_large')
+		{
+			my $code = ($uri eq '/no_body/204') ? 204 : 304;
+			my $length = ($uri eq '/no_body/304_large') ? 1000000 : 5;
+			print $client
+				"HTTP/1.1 $code No Content" . CRLF .
+				"Content-Length: $length" . CRLF .
 				"Connection: close" . CRLF .
 				CRLF;
 
