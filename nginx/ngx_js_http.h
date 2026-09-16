@@ -140,6 +140,7 @@ struct ngx_js_http_s {
     unsigned                       content_length:1;
     unsigned                       chunked:1;
     unsigned                       keepalive:1;
+    unsigned                       body:3;
     off_t                          content_length_n;
 
 #if (NGX_SSL)
