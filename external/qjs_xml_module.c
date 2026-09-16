@@ -73,6 +73,7 @@ static JSValue qjs_xml_node_make(JSContext *cx, qjs_xml_doc_t *doc,
     xmlNode *node);
 static int qjs_xml_node_has_method(JSContext *cx, JSValueConst obj,
     JSAtom prop, njs_str_t *name);
+static JSValue qjs_xml_attr_value(JSContext *cx, xmlAttr *attr);
 static int qjs_xml_node_get_own_property(JSContext *cx,
     JSPropertyDescriptor *pdesc, JSValueConst obj, JSAtom prop);
 static int qjs_xml_node_get_own_property_names(JSContext *cx,
@@ -707,16 +708,29 @@ qjs_xml_node_attr_handler(JSContext *cx, qjs_xml_node_t *current,
             continue;
         }
 
-        if (attr->children != NULL
-            && attr->children->next == NULL
-            && attr->children->type == XML_TEXT_NODE
-            && attr->children->content != NULL)
-        {
-            return JS_NewString(cx, (char *) attr->children->content);
-        }
+        return qjs_xml_attr_value(cx, attr);
     }
 
     return JS_UNDEFINED;
+}
+
+
+static JSValue
+qjs_xml_attr_value(JSContext *cx, xmlAttr *attr)
+{
+    JSValue  value;
+    xmlChar  *text;
+
+    text = xmlNodeGetContent((xmlNode *) attr);
+    if (text == NULL) {
+        JS_ThrowInternalError(cx, "xmlNodeGetContent() failed");
+        return JS_EXCEPTION;
+    }
+
+    value = JS_NewString(cx, (char *) text);
+    xmlFree(text);
+
+    return value;
 }
 
 
@@ -1829,7 +1843,6 @@ qjs_xml_attr_get_own_property(JSContext *cx, JSPropertyDescriptor *pdesc,
     JSValueConst obj, JSAtom prop)
 {
     size_t          size;
-    u_char          *text;
     xmlAttr         *attr;
     njs_str_t       name;
     qjs_xml_attr_t  *current;
@@ -1862,23 +1875,15 @@ qjs_xml_attr_get_own_property(JSContext *cx, JSPropertyDescriptor *pdesc,
 
         JS_FreeCString(cx, (char *) name.start);
 
-        text = xmlNodeGetContent(attr->children);
-        if (text == NULL) {
-            return 0;
-        }
-
         if (pdesc != NULL) {
             pdesc->flags = JS_PROP_ENUMERABLE;
             pdesc->getter = JS_UNDEFINED;
             pdesc->setter = JS_UNDEFINED;
-            pdesc->value  = JS_NewString(cx, (char *) text);
+            pdesc->value = qjs_xml_attr_value(cx, attr);
             if (JS_IsException(pdesc->value)) {
-                xmlFree(text);
                 return -1;
             }
         }
-
-        xmlFree(text);
 
         return 1;
     }

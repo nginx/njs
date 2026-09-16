@@ -294,9 +294,45 @@ let saml_verify_tsuite = {
         { saml: "response_assertion_and_message_signed.xml", expected: true },
 
         { saml: "auth_r.xml", sign: true, key: { sign_file: "rsa.pkcs8" }, expected: true },
-]};
+    ]};
+
+let entity_attribute_tsuite = {
+    name: "signed entity-backed attribute",
+    skip: () => (!has_njs() || !has_webcrypto()),
+    T: async (params) => {
+        let private_key = fs.readFileSync('test/webcrypto/rsa.pkcs8');
+        let public_key = fs.readFileSync('test/webcrypto/rsa.spki');
+        let source = xml.parse(fs.readFileSync('test/xml/auth_r.xml'));
+        let root = source.$root;
+
+        root.setAttribute('NotOnOrAfter', '2024-01-18T06:21:48Z');
+        await signSAML(source, private_key);
+
+        let saml = xml.parse(`<!DOCTYPE saml:Assertion [
+            <!ENTITY njs_entity "2024-01-18T06:21:48Z">
+        ]>${xml.c14n(source).toString().replace('2024-01-18T06:21:48Z',
+                                                 '&njs_entity;')}`);
+
+        if (!await verifySAMLSignature(saml, public_key)) {
+            throw Error('signature verification failed');
+        }
+
+        root = saml.$root;
+        if (root.$attr$NotOnOrAfter !== '2024-01-18T06:21:48Z'
+            || root.$attrs.NotOnOrAfter !== '2024-01-18T06:21:48Z')
+        {
+            throw Error('signed attribute value mismatch');
+        }
+
+        return 'SUCCESS';
+    },
+
+    tests: [
+        {},
+    ]};
 
 run([
     saml_verify_tsuite,
+    entity_attribute_tsuite,
 ])
 .then($DONE, $DONE);

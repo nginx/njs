@@ -168,6 +168,24 @@ let parse_tsuite = {
           get: (doc) => JSON.stringify([doc['俄语'].$name[1],doc['俄语']['$attr$լեզու'][7],doc['俄语'].$text[5]]),
           expected: '["语","ն","е"]' },
 
+        { doc: `<!DOCTYPE r [<!ENTITY e "value">]><r a="&e;"/>`,
+          get: (doc) => JSON.stringify([doc.r.$attr$a, doc.r.$attrs.a]),
+          expected: '["value","value"]' },
+        { doc: `<!DOCTYPE r [<!ENTITY e "middle">]><r a="left-&e;-right"/>`,
+          get: (doc) => JSON.stringify([doc.r.$attr$a, doc.r.$attrs.a,
+                                        xml.serializeToString(doc.r)]),
+          expected: '["left-middle-right","left-middle-right",'
+                    + '"<r a=\\"left-middle-right\\"></r>"]' },
+        { doc: `<!DOCTYPE r [<!ENTITY a "A"><!ENTITY b "&a;B">]><r a="&b;"/>`,
+          get: (doc) => JSON.stringify([doc.r.$attr$a, doc.r.$attrs.a]),
+          expected: '["AB","AB"]' },
+        { doc: `<!DOCTYPE r [<!ENTITY e "">]><r a="&e;"/>`,
+          get: (doc) => JSON.stringify([doc.r.$attr$a, doc.r.$attrs.a]),
+          expected: '["",""]' },
+        { doc: `<!DOCTYPE r [<!ATTLIST r a CDATA "default">]><r/>`,
+          get: (doc) => JSON.stringify([doc.r.$attr$a, doc.r.$attrs]),
+          expected: '[null,null]' },
+
         { get: (doc) => JSON.stringify(Object.getOwnPropertyNames(doc)),
           expected: '["note"]' },
         { get: (doc) => JSON.stringify(Object.getOwnPropertyNames(doc.note)),
@@ -291,6 +309,9 @@ let c14n_tsuite = {
         { doc: `<note><to a="foo" b="bar">Tove</to><from>Jani</from></note>`,
           call: (doc) => xml.exclusiveC14n(doc.note, doc.note.to),
           expected: `<note><from>Jani</from></note>` },
+        { doc: `<!DOCTYPE r [<!ENTITY e "middle">]><r a="left-&e;-right"/>`,
+          call: (doc) => xml.c14n(doc.r),
+          expected: `<r a="left-middle-right"></r>` },
         { doc: `<r><a>A</a></r>`,
           call: (doc) => {
               let other = xml.parse(`<other></other>`);

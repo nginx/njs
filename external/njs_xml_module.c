@@ -102,6 +102,8 @@ static njs_int_t njs_xml_node_tag_handler(njs_vm_t *vm, njs_value_t *value,
     njs_str_t *name, njs_value_t *setval, njs_value_t *retval);
 static njs_int_t njs_xml_node_tags_handler(njs_vm_t *vm, njs_value_t *value,
     njs_str_t *name, njs_value_t *setval, njs_value_t *retval);
+static njs_int_t njs_xml_attr_value(njs_vm_t *vm, xmlAttr *attr,
+    njs_value_t *retval);
 
 static xmlNode *njs_xml_external_node(njs_vm_t *vm, njs_value_t *value);
 static const u_char *njs_xml_string_to_c_string(njs_vm_t *vm, njs_str_t *str,
@@ -1157,7 +1159,7 @@ njs_xml_node_attr_handler(njs_vm_t *vm, xmlNode *current, njs_str_t *name,
     njs_int_t     ret;
     njs_str_t     str;
     xmlAttr       *attr;
-    const u_char  *content, *name_c, *value;
+    const u_char  *name_c, *value;
     u_char        name_buf[512], value_buf[1024];
 
     if (retval != NULL && setval == NULL) {
@@ -1176,15 +1178,7 @@ njs_xml_node_attr_handler(njs_vm_t *vm, xmlNode *current, njs_str_t *name,
                 continue;
             }
 
-            if (attr->children != NULL
-                && attr->children->next == NULL
-                && attr->children->type == XML_TEXT_NODE)
-            {
-                content = (const u_char *) attr->children->content;
-
-                return njs_vm_value_string_create(vm, retval, content,
-                                                  njs_strlen(content));
-            }
+            return njs_xml_attr_value(vm, attr, retval);
         }
 
         njs_value_undefined_set(retval);
@@ -1247,6 +1241,25 @@ njs_xml_node_attr_handler(njs_vm_t *vm, xmlNode *current, njs_str_t *name,
     njs_value_undefined_set(retval);
 
     return NJS_OK;
+}
+
+
+static njs_int_t
+njs_xml_attr_value(njs_vm_t *vm, xmlAttr *attr, njs_value_t *retval)
+{
+    njs_int_t  ret;
+    xmlChar    *text;
+
+    text = xmlNodeGetContent((xmlNode *) attr);
+    if (njs_slow_path(text == NULL)) {
+        njs_vm_internal_error(vm, "xmlNodeGetContent() failed");
+        return NJS_ERROR;
+    }
+
+    ret = njs_vm_value_string_create(vm, retval, text, njs_strlen(text));
+    xmlFree(text);
+
+    return ret;
 }
 
 
@@ -2153,8 +2166,7 @@ njs_xml_attr_ext_prop_handler(njs_vm_t *vm, njs_object_prop_t *prop,
             continue;
         }
 
-        return njs_vm_value_string_create(vm, retval, node->children->content,
-                                          njs_strlen(node->children->content));
+        return njs_xml_attr_value(vm, node, retval);
     }
 
     njs_value_undefined_set(retval);
