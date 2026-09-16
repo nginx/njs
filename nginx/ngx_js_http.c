@@ -1028,6 +1028,10 @@ ngx_js_http_process_body(ngx_js_http_t *http)
     b = http->buffer;
 
     if (http->body == NGX_JS_HTTP_BODY_NONE) {
+        if (b->pos != b->last) {
+            http->keepalive = 0;
+        }
+
         http->ready_handler(http);
         return NGX_DONE;
     }
@@ -1048,6 +1052,10 @@ ngx_js_http_process_body(ngx_js_http_t *http)
 
         if (rc == NGX_OK) {
             b->pos = http->http_chunk_parse.pos;
+
+            if (b->pos != b->last) {
+                http->keepalive = 0;
+            }
 
             http->ready_handler(http);
             return NGX_DONE;
@@ -1099,6 +1107,10 @@ ngx_js_http_process_body(ngx_js_http_t *http)
             rc = (need > chsize) ? NGX_AGAIN : NGX_DONE;
 
             if (rc == NGX_DONE) {
+                if (b->pos != b->last) {
+                    http->keepalive = 0;
+                }
+
                 http->ready_handler(http);
                 return NGX_DONE;
             }
