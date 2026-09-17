@@ -647,12 +647,16 @@ njs_mp_alloc_large(njs_mp_t *mp, size_t alignment, size_t size)
 static intptr_t
 njs_mp_rbtree_compare(njs_rbtree_node_t *node1, njs_rbtree_node_t *node2)
 {
+    uintptr_t        start1, start2;
     njs_mp_block_t  *block1, *block2;
 
     block1 = (njs_mp_block_t *) node1;
     block2 = (njs_mp_block_t *) node2;
 
-    return (uintptr_t) block1->start - (uintptr_t) block2->start;
+    start1 = (uintptr_t) block1->start;
+    start2 = (uintptr_t) block2->start;
+
+    return (start1 > start2) - (start1 < start2);
 }
 
 
