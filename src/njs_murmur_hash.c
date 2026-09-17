@@ -19,10 +19,10 @@ njs_murmur_hash2(const void *data, size_t len)
     h = 0 ^ (uint32_t) len;
 
     while (len >= 4) {
-        k  = p[0];
-        k |= p[1] << 8;
-        k |= p[2] << 16;
-        k |= p[3] << 24;
+        k  = (uint32_t) p[0];
+        k |= (uint32_t) p[1] << 8;
+        k |= (uint32_t) p[2] << 16;
+        k |= (uint32_t) p[3] << 24;
 
         k *= m;
         k ^= k >> 24;
@@ -37,10 +37,10 @@ njs_murmur_hash2(const void *data, size_t len)
 
     switch (len) {
     case 3:
-        h ^= p[2] << 16;
+        h ^= (uint32_t) p[2] << 16;
         /* Fall through. */
     case 2:
-        h ^= p[1] << 8;
+        h ^= (uint32_t) p[1] << 8;
         /* Fall through. */
     case 1:
         h ^= p[0];
@@ -66,10 +66,10 @@ njs_murmur_hash2_uint32(const void *data)
 
     p = data;
 
-    k  = p[0];
-    k |= p[1] << 8;
-    k |= p[2] << 16;
-    k |= p[3] << 24;
+    k  = (uint32_t) p[0];
+    k |= (uint32_t) p[1] << 8;
+    k |= (uint32_t) p[2] << 16;
+    k |= (uint32_t) p[3] << 24;
 
     k *= m;
     k ^= k >> 24;
