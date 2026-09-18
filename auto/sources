@@ -55,6 +55,7 @@ QJS_LIB_SRCS=" \
 
 NJS_LIB_TEST_SRCS=" \
    src/test/flathsh_unit_test.c \
+   src/test/mp_unit_test.c \
    src/test/random_unit_test.c \
    src/test/rbtree_unit_test.c \
    src/test/unicode_unit_test.c \

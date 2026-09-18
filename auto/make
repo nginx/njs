@@ -214,8 +214,8 @@ do
     fname=$(basename $njs_src)
     njs_dep="test/${fname%.c}.dep"
     njs_bin="${fname%.c}"
-    njs_dep_flags=`njs_gen_dep_flags $njs_dep $fname`
-    njs_dep_post=`njs_gen_dep_post $njs_dep $fname`
+    njs_dep_flags=`njs_gen_dep_flags $njs_dep $njs_bin`
+    njs_dep_post=`njs_gen_dep_post $njs_dep $njs_bin`
     cat << END >> $NJS_MAKEFILE
 
 $NJS_BUILD_DIR/$njs_bin: $njs_src \\
@@ -326,11 +326,13 @@ njs_fuzzer: $NJS_BUILD_DIR/njs_auto_config.h \\
 lib_test: $NJS_BUILD_DIR/njs_auto_config.h \\
 	$NJS_BUILD_DIR/random_unit_test \\
 	$NJS_BUILD_DIR/rbtree_unit_test \\
+	$NJS_BUILD_DIR/mp_unit_test \\
 	$NJS_BUILD_DIR/flathsh_unit_test \\
 	$NJS_BUILD_DIR/unicode_unit_test
 
 	$NJS_BUILD_DIR/random_unit_test
 	$NJS_BUILD_DIR/rbtree_unit_test
+	$NJS_BUILD_DIR/mp_unit_test
 	$NJS_BUILD_DIR/flathsh_unit_test
 	$NJS_BUILD_DIR/unicode_unit_test
 
@@ -356,7 +358,7 @@ unit_test: $NJS_BUILD_DIR/njs_auto_config.h \\
 
 	$NJS_BUILD_DIR/njs_unit_test
 
-test: shell_test unit_test test262
+test: shell_test unit_test lib_test test262
 
 benchmark: $NJS_BUILD_DIR/njs_auto_config.h \\
 	$NJS_BUILD_DIR/njs_benchmark

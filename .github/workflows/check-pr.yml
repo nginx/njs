@@ -108,6 +108,21 @@ jobs:
           $MAKE_UTILITY test
           $MAKE_UTILITY clean
 
+      - name: Configure and make njs with ASan, no debug memory
+        run: |
+          ./configure \
+                    --debug=YES \
+                    --address-sanitizer=YES \
+                    --cc-opt="$CC_OPT" \
+                    --ld-opt="$LD_OPT" \
+          || cat build/autoconf.err
+          $MAKE_UTILITY -j$(nproc)
+
+      - name: Test njs with ASan, no debug memory
+        run: |
+          $MAKE_UTILITY test
+          $MAKE_UTILITY clean
+
       - name: Configure and make njs with quickjs-ng
         run: |
           ./configure \
