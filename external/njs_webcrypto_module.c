@@ -1331,7 +1331,8 @@ njs_cipher_aes_ctr(njs_vm_t *vm, njs_str_t *data, njs_webcrypto_key_t *key,
     blocks = BN_new();
     if (njs_slow_path(blocks == NULL)) {
         njs_webcrypto_error(vm, "BN_new() failed");
-        return NJS_ERROR;
+        ret = NJS_ERROR;
+        goto fail;
     }
 
     ret = BN_set_word(blocks, njs_ceil_div(data->length, AES_BLOCK_SIZE));
@@ -1351,7 +1352,8 @@ njs_cipher_aes_ctr(njs_vm_t *vm, njs_str_t *data, njs_webcrypto_key_t *key,
     left = BN_new();
     if (njs_slow_path(left == NULL)) {
         njs_webcrypto_error(vm, "BN_new() failed");
-        return NJS_ERROR;
+        ret = NJS_ERROR;
+        goto fail;
     }
 
     ret = BN_sub(left, total, ctr);
@@ -1365,7 +1367,8 @@ njs_cipher_aes_ctr(njs_vm_t *vm, njs_str_t *data, njs_webcrypto_key_t *key,
                        data->length + EVP_MAX_BLOCK_LENGTH);
     if (njs_slow_path(dst == NULL)) {
         njs_vm_memory_error(vm);
-        return NJS_ERROR;
+        ret = NJS_ERROR;
+        goto fail;
     }
 
     ret = BN_cmp(left, blocks);
