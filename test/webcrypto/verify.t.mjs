@@ -73,6 +73,7 @@ let hmac_tsuite = {
     tests: [
         { signature: "text.base64.sha256.hmac.sig", expected: true },
         { signature: "text.base64.sha256.hmac.sig.broken", expected: false },
+        { signature: "text.base64.sha1.hmac.sig", expected: false },
         { import_alg: { hash: "SHA-1" }, signature: "text.base64.sha1.hmac.sig", expected: true },
         { import_alg: { hash: "SHA-1" }, signature: "text.base64.sha256.hmac.sig", expected: false },
         { key: { file: "aabbccdd" }, signature: "text.base64.sha256.hmac.sig", expected: false },

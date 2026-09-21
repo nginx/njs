@@ -4758,7 +4758,8 @@ qjs_webcrypto_sign(JSContext *cx, JSValueConst this_val, int argc,
         }
 
         if (verify) {
-            rc = (sig.length == outlen && memcmp(sig.start, dst, outlen) == 0);
+            rc = (sig.length == outlen
+                  && CRYPTO_memcmp(sig.start, dst, outlen) == 0);
         }
 
         break;

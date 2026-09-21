@@ -4787,7 +4787,8 @@ njs_ext_sign(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
 
         if (verify) {
-            ret = (sig.length == outlen && memcmp(sig.start, dst, outlen) == 0);
+            ret = (sig.length == outlen
+                   && CRYPTO_memcmp(sig.start, dst, outlen) == 0);
         }
 
         break;
