@@ -3584,14 +3584,17 @@ fail0:
     curve = 0;
 
     val = njs_vm_object_prop(vm, jwk, &string_crv, &value);
-    if (val != NULL && !njs_value_is_undefined(val)) {
-        njs_value_string_get(vm, val, &name);
+    if (val == NULL || !njs_value_is_string(val)) {
+        njs_vm_type_error(vm, "Invalid JWK EC key");
+        return NULL;
+    }
 
-        for (e = &njs_webcrypto_curve[0]; e->name.length != 0; e++) {
-            if (njs_strstr_eq(&name, &e->name)) {
-                curve = e->value;
-                break;
-            }
+    njs_value_string_get(vm, val, &name);
+
+    for (e = &njs_webcrypto_curve[0]; e->name.length != 0; e++) {
+        if (njs_strstr_eq(&name, &e->name)) {
+            curve = e->value;
+            break;
         }
     }
 
