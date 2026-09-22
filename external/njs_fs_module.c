@@ -3919,7 +3919,7 @@ njs_fs_init(njs_vm_t *vm)
     njs_fs_bytes_read_proto_id = njs_vm_external_prototype(vm,
                                                njs_ext_bytes_read,
                                                njs_nitems(njs_ext_bytes_read));
-    if (njs_slow_path(njs_fs_bytes_written_proto_id < 0)) {
+    if (njs_slow_path(njs_fs_bytes_read_proto_id < 0)) {
         return NJS_ERROR;
     }
 
