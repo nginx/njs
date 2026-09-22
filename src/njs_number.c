@@ -20,6 +20,24 @@ static njs_int_t njs_number_to_string_radix(njs_vm_t *vm, njs_value_t *string,
     double number, uint32_t radix);
 
 
+uint64_t
+njs_number_to_length(double num)
+{
+    if (isnan(num)) {
+        return 0;
+    }
+
+    if (num > NJS_MAX_LENGTH) {
+        return NJS_MAX_LENGTH;
+
+    } else if (num < 0.0) {
+        return 0;
+    }
+
+    return (uint64_t) num;
+}
+
+
 double
 njs_key_to_index(const njs_value_t *value)
 {

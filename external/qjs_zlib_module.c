@@ -5,6 +5,7 @@
  */
 
 #include <qjs.h>
+#include <limits.h>
 #include <zlib.h>
 
 #define NJS_ZLIB_CHUNK_SIZE  1024
@@ -68,7 +69,9 @@ static JSValue
 qjs_zlib_ext_deflate(JSContext *ctx, JSValueConst this_val, int argc,
     JSValueConst *argv, int raw)
 {
-    int          rc, chunk_size, level, mem_level, strategy, window_bits;
+    int          rc, level, mem_level, strategy, window_bits;
+    size_t       chunk_size;
+    uint64_t     chunk_size_value;
     JSValue      ret, options;
     z_stream     stream;
     njs_chb_t    chain;
@@ -94,16 +97,18 @@ qjs_zlib_ext_deflate(JSContext *ctx, JSValueConst this_val, int argc,
         }
 
         if (!JS_IsUndefined(ret)) {
-            rc = JS_ToInt32(ctx, &chunk_size, ret);
+            rc = qjs_to_length(ctx, ret, &chunk_size_value);
             JS_FreeValue(ctx, ret);
             if (rc != 0) {
                 return JS_EXCEPTION;
             }
 
-            if (chunk_size < 64) {
+            if (chunk_size_value < 64 || chunk_size_value > UINT_MAX) {
                 JS_ThrowRangeError(ctx, "chunkSize must be >= 64");
                 return JS_EXCEPTION;
             }
+
+            chunk_size = chunk_size_value;
         }
 
         ret = JS_GetPropertyStr(ctx, options, "level");
@@ -296,7 +301,9 @@ static JSValue
 qjs_zlib_ext_inflate(JSContext *ctx, JSValueConst this_val, int argc,
     JSValueConst *argv, int raw)
 {
-    int          rc, chunk_size, window_bits;
+    int          rc, window_bits;
+    size_t       chunk_size;
+    uint64_t     chunk_size_value;
     JSValue      ret, options;
     z_stream     stream;
     njs_chb_t    chain;
@@ -319,16 +326,18 @@ qjs_zlib_ext_inflate(JSContext *ctx, JSValueConst this_val, int argc,
         }
 
         if (!JS_IsUndefined(ret)) {
-            rc = JS_ToInt32(ctx, &chunk_size, ret);
+            rc = qjs_to_length(ctx, ret, &chunk_size_value);
             JS_FreeValue(ctx, ret);
             if (rc != 0) {
                 return JS_EXCEPTION;
             }
 
-            if (chunk_size < 64) {
+            if (chunk_size_value < 64 || chunk_size_value > UINT_MAX) {
                 JS_ThrowRangeError(ctx, "chunkSize must be >= 64");
                 return JS_EXCEPTION;
             }
+
+            chunk_size = chunk_size_value;
         }
 
         ret = JS_GetPropertyStr(ctx, options, "windowBits");

@@ -43,6 +43,10 @@ let deflateSync_tsuite = {
         { value: 'αβγ', raw: false, expected: 'eJw7t/HcpnObAQ/sBIE=' },
 
         { value: 'WAKA', options: {level: 10}, exception: 'RangeError: level must be in the range -1..9' },
+        { value: 'WAKA', options: {chunkSize: Infinity},
+          exception: 'RangeError: chunkSize must be >= 64' },
+        { value: 'WAKA', options: {chunkSize: NaN},
+          exception: 'RangeError: chunkSize must be >= 64' },
         { value: 'WAKA', options: {strategy: 10}, exception: 'RangeError: unknown strategy: 10' },
         { value: 'WAKA', options: {memLevel: 10}, exception: 'RangeError: memLevel must be in the range 1..9' },
         { value: 'WAKA', options: {windowBits: 99}, exception: 'RangeError: windowBits must be in the range -15..-9' },
@@ -87,6 +91,10 @@ let inflateSync_tsuite = {
         { value: zlib.deflateRawSync('αβγ'.repeat(1024)), options: {chunkSize: 64}, expected: 'αβγ'.repeat(1024) },
 
         { value: Buffer.from('C3f0dgQA', 'base64'), options: {chunkSize: 0},
+          exception: 'RangeError: chunkSize must be >= 64' },
+        { value: Buffer.from('C3f0dgQA', 'base64'), options: {chunkSize: Infinity},
+          exception: 'RangeError: chunkSize must be >= 64' },
+        { value: Buffer.from('C3f0dgQA', 'base64'), options: {chunkSize: NaN},
           exception: 'RangeError: chunkSize must be >= 64' },
         { value: Buffer.from('C3f0dgQA', 'base64'), options: {windowBits: 0},
           exception: 'RangeError: windowBits must be in the range -15..-8' },

@@ -155,24 +155,6 @@ njs_number_to_uint16(double num)
 }
 
 
-njs_inline uint64_t
-njs_number_to_length(double num)
-{
-    if (isnan(num)) {
-        return 0;
-    }
-
-    if (num > NJS_MAX_LENGTH) {
-        return NJS_MAX_LENGTH;
-
-    } else if (num < 0.0) {
-        return 0;
-    }
-
-    return (uint64_t) num;
-}
-
-
 njs_inline njs_int_t
 njs_char_to_hex(u_char c)
 {

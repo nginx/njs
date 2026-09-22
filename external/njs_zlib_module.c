@@ -5,6 +5,7 @@
 
 
 #include <njs.h>
+#include <limits.h>
 #include <string.h>
 #include <zlib.h>
 
@@ -221,9 +222,9 @@ njs_zlib_ext_deflate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     if (njs_value_is_object(options)) {
         value = njs_vm_object_prop(vm, options, &chunk_size_key, &lvalue);
         if (value != NULL) {
-            chunk_size = njs_value_number(value);
+            chunk_size = njs_number_to_length(njs_value_number(value));
 
-            if (njs_slow_path(chunk_size < 64)) {
+            if (njs_slow_path(chunk_size < 64 || chunk_size > UINT_MAX)) {
                 njs_vm_range_error(vm, "chunkSize must be >= 64");
                 return NJS_ERROR;
             }
@@ -404,9 +405,9 @@ njs_zlib_ext_inflate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     if (njs_value_is_object(options)) {
         value = njs_vm_object_prop(vm, options, &chunk_size_key, &lvalue);
         if (value != NULL) {
-            chunk_size = njs_value_number(value);
+            chunk_size = njs_number_to_length(njs_value_number(value));
 
-            if (njs_slow_path(chunk_size < 64)) {
+            if (njs_slow_path(chunk_size < 64 || chunk_size > UINT_MAX)) {
                 njs_vm_range_error(vm, "chunkSize must be >= 64");
                 return NJS_ERROR;
             }
@@ -570,4 +571,3 @@ njs_zlib_free(void *opaque, void *address)
 {
     /* Do nothing. */
 }
-

@@ -489,6 +489,7 @@ NJS_EXPORT void njs_value_external_set(njs_value_t *value,
 
 NJS_EXPORT uint8_t njs_value_bool(const njs_value_t *value);
 NJS_EXPORT double njs_value_number(const njs_value_t *value);
+NJS_EXPORT uint64_t njs_number_to_length(double num);
 NJS_EXPORT njs_function_t *njs_value_function(const njs_value_t *value);
 NJS_EXPORT njs_function_native_t njs_value_native_function(
     const njs_value_t *value);
