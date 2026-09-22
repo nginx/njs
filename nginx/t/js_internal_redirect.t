@@ -82,6 +82,9 @@ $t->write_file('test.js', <<EOF);
         } else if (r.variables.arg_quoted) {
             r.internalRedirect('/red%69rect');
 
+        } else if (r.variables.arg_decoded) {
+            r.internalRedirect('/redirect?b=' + r.args.decoded);
+
         } else {
             if (r.variables.arg_a) {
                 r.internalRedirect('/redirect?b=' + r.variables.arg_a);
@@ -105,7 +108,7 @@ $t->write_file('test.js', <<EOF);
 
 EOF
 
-$t->try_run('no njs available')->plan(5);
+$t->try_run('no njs available')->plan(6);
 
 ###############################################################################
 
@@ -117,6 +120,8 @@ like(http_get('/test?unsafe=1'), qr/500 Internal Server/s,
 	'unsafe redirect');
 like(http_get('/test?quoted=1'), qr/200 .*redirect/s,
 	'quoted redirect');
+like(http_get('/test?decoded=A%0d%0aInjected:%201'), qr/500 Internal Server/s,
+	'unsafe redirect args');
 get('/destroyed_ctx', 'If-Match: tt');
 
 ###############################################################################
