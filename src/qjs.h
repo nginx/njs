@@ -115,6 +115,29 @@ typedef struct {
 
 
 njs_inline int
+qjs_to_length(JSContext *ctx, JSValueConst value, uint64_t *length)
+{
+    double  number;
+
+    if (JS_ToFloat64(ctx, &number, value)) {
+        return -1;
+    }
+
+    if (number != number || number <= 0) {
+        *length = 0;
+
+    } else if (number > 0x1fffffffffffffLL) {
+        *length = 0x1fffffffffffffLL;
+
+    } else {
+        *length = number;
+    }
+
+    return 0;
+}
+
+
+njs_inline int
 qjs_is_typed_array(JSContext *cx, JSValue val)
 {
     JS_BOOL  exception;

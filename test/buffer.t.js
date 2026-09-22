@@ -1,5 +1,5 @@
 /*---
-includes: [compatBuffer.js, runTsuite.js, compareArray.js]
+includes: [compatBuffer.js, compatNjs.js, runTsuite.js, compareArray.js]
 flags: [async]
 ---*/
 
@@ -32,6 +32,42 @@ let alloc_tsuite = {
           exception: 'TypeError: "utf-128" encoding is not supported' },
         { size: 3, fill: Buffer.from('def'), expected: 'def' },
     ],
+};
+
+
+let fromObject_tsuite = {
+    name: "Buffer.from() array-like length tests",
+    skip: () => (!has_buffer()),
+    T: async (params) => {
+        let buffer = Buffer.from(params.value);
+
+        if (buffer.toString() !== params.expected) {
+            throw Error(`unexpected output "${buffer.toString()}"`);
+        }
+
+        return 'SUCCESS';
+    },
+
+    tests: [
+        { value: { length: 1.5, 0: 0x41 }, expected: 'A' },
+        { value: { length: -1, 0: 0x41 }, expected: '' },
+        { value: { length: NaN, 0: 0x41 }, expected: '' },
+    ],
+};
+
+
+let fromObjectLarge_tsuite = {
+    name: "Buffer.from() oversized array-like length tests",
+    skip: () => (!has_buffer() || !has_njs()),
+    T: async () => {
+        assert.throws(RangeError, () => Buffer.from({
+            length: 0x100000010,
+            get 0() { throw Error('unexpected index access'); },
+        }));
+
+        return 'SUCCESS';
+    },
+    tests: [{}],
 };
 
 
@@ -1122,6 +1158,8 @@ let writeGeneric_tsuite = {
 
 run([
     alloc_tsuite,
+    fromObject_tsuite,
+    fromObjectLarge_tsuite,
     byteLength_tsuite,
     concat_tsuite,
     concatRevalidate_tsuite,

@@ -2018,7 +2018,7 @@ qjs_buffer_from_object(JSContext *ctx, JSValueConst obj)
 {
     int         v;
     u_char      *p;
-    int64_t     i, len;
+    uint64_t    i, len;
     JSValue     buffer, ret;
     njs_str_t   dst;
     const char  *str;
@@ -2068,7 +2068,12 @@ reject:
         return JS_EXCEPTION;
     }
 
-    len = JS_VALUE_GET_INT(ret);
+    if (qjs_to_length(ctx, ret, &len)) {
+        JS_FreeValue(ctx, ret);
+        return JS_EXCEPTION;
+    }
+
+    JS_FreeValue(ctx, ret);
 
     buffer = qjs_buffer_alloc(ctx, len);
     if (JS_IsException(buffer)) {
