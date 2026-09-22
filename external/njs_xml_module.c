@@ -988,6 +988,11 @@ njs_xml_node_ext_text(njs_vm_t *vm, njs_object_prop_t *unused, uint32_t unused1,
 
     if (retval != NULL && setval == NULL) {
         content.start = xmlNodeGetContent(current);
+        if (njs_slow_path(content.start == NULL)) {
+            njs_vm_memory_error(vm);
+            return NJS_ERROR;
+        }
+
         ret = njs_vm_value_string_create(vm, retval, content.start,
                                          njs_strlen(content.start));
 
