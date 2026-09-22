@@ -564,8 +564,9 @@ njs_float(njs_sprintf_t *spf, u_char *buf, double n)
 
     /* Zero or space padding. */
 
-    if (spf->width != 0) {
-        length = (temp + NJS_DOUBLE_LEN) - p;
+    length = (temp + NJS_DOUBLE_LEN) - p;
+
+    if (spf->width > length) {
         end = buf + (spf->width - length);
         end = njs_min(end, spf->end);
 
@@ -575,8 +576,6 @@ njs_float(njs_sprintf_t *spf, u_char *buf, double n)
     }
 
     /* Number copying. */
-
-    length = (temp + NJS_DOUBLE_LEN) - p;
 
     end = buf + length;
     end = njs_min(end, spf->end);

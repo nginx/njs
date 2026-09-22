@@ -24100,6 +24100,25 @@ njs_chb_test(njs_vm_t *vm, njs_opts_t *opts, njs_stat_t *stat)
         goto done;
     }
 
+    njs_mp_free(njs_vm_memory_pool(vm), string.start);
+
+    njs_chb_destroy(&chain);
+    NJS_CHB_MP_INIT(&chain, njs_vm_memory_pool(vm));
+
+    njs_chb_sprintf(&chain, 32, "%2f", 123.45);
+
+    ret = njs_chb_join(&chain, &string);
+    if (ret != NJS_OK) {
+        njs_printf("njs_chb_join() failed\n");
+        goto done;
+    }
+
+    if (!njs_strstr_eq(&string, &(njs_str_t) njs_str("123.45"))) {
+        ret = NJS_ERROR;
+        njs_printf("njs_chb_sprintf() corrupts float \"%V\"\n", &string);
+        goto done;
+    }
+
     njs_chb_destroy(&chain);
     njs_mp_free(njs_vm_memory_pool(vm), string.start);
 
