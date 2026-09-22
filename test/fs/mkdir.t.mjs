@@ -18,6 +18,10 @@ var testSync = () => new Promise((resolve, reject) => {
 
         fs.mkdirSync(dname);
 
+        try { fs.rmdirSync(dname + '_fractional'); } catch (e) {}
+        try { fs.mkdirSync(dname + '_fractional', 0.5); } catch (e) {}
+        try { fs.rmdirSync(dname + '_fractional'); } catch (e) {}
+
         try {
             fs.mkdirSync(dname);
 

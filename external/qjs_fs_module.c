@@ -398,7 +398,10 @@ qjs_fs_access(JSContext *cx, JSValueConst this_val, int argc,
     }
 
     if (JS_IsNumber(mode)) {
-        md = JS_VALUE_GET_INT(mode);
+        md = qjs_fs_mode(cx, mode, F_OK);
+        if (md == -1) {
+            return JS_EXCEPTION;
+        }
 
     } else if (JS_IsUndefined(mode)) {
         md = F_OK;
@@ -595,7 +598,10 @@ qjs_fs_mkdir(JSContext *cx, JSValueConst this_val, int argc,
     recursive = 0;
 
     if (JS_IsNumber(options)) {
-        md = JS_VALUE_GET_INT(options);
+        md = qjs_fs_mode(cx, options, 0777);
+        if (md == (mode_t) -1) {
+            return JS_EXCEPTION;
+        }
 
     } else if (!JS_IsUndefined(options)) {
         if (!JS_IsObject(options)) {

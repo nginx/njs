@@ -13,6 +13,7 @@ var testSync = () => new Promise((resolve, reject) => {
 
         fs.accessSync(fname);
         fs.accessSync(fname, fs.constants.R_OK | fs.constants.W_OK);
+        fs.accessSync(fname, 0.5);
 
         try {
             fs.accessSync(fname + '___');
