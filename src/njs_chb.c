@@ -68,7 +68,8 @@ njs_chb_reserve(njs_chb_t *chain, size_t size)
     }
 
     if (njs_slow_path(chain->max_size != 0
-                      && chain->total_size + size > chain->max_size))
+                      && (chain->total_size > chain->max_size
+                          || size > chain->max_size - chain->total_size)))
     {
         chain->error = NJS_CHB_ERR_OVERFLOW;
         return NULL;
