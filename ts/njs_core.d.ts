@@ -380,7 +380,7 @@ declare class Buffer extends Uint8Array {
      *
      * @throws {RangeError} if `buf.length` is not a multiple of 8.
      */
-    swap32(): Buffer;
+    swap64(): Buffer;
 
     /**
      * Returns a JSON representation of this buffer. `JSON.stringify()` implicitly calls this
