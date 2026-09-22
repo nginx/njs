@@ -5,7 +5,7 @@
 
 cat << END
 
-test/test262 [options] <DIR or FILE path>
+test/js_test [options] <DIR or FILE path>
 
 options:
 

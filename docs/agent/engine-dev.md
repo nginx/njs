@@ -88,8 +88,9 @@ Run `./configure --help` for the complete list.
 ```bash
 make unit_test     # 5800+ language and API tests
 make lib_test      # internal data structures (hash, rbtree, unicode)
-make test262       # ECMAScript test262 compliance suite
-make test          # shell tests + unit_test + test262
+make js_test       # repository JavaScript tests, including WebCrypto
+make test262       # official TC39 Test262 suite
+make test          # shell tests + unit_test + lib_test + js_test
 ```
 
 NGINX integration tests live under `nginx/t/` and use Perl's `prove`
@@ -124,7 +125,7 @@ Before submitting a change:
 
 1. `./configure && make -j$(nproc)` compiles without warnings (`-Werror`).
 2. `make unit_test` and `make lib_test` pass.
-3. If you touched `src/`, also run `make test262`.
+3. If you touched `src/`, also run `make js_test` and `make test262`.
 4. If you touched `nginx/`, run `prove -I <TESTS_LIB> nginx/t/`,
    once with the default engine and once with
    `TEST_NGINX_GLOBALS_HTTP='js_engine qjs;'`.

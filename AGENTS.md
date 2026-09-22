@@ -32,7 +32,8 @@ Quick facts:
 - **Dual engine = dual code.** Most external modules ship both an `njs_*.c`
   and a `qjs_*.c` implementation. If you change behavior on one side, change
   it on the other.
-- **Tests:** `make unit_test`, `make lib_test`, `make test262`. NGINX
+- **Tests:** `make unit_test`, `make lib_test`, `make js_test`, and
+  `make test262`. NGINX
   integration tests under `nginx/t/` run with
   `prove -I <tests-lib> nginx/t/`.
 - **Code style and commits:** follow

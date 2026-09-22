@@ -336,13 +336,13 @@ lib_test: $NJS_BUILD_DIR/njs_auto_config.h \\
 	$NJS_BUILD_DIR/flathsh_unit_test
 	$NJS_BUILD_DIR/unicode_unit_test
 
-test262_njs: njs
-	test/test262 --binary=$NJS_BUILD_DIR/njs
+js_test_njs: njs
+	test/js_test --binary=$NJS_BUILD_DIR/njs
 
 njs_test262: $NJS_BUILD_DIR/njs_auto_config.h \\
 	$NJS_BUILD_DIR/njs_test262
 
-njs_test262_test: njs_test262
+test262: njs_test262
 
 	@test -n "\$\$NJS_TEST262_DIR" || { \\
 		echo "NJS_TEST262_DIR is not set, it must point at a"; \\
@@ -358,7 +358,7 @@ unit_test: $NJS_BUILD_DIR/njs_auto_config.h \\
 
 	$NJS_BUILD_DIR/njs_unit_test
 
-test: shell_test unit_test lib_test test262
+test: shell_test unit_test lib_test js_test
 
 benchmark: $NJS_BUILD_DIR/njs_auto_config.h \\
 	$NJS_BUILD_DIR/njs_benchmark
@@ -369,18 +369,19 @@ END
 if [ $NJS_HAVE_QUICKJS = YES ]; then
     cat << END >> $NJS_MAKEFILE
 
-test262: njs test262_njs test262_quickjs
+js_test: js_test_njs js_test_quickjs
 
-test262_quickjs: njs
+js_test_quickjs: njs
 	NJS_SKIP_LIST="test/js/promise_rejection_tracker_recursive.t.js \\
 test/js/async_exception_in_await.t.js" \\
-	test/test262 --binary='$NJS_BUILD_DIR/njs -n QuickJS -m'
+	test/js_test --binary='$NJS_BUILD_DIR/njs -n QuickJS -m'
+
 END
 
 else
     cat << END >> $NJS_MAKEFILE
 
-test262: njs test262_njs
+js_test: js_test_njs
 END
 
 fi
