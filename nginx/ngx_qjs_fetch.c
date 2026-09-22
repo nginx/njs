@@ -422,7 +422,7 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
         resolve_host = &u.host;
     }
 
-    if (ngx_js_check_request_line_component(u.uri.data, u.uri.len) != NGX_OK) {
+    if (ngx_js_check_no_space_or_ctrl_chars(u.uri.data, u.uri.len) != NGX_OK) {
         JS_ThrowTypeError(cx, "invalid url");
         goto fail;
     }
@@ -1383,7 +1383,7 @@ ngx_qjs_method_process(JSContext *cx, ngx_js_request_t *request)
     };
 
     if (request->method.len == 0
-        || ngx_js_check_request_line_component(request->method.data,
+        || ngx_js_check_no_space_or_ctrl_chars(request->method.data,
                                                request->method.len)
            != NGX_OK)
     {

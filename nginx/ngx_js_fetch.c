@@ -642,7 +642,7 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         resolve_host = &u.host;
     }
 
-    if (ngx_js_check_request_line_component(u.uri.data, u.uri.len) != NGX_OK) {
+    if (ngx_js_check_no_space_or_ctrl_chars(u.uri.data, u.uri.len) != NGX_OK) {
         njs_vm_type_error(vm, "invalid url");
         goto fail;
     }
@@ -923,7 +923,7 @@ ngx_js_method_process(njs_vm_t *vm, ngx_js_request_t *request)
     str.length = request->method.len;
 
     if (request->method.len == 0
-        || ngx_js_check_request_line_component(request->method.data,
+        || ngx_js_check_no_space_or_ctrl_chars(request->method.data,
                                                request->method.len)
            != NGX_OK)
     {
