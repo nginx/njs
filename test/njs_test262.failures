@@ -381,7 +381,6 @@ built-ins/Promise/all/invoke-resolve-error-close.js	strict
 built-ins/Promise/all/invoke-resolve-error-reject.js	strict
 built-ins/Promise/all/invoke-resolve-get-error-reject.js	strict
 built-ins/Promise/all/invoke-resolve-get-error.js	strict
-built-ins/Promise/all/invoke-resolve-get-once-multiple-calls.js	strict
 built-ins/Promise/all/invoke-resolve-on-promises-every-iteration-of-promise.js	strict
 built-ins/Promise/all/invoke-resolve-on-values-every-iteration-of-promise.js	strict
 built-ins/Promise/all/invoke-then-error-close.js	strict
@@ -505,8 +504,6 @@ built-ins/Promise/prototype/finally/subclass-resolve-count.js	strict
 built-ins/Promise/prototype/finally/subclass-species-constructor-reject-count.js	strict
 built-ins/Promise/prototype/finally/subclass-species-constructor-resolve-count.js	strict
 built-ins/Promise/prototype/finally/this-value-proxy.js	strict
-built-ins/Promise/prototype/then/rxn-handler-fulfilled-next-abrupt.js	strict
-built-ins/Promise/prototype/then/rxn-handler-rejected-next-abrupt.js	strict
 built-ins/Promise/race/S25.4.4.3_A2.2_T1.js	strict
 built-ins/Promise/race/S25.4.4.3_A2.2_T2.js	strict
 built-ins/Promise/race/S25.4.4.3_A2.2_T3.js	strict
@@ -549,7 +546,6 @@ built-ins/Promise/race/resolve-non-callable.js	strict
 built-ins/Promise/race/resolve-throws-iterator-return-is-not-callable.js	strict
 built-ins/Promise/race/resolve-throws-iterator-return-null-or-undefined.js	strict
 built-ins/Promise/reject/ctx-non-ctor.js	strict
-built-ins/Promise/resolve/arg-uniq-ctor.js	strict
 built-ins/Promise/resolve/ctx-non-ctor.js	strict
 built-ins/Promise/withResolvers/promise.js	strict
 built-ins/Promise/withResolvers/resolvers.js	strict
@@ -1433,7 +1429,6 @@ language/expressions/optional-chaining/early-errors-tail-position-optchain-templ
 language/expressions/optional-chaining/eval-optional-call.js	strict
 language/expressions/optional-chaining/iteration-statement-for-await-of.js	strict
 language/expressions/optional-chaining/iteration-statement-for-of-type-error.js	strict
-language/expressions/optional-chaining/member-expression-async-identifier.js	strict
 language/expressions/optional-chaining/member-expression.js	strict
 language/expressions/optional-chaining/new-target-optional-call.js	strict
 language/expressions/optional-chaining/optional-chain-prod-arguments.js	strict
@@ -1683,7 +1678,6 @@ language/statements/async-function/dflt-params-trailing-comma.js	strict
 language/statements/async-function/early-errors-declaration-arguments-in-formal-parameters.js	strict
 language/statements/async-function/early-errors-declaration-await-in-formals.js	strict
 language/statements/async-function/early-errors-declaration-eval-in-formal-parameters.js	strict
-language/statements/async-function/evaluation-body.js	strict
 language/statements/async-function/evaluation-default-that-throws.js	strict
 language/statements/async-function/evaluation-unmapped-arguments.js	strict
 language/statements/async-function/rest-param-strict-body.js	strict

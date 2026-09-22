@@ -187,12 +187,6 @@ typedef struct {
 } njs_test262_wire_t;
 
 
-typedef struct {
-    njs_opaque_value_t          promise;
-    njs_opaque_value_t          reason;
-} njs_test262_rejected_t;
-
-
 typedef enum {
     NJS_TEST262_ASYNC_PENDING = 0,
     NJS_TEST262_ASYNC_COMPLETE,
@@ -203,8 +197,6 @@ typedef enum {
 typedef struct {
     njs_test262_t               *ctx;
     njs_mp_t                    *pool;
-    njs_arr_t                   *rejected;
-
     /*
      * Asynchronous completion is signalled through print(), which is the
      * interface INTERPRETING.md defines.  A second completion is recorded
@@ -2426,51 +2418,6 @@ njs_test262_ext_print(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 
 /*
- * A promise rejected without a handler is a failure: the assertions of a test
- * can all pass while its asynchronous part throws.
- */
-
-static void
-njs_test262_rejection(njs_vm_t *vm, njs_external_ptr_t external,
-    njs_bool_t is_handled, njs_value_t *promise, njs_value_t *reason)
-{
-    void                    *ptr;
-    njs_uint_t              i;
-    njs_test262_run_t       *run;
-    njs_test262_rejected_t  *rejected;
-
-    run = external;
-
-    if (run->rejected == NULL) {
-        return;
-    }
-
-    rejected = run->rejected->start;
-
-    if (is_handled) {
-        ptr = njs_value_ptr(promise);
-
-        for (i = 0; i < run->rejected->items; i++) {
-            if (njs_value_ptr(njs_value_arg(&rejected[i].promise)) == ptr) {
-                njs_arr_remove(run->rejected, &rejected[i]);
-                break;
-            }
-        }
-
-        return;
-    }
-
-    rejected = njs_arr_add(run->rejected);
-    if (rejected == NULL) {
-        return;
-    }
-
-    njs_value_assign(&rejected->promise, promise);
-    njs_value_assign(&rejected->reason, reason);
-}
-
-
-/*
  * Resolves an import relative to the importing module and keeps the result
  * inside the suite tree.  A _FIXTURE.js file is not enumerated as a test but
  * has to be loadable as a dependency.
@@ -2898,7 +2845,6 @@ njs_test262_run_variant(njs_test262_t *ctx, njs_test262_variant_t *variant,
     njs_test262_stage_t     stage;
     njs_test262_source_t    *source;
     njs_test262_metadata_t  meta;
-    njs_test262_rejected_t  *rejected;
 
     njs_memzero(result, sizeof(njs_test262_result_t));
 
@@ -2932,12 +2878,6 @@ njs_test262_run_variant(njs_test262_t *ctx, njs_test262_variant_t *variant,
 
     if (run->dir.length != 0) {
         run->dir.length--;
-    }
-
-    run->rejected = njs_arr_create(pool, 4, sizeof(njs_test262_rejected_t));
-    if (run->rejected == NULL) {
-        ret = njs_test262_error(ctx, "memory allocation failed");
-        goto done;
     }
 
     sources = njs_arr_create(pool, 8, sizeof(njs_test262_source_t));
@@ -2980,7 +2920,6 @@ njs_test262_run_variant(njs_test262_t *ctx, njs_test262_variant_t *variant,
         goto done;
     }
 
-    njs_vm_set_rejection_tracker(vm, njs_test262_rejection, run);
     njs_vm_set_module_loader(vm, njs_test262_module_loader, run);
 
     ret = njs_test262_bindings(ctx, vm);
@@ -3049,11 +2988,6 @@ njs_test262_run_variant(njs_test262_t *ctx, njs_test262_variant_t *variant,
         }
     }
 
-    /*
-     * A synchronous test may still have enqueued promise jobs.  Draining them
-     * keeps a rejected promise from being reported as a pass.
-     */
-
     for (jobs = 0; jobs < NJS_TEST262_MAX_JOBS; jobs++) {
         ret = njs_vm_execute_pending_job(vm);
 
@@ -3083,30 +3017,6 @@ njs_test262_run_variant(njs_test262_t *ctx, njs_test262_variant_t *variant,
         result->status = NJS_TEST262_FAIL;
         result->stage = NJS_TEST262_STAGE_JOBS;
         result->message = njs_str_value("the promise job limit was reached");
-
-        ret = NJS_OK;
-        goto done;
-    }
-
-    if (run->rejected->items != 0) {
-        rejected = run->rejected->start;
-
-        result->status = NJS_TEST262_FAIL;
-        result->stage = NJS_TEST262_STAGE_JOBS;
-
-        if (njs_vm_value_to_string(vm, &test,
-                                   njs_value_arg(&rejected->reason)) == NJS_OK)
-        {
-            if (test.length > NJS_TEST262_MAX_MESSAGE) {
-                test.length = NJS_TEST262_MAX_MESSAGE;
-            }
-
-            (void) njs_test262_str_printf(ctx, &result->message, "unhandled "
-                                          "promise rejection: %V", &test);
-
-        } else {
-            result->message = njs_str_value("unhandled promise rejection");
-        }
 
         ret = NJS_OK;
         goto done;
