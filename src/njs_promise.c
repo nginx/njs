@@ -1291,7 +1291,10 @@ njs_promise_perform_all(njs_vm_t *vm, njs_value_t *iterator,
             njs_error_stack_attach(vm, argument, 1);
         }
 
-        ret = njs_function_call(vm, njs_function(&pargs->capability->resolve),
+        ret = njs_function_call(vm, njs_function(handler
+                                      == njs_promise_perform_any_handler
+                                  ? &pargs->capability->reject
+                                  : &pargs->capability->resolve),
                                 &njs_value_undefined, &argument, 1, retval);
         if (njs_slow_path(ret == NJS_ERROR)) {
             return ret;

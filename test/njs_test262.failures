@@ -456,8 +456,6 @@ built-ins/Promise/allSettled/resolve-non-callable.js	strict
 built-ins/Promise/allSettled/resolve-not-callable-reject-with-typeerror.js	strict
 built-ins/Promise/allSettled/resolve-throws-iterator-return-is-not-callable.js	strict
 built-ins/Promise/allSettled/resolve-throws-iterator-return-null-or-undefined.js	strict
-built-ins/Promise/any/call-reject-element-after-return.js	strict
-built-ins/Promise/any/call-reject-element-items.js	strict
 built-ins/Promise/any/capability-reject-throws-no-close.js	strict
 built-ins/Promise/any/capability-resolve-throws-no-close.js	strict
 built-ins/Promise/any/capability-resolve-throws-reject.js	strict
@@ -471,8 +469,6 @@ built-ins/Promise/any/invoke-resolve.js	strict
 built-ins/Promise/any/invoke-then-error-reject.js	strict
 built-ins/Promise/any/invoke-then-get-error-reject.js	strict
 built-ins/Promise/any/invoke-then-on-promises-every-iteration.js	strict
-built-ins/Promise/any/iter-arg-is-empty-iterable-reject.js	strict
-built-ins/Promise/any/iter-arg-is-empty-string-reject.js	strict
 built-ins/Promise/any/iter-arg-is-error-object-reject.js	strict
 built-ins/Promise/any/iter-arg-is-false-reject.js	strict
 built-ins/Promise/any/iter-arg-is-null-reject.js	strict
@@ -490,7 +486,6 @@ built-ins/Promise/any/iter-returns-string-reject.js	strict
 built-ins/Promise/any/iter-returns-symbol-reject.js	strict
 built-ins/Promise/any/iter-returns-true-reject.js	strict
 built-ins/Promise/any/iter-returns-undefined-reject.js	strict
-built-ins/Promise/any/resolve-before-loop-exit.js	strict
 built-ins/Promise/any/resolve-non-callable.js	strict
 built-ins/Promise/any/resolve-not-callable-reject-with-typeerror.js	strict
 built-ins/Promise/any/resolve-throws-iterator-return-is-not-callable.js	strict
