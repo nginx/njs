@@ -4556,25 +4556,20 @@ njs_convert_p1363_to_der(njs_vm_t *vm, EVP_PKEY *pkey, u_char *p1363,
         goto memory_error;
     }
 
-    r = BN_new();
+    r = BN_bin2bn(p1363, n, NULL);
     if (njs_slow_path(r == NULL)) {
         goto memory_error;
     }
 
-    s = BN_new();
+    s = BN_bin2bn(&p1363[n], n, NULL);
     if (njs_slow_path(s == NULL)) {
+        BN_free(r);
         goto memory_error;
     }
 
-    if (r != BN_bin2bn(p1363, n, r)) {
-        goto fail;
-    }
-
-    if (s != BN_bin2bn(&p1363[n], n, s)) {
-        goto fail;
-    }
-
     if (njs_ecdsa_sig_set0(ec_sig, r, s) != 1) {
+        BN_free(r);
+        BN_free(s);
         njs_webcrypto_error(vm, "njs_ecdsa_sig_set0() failed");
         ret = NJS_ERROR;
         goto fail;
@@ -4589,6 +4584,8 @@ njs_convert_p1363_to_der(njs_vm_t *vm, EVP_PKEY *pkey, u_char *p1363,
     len = i2d_ECDSA_SIG(ec_sig, &data);
 
     if (len < 0) {
+        njs_webcrypto_error(vm, "i2d_ECDSA_SIG() failed");
+        ret = NJS_ERROR;
         goto fail;
     }
 
@@ -4611,8 +4608,9 @@ done:
 memory_error:
 
     njs_vm_memory_error(vm);
+    ret = NJS_ERROR;
 
-    return NJS_ERROR;
+    goto fail;
 }
 
 
