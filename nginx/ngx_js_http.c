@@ -1883,7 +1883,7 @@ ngx_js_check_header_name(u_char *name, size_t len)
 
 
 ngx_int_t
-ngx_js_check_request_line_component(u_char *value, size_t len)
+ngx_js_check_no_space_or_ctrl_chars(u_char *value, size_t len)
 {
     u_char  *p, *end;
 

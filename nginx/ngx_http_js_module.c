@@ -1853,6 +1853,12 @@ ngx_http_js_internal_redirect(ngx_http_request_t *r, ngx_http_js_ctx_t *ctx)
         return NGX_HTTP_INTERNAL_SERVER_ERROR;
     }
 
+    if (ngx_js_check_no_space_or_ctrl_chars(args.data, args.len) != NGX_OK) {
+        ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+                      "unsafe URI arguments were detected");
+        return NGX_HTTP_INTERNAL_SERVER_ERROR;
+    }
+
     return ngx_http_internal_redirect(r, &ctx->redirect_uri, &args);
 }
 
@@ -7902,7 +7908,9 @@ ngx_http_qjs_ext_subrequest(JSContext *cx, JSValueConst this_val,
 
     flags = NGX_HTTP_LOG_UNSAFE;
 
-    if (ngx_http_parse_unsafe_uri(r, &uri, &args, &flags) != NGX_OK) {
+    if (ngx_http_parse_unsafe_uri(r, &uri, &args, &flags) != NGX_OK
+        || ngx_js_check_no_space_or_ctrl_chars(args.data, args.len) != NGX_OK)
+    {
         return JS_ThrowTypeError(cx, "unsafe uri");
     }
 
@@ -10421,7 +10429,10 @@ ngx_http_js_parse_unsafe_uri(ngx_http_request_t *r, njs_str_t *uri,
     args_arg.data = args->start;
     args_arg.len = args->length;
 
-    if (ngx_http_parse_unsafe_uri(r, &uri_arg, &args_arg, &flags) != NGX_OK) {
+    if (ngx_http_parse_unsafe_uri(r, &uri_arg, &args_arg, &flags) != NGX_OK
+        || ngx_js_check_no_space_or_ctrl_chars(args_arg.data, args_arg.len)
+           != NGX_OK)
+    {
         return NGX_ERROR;
     }
 
