@@ -23,6 +23,10 @@ var setContent = (root, path) => {
 
 var isNode = () => process.argv[0].includes('node');
 
+var rmdirRecursive = (path) => isNode()
+    ? fs.rmSync(path, { recursive: true, force: true })
+    : fs.rmdirSync(path, { recursive: true });
+
 let stages = [];
 
 var testSync = () => new Promise((resolve, reject) => {
@@ -31,7 +35,7 @@ var testSync = () => new Promise((resolve, reject) => {
     } catch (e) {
     }
     try {
-        fs.rmdirSync(root + dname, { recursive: true });
+        rmdirRecursive(root + dname);
     } catch (e) {
     }
 
@@ -66,10 +70,10 @@ var testSync = () => new Promise((resolve, reject) => {
         }
 
         fs.mkdirSync(root + dname, { mode: 0 });
-        fs.rmdirSync(root + dname, { recursive: true });
+        fs.rmdirSync(root + dname);
 
         setContent(root + dname, path);
-        fs.rmdirSync(root + dname, { recursive: true });
+        rmdirRecursive(root + dname);
 
         try {
             fs.accessSync(root + dname);

@@ -454,11 +454,11 @@ async function readlink_test(params) {
 }
 
 let readlink_tests = () => [
-    { args: [`${test_dir}/symlink`],
+    { args: ["@symlink"],
       check: (data) => data.endsWith("test/fs/ascii") },
-    { args: [`${test_dir}/symlink`, {encoding:'buffer'}],
+    { args: ["@symlink", {encoding:'buffer'}],
       check: (data) => data instanceof Buffer },
-    { args: [`${test_dir}/symlink`, {encoding:'hex'}],
+    { args: ["@symlink", {encoding:'hex'}],
       check: (data) => data.endsWith("746573742f66732f6173636969") },
 ];
 
@@ -569,10 +569,17 @@ let stat_tests = () => [
 
     { args: ["test/fs/ascii"],
       check: (st) => contains(Object.keys(st),
-                              [ "atime", "atimeMs", "birthtime", "birthtimeMs",
-                                "blksize", "blocks", "ctime", "ctimeMs", "dev",
-                                "gid", "ino", "mode", "mtime", "mtimeMs","nlink",
+                              [ "atimeMs", "birthtimeMs", "blksize", "blocks",
+                                "ctimeMs", "dev", "gid", "ino", "mode", "mtimeMs", "nlink",
                                 "rdev", "size", "uid" ]) },
+    { args: ["test/fs/ascii"],
+      check: (st) => ["atime", "birthtime", "ctime", "mtime"].every(p => {
+          if (!(st[p] instanceof Date)) {
+              throw Error(`${p} is not an instance of Date`);
+          }
+
+          return true;
+      }) },
 
     { args: ["test/fs/ascii"],
       check: (st) => Object.keys(st).every(p => {
