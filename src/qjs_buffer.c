@@ -125,7 +125,7 @@ static qjs_buffer_encoding_t  qjs_buffer_encodings[] =
 
 
 static const JSCFunctionListEntry qjs_buffer_constants[] = {
-    JS_PROP_INT32_DEF("MAX_LENGTH", INT32_MAX, JS_PROP_ENUMERABLE),
+    JS_PROP_INT32_DEF("MAX_LENGTH", QJS_BUFFER_MAX_LENGTH, JS_PROP_ENUMERABLE),
     JS_PROP_INT32_DEF("MAX_STRING_LENGTH", 0x3fffffff, JS_PROP_ENUMERABLE),
 };
 
@@ -2570,9 +2570,13 @@ qjs_hex_encode_length(JSContext *ctx, const njs_str_t *src)
 
 
 JSValue
-qjs_buffer_alloc(JSContext *ctx, size_t size)
+qjs_buffer_alloc(JSContext *ctx, uint64_t size)
 {
     JSValue  ret, proto, value;
+
+    if (size > QJS_BUFFER_MAX_LENGTH) {
+        return JS_ThrowRangeError(ctx, "invalid array buffer length");
+    }
 
     value = JS_NewInt64(ctx, size);
 

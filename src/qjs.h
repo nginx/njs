@@ -56,6 +56,9 @@ typedef struct {
 } qjs_module_t;
 
 
+#define QJS_BUFFER_MAX_LENGTH  INT32_MAX
+
+
 JSContext *qjs_new_context(JSRuntime *rt, qjs_module_t **addons);
 JSValue qjs_call_exit_hook(JSContext *ctx);
 void *qjs_chb_ctx_alloc(void *ctx, size_t size);
@@ -66,7 +69,7 @@ JSValue qjs_new_uint8_array(JSContext *ctx, int argc, JSValueConst *argv);
 JSValue qjs_new_array_buffer(JSContext *cx, uint8_t *src, size_t len);
 JSValue qjs_new_external_array_buffer(JSContext *cx, uint8_t *src, size_t len,
     int is_shared);
-JSValue qjs_buffer_alloc(JSContext *ctx, size_t size);
+JSValue qjs_buffer_alloc(JSContext *ctx, uint64_t size);
 JSValue qjs_buffer_create(JSContext *ctx, u_char *start, size_t size);
 JSValue qjs_buffer_chb_alloc(JSContext *ctx, njs_chb_t *chain);
 
