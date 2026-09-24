@@ -1890,6 +1890,9 @@ qjs_buffer_from_string(JSContext *ctx, JSValueConst str,
     }
 
     src.start = (u_char *) JS_ToCStringLen(ctx, &src.length, str);
+    if (src.start == NULL) {
+        return JS_EXCEPTION;
+    }
 
     if (encoding->decode_length != NULL) {
         size = encoding->decode_length(ctx, &src);
@@ -1907,12 +1910,14 @@ qjs_buffer_from_string(JSContext *ctx, JSValueConst str,
     ret = qjs_typed_array_data(ctx, buffer, &dst);
     if (JS_IsException(ret)) {
         JS_FreeCString(ctx, (char *) src.start);
+        JS_FreeValue(ctx, buffer);
         return ret;
     }
 
     if (encoding->decode != NULL) {
         if (encoding->decode(ctx, &src, &dst) != 0) {
             JS_FreeCString(ctx, (char *) src.start);
+            JS_FreeValue(ctx, buffer);
             JS_ThrowTypeError(ctx, "failed to decode string");
             return JS_EXCEPTION;
         }
@@ -2613,6 +2618,7 @@ qjs_buffer_create(JSContext *ctx, u_char *start, size_t size)
 
     ret = qjs_typed_array_data(ctx, buffer, &dst);
     if (JS_IsException(ret)) {
+        JS_FreeValue(ctx, buffer);
         return ret;
     }
 
