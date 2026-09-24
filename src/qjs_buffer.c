@@ -347,14 +347,14 @@ qjs_bufferobj_alloc(JSContext *ctx, JSValueConst this_val, int argc,
     JSValueConst *argv, int ignored)
 {
     JSValue   buffer, ret;
-    uint32_t  size;
+    uint64_t  size;
 
     if (!JS_IsNumber(argv[0])) {
         return JS_ThrowTypeError(ctx, "The \"size\" argument must be of type"
                                  " number");
     }
 
-    if (JS_ToUint32(ctx, &size, argv[0])) {
+    if (JS_ToIndex(ctx, &size, argv[0])) {
         return JS_EXCEPTION;
     }
 
@@ -434,8 +434,9 @@ qjs_buffer_concat(JSContext *ctx, JSValueConst this_val, int argc,
 {
     u_char     *p;
     size_t     n;
+    uint64_t   len;
     JSValue    list, length, val, ret, buffer;
-    uint32_t   i, len, list_len;
+    uint32_t   i, list_len;
     njs_str_t  buf, dst;
 
     list = argv[0];
@@ -472,16 +473,16 @@ qjs_buffer_concat(JSContext *ctx, JSValueConst this_val, int argc,
                                         " instance of Buffer or Uint8Array", i);
             }
 
-            if ((SIZE_MAX - len) < buf.length) {
-                return JS_ThrowTypeError(ctx,
-                                         "Total size of buffers is too large");
+            if (buf.length > QJS_BUFFER_MAX_LENGTH - len) {
+                return JS_ThrowRangeError(ctx,
+                                          "Total size of buffers is too large");
             }
 
             len += buf.length;
         }
 
     } else {
-        if (JS_ToUint32(ctx, &len, argv[1])) {
+        if (JS_ToIndex(ctx, &len, argv[1])) {
             return JS_EXCEPTION;
         }
     }

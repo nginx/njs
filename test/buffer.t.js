@@ -35,6 +35,30 @@ let alloc_tsuite = {
 };
 
 
+let oversized_tsuite = {
+    name: "Buffer allocation size tests",
+    skip: () => (!has_buffer() || !has_njs()),
+    T: async (params) => {
+        assert.throws(RangeError, () => {
+            if (params.method === 'alloc') {
+                Buffer.alloc(params.size);
+
+            } else {
+                Buffer.concat([], params.size);
+            }
+        });
+
+        return 'SUCCESS';
+    },
+    tests: [
+        { method: 'alloc', size: 0x100000000 },
+        { method: 'alloc', size: 0x100000010 },
+        { method: 'concat', size: 0x100000000 },
+        { method: 'concat', size: 0x100000010 },
+    ],
+};
+
+
 let fromObject_tsuite = {
     name: "Buffer.from() array-like length tests",
     skip: () => (!has_buffer()),
@@ -1158,6 +1182,7 @@ let writeGeneric_tsuite = {
 
 run([
     alloc_tsuite,
+    oversized_tsuite,
     fromObject_tsuite,
     fromObjectLarge_tsuite,
     byteLength_tsuite,
