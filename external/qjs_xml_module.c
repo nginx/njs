@@ -579,7 +579,6 @@ qjs_xml_node_make(JSContext *cx, qjs_xml_doc_t *doc, xmlNode *node)
 
     current->node = node;
     current->doc = doc;
-    doc->ref_count++;
 
     ret = JS_NewObjectClass(cx, QJS_CORE_CLASS_ID_XML_NODE);
     if (JS_IsException(ret)) {
@@ -587,6 +586,7 @@ qjs_xml_node_make(JSContext *cx, qjs_xml_doc_t *doc, xmlNode *node)
         return ret;
     }
 
+    doc->ref_count++;
     JS_SetOpaque(ret, current);
 
     return ret;
@@ -1064,12 +1064,15 @@ qjs_xml_node_get_own_property(JSContext *cx, JSPropertyDescriptor *pdesc,
                 return 0;
             }
 
-            if (pdesc != NULL) {
-                pdesc->flags = JS_PROP_ENUMERABLE;
-                pdesc->getter = JS_UNDEFINED;
-                pdesc->setter = JS_UNDEFINED;
-                pdesc->value  = value;
+            if (pdesc == NULL) {
+                JS_FreeValue(cx, value);
+                return 1;
             }
+
+            pdesc->flags = JS_PROP_ENUMERABLE;
+            pdesc->getter = JS_UNDEFINED;
+            pdesc->setter = JS_UNDEFINED;
+            pdesc->value  = value;
 
             return 1;
         }
@@ -1176,12 +1179,15 @@ qjs_xml_node_get_own_property(JSContext *cx, JSPropertyDescriptor *pdesc,
                 return -1;
             }
 
-            if (pdesc != NULL) {
-                pdesc->flags = JS_PROP_ENUMERABLE;
-                pdesc->getter = JS_UNDEFINED;
-                pdesc->setter = JS_UNDEFINED;
-                pdesc->value = value;
+            if (pdesc == NULL) {
+                JS_FreeValue(cx, value);
+                return 1;
             }
+
+            pdesc->flags = JS_PROP_ENUMERABLE;
+            pdesc->getter = JS_UNDEFINED;
+            pdesc->setter = JS_UNDEFINED;
+            pdesc->value = value;
 
             return 1;
         }
@@ -1235,12 +1241,15 @@ tag:
         return 0;
     }
 
-    if (pdesc != NULL) {
-        pdesc->flags = JS_PROP_ENUMERABLE;
-        pdesc->getter = JS_UNDEFINED;
-        pdesc->setter = JS_UNDEFINED;
-        pdesc->value  = value;
+    if (pdesc == NULL) {
+        JS_FreeValue(cx, value);
+        return 1;
     }
+
+    pdesc->flags = JS_PROP_ENUMERABLE;
+    pdesc->getter = JS_UNDEFINED;
+    pdesc->setter = JS_UNDEFINED;
+    pdesc->value  = value;
 
     return 1;
 }
@@ -1665,7 +1674,6 @@ qjs_xml_attr_make(JSContext *cx, qjs_xml_doc_t *doc, xmlNode *node)
 
     current->node = node;
     current->doc = doc;
-    doc->ref_count++;
 
     ret = JS_NewObjectClass(cx, QJS_CORE_CLASS_ID_XML_ATTR);
     if (JS_IsException(ret)) {
@@ -1673,6 +1681,7 @@ qjs_xml_attr_make(JSContext *cx, qjs_xml_doc_t *doc, xmlNode *node)
         return ret;
     }
 
+    doc->ref_count++;
     JS_SetOpaque(ret, current);
 
     return ret;
