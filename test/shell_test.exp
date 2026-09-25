@@ -408,6 +408,15 @@ njs_test {
      ">> " "unhandled promise rejection"}
 }
 
+njs_test {
+    {"var later\r\n" "undefined\r\n>> "}
+    {"var message = {toString() { later.catch(() => {}); return 1 }}\r\n"
+     "undefined\r\n>> "}
+    {"Promise.reject(message); later = Promise.reject(2); undefined\r\n"
+     "unhandled promise rejection: 1\r\n*>> "}
+    {"42\r\n" "42\r\n>> " "unhandled promise rejection"}
+}
+
 # CLI OPTIONS
 
 # help

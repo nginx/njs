@@ -372,8 +372,7 @@ if [ $NJS_HAVE_QUICKJS = YES ]; then
 js_test: js_test_njs js_test_quickjs
 
 js_test_quickjs: njs
-	NJS_SKIP_LIST="test/js/promise_rejection_tracker_recursive.t.js \\
-test/js/async_exception_in_await.t.js" \\
+	NJS_SKIP_LIST="test/js/async_exception_in_await.t.js" \\
 	test/js_test --binary='$NJS_BUILD_DIR/njs -n QuickJS -m'
 
 END
