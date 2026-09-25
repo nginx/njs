@@ -16,6 +16,29 @@ declare module "xml" {
 
     export interface XMLNode {
         /**
+         * Returns the first direct child element with this namespace URI
+         * and local name, or undefined if there is none.
+         * @param namespaceURI - namespace URI; null or an empty string
+         * matches an element without a namespace.
+         * @param localName - local name of the element.
+         * @since 1.0.2.
+         */
+        getChildNS(namespaceURI: string | null, localName: string):
+            XMLNode | undefined;
+
+        /**
+         * Returns the value of an attribute present in the document with
+         * this namespace URI and local name, or undefined if there is none.
+         * @param namespaceURI - namespace URI; null or an empty string
+         * matches an attribute without a namespace.  An unprefixed
+         * attribute never belongs to the default namespace.
+         * @param localName - local name of the attribute.
+         * @since 1.0.2.
+         */
+        getAttributeNS(namespaceURI: string | null, localName: string):
+            string | undefined;
+
+        /**
          * Adds a recursive copy of a namespace-free child node.
          * @param node - XMLNode to be added.
          * @since 0.7.11.

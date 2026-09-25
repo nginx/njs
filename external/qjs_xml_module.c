@@ -87,6 +87,10 @@ static int qjs_xml_node_property_modify(JSContext *cx, JSValueConst obj,
     JSAtom atom, JSValueConst value, int delete);
 static JSValue qjs_xml_node_add_child(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv);
+static JSValue qjs_xml_node_get_attribute_ns(JSContext *cx,
+    JSValueConst this_val, int argc, JSValueConst *argv);
+static JSValue qjs_xml_node_get_child_ns(JSContext *cx,
+    JSValueConst this_val, int argc, JSValueConst *argv);
 static JSValue qjs_xml_node_remove_children(JSContext *cx,
     JSValueConst this_val, int argc, JSValueConst *argv);
 static JSValue qjs_xml_node_set_attribute(JSContext *cx, JSValueConst this_val,
@@ -119,6 +123,12 @@ static qjs_xml_nset_t *qjs_xml_nset_create(JSContext *cx, xmlDoc *doc,
 static qjs_xml_nset_t *qjs_xml_nset_add(qjs_xml_nset_t *nset,
     qjs_xml_nset_t *add);
 static void qjs_xml_nset_free(JSContext *cx, qjs_xml_nset_t *nset);
+static qjs_xml_node_t *qjs_xml_ns_args(JSContext *cx, JSValueConst this_val,
+    JSValueConst *argv, njs_str_t *uri, njs_str_t *local);
+static void qjs_xml_ns_args_free(JSContext *cx, njs_str_t *uri,
+    njs_str_t *local);
+static int qjs_xml_ns_match(const xmlChar *name, xmlNs *ns, njs_str_t *uri,
+    njs_str_t *local);
 static int qjs_xml_node_is_live(xmlNode *node);
 static xmlNode *qjs_xml_list_detach(xmlNode *parent, njs_str_t *name);
 static int qjs_xml_list_retire(JSContext *cx, qjs_xml_doc_t *doc,
@@ -148,6 +158,8 @@ static const JSCFunctionListEntry qjs_xml_doc_proto[] = {
 static const JSCFunctionListEntry qjs_xml_node_proto[] = {
     JS_PROP_STRING_DEF("[Symbol.toStringTag]", "XMLNode", JS_PROP_CONFIGURABLE),
     JS_CFUNC_DEF("addChild", 1, qjs_xml_node_add_child),
+    JS_CFUNC_DEF("getAttributeNS", 2, qjs_xml_node_get_attribute_ns),
+    JS_CFUNC_DEF("getChildNS", 2, qjs_xml_node_get_child_ns),
     JS_CFUNC_DEF("removeChildren", 1, qjs_xml_node_remove_children),
     JS_CFUNC_DEF("setAttribute", 2, qjs_xml_node_set_attribute),
     JS_CFUNC_DEF("removeAttribute", 1, qjs_xml_node_remove_attribute),
@@ -1432,6 +1444,76 @@ qjs_xml_node_property_modify(JSContext *cx, JSValueConst obj, JSAtom atom,
 
 
 static JSValue
+qjs_xml_node_get_attribute_ns(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv)
+{
+    xmlAttr         *attr;
+    xmlChar         *text;
+    JSValue         value;
+    njs_str_t       uri, local;
+    qjs_xml_node_t  *current;
+
+    current = qjs_xml_ns_args(cx, this_val, argv, &uri, &local);
+    if (current == NULL) {
+        return JS_EXCEPTION;
+    }
+
+    value = JS_UNDEFINED;
+
+    for (attr = current->node->properties; attr != NULL; attr = attr->next) {
+        if (!qjs_xml_ns_match(attr->name, attr->ns, &uri, &local)) {
+            continue;
+        }
+
+        text = xmlNodeGetContent((xmlNode *) attr);
+        if (text == NULL) {
+            value = JS_ThrowInternalError(cx, "xmlNodeGetContent() failed");
+            break;
+        }
+
+        value = JS_NewString(cx, (char *) text);
+        xmlFree(text);
+        break;
+    }
+
+    qjs_xml_ns_args_free(cx, &uri, &local);
+
+    return value;
+}
+
+
+static JSValue
+qjs_xml_node_get_child_ns(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv)
+{
+    JSValue         value;
+    xmlNode         *node;
+    njs_str_t       uri, local;
+    qjs_xml_node_t  *current;
+
+    current = qjs_xml_ns_args(cx, this_val, argv, &uri, &local);
+    if (current == NULL) {
+        return JS_EXCEPTION;
+    }
+
+    value = JS_UNDEFINED;
+
+    for (node = current->node->children; node != NULL; node = node->next) {
+        if (node->type == XML_ELEMENT_NODE
+            && qjs_xml_ns_match(node->name, node->ns, &uri, &local))
+        {
+            value = qjs_xml_node_make(cx, current->doc, node);
+            break;
+        }
+    }
+
+    qjs_xml_ns_args_free(cx, &uri, &local);
+
+    return value;
+}
+
+
+static JSValue
 qjs_xml_node_add_child(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv)
 {
@@ -2039,6 +2121,91 @@ qjs_xml_nset_free(JSContext *cx, qjs_xml_nset_t *nset)
     }
 
     js_free(cx, nset);
+}
+
+
+static qjs_xml_node_t *
+qjs_xml_ns_args(JSContext *cx, JSValueConst this_val, JSValueConst *argv,
+    njs_str_t *uri, njs_str_t *local)
+{
+    size_t          length;
+    qjs_xml_node_t  *current;
+
+    current = JS_GetOpaque(this_val, QJS_CORE_CLASS_ID_XML_NODE);
+    if (current == NULL) {
+        JS_ThrowTypeError(cx, "\"this\" is not a XMLNode object");
+        return NULL;
+    }
+
+    if (!JS_IsNull(argv[0]) && !JS_IsString(argv[0])) {
+        JS_ThrowTypeError(cx, "namespace URI is not a string or null");
+        return NULL;
+    }
+
+    if (!JS_IsString(argv[1])) {
+        JS_ThrowTypeError(cx, "local name is not a string");
+        return NULL;
+    }
+
+    uri->start = NULL;
+    uri->length = 0;
+
+    if (JS_IsString(argv[0])) {
+        uri->start = (u_char *) JS_ToCStringLen(cx, &length, argv[0]);
+        if (uri->start == NULL) {
+            return NULL;
+        }
+
+        uri->length = length;
+    }
+
+    local->start = (u_char *) JS_ToCStringLen(cx, &length, argv[1]);
+    if (local->start == NULL) {
+        if (uri->start != NULL) {
+            JS_FreeCString(cx, (char *) uri->start);
+        }
+
+        return NULL;
+    }
+
+    local->length = length;
+
+    return current;
+}
+
+
+static void
+qjs_xml_ns_args_free(JSContext *cx, njs_str_t *uri, njs_str_t *local)
+{
+    if (uri->start != NULL) {
+        JS_FreeCString(cx, (char *) uri->start);
+    }
+
+    JS_FreeCString(cx, (char *) local->start);
+}
+
+
+/*
+ * An empty or null URI matches only names without a namespace, as in
+ * DOM getAttributeNS().
+ */
+
+static int
+qjs_xml_ns_match(const xmlChar *name, xmlNs *ns, njs_str_t *uri,
+    njs_str_t *local)
+{
+    if (local->length != njs_strlen(name)
+        || njs_strncmp(local->start, name, local->length) != 0)
+    {
+        return 0;
+    }
+
+    if (ns == NULL || ns->href == NULL) {
+        return uri->length == 0;
+    }
+
+    return uri->length == njs_strlen(ns->href)
+           && njs_strncmp(uri->start, ns->href, uri->length) == 0;
 }
 
 

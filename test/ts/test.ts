@@ -179,6 +179,11 @@ function xml_module(str: string) {
 
     node?.$tag$xxx?.$tag$yyy?.$attr$zzz;
 
+    let child: XMLNode | undefined = node.getChildNS('urn:x', 'xxx');
+    child = node.getChildNS(null, 'xxx');
+    let attr: string | undefined = node.getAttributeNS('urn:x', 'yyy');
+    attr = node.getAttributeNS(null, 'yyy');
+
     let buf:Buffer = xml.exclusiveC14n(node);
     buf = xml.exclusiveC14n(doc, node.$tag$xxx, false);
     buf = xml.exclusiveC14n(node, null, true, "aa bb");
