@@ -57,6 +57,12 @@ static njs_int_t njs_xml_attr_ext_prop_handler(njs_vm_t *vm,
     njs_value_t *unused, njs_value_t *retval);
 static njs_int_t njs_xml_node_ext_add_child(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
+static njs_int_t njs_xml_node_ext_get_attribute_ns(njs_vm_t *vm,
+    njs_value_t *args, njs_uint_t nargs, njs_index_t unused,
+    njs_value_t *retval);
+static njs_int_t njs_xml_node_ext_get_child_ns(njs_vm_t *vm,
+    njs_value_t *args, njs_uint_t nargs, njs_index_t unused,
+    njs_value_t *retval);
 static njs_int_t njs_xml_node_ext_attrs(njs_vm_t *vm, njs_object_prop_t *prop,
     uint32_t unused, njs_value_t *value, njs_value_t *setval,
     njs_value_t *retval);
@@ -106,6 +112,10 @@ static njs_int_t njs_xml_node_tags_handler(njs_vm_t *vm, njs_value_t *value,
 static xmlNode *njs_xml_external_node(njs_vm_t *vm, njs_value_t *value);
 static const u_char *njs_xml_string_to_c_string(njs_vm_t *vm, njs_str_t *str,
     u_char *dst, size_t size);
+static xmlNode *njs_xml_ns_args(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_str_t *uri, njs_str_t *local);
+static njs_bool_t njs_xml_ns_match(const xmlChar *name, xmlNs *ns,
+    njs_str_t *uri, njs_str_t *local);
 static njs_bool_t njs_xml_node_is_live(xmlNode *node);
 static xmlNode *njs_xml_list_detach(xmlNode *parent, njs_str_t *name);
 static njs_int_t njs_xml_list_retire(njs_vm_t *vm, xmlNode *parent,
@@ -256,6 +266,28 @@ static njs_external_t  njs_ext_xml_node[] = {
         .enumerable = 1,
         .u.method = {
             .native = njs_xml_node_ext_add_child,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("getAttributeNS"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = njs_xml_node_ext_get_attribute_ns,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_METHOD,
+        .name.string = njs_str("getChildNS"),
+        .writable = 1,
+        .configurable = 1,
+        .enumerable = 1,
+        .u.method = {
+            .native = njs_xml_node_ext_get_child_ns,
         }
     },
 
@@ -753,6 +785,71 @@ njs_xml_node_ext_add_child(njs_vm_t *vm, njs_value_t *args,
     }
 
     njs_xml_list_append(current, node);
+
+    njs_value_undefined_set(retval);
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+njs_xml_node_ext_get_attribute_ns(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
+{
+    xmlAttr    *attr;
+    xmlChar    *text;
+    xmlNode    *current;
+    njs_int_t  ret;
+    njs_str_t  uri, local;
+
+    current = njs_xml_ns_args(vm, args, nargs, &uri, &local);
+    if (njs_slow_path(current == NULL)) {
+        return NJS_ERROR;
+    }
+
+    for (attr = current->properties; attr != NULL; attr = attr->next) {
+        if (!njs_xml_ns_match(attr->name, attr->ns, &uri, &local)) {
+            continue;
+        }
+
+        text = xmlNodeGetContent((xmlNode *) attr);
+        if (njs_slow_path(text == NULL)) {
+            njs_vm_internal_error(vm, "xmlNodeGetContent() failed");
+            return NJS_ERROR;
+        }
+
+        ret = njs_vm_value_string_create(vm, retval, text, njs_strlen(text));
+        xmlFree(text);
+
+        return ret;
+    }
+
+    njs_value_undefined_set(retval);
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
+njs_xml_node_ext_get_child_ns(njs_vm_t *vm, njs_value_t *args,
+    njs_uint_t nargs, njs_index_t unused, njs_value_t *retval)
+{
+    xmlNode    *current, *node;
+    njs_str_t  uri, local;
+
+    current = njs_xml_ns_args(vm, args, nargs, &uri, &local);
+    if (njs_slow_path(current == NULL)) {
+        return NJS_ERROR;
+    }
+
+    for (node = current->children; node != NULL; node = node->next) {
+        if (node->type == XML_ELEMENT_NODE
+            && njs_xml_ns_match(node->name, node->ns, &uri, &local))
+        {
+            return njs_vm_external_create(vm, retval, njs_xml_node_proto_id,
+                                          node, 0);
+        }
+    }
 
     njs_value_undefined_set(retval);
 
@@ -1432,6 +1529,71 @@ njs_xml_string_to_c_string(njs_vm_t *vm, njs_str_t *str, u_char *dst,
     *p = '\0';
 
     return dst;
+}
+
+
+static xmlNode *
+njs_xml_ns_args(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
+    njs_str_t *uri, njs_str_t *local)
+{
+    xmlNode      *current;
+    njs_value_t  *value;
+
+    current = njs_vm_external(vm, njs_xml_node_proto_id,
+                              njs_argument(args, 0));
+    if (njs_slow_path(current == NULL)) {
+        njs_vm_type_error(vm, "\"this\" is not a XMLNode object");
+        return NULL;
+    }
+
+    value = njs_arg(args, nargs, 1);
+
+    if (njs_value_is_null(value)) {
+        uri->length = 0;
+        uri->start = NULL;
+
+    } else if (njs_value_is_string(value)) {
+        njs_value_string_get(vm, value, uri);
+
+    } else {
+        njs_vm_type_error(vm, "namespace URI is not a string or null");
+        return NULL;
+    }
+
+    value = njs_arg(args, nargs, 2);
+
+    if (njs_slow_path(!njs_value_is_string(value))) {
+        njs_vm_type_error(vm, "local name is not a string");
+        return NULL;
+    }
+
+    njs_value_string_get(vm, value, local);
+
+    return current;
+}
+
+
+/*
+ * An empty or null URI matches only names without a namespace, as in
+ * DOM getAttributeNS().
+ */
+
+static njs_bool_t
+njs_xml_ns_match(const xmlChar *name, xmlNs *ns, njs_str_t *uri,
+    njs_str_t *local)
+{
+    if (local->length != njs_strlen(name)
+        || njs_strncmp(local->start, name, local->length) != 0)
+    {
+        return 0;
+    }
+
+    if (ns == NULL || ns->href == NULL) {
+        return uri->length == 0;
+    }
+
+    return uri->length == njs_strlen(ns->href)
+           && njs_strncmp(uri->start, ns->href, uri->length) == 0;
 }
 
 
