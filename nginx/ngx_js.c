@@ -2398,21 +2398,24 @@ ngx_qjs_rejection_tracker(JSContext *cx, JSValueConst promise,
 
     ctx = opaque;
 
-    if (is_handled && ctx->rejected_promises != NULL) {
-        rejected_promise = ctx->rejected_promises->start;
-        length = ctx->rejected_promises->items;
+    if (is_handled) {
+        if (ctx->rejected_promises != NULL) {
+            rejected_promise = ctx->rejected_promises->start;
+            length = ctx->rejected_promises->items;
 
-        promise_obj = JS_VALUE_GET_PTR(promise);
+            promise_obj = JS_VALUE_GET_PTR(promise);
 
-        for (i = 0; i < length; i++) {
-            if (JS_VALUE_GET_PTR(ngx_qjs_arg(rejected_promise[i].promise))
-                == promise_obj)
-            {
-                JS_FreeValue(cx, ngx_qjs_arg(rejected_promise[i].promise));
-                JS_FreeValue(cx, ngx_qjs_arg(rejected_promise[i].message));
-                njs_arr_remove(ctx->rejected_promises, &rejected_promise[i]);
+            for (i = 0; i < length; i++) {
+                if (JS_VALUE_GET_PTR(ngx_qjs_arg(rejected_promise[i].promise))
+                    == promise_obj)
+                {
+                    JS_FreeValue(cx, ngx_qjs_arg(rejected_promise[i].promise));
+                    JS_FreeValue(cx, ngx_qjs_arg(rejected_promise[i].message));
+                    njs_arr_remove(ctx->rejected_promises,
+                                   &rejected_promise[i]);
 
-                break;
+                    break;
+                }
             }
         }
 
@@ -4087,19 +4090,22 @@ ngx_js_rejection_tracker(njs_vm_t *vm, njs_external_ptr_t unused,
 
     ctx = ngx_external_ctx(vm, njs_vm_external_ptr(vm));
 
-    if (is_handled && ctx->rejected_promises != NULL) {
-        rejected_promise = ctx->rejected_promises->start;
-        length = ctx->rejected_promises->items;
+    if (is_handled) {
+        if (ctx->rejected_promises != NULL) {
+            rejected_promise = ctx->rejected_promises->start;
+            length = ctx->rejected_promises->items;
 
-        promise_obj = njs_value_ptr(promise);
+            promise_obj = njs_value_ptr(promise);
 
-        for (i = 0; i < length; i++) {
-            if (njs_value_ptr(njs_value_arg(&rejected_promise[i].promise))
-                == promise_obj)
-            {
-                njs_arr_remove(ctx->rejected_promises, &rejected_promise[i]);
+            for (i = 0; i < length; i++) {
+                if (njs_value_ptr(njs_value_arg(&rejected_promise[i].promise))
+                    == promise_obj)
+                {
+                    njs_arr_remove(ctx->rejected_promises,
+                                   &rejected_promise[i]);
 
-                break;
+                    break;
+                }
             }
         }
 

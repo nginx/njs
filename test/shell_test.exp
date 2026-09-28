@@ -19,6 +19,10 @@ proc njs_test {body {opts ""}} {
         set pair [lindex $body $i]
         send [lindex $pair 0]
         expect [lindex $pair 1]
+        if {[llength $pair] > 2
+            && [regexp [lindex $pair 2] $expect_out(buffer)]} {
+            return -code error "unexpected output: $expect_out(buffer)"
+        }
     }
 
     send "\n"
@@ -395,6 +399,13 @@ njs_test {
      "1\r\nx\r\nThrown:\r\n*Error: unhandled promise rejection: xx\r\n"}
     {"42\r\n"
      "42\r\n"}
+}
+
+njs_test {
+    {"var rejected = Promise.reject('handled later')\r\n"
+     "unhandled promise rejection: handled later\r\n*>> "}
+    {"rejected.catch(() => {})\r\n"
+     ">> " "unhandled promise rejection"}
 }
 
 # CLI OPTIONS
