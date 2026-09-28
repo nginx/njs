@@ -1378,11 +1378,12 @@ ngx_engine_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
 
         ngx_qjs_clear_events(ctx);
 
+        JS_SetHostPromiseRejectionTracker(JS_GetRuntime(cx), NULL, NULL);
+
         if (ngx_qjs_unhandled_rejection(ctx)) {
             ngx_qjs_log_exception(e, ctx->log, "unhandled rejection");
         }
 
-        JS_SetHostPromiseRejectionTracker(JS_GetRuntime(cx), NULL, NULL);
         ngx_qjs_detach_ctx(ctx, cx);
 
         if (JS_IsJobPending(JS_GetRuntime(cx))) {
