@@ -1024,20 +1024,23 @@ njs_rejection_tracker(njs_vm_t *vm, njs_external_ptr_t external,
 
     console = external;
 
-    if (is_handled && console->rejected_promises != NULL) {
-        rejected_promise = console->rejected_promises->start;
-        length = console->rejected_promises->items;
+    if (is_handled) {
+        if (console->rejected_promises != NULL) {
+            rejected_promise = console->rejected_promises->start;
+            length = console->rejected_promises->items;
 
-        promise_obj = njs_value_ptr(promise);
+            promise_obj = njs_value_ptr(promise);
 
-        for (i = 0; i < length; i++) {
-            if (njs_value_ptr(njs_value_arg(&rejected_promise[i].u.njs.promise))
-                == promise_obj)
-            {
-                njs_arr_remove(console->rejected_promises,
-                               &rejected_promise[i]);
+            for (i = 0; i < length; i++) {
+                if (njs_value_ptr(njs_value_arg(
+                                      &rejected_promise[i].u.njs.promise))
+                    == promise_obj)
+                {
+                    njs_arr_remove(console->rejected_promises,
+                                   &rejected_promise[i]);
 
-                break;
+                    break;
+                }
             }
         }
 
@@ -2536,22 +2539,24 @@ njs_qjs_rejection_tracker(JSContext *ctx, JSValueConst promise,
 
     console = opaque;
 
-    if (is_handled && console->rejected_promises != NULL) {
-        rejected_promise = console->rejected_promises->start;
-        length = console->rejected_promises->items;
+    if (is_handled) {
+        if (console->rejected_promises != NULL) {
+            rejected_promise = console->rejected_promises->start;
+            length = console->rejected_promises->items;
 
-        promise_obj = JS_VALUE_GET_PTR(promise);
+            promise_obj = JS_VALUE_GET_PTR(promise);
 
-        for (i = 0; i < length; i++) {
-            if (JS_VALUE_GET_PTR(rejected_promise[i].u.qjs.promise)
-                == promise_obj)
-            {
-                JS_FreeValue(ctx, rejected_promise[i].u.qjs.promise);
-                JS_FreeValue(ctx, rejected_promise[i].u.qjs.message);
-                njs_arr_remove(console->rejected_promises,
-                               &rejected_promise[i]);
+            for (i = 0; i < length; i++) {
+                if (JS_VALUE_GET_PTR(rejected_promise[i].u.qjs.promise)
+                    == promise_obj)
+                {
+                    JS_FreeValue(ctx, rejected_promise[i].u.qjs.promise);
+                    JS_FreeValue(ctx, rejected_promise[i].u.qjs.message);
+                    njs_arr_remove(console->rejected_promises,
+                                   &rejected_promise[i]);
 
-                break;
+                    break;
+                }
             }
         }
 
