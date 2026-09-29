@@ -103,6 +103,7 @@ declare module "xml" {
 
         /**
          * node.$tag$xxx - the node's first child tag named "xxx".
+         * Use this form when the tag name matches an XMLNode method.
          * Assigning a value throws TypeError at runtime. Deleting the property
          * removes matching child tags.
          */

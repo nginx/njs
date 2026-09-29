@@ -72,6 +72,8 @@ static void qjs_xml_doc_free(JSRuntime *rt, qjs_xml_doc_t *current);
 
 static JSValue qjs_xml_node_make(JSContext *cx, qjs_xml_doc_t *doc,
     xmlNode *node);
+static int qjs_xml_node_has_method(JSContext *cx, JSValueConst obj,
+    JSAtom prop, njs_str_t *name);
 static int qjs_xml_node_get_own_property(JSContext *cx,
     JSPropertyDescriptor *pdesc, JSValueConst obj, JSAtom prop);
 static int qjs_xml_node_get_own_property_names(JSContext *cx,
@@ -1007,9 +1009,48 @@ qjs_xml_node_text_handler(JSContext *cx, JSValue current, JSValue setval)
 
 
 static int
+qjs_xml_node_has_method(JSContext *cx, JSValueConst obj, JSAtom prop,
+    njs_str_t *name)
+{
+    int                         rc;
+    size_t                      i, length;
+    JSValue                     proto;
+    const JSCFunctionListEntry  *entry;
+
+    for (i = 0; i < njs_nitems(qjs_xml_node_proto); i++) {
+        entry = &qjs_xml_node_proto[i];
+
+        if (entry->def_type != JS_DEF_CFUNC) {
+            continue;
+        }
+
+        length = njs_strlen(entry->name);
+
+        if (name->length == length
+            && njs_strncmp(name->start, entry->name, length) == 0)
+        {
+            proto = JS_GetPrototype(cx, obj);
+            if (JS_IsException(proto)) {
+                return -1;
+            }
+
+            rc = JS_IsObject(proto) ? JS_GetOwnProperty(cx, NULL, proto, prop)
+                                    : 0;
+            JS_FreeValue(cx, proto);
+
+            return rc;
+        }
+    }
+
+    return 0;
+}
+
+
+static int
 qjs_xml_node_get_own_property(JSContext *cx, JSPropertyDescriptor *pdesc,
     JSValueConst obj, JSAtom prop)
 {
+    int             rc;
     u_char          *text;
     JSValue         value;
     xmlNode         *node;
@@ -1241,6 +1282,12 @@ qjs_xml_node_get_own_property(JSContext *cx, JSPropertyDescriptor *pdesc,
 
     nm = name;
 
+    rc = qjs_xml_node_has_method(cx, obj, prop, &name);
+    if (rc != 0) {
+        JS_FreeCString(cx, (char *) name.start);
+        return rc < 0 ? -1 : 0;
+    }
+
 tag:
 
     value = qjs_xml_node_tag_handler(cx, current, &nm);
@@ -1433,6 +1480,14 @@ qjs_xml_node_property_modify(JSContext *cx, JSValueConst obj, JSAtom atom,
             JS_FreeCString(cx, (char *) name.start);
 
             return qjs_xml_node_text_handler(cx, obj, value);
+        }
+    }
+
+    if (delete) {
+        rc = qjs_xml_node_has_method(cx, obj, atom, &name);
+        if (rc != 0) {
+            JS_FreeCString(cx, (char *) name.start);
+            return rc < 0 ? -1 : 1;
         }
     }
 

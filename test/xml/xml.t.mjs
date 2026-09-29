@@ -81,6 +81,54 @@ let parse_tsuite = {
         { doc: `<r><!--c--><?p?>text<c/></r>`,
           get: (doc) => doc.r.getChildNS(null, 'c').$name,
           expected: 'c' },
+        { doc: `<r ID="ok"><addChild/><getAttributeNS/><getChildNS/>`
+               + `<removeChildren/><setAttribute/><removeAttribute/>`
+               + `<removeAllAttributes/><setText/><removeText/>`
+               + `<Issuer>trusted</Issuer></r>`,
+          get: (doc) => {
+              const node = doc.r;
+              const methods = ['addChild', 'getAttributeNS', 'getChildNS',
+                               'removeChildren', 'setAttribute',
+                               'removeAttribute', 'removeAllAttributes',
+                               'setText', 'removeText'];
+
+              return methods.every(name => typeof node[name] == 'function'
+                             && node[`$tag$${name}`].$name == name)
+                     && node.getAttributeNS(null, 'ID') == 'ok'
+                     && node.getChildNS(null, 'Issuer').$text == 'trusted';
+          },
+          expected: true },
+        { doc: `<r><getChildNS/></r>`,
+          get: (doc) => {
+              delete doc.r.$tag$getChildNS;
+              return typeof doc.r.getChildNS == 'function'
+                     && doc.r.$tag$getChildNS === undefined;
+          },
+          expected: true },
+        { doc: `<r><setAttribute/></r>`,
+          skip: () => !has_quickjs(),
+          get: (doc) => {
+              delete doc.r.setAttribute;
+              return typeof doc.r.setAttribute == 'function'
+                     && doc.r.$tag$setAttribute.$name == 'setAttribute';
+          },
+          expected: true },
+        { doc: `<r><getChildNS/></r>`,
+          skip: () => !has_quickjs(),
+          get: (doc) => {
+              const proto = Object.getPrototypeOf(doc.r);
+              const method = proto.getChildNS;
+
+              delete proto.getChildNS;
+
+              try {
+                  return doc.r.getChildNS.$name == 'getChildNS';
+
+              } finally {
+                  proto.getChildNS = method;
+              }
+          },
+          expected: true },
         { doc: `<!DOCTYPE r [<!ENTITY e "complete">]>`
                + `<r xmlns:x="urn:other" x:ID="pre&e;post"/>`,
           get: (doc) => doc.r.getAttributeNS('urn:other', 'ID'),
