@@ -12,18 +12,36 @@ proc njs_test {body {opts ""}} {
         eval spawn  -nottycopy njs $opts
     }
 
-    expect -re "interactive njs \\(njs:\\d+\.\\d+\.\\d+\\)\r\n\r\n>> "
+    expect -re "interactive njs \\(njs:\\d+\.\\d+\.\\d+\\)\r\n\r\n>> " {
+    } timeout {
+        return -code error "timed out waiting for REPL prompt"
+    } eof {
+        return -code error "REPL exited before prompt"
+    }
 
     set len [llength $body]
     for {set i 0} {$i < $len} {incr i} {
         set pair [lindex $body $i]
         send [lindex $pair 0]
-        expect [lindex $pair 1]
+        expect -glob [lindex $pair 1] {
+        } timeout {
+            return -code error "timed out waiting for: [lindex $pair 1]"
+        } eof {
+            return -code error "REPL exited before: [lindex $pair 1]"
+        }
     }
 
     send "\n"
     send ".exit\r\n"
-    expect eof
+    expect eof {
+    } timeout {
+        return -code error "timed out waiting for REPL exit"
+    }
+
+    set status [wait]
+    if {[llength $status] != 4 || [lindex $status 3] != 0} {
+        return -code error "REPL exited abnormally: $status"
+    }
 }
 
 proc njs_run {opts expected_re} {
@@ -78,9 +96,13 @@ njs_test {
      "o\r\n{\r\n toString: \\\[Function: toString],\r\n log: \\\[Function: log]\r\n}"}
 }
 
+# Work around old libedit's UTF-8 input bug: new String('αβZγ').
 njs_test {
-    {"[1, new Number(2), 'a', new String('αβZγ'), true, new Boolean(false)]\r\n"
-     "\\\[\r\n 1,\r\n \\\[Number: 2],\r\n 'a',\r\n \\\[String: 'αβZγ'],\r\n true,\r\n \\\[Boolean: false]\r\n]"}
+    {"[1, new Number(2), 'a',\
+      new String('\\u03b1\\u03b2Z\\u03b3'), true, new Boolean(false)]\r\n"
+     "\\\[\r\n 1,\r\n \\\[Number: 2],\r\n 'a',\r\n\
+      \\\[String: '\u03b1\u03b2Z\u03b3'],\r\n true,\r\n\
+      \\\[Boolean: false]\r\n]\r\n>> "}
 }
 
 njs_test {
