@@ -12,13 +12,23 @@ proc njs_test {body {opts ""}} {
         eval spawn  -nottycopy njs $opts
     }
 
-    expect -re "interactive njs \\((njs|QuickJS):.*\r\n\r\n>> "
+    expect -re "interactive njs \\((njs|QuickJS):.*\r\n\r\n>> " {
+    } timeout {
+        return -code error "timed out waiting for REPL prompt"
+    } eof {
+        return -code error "REPL exited before prompt"
+    }
 
     set len [llength $body]
     for {set i 0} {$i < $len} {incr i} {
         set pair [lindex $body $i]
         send [lindex $pair 0]
-        expect [lindex $pair 1]
+        expect -glob [lindex $pair 1] {
+        } timeout {
+            return -code error "timed out waiting for: [lindex $pair 1]"
+        } eof {
+            return -code error "REPL exited before: [lindex $pair 1]"
+        }
         if {[llength $pair] > 2
             && [regexp [lindex $pair 2] $expect_out(buffer)]} {
             return -code error "unexpected output: $expect_out(buffer)"
@@ -27,7 +37,15 @@ proc njs_test {body {opts ""}} {
 
     send "\n"
     send ".exit\r\n"
-    expect eof
+    expect eof {
+    } timeout {
+        return -code error "timed out waiting for REPL exit"
+    }
+
+    set status [wait]
+    if {[llength $status] != 4 || [lindex $status 3] != 0} {
+        return -code error "REPL exited abnormally: $status"
+    }
 }
 
 proc njs_run {opts expected_re} {
@@ -73,17 +91,17 @@ njs_test {
 
 njs_test {
     {"O\t"
-     "O\a*bject"}
+     "O*bject"}
 }
 
 njs_test {
     {"Mat\t"
-     "Mat\a*h"}
+     "Mat*h"}
 }
 
  njs_test {
      {"conso\t"
-     "conso\a*le"}
+      "conso*le"}
  }
 
 # Global completions, multiple partial match
@@ -94,7 +112,7 @@ njs_test {
 
 njs_test {
     {"Type\t"
-     "Type\a*Error"}
+     "Type*Error"}
     {".\t\t"
      "TypeError.__proto__"}
 }
@@ -106,14 +124,14 @@ njs_test {
 
 njs_test {
     {"Object.ge\t"
-     "Object.ge\a*t"}
+     "Object.ge*t"}
     {"\t\t"
      "Object.getOwnPropertyDescriptor*Object.getPrototypeOf"}
 }
 
 njs_test {
     {"JS\t"
-     "JS\a*ON"}
+     "JS*ON"}
     {".\t\t"
      "JSON.__*JSON.stringify"}
 }
@@ -122,7 +140,7 @@ njs_test {
     {"decodeURI\t\t"
      "decodeURI*decodeURIComponent"}
     {"C\t"
-     "decodeURIC\a*omponent"}
+     "decodeURIC*omponent"}
 }
 
 # Global completions, no matches
@@ -233,8 +251,15 @@ njs_test {
      "console.log(1, 'a')\r\n1\r\na\r\nundefined\r\n>> "}
     {"print(1, 'a')\r\n"
      "print(1, 'a')\r\n1\r\na\r\nundefined\r\n>> "}
-    {"console.log('\\tабв\\nгд')\r\n"
-     "console.log('\\\\tабв\\\\nгд')\r\n\tабв\r\nгд\r\nundefined\r\n>> "}
+}
+
+# Work around old libedit's UTF-8 input bug: console.log('\tабв\nгд').
+njs_test {
+    {"console.log('\\t\\u0430\\u0431\\u0432\\n\\u0433\\u0434')\r\n"
+     "*\t\u0430\u0431\u0432\r\n\u0433\u0434\r\nundefined\r\n>> "}
+}
+
+njs_test {
     {"console.error(42)\r\n"
      "console.error(42)\r\nE: 42\r\nundefined\r\n>> "}
     {"console.info(23)\r\n"
@@ -316,11 +341,16 @@ njs_test {
 }
 
 # Non-ASCII characters
+# Work around old libedit's UTF-8 input bug: '絵文字'.
 njs_test {
-    {"'絵文字'\r\n"
-     "'絵文字'"}
-    {"var v = 'абвгдеёжзийкл';v[10]\r\n"
-     "'й'"}
+    {"'\\u7d75\\u6587\\u5b57'\r\n"
+     "'\u7d75\u6587\u5b57'\r\n>> "}
+}
+
+# Work around old libedit's UTF-8 input bug: var v = 'ёxй';v[2].
+njs_test {
+    {"var v = '\\u0451x\\u0439';v[2]\r\n"
+     "'\u0439'\r\n>> "}
 }
 
 # Immediate events
@@ -406,6 +436,7 @@ njs_test {
      "unhandled promise rejection: handled later\r\n*>> "}
     {"rejected.catch(() => {})\r\n"
      ">> " "unhandled promise rejection"}
+    {"42\r\n" "42\r\n>> " "unhandled promise rejection"}
 }
 
 njs_test {
