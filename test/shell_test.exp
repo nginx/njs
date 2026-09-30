@@ -457,6 +457,15 @@ njs_test {
      "'name'\r\n>> "}
 } "-n njs"
 
+njs_test {
+    {"import broken from './test/js/module/cyclic_compile_exception.js';\r\n"
+     "SyntaxError:*\r\n*>> "}
+    {"import dep from './test/js/module/cyclic_compile_exception_dep.js';\r\n"
+     "Error: Cannot load module*cyclic_compile_exception.js*\r\n*>> "}
+    {"1 + 1\r\n"
+     "2\r\n>> "}
+} "-n njs"
+
 # CLI OPTIONS
 
 # help

@@ -2688,6 +2688,10 @@ njs_vmcode_import(njs_vm_t *vm, njs_mod_t *module, njs_value_t *retval)
 
     m = njs_module_find(vm, &module->name, 0);
     if (njs_slow_path(m == NULL)) {
+        if (!njs_is_valid(&vm->exception)) {
+            njs_error(vm, "Cannot load module \"%V\"", &module->name);
+        }
+
         return NJS_ERROR;
     }
 
