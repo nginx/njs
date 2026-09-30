@@ -1,3 +1,123 @@
+Changes with njs 1.0.2                                       14 Oct 2026
+
+    nginx modules:
+
+    *) Bugfix: fixed response body framing and keepalive connection reuse
+       in ngx.fetch().  Responses with conflicting Content-Length fields,
+       with both Transfer-Encoding and Content-Length, or with 1xx status
+       codes are now rejected.
+
+    *) Bugfix: fixed enforcement of max_response_body_size for chunked
+       responses in ngx.fetch().
+
+    *) Bugfix: fixed parsing of js_periodic options following
+       worker_affinity in HTTP and Stream configurations.
+
+    *) Bugfix: fixed memory leaks and false unhandled promise rejection
+       reports when formatting rejection reasons in the QuickJS engine.
+
+    Core:
+
+    *) Security: fixed a memory leak when parsing malformed XML in the
+       njs engine.  Repeated malformed input could exhaust worker process
+       memory.
+
+    *) Security: fixed incomplete XML attribute values containing entity
+       references.  JavaScript accessors could return values different
+       from those used by XML canonicalization, affecting signed XML
+       validation.
+
+    *) Feature: added XMLNode.getAttributeNS() and XMLNode.getChildNS()
+       methods for namespace-aware attribute and child element lookup.
+
+    *) Improvement: reduced compilation memory consumption in the njs
+       engine and released temporary parser and generator data after
+       compilation.
+
+    *) Improvement: switched to constant-time HMAC signature verification
+       in WebCrypto.
+
+    *) Change: XML node mutation and canonicalization now reject detached
+       nodes, and a removed child node has an undefined $parent.
+       Text and attribute values must be primitive strings; null and
+       undefined retain their deletion semantics for these values.
+       addChild() and $tags reject source trees with namespaces.
+       Assigning to $tag$name now throws TypeError in the QuickJS engine;
+       deletion is still supported.
+
+    *) Change: the "test262" make target was renamed to "js_test".
+       The "test262" target now runs the official Test262 suite and
+       requires NJS_TEST262_DIR.
+
+    *) Bugfix: fixed stale XML node references after tree mutations and
+       a crash when repeatedly modifying a node in the QuickJS engine.
+
+    *) Bugfix: fixed XML node methods being hidden by child elements with
+       matching names in the QuickJS engine.
+
+    *) Bugfix: fixed XML document leaks during property existence checks
+       in the QuickJS engine.
+
+    *) Bugfix: fixed out-of-bounds reads and invalid frees when formatting
+       unhandled promise rejection reasons in the QuickJS shell.
+
+    *) Bugfix: fixed crashes and incorrect error reporting when importing
+       modules after a failed module compilation in the njs engine.
+
+    *) Bugfix: fixed oversized Buffer allocation lengths being truncated
+       instead of rejected in the QuickJS engine.
+
+    *) Bugfix: fixed use of invalidated zlib dictionary memory during
+       argument conversion in the QuickJS engine.
+
+    *) Bugfix: fixed UTC Date setters applying the local timezone offset
+       in the njs engine.
+
+    *) Bugfix: fixed Promise.any() with empty input resolving with
+       AggregateError instead of rejecting in the njs engine.
+
+    *) Bugfix: fixed excessive execution time and memory consumption in
+       Array.prototype.sort() with huge sparse arrays in the njs engine.
+       This closes #1095 issue on Github.
+
+    *) Bugfix: fixed Array.prototype.concat() with sparse arrays in the
+       njs engine.
+       This closes #1095 issue on Github.
+
+    *) Bugfix: fixed initialization of array literals with more than
+       32760 elements in the njs engine.
+
+    *) Bugfix: fixed invalid memory accesses when enumerating typed arrays
+       with Object.values() and Object.entries() in the njs engine.
+       This closes #1098 issue on Github.
+
+    *) Bugfix: fixed invalid memory accesses in Object.defineProperty()
+       with reentrant property descriptors in the njs engine.
+       This closes #1089 issue on Github.
+
+    *) Bugfix: fixed object-to-primitive conversion when user code
+       replaced the input value during conversion in the njs engine.
+       This closes #1094 issue on Github.
+
+    *) Bugfix: fixed memory corruption in RegExp replace and split
+       operations with custom exec() results in the njs engine.
+       This closes #1090, #1091, #1092, #1093, #1096, and #1097 issues
+       on Github.
+
+    *) Bugfix: fixed out-of-bounds reads in RegExp replacement with
+       inconsistent match objects in the njs engine.
+       Thanks to Basavaraj S m.
+
+    *) Bugfix: fixed out-of-bounds reads in RegExp named capture lookup
+       in the njs engine.
+       This closes #1088 issue on Github.
+
+    *) Bugfix: fixed parsing of for loop initializers and preservation of
+       lexical bindings across nested declarations in the njs engine.
+
+    *) Bugfix: prevented stack overflow when compiling deeply nested
+       expressions in the njs engine by limiting recursive analysis.
+
 Changes with njs 1.0.1                                       02 Sep 2026
 
     nginx modules:
