@@ -151,8 +151,7 @@ njs_module_remove(njs_vm_t *vm, njs_mod_t *module)
 
     (void) njs_flathsh_delete(&vm->shared->modules_hash, &fhq);
 
-    njs_mp_free(vm->mem_pool, module->name.start);
-    njs_mp_free(vm->mem_pool, module);
+    /* Compiled dependencies may still reference this module and its name. */
 }
 
 

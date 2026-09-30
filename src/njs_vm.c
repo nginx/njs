@@ -326,7 +326,6 @@ njs_vm_compile_module(njs_vm_t *vm, njs_str_t *name, u_char **start,
     u_char *end)
 {
     njs_int_t              ret;
-    njs_uint_t             code_index;
     njs_mod_t              *module;
     njs_parser_t           parser;
     njs_vm_code_t          *code;
@@ -335,7 +334,6 @@ njs_vm_compile_module(njs_vm_t *vm, njs_str_t *name, u_char **start,
     njs_function_lambda_t  *lambda;
 
     parser.mem_pool = NULL;
-    code_index = (vm->codes != NULL) ? vm->codes->items : 0;
 
     module = njs_module_find(vm, name, 1);
     if (module != NULL) {
@@ -397,7 +395,6 @@ failed:
         njs_parser_destroy(&parser);
     }
 
-    njs_generator_cleanup(vm, code_index);
     njs_module_remove(vm, module);
 
     return NULL;
