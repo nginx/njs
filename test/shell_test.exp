@@ -448,6 +448,15 @@ njs_test {
     {"42\r\n" "42\r\n>> " "unhandled promise rejection"}
 }
 
+njs_test {
+    {"import broken from './test/js/module/compile_exception.js';\r\n"
+     "SyntaxError:*\r\n*>> "}
+    {"import broken from './test/js/module/compile_exception.js';\r\n"
+     "SyntaxError:*\r\n*>> "}
+    {"import name from './test/js/module/name.js'; name;\r\n"
+     "'name'\r\n>> "}
+} "-n njs"
+
 # CLI OPTIONS
 
 # help

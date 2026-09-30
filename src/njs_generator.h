@@ -46,7 +46,6 @@ njs_int_t njs_generator_init(njs_generator_t *generator, njs_mp_t *mem_pool,
     njs_str_t *file, njs_int_t depth, njs_bool_t runtime);
 njs_vm_code_t *njs_generate_scope(njs_vm_t *vm, njs_generator_t *generator,
     njs_parser_scope_t *scope, const njs_str_t *name);
-void njs_generator_cleanup(njs_vm_t *vm, njs_uint_t code_index);
 njs_vm_code_t *njs_lookup_code(njs_vm_t *vm, u_char *pc);
 uint32_t njs_lookup_line(njs_arr_t *lines, uint32_t offset);
 
