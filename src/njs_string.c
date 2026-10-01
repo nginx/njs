@@ -1469,7 +1469,7 @@ njs_string_from_char_code(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t is_point, njs_value_t *retval)
 {
     double                num;
-    u_char                *p, *start, *end;
+    u_char                *p, *start, *end, *last;
     ssize_t               len;
     int32_t               code;
     uint32_t              cp;
@@ -1515,18 +1515,30 @@ njs_string_from_char_code(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         len = njs_utf16_encode(code, &start, end);
 
         start = buf;
-        cp = njs_utf16_decode(&ctx, (const u_char **) &start, start + len);
+        last = buf + len;
 
-        if (cp > NJS_UNICODE_MAX_CODEPOINT) {
-            if (cp == NJS_UNICODE_CONTINUE) {
-                continue;
+        /*
+         * When a pending leading surrogate is not followed by a trailing
+         * one, njs_utf16_decode() reports the unpaired surrogate and pushes
+         * the current code unit back, so the buffer has to be drained before
+         * the next argument overwrites it.
+         */
+
+        do {
+            cp = njs_utf16_decode(&ctx, (const u_char **) &start, last);
+
+            if (cp > NJS_UNICODE_MAX_CODEPOINT) {
+                if (cp == NJS_UNICODE_CONTINUE) {
+                    break;
+                }
+
+                cp = NJS_UNICODE_REPLACEMENT;
             }
 
-            cp = NJS_UNICODE_REPLACEMENT;
-        }
+            size += njs_utf8_size(cp);
+            length++;
 
-        size += njs_utf8_size(cp);
-        length++;
+        } while (start < last);
     }
 
     if (cp == NJS_UNICODE_CONTINUE) {
@@ -1553,17 +1565,22 @@ njs_string_from_char_code(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         len = njs_utf16_encode(code, &start, end);
 
         start = buf;
-        cp = njs_utf16_decode(&ctx, (const u_char **) &start, start + len);
+        last = buf + len;
 
-        if (cp > NJS_UNICODE_MAX_CODEPOINT) {
-            if (cp == NJS_UNICODE_CONTINUE && i + 1 != nargs) {
-                continue;
+        do {
+            cp = njs_utf16_decode(&ctx, (const u_char **) &start, last);
+
+            if (cp > NJS_UNICODE_MAX_CODEPOINT) {
+                if (cp == NJS_UNICODE_CONTINUE && i + 1 != nargs) {
+                    break;
+                }
+
+                cp = NJS_UNICODE_REPLACEMENT;
             }
 
-            cp = NJS_UNICODE_REPLACEMENT;
-        }
+            p = njs_utf8_encode(p, cp);
 
-        p = njs_utf8_encode(p, cp);
+        } while (start < last);
     }
 
     return NJS_OK;
