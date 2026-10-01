@@ -1858,7 +1858,7 @@ njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
     }
 
-    fd = open(path, flags);
+    fd = open(path, flags, 0666);
     if (njs_slow_path(fd < 0)) {
         ret = njs_fs_error(vm, "open", strerror(errno), path, errno, &result);
         goto done;
@@ -1885,6 +1885,7 @@ njs_fs_read_file(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                                &result);
         }
 
+        njs_mp_free(njs_vm_memory_pool(vm), data.start);
         goto done;
     }
 

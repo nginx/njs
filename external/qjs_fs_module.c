@@ -941,7 +941,7 @@ qjs_fs_read_file(JSContext *cx, JSValueConst this_val, int argc,
 
     JS_FreeValue(cx, encode);
 
-    fd = open(path, flags);
+    fd = open(path, flags, 0666);
     if (fd < 0) {
         result = qjs_fs_error(cx, "open", strerror(errno), path, errno);
         goto done;
