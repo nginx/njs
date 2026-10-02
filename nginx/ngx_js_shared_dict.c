@@ -19,8 +19,8 @@ typedef struct {
     ngx_rbtree_t           rbtree_expire;
     ngx_rbtree_node_t      sentinel_expire;
 
-    unsigned               dirty:1;
-    unsigned               writing:1;
+    ngx_uint_t             dirty;
+    ngx_uint_t             writing;
 } ngx_js_dict_sh_t;
 
 
