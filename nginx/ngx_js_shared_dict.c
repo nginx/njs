@@ -2609,6 +2609,11 @@ ngx_js_dict_save(ngx_js_dict_t *dict)
 
     name = dict->state_temp_file.data;
 
+    ngx_memzero(&file, sizeof(ngx_file_t));
+    file.fd = NGX_INVALID_FILE;
+    file.name = dict->state_temp_file;
+    file.log = log;
+
     out = NULL;
     ll = &out;
 
@@ -2633,10 +2638,6 @@ ngx_js_dict_save(ngx_js_dict_t *dict)
     }
 
     *ll = NULL;
-
-    ngx_memzero(&file, sizeof(ngx_file_t));
-    file.name = dict->state_temp_file;
-    file.log = log;
 
     file.fd = ngx_open_file(file.name.data, NGX_FILE_WRONLY, NGX_FILE_TRUNCATE,
                             NGX_FILE_DEFAULT_ACCESS);
