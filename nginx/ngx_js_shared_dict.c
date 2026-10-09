@@ -2659,6 +2659,8 @@ ngx_js_dict_save(ngx_js_dict_t *dict)
     if (ngx_close_file(file.fd) == NGX_FILE_ERROR) {
         ngx_log_error(NGX_LOG_ALERT, log, ngx_errno,
                      ngx_close_file_n " \"%s\" failed", file.name.data);
+        file.fd = NGX_INVALID_FILE;
+        goto error;
     }
 
     file.fd = NGX_INVALID_FILE;
