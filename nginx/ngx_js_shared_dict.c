@@ -20,7 +20,7 @@ typedef struct {
     ngx_rbtree_node_t      sentinel_expire;
 
     ngx_msec_t             last_write;
-    ngx_uint_t             dirty;
+    ngx_uint_t             write_id;
     ngx_uint_t             writing;
 } ngx_js_dict_sh_t;
 
@@ -46,6 +46,7 @@ struct ngx_js_dict_s {
     ngx_event_t            save_event;
     ngx_str_t              state_file;
     ngx_str_t              state_temp_file;
+    ngx_uint_t             write_id;
 
     ngx_js_dict_t         *next;
 };
@@ -663,7 +664,7 @@ njs_js_ext_shared_dict_clear(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
 done:
 
-    dict->sh->dirty = 1;
+    dict->write_id = dict->sh->write_id;
 
     ngx_rwlock_unlock(&dict->sh->rwlock);
 
@@ -1492,7 +1493,7 @@ ngx_js_dict_set(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_str_t *key,
         }
     }
 
-    dict->sh->dirty = 1;
+    dict->write_id = dict->sh->write_id;
 
     ngx_rwlock_unlock(&dict->sh->rwlock);
 
@@ -1704,7 +1705,7 @@ ngx_js_dict_delete(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_str_t *key,
 
     ngx_js_dict_node_free(dict, node);
 
-    dict->sh->dirty = 1;
+    dict->write_id = dict->sh->write_id;
 
     ngx_rwlock_unlock(&dict->sh->rwlock);
 
@@ -1755,7 +1756,7 @@ ngx_js_dict_incr(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_str_t *key,
         }
     }
 
-    dict->sh->dirty = 1;
+    dict->write_id = dict->sh->write_id;
 
     ngx_rwlock_unlock(&dict->sh->rwlock);
 
@@ -2563,6 +2564,7 @@ ngx_js_dict_save(ngx_js_dict_t *dict)
     u_char                 *name;
     ngx_int_t               rc;
     ngx_log_t              *log;
+    ngx_uint_t              write_id;
     ngx_msec_t              now;
     njs_chb_t               chain;
     ngx_file_t              file;
@@ -2582,7 +2584,7 @@ ngx_js_dict_save(ngx_js_dict_t *dict)
 
     ngx_rwlock_wlock(&dict->sh->rwlock);
 
-    if (!dict->sh->dirty) {
+    if (dict->write_id < dict->sh->write_id) {
         ngx_rwlock_unlock(&dict->sh->rwlock);
         ngx_destroy_pool(pool);
         return NGX_OK;
@@ -2613,8 +2615,10 @@ ngx_js_dict_save(ngx_js_dict_t *dict)
     }
 
     dict->sh->writing = 1;
-    dict->sh->dirty = 0;
+    dict->sh->write_id++;
     dict->sh->last_write = now;
+
+    write_id = dict->sh->write_id;
 
     ngx_rwlock_unlock(&dict->sh->rwlock);
 
@@ -2705,9 +2709,7 @@ error:
 
     ngx_destroy_pool(pool);
 
-    dict->sh->dirty = 1;
-
-    ngx_memory_barrier();
+    dict->write_id = write_id;
 
     /* no lock required */
     dict->sh->writing = 0;
@@ -2836,14 +2838,14 @@ ngx_js_dict_load(ngx_js_dict_t *dict)
             expire = entries[i].expire;
 
             if (expire && now >= expire) {
-                dict->sh->dirty = 1;
+                dict->write_id = dict->sh->write_id;
                 continue;
             }
 
             if (expire == 0) {
                 /* treat state without expire as new */
                 expire = now + dict->timeout;
-                dict->sh->dirty = 1;
+                dict->write_id = dict->sh->write_id;
             }
 
         } else {
@@ -2925,9 +2927,18 @@ ngx_js_dict_init_worker(ngx_js_main_conf_t *jmcf)
 
     for (dict = jmcf->dicts; dict != NULL; dict = dict->next) {
 
-        if (!dict->sh->dirty || !dict->state_file.data) {
+        if (!dict->state_file.data) {
             continue;
         }
+
+        ngx_rwlock_rlock(&dict->sh->rwlock);
+
+        if (dict->write_id < dict->sh->write_id) {
+            ngx_rwlock_unlock(&dict->sh->rwlock);
+            continue;
+        }
+
+        ngx_rwlock_unlock(&dict->sh->rwlock);
 
         ngx_add_timer(&dict->save_event, 1000);
     }
@@ -2984,6 +2995,7 @@ ngx_js_dict_init_zone(ngx_shm_zone_t *shm_zone, void *data)
     dict->shpool->data = dict->sh;
 
     dict->sh->last_write = ngx_current_msec;
+    dict->sh->write_id = 1;
 
     ngx_rbtree_init(&dict->sh->rbtree, &dict->sh->sentinel,
                     ngx_str_rbtree_insert_value);
@@ -3391,7 +3403,7 @@ ngx_qjs_ext_shared_dict_clear(JSContext *cx, JSValueConst this_val,
 
 done:
 
-    dict->sh->dirty = 1;
+    dict->write_id = dict->sh->write_id;
 
     ngx_rwlock_unlock(&dict->sh->rwlock);
 
@@ -4148,7 +4160,7 @@ ngx_qjs_dict_delete(JSContext *cx, ngx_js_dict_t *dict, ngx_str_t *key,
 
     ngx_js_dict_node_free(dict, node);
 
-    dict->sh->dirty = 1;
+    dict->write_id = dict->sh->write_id;
 
     ngx_rwlock_unlock(&dict->sh->rwlock);
 
@@ -4236,7 +4248,7 @@ ngx_qjs_dict_incr(JSContext *cx, ngx_js_dict_t *dict, ngx_str_t *key,
         }
     }
 
-    dict->sh->dirty = 1;
+    dict->write_id = dict->sh->write_id;
 
     ngx_rwlock_unlock(&dict->sh->rwlock);
 
@@ -4289,7 +4301,7 @@ ngx_qjs_dict_set(JSContext *cx, ngx_js_dict_t *dict, ngx_str_t *key,
         }
     }
 
-    dict->sh->dirty = 1;
+    dict->write_id = dict->sh->write_id;
 
     ngx_rwlock_unlock(&dict->sh->rwlock);
 
