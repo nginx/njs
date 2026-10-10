@@ -2694,9 +2694,12 @@ error:
 
     ngx_destroy_pool(pool);
 
+    dict->sh->dirty = 1;
+
+    ngx_memory_barrier();
+
     /* no lock required */
     dict->sh->writing = 0;
-    dict->sh->dirty = 1;
 
     return NGX_ERROR;
 }
