@@ -43,6 +43,8 @@ http {
 
     js_shared_dict_zone zone=waka:32k timeout=1000s type=number state=waka.json;
     js_shared_dict_zone zone=exp:32k timeout=1000s type=string state=exp.json;
+    js_shared_dict_zone zone=legacy:32k timeout=1000s type=number
+                        state=legacy.json;
 
     server {
         listen       127.0.0.1:8080;
@@ -58,6 +60,10 @@ http {
 
         location /incr {
             js_content test.incr;
+        }
+
+        location /njs {
+            js_content test.njs;
         }
 
         location /set {
@@ -79,10 +85,19 @@ my $future_expire = $now_ms + 3600000;
 $t->write_file('exp.json', <<EOF);
 {"past":{"value":"gone","expire":$past_expire},
  "future":{"value":"here","expire":$future_expire},
- "noexp":{"value":"fresh","expire":0}}
+ "noexp":{"value":"fresh","expire":0},
+ "missing":{"value":"legacy"}}
+EOF
+
+$t->write_file('legacy.json', <<EOF);
+{"missing":{"value":17}}
 EOF
 
 $t->write_file('test.js', <<'EOF');
+    function test_njs(r) {
+        r.return(200, njs.version);
+    }
+
     function convertToValue(dict, v) {
         if (dict.type == 'number') {
             return parseInt(v);
@@ -155,17 +170,41 @@ $t->write_file('test.js', <<'EOF');
         r.return(200, val === undefined ? 'undefined' : val);
     }
 
-    export default { add, get, incr, set, ttl };
+    export default { add, get, incr, njs: test_njs, set, ttl };
 EOF
 
 $t->try_run('js_shared_dict_zone state with timeout no support on 32-bit')
-	->plan(18);
+	->plan(24);
 
 ###############################################################################
+
+TODO: {
+local $TODO = 'not yet' unless has_version('1.0.3');
+
+like(http_get('/get?dict=exp&key=missing'), qr/^legacy$/m,
+	'string entry without expire loaded');
+like(http_get('/get?dict=legacy&key=missing'), qr/^17$/m,
+	'number entry without expire loaded');
+
+for my $dict ('exp', 'legacy') {
+	my $ttl = get_ttl("/ttl?dict=$dict&key=missing");
+	ok($ttl >= 990000 && $ttl <= 1000000,
+		"$dict entry without expire gets zone timeout");
+}
 
 http_get('/set?dict=waka&key=foo&value=42');
 
 select undef, undef, undef, 1.1;
+
+for my $dict ('exp', 'legacy') {
+	my $state = read_state($t, "$dict.json");
+	my $expire = $state->{missing}->{expire};
+	ok(defined $expire && $expire >= $now_ms + 990000
+		&& $expire <= time_ms() + 1000000,
+		"$dict entry without expire resaved without mutation");
+}
+
+}
 
 $t->reload();
 
@@ -266,6 +305,23 @@ sub get_ttl {
 	my ($uri) = @_;
 	my $resp = http_get($uri);
 	($resp =~ /\x0d\x0a\x0d\x0a(\d+)/) ? $1 : -1;
+}
+
+sub has_version {
+	my $need = shift;
+
+	http_get('/njs') =~ /^([.0-9]+)$/m;
+
+	my @v = split(/\./, $1);
+	my ($n, $v);
+
+	for $n (split(/\./, $need)) {
+		$v = shift @v || 0;
+		return 0 if $n > $v;
+		return 1 if $v > $n;
+	}
+
+	return 1;
 }
 
 sub time_ms {
