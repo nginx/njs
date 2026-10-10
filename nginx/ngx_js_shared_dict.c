@@ -1999,6 +1999,7 @@ ngx_js_dict_render_json(ngx_js_dict_t *dict, njs_chb_t *chain)
 {
     u_char              *p, *dst;
     size_t               len;
+    ngx_uint_t           first;
     ngx_msec_t           now;
     ngx_time_t          *tp;
     ngx_rbtree_t        *rbtree;
@@ -2017,6 +2018,8 @@ ngx_js_dict_render_json(ngx_js_dict_t *dict, njs_chb_t *chain)
         return NGX_OK;
     }
 
+    first = 1;
+
     for (rn = ngx_rbtree_min(rbtree->root, rbtree->sentinel);
          rn != NULL;
          rn = next)
@@ -2028,6 +2031,12 @@ ngx_js_dict_render_json(ngx_js_dict_t *dict, njs_chb_t *chain)
         if (dict->timeout && now >= node->expire.key) {
             continue;
         }
+
+        if (!first) {
+            njs_chb_append_literal(chain, ",");
+        }
+
+        first = 0;
 
         if (ngx_js_render_string(chain, &node->sn.str) != NGX_OK) {
             return NGX_ERROR;
@@ -2067,10 +2076,6 @@ ngx_js_dict_render_json(ngx_js_dict_t *dict, njs_chb_t *chain)
         }
 
         njs_chb_append_literal(chain, "}");
-
-        if (next != NULL) {
-            njs_chb_append_literal(chain, ",");
-        }
     }
 
     njs_chb_append_literal(chain, "}");
