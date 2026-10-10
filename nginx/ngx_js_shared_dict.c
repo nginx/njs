@@ -19,6 +19,7 @@ typedef struct {
     ngx_rbtree_t           rbtree_expire;
     ngx_rbtree_node_t      sentinel_expire;
 
+    ngx_msec_t             last_write;
     ngx_uint_t             dirty;
     ngx_uint_t             writing;
 } ngx_js_dict_sh_t;
@@ -2562,12 +2563,15 @@ ngx_js_dict_save(ngx_js_dict_t *dict)
     u_char                 *name;
     ngx_int_t               rc;
     ngx_log_t              *log;
+    ngx_msec_t              now;
     njs_chb_t               chain;
     ngx_file_t              file;
     ngx_pool_t             *pool;
     ngx_chain_t            *out, *cl, **ll;
     njs_chb_node_t         *node;
     ngx_ext_rename_file_t   ext;
+
+    now = ngx_current_msec;
 
     log = dict->shm_zone->shm.log;
 
@@ -2590,6 +2594,12 @@ ngx_js_dict_save(ngx_js_dict_t *dict)
         return NGX_AGAIN;
     }
 
+    if ((ngx_msec_int_t) (now - dict->sh->last_write) < 1000) {
+        ngx_rwlock_unlock(&dict->sh->rwlock);
+        ngx_destroy_pool(pool);
+        return NGX_AGAIN;
+    }
+
     ngx_rwlock_downgrade(&dict->sh->rwlock);
 
     NGX_CHB_CTX_INIT(&chain, pool);
@@ -2604,6 +2614,7 @@ ngx_js_dict_save(ngx_js_dict_t *dict)
 
     dict->sh->writing = 1;
     dict->sh->dirty = 0;
+    dict->sh->last_write = now;
 
     ngx_rwlock_unlock(&dict->sh->rwlock);
 
@@ -2971,6 +2982,8 @@ ngx_js_dict_init_zone(ngx_shm_zone_t *shm_zone, void *data)
     }
 
     dict->shpool->data = dict->sh;
+
+    dict->sh->last_write = ngx_current_msec;
 
     ngx_rbtree_init(&dict->sh->rbtree, &dict->sh->sentinel,
                     ngx_str_rbtree_insert_value);
