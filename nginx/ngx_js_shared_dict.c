@@ -2355,6 +2355,7 @@ ngx_js_dict_parse_entry(ngx_js_dict_t *dict, ngx_pool_t *pool,
     }
 
     see_value = 0;
+    entry->expire = 0;
 
     while (1) {
         p = ngx_js_skip_space(p, end);
