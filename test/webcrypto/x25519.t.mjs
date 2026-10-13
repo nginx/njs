@@ -19,16 +19,6 @@ async function import_key_pair(params) {
 
 
 async function test(params) {
-    try {
-        await crypto.subtle.generateKey("X25519", true, ["deriveBits"]);
-    } catch (e) {
-        if (e.message.indexOf("X25519") !== -1) {
-            return 'SKIPPED';
-        }
-
-        throw e;
-    }
-
     /* generateKey + deriveBits roundtrip */
     if (params.derive_bits) {
         let alice = await crypto.subtle.generateKey("X25519", true,
@@ -104,6 +94,19 @@ async function test(params) {
         if (s2 !== params.expected) {
             throw Error(`reverse shared secret mismatch: ${s2} != `
                         + `${params.expected}`);
+        }
+
+        let jwk = await crypto.subtle.exportKey("jwk", alice.privateKey);
+        let raw = await crypto.subtle.exportKey("raw", bob.publicKey);
+        let privateKey = await crypto.subtle.importKey("jwk", jwk,
+            "X25519", false, ["deriveBits"]);
+        let publicKey = await crypto.subtle.importKey("raw", raw,
+            "X25519", false, []);
+        let secret = await crypto.subtle.deriveBits(
+            {name: "X25519", public: publicKey}, privateKey, 256);
+
+        if (Buffer.from(secret).toString("base64url") !== params.expected) {
+            throw Error("X25519 JWK/raw key agreement failed");
         }
 
         return 'SUCCESS';
@@ -188,7 +191,7 @@ async function test(params) {
 
 let x25519_tsuite = {
     name: "X25519 key agreement",
-    skip: () => (!has_buffer() || !has_webcrypto()),
+    skip: async () => !await has_webcrypto_algorithm("X25519"),
     T: test,
     prepare_args: (args) => args,
 
@@ -211,16 +214,6 @@ let x25519_tsuite = {
 ]};
 
 async function test_derive_with_ed25519_key() {
-    try {
-        await crypto.subtle.generateKey("Ed25519", true, ["sign"]);
-    } catch (e) {
-        if (e.message.indexOf("Ed25519") !== -1) {
-            return 'SKIPPED';
-        }
-
-        throw e;
-    }
-
     let x_kp = await crypto.subtle.generateKey("X25519", true,
                                                 ["deriveBits"]);
     let ed_kp = await crypto.subtle.generateKey("Ed25519", true,
@@ -232,16 +225,6 @@ async function test_derive_with_ed25519_key() {
 }
 
 async function test_sign_with_x25519_key() {
-    try {
-        await crypto.subtle.generateKey("X25519", true, ["deriveBits"]);
-    } catch (e) {
-        if (e.message.indexOf("X25519") !== -1) {
-            return 'SKIPPED';
-        }
-
-        throw e;
-    }
-
     let kp = await crypto.subtle.generateKey("X25519", true,
                                               ["deriveBits"]);
     let data = new TextEncoder().encode("test");
@@ -250,7 +233,8 @@ async function test_sign_with_x25519_key() {
 
 let x25519_error_tsuite = {
     name: "X25519 errors",
-    skip: () => (!has_buffer() || !has_webcrypto()),
+    skip: async () => !await has_webcrypto_algorithm("X25519")
+                     || !await has_webcrypto_algorithm("Ed25519"),
     T: (params) => params.T(),
     prepare_args: (args) => args,
 

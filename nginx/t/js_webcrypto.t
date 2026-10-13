@@ -48,6 +48,10 @@ http {
         location /random_values_test {
             js_content test.random_values_test;
         }
+
+        location /algorithms {
+            js_content test.algorithms;
+        }
     }
 }
 
@@ -80,7 +84,70 @@ $t->write_file('test.js', <<EOF);
         r.return(200, bits1 > (mean - 10 * stdd) && bits1 < (mean + 10 * stdd));
     }
 
-    export default {has_crypto, random_values_test};
+    async function ed25519() {
+        let data = new Uint8Array(16);
+        let ed = await crypto.subtle.generateKey("Ed25519", false,
+                                                ["sign", "verify"]);
+        let signature = await crypto.subtle.sign("Ed25519",
+                                                 ed.privateKey, data);
+        if (!await crypto.subtle.verify("Ed25519", ed.publicKey,
+                                         signature, data))
+        {
+            throw Error("Ed25519 verification failed");
+        }
+    }
+
+    async function x25519() {
+        let x = await crypto.subtle.generateKey("X25519", false,
+                                               ["deriveBits"]);
+        let bits = await crypto.subtle.deriveBits(
+            {name: "X25519", public: x.publicKey}, x.privateKey, 256);
+        if (bits.byteLength !== 32) {
+            throw Error("X25519 derivation failed");
+        }
+    }
+
+    async function aes_kw() {
+        let data = new Uint8Array(16);
+        let key = await crypto.subtle.importKey("raw", data,
+            "AES-GCM", true, ["encrypt"]);
+        for (let length = 128; length <= 256; length += 64) {
+            let kw = await crypto.subtle.generateKey(
+                {name: "AES-KW", length}, false, ["wrapKey", "unwrapKey"]);
+            let wrapped = await crypto.subtle.wrapKey("raw", key, kw,
+                                                     "AES-KW");
+            let unwrapped = await crypto.subtle.unwrapKey("raw", wrapped,
+                kw, "AES-KW", "AES-GCM", true, ["encrypt"]);
+            let raw = await crypto.subtle.exportKey("raw", unwrapped);
+            if (Buffer.from(raw).compare(Buffer.from(data)) !== 0) {
+                throw Error("AES-KW roundtrip failed");
+            }
+        }
+    }
+
+    async function algorithms(r) {
+        try {
+            switch (r.args.algorithm) {
+            case "Ed25519":
+                await ed25519();
+                break;
+            case "X25519":
+                await x25519();
+                break;
+            case "AES-KW":
+                await aes_kw();
+                break;
+            default:
+                throw Error("unknown test algorithm");
+            }
+
+            r.return(200, "SUCCESS");
+        } catch (e) {
+            r.return(500, e.message);
+        }
+    }
+
+    export default {has_crypto, random_values_test, algorithms};
 
 EOF
 
@@ -89,10 +156,28 @@ $t->try_run('no njs');
 plan(skip_all => 'njs crypto module not available')
 	if http_get('/has_crypto') !~ /true/;
 
-$t->plan(1);
+$t->plan(4);
 
 ###############################################################################
 
 like(http_get('/random_values_test'), qr/true/, 'random_values_test');
+
+SKIP: {
+	skip 'no 25519 support in SSL library', 2
+		unless $t->has_feature('openssl:1.1.1')
+		|| $t->has_feature('libressl:3.7.0')
+		|| $t->has_module('BoringSSL|AWS-LC');
+
+	like(http_get('/algorithms?algorithm=Ed25519'), qr/SUCCESS/, 'Ed25519');
+	like(http_get('/algorithms?algorithm=X25519'), qr/SUCCESS/, 'X25519');
+}
+
+SKIP: {
+	skip 'no AES-KW support in SSL library', 1
+		unless $t->has_feature('openssl:1.0.2')
+		|| $t->has_feature('libressl:3.0.0');
+
+	like(http_get('/algorithms?algorithm=AES-KW'), qr/SUCCESS/, 'AES-KW');
+}
 
 ###############################################################################

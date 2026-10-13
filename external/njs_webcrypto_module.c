@@ -114,7 +114,7 @@ static njs_int_t njs_cipher_aes_ctr(njs_vm_t *vm, njs_str_t *data,
 static njs_int_t njs_cipher_aes_cbc(njs_vm_t *vm, njs_str_t *data,
     njs_webcrypto_key_t *key, njs_value_t *options, njs_bool_t encrypt,
     njs_value_t *retval);
-#if (NJS_HAVE_AES_WRAP)
+#if defined(EVP_CIPHER_CTX_FLAG_WRAP_ALLOW)
 static njs_int_t njs_cipher_aes_kw(njs_vm_t *vm, njs_str_t *data,
     njs_webcrypto_key_t *key, njs_bool_t encrypt, njs_value_t *retval);
 #endif
@@ -126,7 +126,7 @@ static njs_int_t njs_ext_export_key(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
 static njs_int_t njs_ext_generate_key(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t unused, njs_value_t *retval);
-#if (NJS_HAVE_ED25519)
+#if (NJS_OPENSSL_HAS_25519)
 static njs_int_t njs_webcrypto_generate_25519_keypair(njs_vm_t *vm,
     int pkey_id, njs_webcrypto_key_t *key, njs_webcrypto_algorithm_t *alg,
     unsigned usage, njs_bool_t extractable, unsigned priv_usage,
@@ -287,7 +287,7 @@ static njs_webcrypto_entry_t njs_webcrypto_alg[] = {
                               1)
     },
 
-#if (NJS_HAVE_AES_WRAP)
+#if defined(EVP_CIPHER_CTX_FLAG_WRAP_ALLOW)
     {
       njs_str("AES-KW"),
       njs_webcrypto_algorithm(NJS_ALGORITHM_AES_KW,
@@ -326,7 +326,7 @@ static njs_webcrypto_entry_t njs_webcrypto_alg[] = {
                               0)
     },
 
-#if (NJS_HAVE_ED25519)
+#if (NJS_OPENSSL_HAS_25519)
     {
       njs_str("Ed25519"),
       njs_webcrypto_algorithm(NJS_ALGORITHM_ED25519,
@@ -1545,7 +1545,7 @@ fail:
 }
 
 
-#if (NJS_HAVE_AES_WRAP)
+#if defined(EVP_CIPHER_CTX_FLAG_WRAP_ALLOW)
 static njs_int_t
 njs_cipher_aes_kw(njs_vm_t *vm, njs_str_t *data, njs_webcrypto_key_t *key,
     njs_bool_t encrypt, njs_value_t *retval)
@@ -1581,19 +1581,24 @@ njs_cipher_aes_kw(njs_vm_t *vm, njs_str_t *data, njs_webcrypto_key_t *key,
 
     switch (key->u.s.raw.length) {
     case 16:
-        cipher = EVP_aes_128_wrap();
+        cipher = EVP_get_cipherbyname("id-aes128-wrap");
         break;
 
     case 24:
-        cipher = EVP_aes_192_wrap();
+        cipher = EVP_get_cipherbyname("id-aes192-wrap");
         break;
 
     case 32:
-        cipher = EVP_aes_256_wrap();
+        cipher = EVP_get_cipherbyname("id-aes256-wrap");
         break;
 
     default:
         njs_vm_type_error(vm, "AES-KW Invalid key length");
+        return NJS_ERROR;
+    }
+
+    if (njs_slow_path(cipher == NULL)) {
+        njs_vm_type_error(vm, "AES-KW is not supported by this OpenSSL build");
         return NJS_ERROR;
     }
 
@@ -2623,7 +2628,7 @@ njs_export_jwk_oct(njs_vm_t *vm, njs_webcrypto_key_t *key, njs_value_t *retval)
 }
 
 
-#if (NJS_HAVE_ED25519)
+#if (NJS_OPENSSL_HAS_25519)
 static njs_int_t
 njs_export_jwk_okp(njs_vm_t *vm, njs_webcrypto_key_t *key,
     njs_value_t *retval)
@@ -2779,7 +2784,7 @@ fail:
 }
 
 
-#if (NJS_HAVE_ED25519)
+#if (NJS_OPENSSL_HAS_25519)
 static njs_int_t
 njs_webcrypto_generate_25519_keypair(njs_vm_t *vm, int pkey_id,
     njs_webcrypto_key_t *key, njs_webcrypto_algorithm_t *alg, unsigned usage,
@@ -3100,7 +3105,7 @@ njs_ext_generate_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
         break;
 
-#if (NJS_HAVE_ED25519)
+#if (NJS_OPENSSL_HAS_25519)
     case NJS_ALGORITHM_ED25519:
         ret = njs_webcrypto_generate_25519_keypair(vm, EVP_PKEY_ED25519,
                                                    key, alg, usage,
@@ -3691,7 +3696,7 @@ fail:
 }
 
 
-#if (NJS_HAVE_ED25519)
+#if (NJS_OPENSSL_HAS_25519)
 static EVP_PKEY *
 njs_import_jwk_okp(njs_vm_t *vm, njs_value_t *jwk, njs_webcrypto_key_t *key)
 {
@@ -4058,7 +4063,7 @@ njs_webcrypto_import_key_internal(njs_vm_t *vm, njs_webcrypto_key_format_t fmt,
                 goto fail;
             }
 
-#if (NJS_HAVE_ED25519)
+#if (NJS_OPENSSL_HAS_25519)
         } else if (njs_strstr_eq(&kty, &njs_str_value("OKP"))) {
             if (alg->type != NJS_ALGORITHM_ED25519
                 && alg->type != NJS_ALGORITHM_X25519)
@@ -4209,7 +4214,7 @@ njs_webcrypto_import_key_internal(njs_vm_t *vm, njs_webcrypto_key_format_t fmt,
 
         break;
 
-#if (NJS_HAVE_ED25519)
+#if (NJS_OPENSSL_HAS_25519)
     case NJS_ALGORITHM_ED25519:
         if (fmt == NJS_KEY_FORMAT_RAW) {
             pkey = EVP_PKEY_new_raw_public_key(EVP_PKEY_ED25519, NULL,
@@ -4701,7 +4706,7 @@ njs_ext_sign(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     outlen = 0;
 
     switch (alg->type) {
-#if (NJS_HAVE_ED25519)
+#if (NJS_OPENSSL_HAS_25519)
     case NJS_ALGORITHM_ED25519:
         mctx = njs_evp_md_ctx_new();
         if (njs_slow_path(mctx == NULL)) {
@@ -4947,7 +4952,7 @@ njs_webcrypto_export_key_raw(njs_vm_t *vm, njs_webcrypto_key_t *key,
         case NJS_ALGORITHM_ECDH:
             return njs_export_jwk_asymmetric(vm, key, retval);
 
-#if (NJS_HAVE_ED25519)
+#if (NJS_OPENSSL_HAS_25519)
         case NJS_ALGORITHM_ED25519:
         case NJS_ALGORITHM_X25519:
             return njs_export_jwk_okp(vm, key, retval);
@@ -5042,7 +5047,7 @@ njs_webcrypto_export_key_raw(njs_vm_t *vm, njs_webcrypto_key_t *key,
             return njs_export_raw_ec(vm, key, retval);
         }
 
-#if (NJS_HAVE_ED25519)
+#if (NJS_OPENSSL_HAS_25519)
         if (key->alg->type == NJS_ALGORITHM_ED25519
             || key->alg->type == NJS_ALGORITHM_X25519)
         {
@@ -5087,7 +5092,7 @@ njs_webcrypto_cipher_core(njs_vm_t *vm, njs_str_t *data,
     case NJS_ALGORITHM_AES_CBC:
         return njs_cipher_aes_cbc(vm, data, key, options, encrypt, retval);
 
-#if (NJS_HAVE_AES_WRAP)
+#if defined(EVP_CIPHER_CTX_FLAG_WRAP_ALLOW)
     case NJS_ALGORITHM_AES_KW:
         return njs_cipher_aes_kw(vm, data, key, encrypt, retval);
 #endif
