@@ -4,16 +4,6 @@ flags: [async]
 ---*/
 
 async function test(params) {
-    try {
-        await crypto.subtle.generateKey("Ed25519", true, ["sign", "verify"]);
-    } catch (e) {
-        if (e.message.indexOf("Ed25519") !== -1) {
-            return 'SKIPPED';
-        }
-
-        throw e;
-    }
-
     /* generateKey + sign/verify roundtrip */
     if (params.generate) {
         let kp = await crypto.subtle.generateKey("Ed25519", true,
@@ -139,7 +129,7 @@ async function test(params) {
         return 'SUCCESS';
     }
 
-    /* RFC 8032 test vector: sign-only (verify uses derived public key) */
+    /* RFC 8032 test vector */
     if (params.rfc8032) {
         let priv_jwk = {
             kty: "OKP",
@@ -161,6 +151,19 @@ async function test(params) {
                 + "expected:\n" + params.expected);
         }
 
+        let pub = await crypto.subtle.importKey("jwk",
+            {kty: "OKP", crv: "Ed25519", x: params.x},
+            "Ed25519", false, ["verify"]);
+
+        if (!await crypto.subtle.verify("Ed25519", pub, expected, data)) {
+            throw Error("RFC 8032 signature verification failed");
+        }
+
+        expected[0] ^= 1;
+        if (await crypto.subtle.verify("Ed25519", pub, expected, data)) {
+            throw Error("Ed25519 accepted a tampered signature");
+        }
+
         return 'SUCCESS';
     }
 
@@ -169,7 +172,7 @@ async function test(params) {
 
 let ed25519_tsuite = {
     name: "Ed25519 sign/verify",
-    skip: () => (!has_buffer() || !has_webcrypto()),
+    skip: async () => !await has_webcrypto_algorithm("Ed25519"),
     T: test,
     prepare_args: (args) => args,
 
@@ -198,16 +201,6 @@ let ed25519_tsuite = {
 ]};
 
 async function test_sign_with_x25519() {
-    try {
-        await crypto.subtle.generateKey("X25519", true, ["deriveBits"]);
-    } catch (e) {
-        if (e.message.indexOf("X25519") !== -1) {
-            return 'SKIPPED';
-        }
-
-        throw e;
-    }
-
     let kp = await crypto.subtle.generateKey("X25519", true,
                                               ["deriveBits"]);
     let data = new TextEncoder().encode("test");
@@ -215,17 +208,6 @@ async function test_sign_with_x25519() {
 }
 
 async function test_derive_with_ed25519() {
-    try {
-        await crypto.subtle.generateKey("Ed25519", true,
-                                         ["sign", "verify"]);
-    } catch (e) {
-        if (e.message.indexOf("Ed25519") !== -1) {
-            return 'SKIPPED';
-        }
-
-        throw e;
-    }
-
     let kp = await crypto.subtle.generateKey("Ed25519", true,
                                               ["sign", "verify"]);
     await crypto.subtle.deriveBits(
@@ -235,7 +217,8 @@ async function test_derive_with_ed25519() {
 
 let ed25519_error_tsuite = {
     name: "Ed25519 errors",
-    skip: () => (!has_buffer() || !has_webcrypto()),
+    skip: async () => !await has_webcrypto_algorithm("Ed25519")
+                     || !await has_webcrypto_algorithm("X25519"),
     T: (params) => params.T(),
     prepare_args: (args) => args,
 

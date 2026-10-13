@@ -19,10 +19,18 @@ async function run(tlist) {
         return false;
     }
 
-    function map(ts) {
-        return ts.tests.map(t => {
+    async function map(ts) {
+        let skipped = [];
+
+        for (let i = 0; i < ts.tests.length; i++) {
+            let t = ts.tests[i];
+
+            skipped[i] = t.skip && await t.skip();
+        }
+
+        return ts.tests.map((t, i) => {
             try {
-                if (t.skip && t.skip()) {
+                if (skipped[i]) {
                     return Promise.resolve("SKIPPED");
                 }
 
@@ -40,11 +48,11 @@ async function run(tlist) {
     for (let k = 0; k < tlist.length; k++) {
         let ts = tlist[k];
 
-        if (ts.skip && ts.skip()) {
+        if (ts.skip && await ts.skip()) {
             continue;
         }
 
-        let results = await Promise.allSettled(map(ts));
+        let results = await Promise.allSettled(await map(ts));
         let r = results.map((r, i) => { r.passed = validate(ts.tests, r, i); return r; });
 
         let passed = r.filter(r => r.passed).length;

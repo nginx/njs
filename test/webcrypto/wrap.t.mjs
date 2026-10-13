@@ -4,20 +4,8 @@ flags: [async]
 ---*/
 
 async function test(params) {
-    let wrapping_key;
-
-    try {
-        wrapping_key = await crypto.subtle.generateKey(
-            params.wrap_alg, true, ["wrapKey", "unwrapKey"]);
-    } catch (e) {
-        if (e.message.indexOf("unknown algorithm") !== -1
-            || e.message.indexOf("Unrecognized algorithm") !== -1)
-        {
-            return 'SKIPPED';
-        }
-
-        throw e;
-    }
+    let wrapping_key = await crypto.subtle.generateKey(
+        params.wrap_alg, true, ["wrapKey", "unwrapKey"]);
 
     let key = await crypto.subtle.generateKey(
         params.key_alg, true, params.key_usage);
@@ -109,6 +97,7 @@ let wrap_tsuite = {
     tests: [
         /* AES-KW wrapping an AES-GCM key (raw format) */
         { wrap_alg: {name: "AES-KW", length: 256},
+          skip: async () => !await has_webcrypto_algorithm("AES-KW", 256),
           key_alg: {name: "AES-GCM", length: 128},
           key_usage: ["encrypt", "decrypt"],
           format: "raw",
@@ -119,6 +108,7 @@ let wrap_tsuite = {
 
         /* AES-KW wrapping an AES-CBC key */
         { wrap_alg: {name: "AES-KW", length: 128},
+          skip: async () => !await has_webcrypto_algorithm("AES-KW", 128),
           key_alg: {name: "AES-CBC", length: 256},
           key_usage: ["encrypt", "decrypt"],
           format: "raw",
@@ -127,6 +117,7 @@ let wrap_tsuite = {
 
         /* AES-KW wrapping an HMAC key */
         { wrap_alg: {name: "AES-KW", length: 256},
+          skip: async () => !await has_webcrypto_algorithm("AES-KW", 256),
           key_alg: {name: "HMAC", hash: "SHA-256"},
           key_usage: ["sign", "verify"],
           format: "raw",
@@ -194,7 +185,8 @@ let wrap_tsuite = {
 
 let wrap_error_tsuite = {
     name: "wrapKey/unwrapKey errors",
-    skip: () => (!has_buffer() || !has_webcrypto()),
+    skip: async () => !await has_webcrypto_algorithm("AES-KW", 128)
+                     || !await has_webcrypto_algorithm("AES-KW", 256),
     T: (params) => params.T(),
     prepare_args: (args) => args,
 

@@ -10,17 +10,6 @@ async function generate_kek(usages) {
 
 
 async function test(params) {
-    try {
-        await crypto.subtle.generateKey(
-            {name: "AES-KW", length: 128}, true, ["wrapKey", "unwrapKey"]);
-    } catch (e) {
-        if (e.message.indexOf("AES-KW") !== -1) {
-            return 'SKIPPED';
-        }
-
-        throw e;
-    }
-
     let key;
 
     if (params.generate) {
@@ -83,6 +72,21 @@ async function test(params) {
     let raw = await crypto.subtle.exportKey("raw", unwrapped);
     if (Buffer.from(raw).compare(data) != 0) {
         throw Error(`AES-KW unwrap failed`);
+    }
+
+    let tampered = Buffer.from(expected);
+    tampered[0] ^= 1;
+    let rejected = false;
+
+    try {
+        await crypto.subtle.unwrapKey("raw", tampered, kek,
+            "AES-KW", "AES-GCM", true, ["encrypt"]);
+    } catch (e) {
+        rejected = true;
+    }
+
+    if (!rejected) {
+        throw Error("AES-KW accepted a tampered key");
     }
 
     return 'SUCCESS';
@@ -149,7 +153,7 @@ async function test_no_unwrapkey_usage() {
 
 let aes_kw_tsuite = {
     name: "AES-KW wrap/unwrap",
-    skip: () => (!has_buffer() || !has_webcrypto()),
+    skip: async () => !await has_webcrypto_algorithm("AES-KW"),
     T: test,
     prepare_args: (args) => args,
 
@@ -199,7 +203,7 @@ let aes_kw_tsuite = {
 
 let aes_kw_error_tsuite = {
     name: "AES-KW errors",
-    skip: () => (!has_buffer() || !has_webcrypto()),
+    skip: async () => !await has_webcrypto_algorithm("AES-KW"),
     T: (params) => params.T(),
     prepare_args: (args) => args,
 

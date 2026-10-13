@@ -37,6 +37,13 @@
 #endif
 
 
+#if defined(EVP_PKEY_ED25519) && defined(EVP_PKEY_X25519)
+#define NJS_OPENSSL_HAS_25519  1
+#else
+#define NJS_OPENSSL_HAS_25519  0
+#endif
+
+
 #if (OPENSSL_VERSION_NUMBER >= 0x10002000L                            \
      && (!defined LIBRESSL_VERSION_NUMBER                            \
          || LIBRESSL_VERSION_NUMBER >= 0x3010000fL))

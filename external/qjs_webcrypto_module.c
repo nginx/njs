@@ -119,7 +119,7 @@ static JSValue qjs_cipher_aes_ctr(JSContext *cx, njs_str_t *data,
     qjs_webcrypto_key_t *key, JSValue options, int encrypt);
 static JSValue qjs_cipher_aes_cbc(JSContext *cx, njs_str_t *data,
     qjs_webcrypto_key_t *key, JSValue options, int encrypt);
-#if (NJS_HAVE_AES_WRAP)
+#if defined(EVP_CIPHER_CTX_FLAG_WRAP_ALLOW)
 static JSValue qjs_cipher_aes_kw(JSContext *cx, njs_str_t *data,
     qjs_webcrypto_key_t *key, int encrypt);
 #endif
@@ -133,7 +133,7 @@ static JSValue qjs_webcrypto_export_key(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv);
 static JSValue qjs_webcrypto_generate_key(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv);
-#if (NJS_HAVE_ED25519)
+#if (NJS_OPENSSL_HAS_25519)
 static int qjs_webcrypto_generate_25519_keypair(JSContext *cx, int pkey_id,
     qjs_webcrypto_key_t *wkey, qjs_webcrypto_algorithm_t *alg,
     unsigned usage, int extractable, unsigned priv_usage,
@@ -285,7 +285,7 @@ static qjs_webcrypto_entry_t qjs_webcrypto_alg[] = {
                               1)
     },
 
-#if (NJS_HAVE_AES_WRAP)
+#if defined(EVP_CIPHER_CTX_FLAG_WRAP_ALLOW)
     {
       njs_str("AES-KW"),
       qjs_webcrypto_algorithm(QJS_ALGORITHM_AES_KW,
@@ -324,7 +324,7 @@ static qjs_webcrypto_entry_t qjs_webcrypto_alg[] = {
                               0)
     },
 
-#if (NJS_HAVE_ED25519)
+#if (NJS_OPENSSL_HAS_25519)
     {
       njs_str("Ed25519"),
       qjs_webcrypto_algorithm(QJS_ALGORITHM_ED25519,
@@ -1330,7 +1330,7 @@ fail:
 }
 
 
-#if (NJS_HAVE_AES_WRAP)
+#if defined(EVP_CIPHER_CTX_FLAG_WRAP_ALLOW)
 static JSValue
 qjs_cipher_aes_kw(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
     int encrypt)
@@ -1366,20 +1366,25 @@ qjs_cipher_aes_kw(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
 
     switch (key->u.s.raw.length) {
     case 16:
-        cipher = EVP_aes_128_wrap();
+        cipher = EVP_get_cipherbyname("id-aes128-wrap");
         break;
 
     case 24:
-        cipher = EVP_aes_192_wrap();
+        cipher = EVP_get_cipherbyname("id-aes192-wrap");
         break;
 
     case 32:
-        cipher = EVP_aes_256_wrap();
+        cipher = EVP_get_cipherbyname("id-aes256-wrap");
         break;
 
     default:
         JS_ThrowTypeError(cx, "AES-KW Invalid key length");
         return JS_EXCEPTION;
+    }
+
+    if (cipher == NULL) {
+        return JS_ThrowTypeError(cx,
+                                "AES-KW is not supported by this OpenSSL build");
     }
 
     ctx = EVP_CIPHER_CTX_new();
@@ -1805,7 +1810,7 @@ fail:
 }
 
 
-#if (NJS_HAVE_ED25519)
+#if (NJS_OPENSSL_HAS_25519)
 static JSValue
 qjs_export_jwk_okp(JSContext *cx, qjs_webcrypto_key_t *key)
 {
@@ -2504,7 +2509,7 @@ qjs_webcrypto_export_key_raw(JSContext *cx, qjs_webcrypto_key_t *key,
         case QJS_ALGORITHM_ECDH:
             return qjs_export_jwk_asymmetric(cx, key);
 
-#if (NJS_HAVE_ED25519)
+#if (NJS_OPENSSL_HAS_25519)
         case QJS_ALGORITHM_ED25519:
         case QJS_ALGORITHM_X25519:
             return qjs_export_jwk_okp(cx, key);
@@ -2599,7 +2604,7 @@ qjs_webcrypto_export_key_raw(JSContext *cx, qjs_webcrypto_key_t *key,
             return qjs_export_raw_ec(cx, key);
         }
 
-#if (NJS_HAVE_ED25519)
+#if (NJS_OPENSSL_HAS_25519)
         if (key->alg->type == QJS_ALGORITHM_ED25519
             || key->alg->type == QJS_ALGORITHM_X25519)
         {
@@ -2642,7 +2647,7 @@ qjs_webcrypto_cipher_core(JSContext *cx, njs_str_t *data,
     case QJS_ALGORITHM_AES_CBC:
         return qjs_cipher_aes_cbc(cx, data, key, options, encrypt);
 
-#if (NJS_HAVE_AES_WRAP)
+#if defined(EVP_CIPHER_CTX_FLAG_WRAP_ALLOW)
     case QJS_ALGORITHM_AES_KW:
         return qjs_cipher_aes_kw(cx, data, key, encrypt);
 #endif
@@ -2691,7 +2696,7 @@ qjs_webcrypto_export_key(JSContext *cx, JSValueConst this_val, int argc,
 }
 
 
-#if (NJS_HAVE_ED25519)
+#if (NJS_OPENSSL_HAS_25519)
 static int
 qjs_webcrypto_generate_25519_keypair(JSContext *cx, int pkey_id,
     qjs_webcrypto_key_t *wkey, qjs_webcrypto_algorithm_t *alg, unsigned usage,
@@ -2986,7 +2991,7 @@ qjs_webcrypto_generate_key(JSContext *cx, JSValueConst this_val,
 
         break;
 
-#if (NJS_HAVE_ED25519)
+#if (NJS_OPENSSL_HAS_25519)
     case QJS_ALGORITHM_ED25519:
         n = qjs_webcrypto_generate_25519_keypair(cx, EVP_PKEY_ED25519,
                                                  wkey, alg, usage,
@@ -3638,7 +3643,7 @@ qjs_import_raw_ec(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key)
 }
 
 
-#if (NJS_HAVE_ED25519)
+#if (NJS_OPENSSL_HAS_25519)
 static EVP_PKEY *
 qjs_import_jwk_okp(JSContext *cx, JSValue jwk, qjs_webcrypto_key_t *key)
 {
@@ -4045,7 +4050,7 @@ qjs_webcrypto_import_key_internal(JSContext *cx, qjs_webcrypto_key_format_t fmt,
 
             break;
 
-#if (NJS_HAVE_ED25519)
+#if (NJS_OPENSSL_HAS_25519)
         case QJS_KEY_JWK_KTY_OKP:
             if (alg->type != QJS_ALGORITHM_ED25519
                 && alg->type != QJS_ALGORITHM_X25519)
@@ -4193,7 +4198,7 @@ qjs_webcrypto_import_key_internal(JSContext *cx, qjs_webcrypto_key_format_t fmt,
         wkey->u.a.pkey = pkey;
         break;
 
-#if (NJS_HAVE_ED25519)
+#if (NJS_OPENSSL_HAS_25519)
     case QJS_ALGORITHM_ED25519:
         if (fmt == QJS_KEY_FORMAT_RAW) {
             pkey = EVP_PKEY_new_raw_public_key(EVP_PKEY_ED25519, NULL,
@@ -4673,7 +4678,7 @@ qjs_webcrypto_sign(JSContext *cx, JSValueConst this_val, int argc,
     outlen = 0;
 
     switch (alg->type) {
-#if (NJS_HAVE_ED25519)
+#if (NJS_OPENSSL_HAS_25519)
     case QJS_ALGORITHM_ED25519:
         mctx = njs_evp_md_ctx_new();
         if (mctx == NULL) {
@@ -5947,6 +5952,10 @@ qjs_webcrypto_init(JSContext *cx, const char *name)
     int          rc;
     JSValue      crypto, proto, global_obj;
     JSModuleDef  *m;
+
+#if (OPENSSL_VERSION_NUMBER < 0x10100003L)
+    OpenSSL_add_all_algorithms();
+#endif
 
     if (!JS_IsRegisteredClass(JS_GetRuntime(cx),
                               QJS_CORE_CLASS_ID_WEBCRYPTO_KEY))
