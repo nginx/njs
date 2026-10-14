@@ -4895,6 +4895,11 @@ qjs_webcrypto_sign(JSContext *cx, JSValueConst this_val, int argc,
         }
 
     } else {
+        if (rc == 0) {
+            /* A signature mismatch may leave errors in the OpenSSL queue. */
+            ERR_clear_error();
+        }
+
         ret = JS_NewBool(cx, rc != 0);
     }
 

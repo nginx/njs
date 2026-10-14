@@ -4914,6 +4914,11 @@ njs_ext_sign(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
 
     } else {
+        if (ret == 0) {
+            /* A signature mismatch may leave errors in the OpenSSL queue. */
+            ERR_clear_error();
+        }
+
         njs_value_boolean_set(njs_value_arg(&result), ret != 0);
     }
 
