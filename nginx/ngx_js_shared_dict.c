@@ -2591,9 +2591,21 @@ ngx_js_dict_save(ngx_js_dict_t *dict)
     }
 
     if (dict->sh->writing) {
+        rc = NGX_AGAIN;
+
+        if (ngx_exiting
+            && (ngx_msec_int_t) (now - dict->sh->last_write) >= 60000)
+        {
+            /*
+             * The writer may have died during the save, leaving the flag
+             * set.  Do not delay the worker exit indefinitely.
+             */
+            rc = NGX_ERROR;
+        }
+
         ngx_rwlock_unlock(&dict->sh->rwlock);
         ngx_destroy_pool(pool);
-        return NGX_AGAIN;
+        return rc;
     }
 
     if ((ngx_msec_int_t) (now - dict->sh->last_write) < 1000) {
