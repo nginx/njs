@@ -1,5 +1,5 @@
 /*---
-includes: [compatFs.js, compatBuffer.js, compatWebcrypto.js, runTsuite.js, webCryptoUtils.js]
+includes: [compatFs.js, compatBuffer.js, compatNjs.js, compatWebcrypto.js, runTsuite.js, webCryptoUtils.js]
 flags: [async]
 ---*/
 
@@ -152,6 +152,55 @@ function p(args, default_opts) {
 
     return params;
 }
+
+async function decrypt_error(key) {
+    try {
+        await crypto.subtle.decrypt(
+            {name: "AES-CBC", iv: new Uint8Array(16)}, key,
+            new Uint8Array(16));
+    } catch (e) {
+        return e.toString();
+    }
+
+    throw Error("decrypt accepted invalid padding");
+}
+
+async function test_verify_error_queue() {
+    let pair = await crypto.subtle.generateKey(
+        {name: "RSA-PSS", modulusLength: 2048, hash: "SHA-256",
+         publicExponent: new Uint8Array([1, 0, 1])},
+        false, ["sign", "verify"]);
+    let key = await crypto.subtle.importKey("raw", new Uint8Array(16),
+                                           "AES-CBC", false, ["decrypt"]);
+    let options = {name: "RSA-PSS", saltLength: 32};
+    let data = new Uint8Array([1, 2, 3]);
+    let signature = await crypto.subtle.sign(options, pair.privateKey, data);
+
+    /* Drain errors left by preceding tests before taking the baseline. */
+    await decrypt_error(key);
+    let expected = await decrypt_error(key);
+
+    data[0] ^= 1;
+    let verified = await crypto.subtle.verify(options, pair.publicKey,
+                                             signature, data);
+    if (verified !== false) {
+        throw Error("verify accepted an invalid signature");
+    }
+
+    let actual = await decrypt_error(key);
+    if (actual !== expected) {
+        throw Error(`verify polluted OpenSSL errors: ${actual} != ${expected}`);
+    }
+
+    return "SUCCESS";
+}
+
+let verify_error_queue_tsuite = {
+    name: "verify OpenSSL error queue",
+    skip: () => !has_njs() || !has_webcrypto(),
+    T: test_verify_error_queue,
+    tests: [{}],
+};
 
 let hmac_tsuite = {
     name: "HMAC sign",
@@ -353,6 +402,7 @@ run([
     hmac_tsuite,
     rsassa_pkcs1_v1_5_tsuite,
     rsa_pss_tsuite,
-    ecdsa_tsuite
+    ecdsa_tsuite,
+    verify_error_queue_tsuite
 ])
 .then($DONE, $DONE);
