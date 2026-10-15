@@ -4529,10 +4529,13 @@ qjs_convert_p1363_to_der(JSContext *cx, EVP_PKEY *pkey, u_char *p1363,
 
     n = qjs_ec_rs_size(pkey);
 
-    if (n == 0 || p1363_len != 2 * n) {
-        JS_ThrowTypeError(cx, "invalid ECDSA signature length %zu != %u",
-                          p1363_len, 2 * n);
+    if (n == 0) {
+        qjs_webcrypto_error(cx, "cannot determine ECDSA signature length");
         return -1;
+    }
+
+    if (p1363_len != 2 * n) {
+        return 1;
     }
 
     ec_sig = ECDSA_SIG_new();
@@ -4862,6 +4865,11 @@ qjs_webcrypto_sign(JSContext *cx, JSValueConst this_val, int argc,
                 rc = qjs_convert_p1363_to_der(cx, key->u.a.pkey, sig.start,
                                               sig.length, &sig.start,
                                               &sig.length);
+                if (rc > 0) {
+                    rc = 0;
+                    goto verify_done;
+                }
+
                 if (rc < 0) {
                     goto fail;
                 }
@@ -4877,6 +4885,8 @@ qjs_webcrypto_sign(JSContext *cx, JSValueConst this_val, int argc,
                 qjs_webcrypto_error(cx, "EVP_PKEY_verify() failed");
                 goto fail;
             }
+
+        verify_done:
 
             js_free(cx, dst);
         }

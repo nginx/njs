@@ -4552,8 +4552,13 @@ njs_convert_p1363_to_der(njs_vm_t *vm, EVP_PKEY *pkey, u_char *p1363,
 
     n = njs_ec_rs_size(pkey);
 
-    if (njs_slow_path(n == 0 || p1363_len != 2 * n)) {
-        goto fail;
+    if (njs_slow_path(n == 0)) {
+        njs_webcrypto_error(vm, "cannot determine ECDSA signature length");
+        return NJS_ERROR;
+    }
+
+    if (p1363_len != 2 * n) {
+        return NJS_DECLINED;
     }
 
     ec_sig = ECDSA_SIG_new();
@@ -4887,6 +4892,11 @@ njs_ext_sign(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                 ret = njs_convert_p1363_to_der(vm, key->u.a.pkey, sig.start,
                                                sig.length, &sig.start,
                                                &sig.length);
+                if (ret == NJS_DECLINED) {
+                    ret = 0;
+                    goto verify_done;
+                }
+
                 if (njs_slow_path(ret != NJS_OK)) {
                     goto fail;
                 }
@@ -4898,6 +4908,8 @@ njs_ext_sign(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                 goto fail;
             }
         }
+
+    verify_done:
 
         njs_evp_md_ctx_free(mctx);
 
