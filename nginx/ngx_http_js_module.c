@@ -6687,8 +6687,14 @@ ngx_http_qjs_body_to_value(JSContext *cx, ngx_http_js_ctx_t *ctx,
 
     switch (type) {
     case NGX_JS_BODY_ARRAY_BUFFER:
-        return qjs_new_external_array_buffer(cx, ctx->body_read_data,
-                                             ctx->body_read_len, 0);
+        /*
+         * The body is allocated from the request pool, which is destroyed
+         * at the end of the request, while the context may be reused by
+         * the next one.  The bytes are copied so that the buffer does not
+         * outlive its backing store.
+         */
+        return JS_NewArrayBufferCopy(cx, ctx->body_read_data,
+                                     ctx->body_read_len);
 
     case NGX_JS_BODY_JSON:
         if (ctx->body_read_nul) {
