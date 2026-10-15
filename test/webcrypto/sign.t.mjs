@@ -398,11 +398,56 @@ let ecdsa_tsuite = {
           exception: "TypeError: Unsupported key usage for a ECDSA key" },
 ]};
 
+async function test_ecdsa_signature_length(params) {
+    let pair = await crypto.subtle.generateKey(
+        {name: "ECDSA", namedCurve: params.curve}, false, ["sign", "verify"]);
+    let options = {name: "ECDSA", hash: "SHA-256"};
+    let data = new Uint8Array([1, 2, 3]);
+    let signature = await crypto.subtle.sign(options, pair.privateKey, data);
+
+    if (signature.byteLength !== params.length) {
+        throw Error("unexpected ECDSA signature length");
+    }
+
+    let lengths = [0, 3, params.length - 1, params.length + 1];
+    for (let i = 0; i < lengths.length; i++) {
+        let length = lengths[i];
+        let invalid = new Uint8Array(length);
+        invalid.set(new Uint8Array(signature).subarray(0, length));
+
+        let verified = await crypto.subtle.verify(options, pair.publicKey,
+                                                  invalid, data);
+        if (verified !== false) {
+            throw Error(`ECDSA accepted a signature of length ${length}`);
+        }
+    }
+
+    let verified = await crypto.subtle.verify(options, pair.publicKey,
+                                              signature, data);
+    if (verified !== true) {
+        throw Error("ECDSA rejected a valid signature");
+    }
+
+    return "SUCCESS";
+}
+
+let ecdsa_signature_length_tsuite = {
+    name: "ECDSA signature length",
+    skip: () => !has_webcrypto(),
+    T: test_ecdsa_signature_length,
+    tests: [
+        {curve: "P-256", length: 64},
+        {curve: "P-384", length: 96},
+        {curve: "P-521", length: 132},
+    ],
+};
+
 run([
     hmac_tsuite,
     rsassa_pkcs1_v1_5_tsuite,
     rsa_pss_tsuite,
     ecdsa_tsuite,
+    ecdsa_signature_length_tsuite,
     verify_error_queue_tsuite
 ])
 .then($DONE, $DONE);
