@@ -26,6 +26,7 @@ NJS_PCRE=YES
 NJS_TRY_PCRE2=YES
 
 NJS_TRY_GOTO=YES
+NJS_ROOT_MAKEFILE=YES
 
 NJS_CONFIGURE_OPTIONS=
 
@@ -45,6 +46,7 @@ do
         --pic=*)                         NJS_PIC="$value"                    ;;
 
         --build-dir=*)                   NJS_BUILD_DIR="$value"              ;;
+        --no-root-makefile)              NJS_ROOT_MAKEFILE=NO                ;;
 
         --address-sanitizer=*)           NJS_ADDRESS_SANITIZER="$value"      ;;
         --addr2line=*)                   NJS_ADDR2LINE="$value"              ;;
