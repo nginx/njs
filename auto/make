@@ -439,14 +439,20 @@ ts_clean:
 END
 
 # pkg-config file
+njs_pc_build_dir=$NJS_BUILD_DIR
+case "$njs_pc_build_dir" in
+    /*) ;;
+    *) njs_pc_build_dir="$(pwd)/$njs_pc_build_dir" ;;
+esac
+
 cat << END >> $NJS_MAKEFILE
 
 pc: $NJS_BUILD_DIR/njs.pc
 
 $NJS_BUILD_DIR/njs.pc: $NJS_BUILD_DIR/njs_auto_config.h
-	sed -e "s#@PREFIX@#$(pwd)/$NJS_BUILD_DIR#" \\
-		-e "s#@LIBDIR@#$(pwd)/$NJS_BUILD_DIR#" \\
-		-e "s#@CFLAGS@#-I$(pwd)/$NJS_BUILD_DIR -I$(pwd)/src#" \\
+	sed -e "s#@PREFIX@#$njs_pc_build_dir#" \\
+		-e "s#@LIBDIR@#$njs_pc_build_dir#" \\
+		-e "s#@CFLAGS@#-I$njs_pc_build_dir -I$(pwd)/src#" \\
 		-e "s#@VERSION@#\$(NJS_VER)#" \\
 		-e "s#@EXTRA_LIBS@#-lm $NJS_LIBS $NJS_LIB_AUX_LIBS#" \\
 		src/njs.pc.in > \$@
