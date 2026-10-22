@@ -5,6 +5,11 @@ NJS_LIBXSLT=${NJS_LIBXSLT:-YES}
 NJS_ZLIB=${NJS_ZLIB:-YES}
 NJS_QUICKJS=${NJS_QUICKJS:-YES}
 
+NJS_BUILD_DIR="$(pwd)/$NGX_OBJS/njs"
+case "$NGX_OBJS" in
+    /*) NJS_BUILD_DIR="$NGX_OBJS/njs" ;;
+esac
+
 NJS_DEPS="$ngx_addon_dir/ngx_js.h \
     $ngx_addon_dir/ngx_js_form.h \
     $ngx_addon_dir/ngx_js_http.h \
@@ -26,7 +31,7 @@ NJS_XSLT_LIB=
 NJS_ZLIB_LIB=
 NJS_QUICKJS_LIB=
 NJS_QUICKJS_INC=
-NJS_QUICKJS_DEFAULT_INCS="$ngx_addon_dir/../src $ngx_addon_dir/../build"
+NJS_QUICKJS_DEFAULT_INCS="$ngx_addon_dir/../src"
 NJS_HAVE_QUICKJS=
 
 if [ $NJS_QUICKJS != NO ]; then
@@ -152,18 +157,18 @@ if [ $NJS_ZLIB != NO ]; then
 fi
 
 
-NJS_ENGINE_DEP="$ngx_addon_dir/../build/libnjs.a"
-NJS_ENGINE_LIB="$ngx_addon_dir/../build/libnjs.a"
+NJS_ENGINE_DEP="$NJS_BUILD_DIR/libnjs.a"
+NJS_ENGINE_LIB="$NJS_BUILD_DIR/libnjs.a"
 if [ "$NJS_HAVE_QUICKJS" = "YES" ];  then
-    NJS_ENGINE_DEP="$ngx_addon_dir/../build/libqjs.a"
-    NJS_ENGINE_LIB="$ngx_addon_dir/../build/libnjs.a $ngx_addon_dir/../build/libqjs.a"
+    NJS_ENGINE_DEP="$NJS_BUILD_DIR/libqjs.a"
+    NJS_ENGINE_LIB="$NJS_ENGINE_LIB $NJS_BUILD_DIR/libqjs.a"
     QJS_SRCS="$QJS_SRCS $ngx_addon_dir/ngx_qjs_fetch.c"
 fi
 
 if [ $HTTP != NO ]; then
     ngx_module_type=HTTP_AUX_FILTER
     ngx_module_name="ngx_http_js_module ngx_http_js_core_module"
-    ngx_module_incs="$ngx_addon_dir/../src $ngx_addon_dir/../build \
+    ngx_module_incs="$ngx_addon_dir/../src $NJS_BUILD_DIR \
                      $NJS_QUICKJS_INC"
     ngx_module_deps="$NJS_ENGINE_DEP $NJS_DEPS $QJS_DEPS"
     ngx_module_srcs="$ngx_addon_dir/ngx_http_js_module.c $NJS_SRCS $QJS_SRCS"
@@ -180,7 +185,7 @@ fi
 if [ $STREAM != NO ]; then
     ngx_module_type=STREAM
     ngx_module_name="ngx_stream_js_module ngx_stream_js_core_module"
-    ngx_module_incs="$ngx_addon_dir/../src $ngx_addon_dir/../build \
+    ngx_module_incs="$ngx_addon_dir/../src $NJS_BUILD_DIR \
                      $NJS_QUICKJS_INC"
     ngx_module_deps="$NJS_ENGINE_DEP $NJS_DEPS $QJS_DEPS"
     ngx_module_srcs="$ngx_addon_dir/ngx_stream_js_module.c $NJS_SRCS $QJS_SRCS"
