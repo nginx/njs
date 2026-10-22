@@ -18,6 +18,8 @@ NJS_ADDR2LINE=NO
 
 NJS_QUICKJS=NO
 NJS_TRY_QUICKJS=YES
+NJS_QUICKJS_LIB=
+NJS_QUICKJS_INCS=
 NJS_OPENSSL=YES
 NJS_LIBXML2=YES
 NJS_ZLIB=YES
@@ -56,6 +58,8 @@ do
         --debug-generator=*)             NJS_DEBUG_GENERATOR="$value"        ;;
 
         --no-quickjs)                    NJS_TRY_QUICKJS=NO                  ;;
+        --quickjs-lib=*)                 NJS_QUICKJS_LIB="$value"            ;;
+        --quickjs-inc=*)                 NJS_QUICKJS_INCS="$value"           ;;
         --no-openssl)                    NJS_OPENSSL=NO                      ;;
         --no-libxml2)                    NJS_LIBXML2=NO                      ;;
         --no-zlib)                       NJS_ZLIB=NO                         ;;
@@ -85,6 +89,13 @@ do
     NJS_CONFIGURE_OPTIONS="$NJS_CONFIGURE_OPTIONS $njs_opt"
 
 done
+
+if [ -n "$NJS_QUICKJS_INCS" ] && [ -z "$NJS_QUICKJS_LIB" ]; then
+    echo
+    echo "$0: error: --quickjs-inc requires --quickjs-lib."
+    echo
+    exit 1
+fi
 
 if [ "$NJS_DEBUG_MEMORY" = "YES" ]; then
     NJS_DEBUG=YES

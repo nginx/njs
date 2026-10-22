@@ -3,7 +3,6 @@
 # Copyright (C) NGINX, Inc.
 
 
-NJS_QUICKJS_LIB=
 NJS_HAVE_QUICKJS=NO
 NJS_QUICKJS_DEFAULT_INCS="src $NJS_BUILD_DIR"
 
@@ -13,7 +12,7 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
     njs_feature="QuickJS library -lquickjs.lto"
     njs_feature_name=NJS_HAVE_QUICKJS
     njs_feature_run=yes
-    njs_feature_incs="$NJS_QUICKJS_DEFAULT_INCS"
+    njs_feature_incs="$NJS_QUICKJS_DEFAULT_INCS $NJS_QUICKJS_INCS"
     njs_feature_libs="-lquickjs.lto -lm -ldl -lpthread"
     njs_feature_test="#include <quickjs_compat.h>
 
@@ -24,7 +23,19 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
                           JS_FreeRuntime(rt);
                           return 0;
                      }"
+    if [ -n "$NJS_QUICKJS_LIB" ]; then
+        njs_feature="QuickJS library $NJS_QUICKJS_LIB"
+        njs_feature_libs="$NJS_QUICKJS_LIB"
+    fi
+
     . auto/feature
+
+    if [ -n "$NJS_QUICKJS_LIB" -a $njs_found = no ]; then
+        echo
+        echo $0: error: the specified QuickJS library is not working.
+        echo
+        exit 1
+    fi
 
     if [ $njs_found = no ]; then
         njs_feature="QuickJS library -lquickjs"
