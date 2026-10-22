@@ -1348,7 +1348,7 @@ njs_generate_var_statement_after(njs_vm_t *vm, njs_generator_t *generator,
 
         if (name.length == 0) {
             njs_atom_to_value(vm, &expr->u.value.data.u.lambda->name,
-                              node->left->u.reference.atom_id);
+                              node->left->u.atom_id);
         }
     }
 
@@ -2514,7 +2514,7 @@ njs_generate_for_in_set_prop_block(njs_vm_t *vm, njs_generator_t *generator,
 
     if (prop->token_type == NJS_TOKEN_STRING
         || (prop->token_type == NJS_TOKEN_NUMBER
-            && prop->u.value.atom_id != NJS_ATOM_STRING_unknown))
+            && prop->u.atom_id != NJS_ATOM_STRING_unknown))
     {
         opcode = NJS_VMCODE_PROPERTY_ATOM_SET;
 
@@ -3248,7 +3248,7 @@ njs_generate_global_property_set(njs_vm_t *vm, njs_generator_t *generator,
         prop_set->value = node_dst->index;
         prop_set->object = njs_scope_global_this_index();
 
-        njs_atom_to_value(vm, &property,node_dst->u.reference.atom_id);
+        njs_atom_to_value(vm, &property, node_dst->u.atom_id);
 
         prop_set->property = njs_scope_global_index(vm, &property,
                                                 generator->runtime);
@@ -3411,7 +3411,7 @@ njs_generate_property_get_opcode(njs_parser_node_t *node)
 {
     if (node->token_type == NJS_TOKEN_STRING
         || (node->token_type == NJS_TOKEN_NUMBER
-            && node->u.value.atom_id != NJS_ATOM_STRING_unknown))
+            && node->u.atom_id != NJS_ATOM_STRING_unknown))
     {
         return NJS_VMCODE_PROPERTY_ATOM_GET;
     }
@@ -3425,7 +3425,7 @@ njs_generate_property_set_opcode(njs_parser_node_t *node)
 {
     if (node->token_type == NJS_TOKEN_STRING
         || (node->token_type == NJS_TOKEN_NUMBER
-            && node->u.value.atom_id != NJS_ATOM_STRING_unknown))
+            && node->u.atom_id != NJS_ATOM_STRING_unknown))
     {
         return NJS_VMCODE_PROPERTY_ATOM_SET;
     }
@@ -4598,7 +4598,7 @@ njs_generate_3addr_operation_end(njs_vm_t *vm, njs_generator_t *generator,
     if (node->u.operation == NJS_VMCODE_PROPERTY_GET
         && (right->token_type == NJS_TOKEN_STRING
             || (right->token_type == NJS_TOKEN_NUMBER
-                && right->u.value.atom_id != NJS_ATOM_STRING_unknown)))
+                && right->u.atom_id != NJS_ATOM_STRING_unknown)))
     {
         opcode = NJS_VMCODE_PROPERTY_ATOM_GET;
 
@@ -4842,7 +4842,7 @@ found:
 
     if (prop->token_type == NJS_TOKEN_STRING
         || (prop->token_type == NJS_TOKEN_NUMBER
-            && prop->u.value.atom_id != NJS_ATOM_STRING_unknown))
+            && prop->u.atom_id != NJS_ATOM_STRING_unknown))
     {
         opcode = NJS_VMCODE_PROPERTY_ATOM_GET;
 
@@ -4918,7 +4918,7 @@ njs_generate_function_declaration(njs_vm_t *vm, njs_generator_t *generator,
 
     lambda = njs_variable_lambda(var);
 
-    njs_atom_to_value(vm, &lambda->name, node->u.reference.atom_id);
+    njs_atom_to_value(vm, &lambda->name, node->u.atom_id);
     njs_string_get(vm, &lambda->name, &name);
 
     ret = njs_generate_function_scope(vm, generator, lambda, node, &name);
@@ -6457,7 +6457,7 @@ njs_generate_global_reference(njs_vm_t *vm, njs_generator_t *generator,
         return NJS_ERROR;
     }
 
-    njs_atom_to_value(vm, &property, node->u.reference.atom_id);
+    njs_atom_to_value(vm, &property, node->u.atom_id);
 
     prop_get->property = njs_scope_global_index(vm, &property,
                                                 generator->runtime);
@@ -6495,7 +6495,7 @@ njs_generate_reference_error(njs_vm_t *vm, njs_generator_t *generator,
 
     ref_err->type = NJS_OBJ_TYPE_REF_ERROR;
 
-    njs_atom_string_get(vm, node->u.reference.atom_id, &entry);
+    njs_atom_string_get(vm, node->u.atom_id, &entry);
 
     return njs_name_copy(vm, &ref_err->u.name, &entry);
 }

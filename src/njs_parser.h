@@ -56,6 +56,8 @@ struct njs_parser_node_s {
             njs_arr_t               *items;
             uint32_t                length;
         } array;
+        /* Only reference and value payloads share this field. */
+        uint32_t                    atom_id;
         njs_variable_reference_t    reference;
         njs_value_t                 value;
         uintptr_t                   label;
@@ -156,7 +158,7 @@ njs_bool_t njs_variable_closure_test(njs_parser_scope_t *root,
 njs_variable_t *njs_variable_resolve(njs_vm_t *vm, njs_parser_node_t *node);
 njs_index_t njs_variable_index(njs_vm_t *vm, njs_parser_node_t *node);
 njs_int_t njs_parser_variable_reference(njs_parser_t *parser,
-    njs_parser_scope_t *scope, njs_parser_node_t *node, uintptr_t atom_id);
+    njs_parser_scope_t *scope, njs_parser_node_t *node, uint32_t atom_id);
 njs_token_type_t njs_parser_unexpected_token(njs_vm_t *vm, njs_parser_t *parser,
     njs_str_t *name, njs_token_type_t type);
 njs_int_t njs_parser_string_create(njs_vm_t *vm, njs_lexer_token_t *token,

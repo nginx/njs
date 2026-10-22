@@ -1064,7 +1064,7 @@ njs_parser_primary_expression_test(njs_parser_t *parser,
         if (njs_number_is_integer_index(token->number)
             && token->number < 0x80000000)
         {
-            node->u.value.atom_id = njs_number_atom((uint32_t) token->number);
+            node->u.atom_id = njs_number_atom((uint32_t) token->number);
         }
 
         node->token_line = token->line;
@@ -1266,8 +1266,6 @@ reference:
     if (node == NULL) {
         return NJS_ERROR;
     }
-
-    node->u.value.atom_id = token->atom_id;
 
     node->token_line = token->line;
     parser->node = node;
@@ -8214,6 +8212,7 @@ njs_parser_reference(njs_parser_t *parser, njs_lexer_token_t *token)
 
     case NJS_TOKEN_NULL:
         njs_thread_log_debug("JS: null");
+        node->u.atom_id = token->atom_id;
         break;
 
     case NJS_TOKEN_THIS:
@@ -9001,15 +9000,12 @@ invalid:
 
 njs_int_t
 njs_parser_variable_reference(njs_parser_t *parser, njs_parser_scope_t *scope,
-    njs_parser_node_t *node, uintptr_t atom_id)
+    njs_parser_node_t *node, uint32_t atom_id)
 {
     njs_rbtree_node_t         *rb_node;
-    njs_variable_reference_t  *vr;
     njs_parser_rbtree_node_t  parse_node, *rb_parse_node;
 
-    vr = &node->u.reference;
-
-    vr->atom_id = atom_id;
+    node->u.atom_id = atom_id;
 
     parse_node.key = atom_id;
 

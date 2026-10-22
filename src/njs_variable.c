@@ -369,15 +369,13 @@ njs_variable_closure_test(njs_parser_scope_t *root, njs_parser_scope_t *scope)
 njs_variable_t *
 njs_variable_resolve(njs_vm_t *vm, njs_parser_node_t *node)
 {
-    njs_rbtree_node_t         *rb_node;
-    njs_parser_scope_t        *scope;
-    njs_variable_node_t       var_node;
-    njs_variable_reference_t  *ref;
+    njs_rbtree_node_t    *rb_node;
+    njs_parser_scope_t   *scope;
+    njs_variable_node_t  var_node;
 
-    ref = &node->u.reference;
     scope = node->scope;
 
-    var_node.key = ref->atom_id;
+    var_node.key = node->u.atom_id;
 
     do {
         rb_node = njs_rbtree_find(&scope->variables, &var_node.node);
@@ -510,7 +508,7 @@ njs_variable_reference(njs_vm_t *vm, njs_mp_t *mem_pool,
 
     closure = njs_variable_closure_test(node->scope, ref->variable->scope);
 
-    ref_node.key = ref->atom_id;
+    ref_node.key = node->u.atom_id;
 
     rb_node = njs_rbtree_find(&scope->references, &ref_node.node);
     if (njs_slow_path(rb_node == NULL)) {

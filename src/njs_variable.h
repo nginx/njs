@@ -44,7 +44,7 @@ typedef enum {
 
 
 typedef struct {
-    uintptr_t             atom_id;
+    uint32_t              atom_id;
     njs_variable_t        *variable;
 } njs_variable_reference_t;
 
