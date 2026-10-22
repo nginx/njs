@@ -157,13 +157,16 @@ if [ $NJS_ZLIB != NO ]; then
 fi
 
 
-NJS_ENGINE_DEP="$NJS_BUILD_DIR/libnjs.a"
 NJS_ENGINE_LIB="$NJS_BUILD_DIR/libnjs.a"
 if [ "$NJS_HAVE_QUICKJS" = "YES" ];  then
-    NJS_ENGINE_DEP="$NJS_BUILD_DIR/libqjs.a"
     NJS_ENGINE_LIB="$NJS_ENGINE_LIB $NJS_BUILD_DIR/libqjs.a"
     QJS_SRCS="$QJS_SRCS $ngx_addon_dir/ngx_qjs_fetch.c"
 fi
+
+NJS_ENGINE_DEP="$NJS_ENGINE_LIB $NJS_BUILD_DIR/njs_auto_config.h"
+NJS_DEPS="$NJS_DEPS `echo $ngx_addon_dir/../src/*.h` \
+          `echo $ngx_addon_dir/../external/*.h` \
+          $ngx_addon_dir/../external/njs_regex.c"
 
 if [ $HTTP != NO ]; then
     ngx_module_type=HTTP_AUX_FILTER
