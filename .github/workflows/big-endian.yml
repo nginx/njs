@@ -1,0 +1,60 @@
+name: big-endian
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  s390x:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout njs
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          persist-credentials: false
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+        with:
+          platforms: s390x
+          image: tonistiigi/binfmt@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0
+
+      - name: Build and test njs on s390x
+        run: |
+          docker run --rm -i --platform linux/s390x \
+              --memory=3g --memory-swap=3g --cpus=2 \
+              --env TZ=UTC --env DEBIAN_FRONTEND=noninteractive \
+              --mount "type=bind,src=$GITHUB_WORKSPACE,dst=/src,readonly" \
+              --workdir /tmp \
+              debian:trixie-slim@sha256:62bd423aeee912639ca8ee681c2b762cb3e25137e0a92b20be455898a9f034ad \
+              timeout --kill-after=30s 25m bash -se <<'EOF'
+          test "$(dpkg --print-architecture)" = s390x
+          apt-get update
+          apt-get install -y --no-install-recommends \
+              build-essential libssl-dev libpcre2-dev zlib1g-dev libxml2-dev
+
+          mkdir /tmp/njs
+          cp -a /src/. /tmp/njs/
+          chown -R nobody:nogroup /tmp/njs
+
+          # Permission tests must run without root privileges.
+          su -s /bin/sh nobody -c '
+              set -e
+              cd /tmp/njs
+              ./configure --no-quickjs
+              make -j2 njs
+              make unit_test lib_test js_test
+          '
+          EOF
