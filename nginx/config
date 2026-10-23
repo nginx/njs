@@ -159,7 +159,7 @@ fi
 
 NJS_ENGINE_LIB="$NJS_BUILD_DIR/libnjs.a"
 if [ "$NJS_HAVE_QUICKJS" = "YES" ];  then
-    NJS_ENGINE_LIB="$NJS_ENGINE_LIB $NJS_BUILD_DIR/libqjs.a"
+    NJS_ENGINE_LIB="$NJS_ENGINE_LIB $NJS_BUILD_DIR/libnjs_qjs.a"
     QJS_SRCS="$QJS_SRCS $ngx_addon_dir/ngx_qjs_fetch.c"
 fi
 

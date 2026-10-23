@@ -79,7 +79,7 @@ qjs_objs=`echo $QJS_LIB_SRCS \
 
 QJS_LIB=""
 if [ $NJS_HAVE_QUICKJS = YES ]; then
-    QJS_LIB="$NJS_BUILD_DIR/libqjs.a"
+    QJS_LIB="$NJS_BUILD_DIR/libnjs_qjs.a"
 fi
 
 cat << END > $NJS_MAKEFILE
@@ -105,7 +105,7 @@ NJS_LIB_OBJS = $njs_objs
 QJS_LIB_OBJS = $qjs_objs
 
 libnjs: $NJS_BUILD_DIR/libnjs.a pc
-libqjs: $NJS_BUILD_DIR/libqjs.a
+libnjs_qjs: $NJS_BUILD_DIR/libnjs_qjs.a
 
 $NJS_BUILD_DIR/libnjs.a:   \\
 	$NJS_BUILD_DIR/njs_auto_config.h \\
@@ -114,11 +114,11 @@ $NJS_BUILD_DIR/libnjs.a:   \\
 	\$(NJS_STATIC_LINK) $NJS_BUILD_DIR/libnjs.a \\
 		\$(NJS_LIB_OBJS)
 
-$NJS_BUILD_DIR/libqjs.a:   \\
+$NJS_BUILD_DIR/libnjs_qjs.a:   \\
 	$NJS_BUILD_DIR/njs_auto_config.h \\
 	\$(QJS_LIB_OBJS)
 
-	\$(NJS_STATIC_LINK) $NJS_BUILD_DIR/libqjs.a \\
+	\$(NJS_STATIC_LINK) $NJS_BUILD_DIR/libnjs_qjs.a \\
 		\$(QJS_LIB_OBJS)
 END
 
