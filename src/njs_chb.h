@@ -39,10 +39,10 @@ typedef struct {
 } njs_chb_t;
 
 
-void njs_chb_init(njs_chb_t *chain, void *pool, njs_chb_alloc_t alloc,
+NJS_EXPORT void njs_chb_init(njs_chb_t *chain, void *pool, njs_chb_alloc_t alloc,
     njs_chb_free_t free);
-void *njs_chb_mp_alloc(void *pool, size_t size);
-void njs_chb_mp_free(void *pool, void *p);
+NJS_EXPORT void *njs_chb_mp_alloc(void *pool, size_t size);
+NJS_EXPORT void njs_chb_mp_free(void *pool, void *p);
 #define NJS_CHB_MP_INIT(chain, mp)                                           \
     njs_chb_init(chain, mp, njs_chb_mp_alloc, njs_chb_mp_free)
 #define NJS_CHB_CTX_INIT(chain, ctx)                                         \
@@ -51,16 +51,17 @@ void njs_chb_mp_free(void *pool, void *p);
     (NJS_CHB_MP_INIT(chain, mp), (chain)->max_size = (max))
 #define NJS_CHB_CTX_INIT_MAX(chain, ctx, max)                                \
     (NJS_CHB_CTX_INIT(chain, ctx), (chain)->max_size = (max))
-void njs_chb_append0(njs_chb_t *chain, const char *msg, size_t len);
-void njs_chb_vsprintf(njs_chb_t *chain, size_t size, const char *fmt,
+NJS_EXPORT void njs_chb_append0(njs_chb_t *chain, const char *msg, size_t len);
+NJS_EXPORT void njs_chb_vsprintf(njs_chb_t *chain, size_t size, const char *fmt,
     va_list args);
-void njs_chb_sprintf(njs_chb_t *chain, size_t size, const char* fmt, ...);
-u_char *njs_chb_reserve(njs_chb_t *chain, size_t size);
-void njs_chb_drain(njs_chb_t *chain, size_t drop);
-void njs_chb_drop(njs_chb_t *chain, size_t drop);
-njs_int_t njs_chb_join(njs_chb_t *chain, njs_str_t *str);
-void njs_chb_join_to(njs_chb_t *chain, u_char *dst);
-void njs_chb_destroy(njs_chb_t *chain);
+NJS_EXPORT void njs_chb_sprintf(njs_chb_t *chain, size_t size, const char *fmt,
+    ...);
+NJS_EXPORT u_char *njs_chb_reserve(njs_chb_t *chain, size_t size);
+NJS_EXPORT void njs_chb_drain(njs_chb_t *chain, size_t drop);
+NJS_EXPORT void njs_chb_drop(njs_chb_t *chain, size_t drop);
+NJS_EXPORT njs_int_t njs_chb_join(njs_chb_t *chain, njs_str_t *str);
+NJS_EXPORT void njs_chb_join_to(njs_chb_t *chain, u_char *dst);
+NJS_EXPORT void njs_chb_destroy(njs_chb_t *chain);
 
 
 #define njs_chb_append(chain, msg, len)                                      \
