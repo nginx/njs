@@ -43,7 +43,7 @@ http {
         listen       127.0.0.1:8080;
         server_name  localhost;
 
-        location /engine {
+        location = /engine {
             js_content test.engine;
         }
 
@@ -124,14 +124,22 @@ $t->write_file('test.js', <<'EOF');
     }
 
     export default {engine, engine_name, http_cycle,
-                    request_body_cycle, response_body_cycle,
-                    stream_cycle};
+                    request_body_cycle, response_body_cycle, stream_cycle};
 EOF
 
-$t->try_run('no njs available');
-plan(skip_all => 'QuickJS-specific GC tests')
-    if http_get('/engine') =~ /njs$/m
-       || stream('127.0.0.1:' . port(8082))->read() =~ /njs$/;
+$t->run();
+
+my ($headers, $engine) = split(/\x0d\x0a\x0d\x0a/, http_get('/engine') // '', 2);
+die "failed to determine HTTP js_engine\n"
+    unless defined $engine && $headers =~ /\AHTTP\/1\.[01] 200 /
+    && $engine =~ /\A(?:njs|QuickJS)\z/;
+
+my $stream_engine = stream('127.0.0.1:' . port(8082))->read();
+die "failed to determine stream js_engine\n"
+    unless defined $stream_engine && $stream_engine =~ /\A(?:njs|QuickJS)\z/;
+
+plan(skip_all => 'wrapper GC marking requires QuickJS in HTTP and stream')
+    if $engine ne 'QuickJS' || $stream_engine ne 'QuickJS';
 $t->plan(4);
 
 ###############################################################################
