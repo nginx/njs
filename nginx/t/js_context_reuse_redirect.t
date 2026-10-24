@@ -46,8 +46,8 @@ http {
 
         location = /engine {
             js_context_reuse 0;
-            js_import test from engine.js;
-            js_content test.engine;
+            js_import engine.js;
+            js_content engine.name;
         }
 
         location = /source {
@@ -65,11 +65,11 @@ http {
 EOF
 
 $t->write_file('engine.js', <<'EOF');
-    function engine(r) {
+    function name(r) {
         r.return(200, njs.engine);
     }
 
-    export default {engine};
+    export default { name };
 EOF
 
 $t->write_file('source.js', <<'EOF');
@@ -102,9 +102,15 @@ $t->write_file('destination.js', <<'EOF');
 
 EOF
 
-$t->try_run('no njs available');
-plan(skip_all => 'QuickJS-specific context reuse tests')
-    if http_get('/engine') =~ /njs$/m;
+$t->run();
+
+my ($headers, $engine) = split(/\x0d\x0a\x0d\x0a/, http_get('/engine') // '', 2);
+die "failed to determine js_engine\n"
+    unless defined $engine && $headers =~ /\AHTTP\/1\.[01] 200 /
+    && $engine =~ /\A(?:njs|QuickJS)\z/;
+
+plan(skip_all => 'context reuse requires the QuickJS engine')
+    if $engine ne 'QuickJS';
 $t->plan(4);
 
 ###############################################################################

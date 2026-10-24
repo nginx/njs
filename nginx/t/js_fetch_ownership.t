@@ -261,9 +261,15 @@ my @cases = (
     ['/retain?op=release', qr/ok$/, 'release retained object'],
 );
 
-$t->try_run('no njs available');
+$t->run();
+
+my ($headers, $engine) = split(/\x0d\x0a\x0d\x0a/, http_get('/engine') // '', 2);
+die "failed to determine js_engine\n"
+    unless defined $engine && $headers =~ /\AHTTP\/1\.[01] 200 /
+    && $engine =~ /\A(?:njs|QuickJS)\z/;
+
 plan(skip_all => 'QuickJS-specific lifetime tests')
-    if http_get('/engine') =~ /njs$/m;
+    if $engine ne 'QuickJS';
 $t->plan(scalar @cases);
 
 ###############################################################################

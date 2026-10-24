@@ -35,14 +35,17 @@ events {
 http {
     %%TEST_GLOBALS_HTTP%%
 
-    js_engine njs;
-    js_import test.js;
-
     server {
         listen       127.0.0.1:8080;
         server_name  localhost;
 
+        location = /engine {
+            js_import engine.js;
+            js_content engine.name;
+        }
+
         location /failed {
+            js_import test.js;
             js_content test.content;
             js_body_filter test.filter;
         }
@@ -52,6 +55,15 @@ http {
         }
     }
 }
+
+EOF
+
+$t->write_file('engine.js', <<'EOF');
+    function name(r) {
+        r.return(200, njs.engine);
+    }
+
+    export default { name };
 
 EOF
 
@@ -71,7 +83,16 @@ $t->write_file('test.js', <<'EOF');
 
 EOF
 
-$t->try_run('no njs available')->plan(2);
+$t->run();
+
+my ($headers, $engine) = split(/\x0d\x0a\x0d\x0a/, http_get('/engine') // '', 2);
+die "failed to determine js_engine\n"
+    unless defined $engine && $headers =~ /\AHTTP\/1\.[01] 200 /
+    && $engine =~ /\A(?:njs|QuickJS)\z/;
+
+plan(skip_all => 'context cloning requires the njs engine')
+    if $engine ne 'njs';
+$t->plan(2);
 
 ###############################################################################
 
