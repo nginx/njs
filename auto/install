@@ -1,0 +1,102 @@
+
+# Copyright (C) Dmitry Volyntsev
+# Copyright (C) F5, Inc.
+
+
+njs_public_headers="src/njs.h src/njs_types.h src/njs_clang.h src/njs_str.h \
+                    src/njs_unicode.h src/njs_utf8.h src/njs_mp.h \
+                    src/njs_chb.h src/njs_sprintf.h"
+njs_private_headers=
+
+for njs_header in src/*.h; do
+    case " $njs_public_headers " in
+        *" $njs_header "*) ;;
+        *) njs_private_headers="$njs_private_headers $njs_header" ;;
+    esac
+done
+
+mkdir -p $NJS_BUILD_DIR/pkgconfig
+
+njs_install_core_libs="$NJS_CORE_LIBS"
+njs_install_qjs_libs="$NJS_OPENSSL_LIB $NJS_LIBXML2_LIB $NJS_ZLIB_LIB -lm"
+if [ -n "${PKG_CONFIG_SYSROOT_DIR:-}" ]; then
+    njs_sysroot=$(printf '%s' "$PKG_CONFIG_SYSROOT_DIR" \
+                 | sed 's/[][\\.^$*#]/\\&/g')
+    njs_install_core_libs=$(printf '%s' "$njs_install_core_libs" \
+                           | sed "s#-L$njs_sysroot/#-L/#g")
+    njs_install_qjs_libs=$(printf '%s' "$njs_install_qjs_libs" \
+                          | sed "s#-L$njs_sysroot/#-L/#g")
+fi
+
+cat << END > $NJS_BUILD_DIR/pkgconfig/njs.pc
+prefix=$NJS_PREFIX
+libdir=$NJS_LIBDIR
+includedir=$NJS_INCLUDEDIR
+private_includedir=\${pc_sysrootdir}\${includedir}/njs/private
+shared=$NJS_SHARED
+openssl=$NJS_HAVE_OPENSSL
+libxml2=$NJS_HAVE_LIBXML2
+zlib=$NJS_HAVE_ZLIB
+
+Name: njs
+Description: library to embed njs scripting language
+Version: $njs_version
+Libs: -L\${libdir} -lnjs
+Libs.private: $njs_install_core_libs
+Cflags: -I\${includedir}/njs
+END
+
+njs_install_libs="$NJS_BUILD_DIR/libnjs.a"
+njs_install_pc="$NJS_BUILD_DIR/pkgconfig/njs.pc"
+
+if [ $NJS_HAVE_QUICKJS = YES ]; then
+    njs_install_libs="$njs_install_libs $NJS_BUILD_DIR/libnjs_qjs.a"
+    if [ -n "$NJS_QUICKJS_PC" ]; then
+        cat << END > $NJS_BUILD_DIR/pkgconfig/njs_qjs.pc
+prefix=$NJS_PREFIX
+libdir=$NJS_LIBDIR
+includedir=$NJS_INCLUDEDIR
+shared=$NJS_SHARED
+
+Name: njs_qjs
+Description: njs QuickJS integration library (private interface)
+Version: $njs_version
+Requires: njs = $njs_version, $NJS_QUICKJS_PC = $(pkg-config --modversion "$NJS_QUICKJS_PC")
+Libs: -L\${libdir} -lnjs_qjs
+Libs.private: $njs_install_qjs_libs
+Cflags: -I\${includedir}/njs/private
+END
+        njs_install_pc="$njs_install_pc $NJS_BUILD_DIR/pkgconfig/njs_qjs.pc"
+    fi
+fi
+
+cat << END >> $NJS_MAKEFILE
+
+DESTDIR ?=
+PREFIX = $NJS_PREFIX
+LIBDIR = $NJS_LIBDIR
+INCLUDEDIR = $NJS_INCLUDEDIR
+INSTALL ?= install
+
+.PHONY: install
+
+install: njs $njs_install_libs $NJS_SHARED_LIB $QJS_SHARED_LIB
+	\$(INSTALL) -d \$(DESTDIR)\$(PREFIX)/bin \\
+		\$(DESTDIR)\$(LIBDIR)/pkgconfig \\
+		\$(DESTDIR)\$(INCLUDEDIR)/njs/private
+	\$(INSTALL) -m 755 $NJS_BUILD_DIR/njs \$(DESTDIR)\$(PREFIX)/bin/
+	\$(INSTALL) -m 644 $njs_install_libs \$(DESTDIR)\$(LIBDIR)/
+	\$(INSTALL) -m 644 $njs_public_headers \\
+		$NJS_BUILD_DIR/njs_auto_config.h \$(DESTDIR)\$(INCLUDEDIR)/njs/
+	\$(INSTALL) -m 644 $njs_private_headers \\
+		\$(DESTDIR)\$(INCLUDEDIR)/njs/private/
+	\$(INSTALL) -m 644 $njs_install_pc \$(DESTDIR)\$(LIBDIR)/pkgconfig/
+END
+
+for njs_library in $NJS_SHARED_LIB $QJS_SHARED_LIB; do
+    njs_name=$(basename $njs_library)
+    cat << END >> $NJS_MAKEFILE
+	\$(INSTALL) -m 755 $njs_library.\$(NJS_VER) \$(DESTDIR)\$(LIBDIR)/
+	ln -sf $njs_name.\$(NJS_VER) \$(DESTDIR)\$(LIBDIR)/$njs_name
+END
+done

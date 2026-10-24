@@ -78,9 +78,27 @@ qjs_objs=`echo $QJS_LIB_SRCS \
         | sed -e "s# *\([^ ]*\.\)c#$NJS_BUILD_DIR/\1o$njs_regex_cont#g"`
 
 QJS_LIB=""
+NJS_LIB="$NJS_BUILD_DIR/libnjs.a"
+NJS_SHARED_LIB=
+QJS_SHARED_LIB=
 if [ $NJS_HAVE_QUICKJS = YES ]; then
     QJS_LIB="$NJS_BUILD_DIR/libnjs_qjs.a"
 fi
+
+if [ "$NJS_SHARED" = YES ]; then
+    NJS_LIB="$NJS_BUILD_DIR/libnjs.so"
+    NJS_SHARED_LIB="$NJS_LIB"
+    if [ $NJS_HAVE_QUICKJS = YES ]; then
+        QJS_LIB="$NJS_BUILD_DIR/libnjs_qjs.so"
+        QJS_SHARED_LIB="$QJS_LIB"
+    fi
+    NJS_CLI_LIBS="$QJS_LIB $NJS_LIB $NJS_LD_OPT $NJS_QUICKJS_LIB -lm"
+else
+    NJS_CLI_LIBS="$NJS_LIB $QJS_LIB $NJS_LD_OPT \
+                  -lm $NJS_LIBS $NJS_LIB_AUX_LIBS"
+fi
+
+njs_version=`sed -n 's/^#define NJS_VERSION  *"\(.*\)"/\1/p' src/njs.h`
 
 cat << END > $NJS_MAKEFILE
 
@@ -89,11 +107,12 @@ cat << END > $NJS_MAKEFILE
 NJS_CC = ${CC}
 NJS_STATIC_LINK = ${AR} -r -c
 NJS_LINK = ${CC} ${NJS_LD_OPT} ${NJS_LINK}
+NJS_SHARED_LINK = ${CC} ${NJS_LD_OPT} ${NJS_SHARED_LINK}
 NJS_PIC = ${NJS_PIC}
 CFLAGS = ${NJS_CC_OPT} ${CFLAGS:-${NJS_CFLAGS}}
 NJS_LIB_AUX_CFLAGS = ${NJS_LIB_AUX_CFLAGS}
 
-NJS_VER = $(grep NJS_VERSION src/njs.h | sed -e 's#.*"\(.*\)".*#\1#')
+NJS_VER = $njs_version
 NJS_TYPES_VER = \$(NJS_VER)
 
 NPM = npm
@@ -104,8 +123,8 @@ NJS_LIB_INCS = $njs_incs
 NJS_LIB_OBJS = $njs_objs
 QJS_LIB_OBJS = $qjs_objs
 
-libnjs: $NJS_BUILD_DIR/libnjs.a pc
-libnjs_qjs: $NJS_BUILD_DIR/libnjs_qjs.a
+libnjs: $NJS_BUILD_DIR/libnjs.a $NJS_SHARED_LIB pc
+libnjs_qjs: $NJS_BUILD_DIR/libnjs_qjs.a $QJS_SHARED_LIB
 
 $NJS_BUILD_DIR/libnjs.a:   \\
 	$NJS_BUILD_DIR/njs_auto_config.h \\
@@ -121,6 +140,37 @@ $NJS_BUILD_DIR/libnjs_qjs.a:   \\
 	\$(NJS_STATIC_LINK) $NJS_BUILD_DIR/libnjs_qjs.a \\
 		\$(QJS_LIB_OBJS)
 END
+
+if [ "$NJS_SHARED" = YES ]; then
+    cat << END >> $NJS_MAKEFILE
+
+$NJS_BUILD_DIR/libnjs.so: $NJS_BUILD_DIR/libnjs.so.\$(NJS_VER)
+
+	ln -sf libnjs.so.\$(NJS_VER) \$@
+
+$NJS_BUILD_DIR/libnjs.so.\$(NJS_VER): \$(NJS_LIB_OBJS)
+
+	\$(NJS_SHARED_LINK) -Wl,-soname,libnjs.so.\$(NJS_VER) \\
+		-o \$@ \$(NJS_LIB_OBJS) $NJS_CORE_LIBS
+
+END
+
+    if [ $NJS_HAVE_QUICKJS = YES ]; then
+        cat << END >> $NJS_MAKEFILE
+
+$NJS_BUILD_DIR/libnjs_qjs.so: $NJS_BUILD_DIR/libnjs_qjs.so.\$(NJS_VER)
+
+	ln -sf libnjs_qjs.so.\$(NJS_VER) \$@
+
+$NJS_BUILD_DIR/libnjs_qjs.so.\$(NJS_VER): \$(QJS_LIB_OBJS) $NJS_LIB
+
+	\$(NJS_SHARED_LINK) -Wl,-soname,libnjs_qjs.so.\$(NJS_VER) \\
+		-o \$@ \$(QJS_LIB_OBJS) $NJS_LIB $NJS_QUICKJS_LIB \\
+		$NJS_OPENSSL_LIB $NJS_LIBXML2_LIB $NJS_ZLIB_LIB -lm
+
+END
+    fi
+fi
 
 # object files.
 
@@ -173,13 +223,12 @@ done
 cat << END >> $NJS_MAKEFILE
 
 $NJS_BUILD_DIR/njs: \\
-	$NJS_BUILD_DIR/libnjs.a $QJS_LIB \\
+	$NJS_LIB $QJS_LIB \\
 	external/njs_shell.c
 	\$(NJS_LINK) -o $NJS_BUILD_DIR/njs \$(NJS_LIB_INCS) \\
 		\$(CFLAGS) \$(NJS_LIB_AUX_CFLAGS)\\
 		external/njs_shell.c \\
-		$NJS_BUILD_DIR/libnjs.a $QJS_LIB \\
-		$NJS_LD_OPT -lm $NJS_LIBS $NJS_LIB_AUX_LIBS $NJS_READLINE_LIB
+		$NJS_CLI_LIBS $NJS_READLINE_LIB
 
 END
 
@@ -445,18 +494,33 @@ case "$njs_pc_build_dir" in
     *) njs_pc_build_dir="$(pwd)/$njs_pc_build_dir" ;;
 esac
 
+njs_pc_extra_libs="-lm $NJS_LIBS $NJS_LIB_AUX_LIBS"
+njs_pc_private_libs=
+if [ "$NJS_SHARED" = YES ]; then
+    njs_pc_extra_libs=
+    njs_pc_private_libs="$NJS_CORE_LIBS"
+fi
+
 cat << END >> $NJS_MAKEFILE
 
 pc: $NJS_BUILD_DIR/njs.pc
 
-$NJS_BUILD_DIR/njs.pc: $NJS_BUILD_DIR/njs_auto_config.h
+$NJS_BUILD_DIR/njs.pc: $NJS_BUILD_DIR/njs_auto_config.h src/njs.pc.in
 	sed -e "s#@PREFIX@#$njs_pc_build_dir#" \\
 		-e "s#@LIBDIR@#$njs_pc_build_dir#" \\
+		-e "s#@PRIVATE_INCLUDEDIR@#$(pwd)/src#" \\
+		-e "s#@SHARED@#$NJS_SHARED#" \\
+		-e "s#@OPENSSL@#$NJS_HAVE_OPENSSL#" \\
+		-e "s#@LIBXML2@#$NJS_HAVE_LIBXML2#" \\
+		-e "s#@ZLIB@#$NJS_HAVE_ZLIB#" \\
 		-e "s#@CFLAGS@#-I$njs_pc_build_dir -I$(pwd)/src#" \\
 		-e "s#@VERSION@#\$(NJS_VER)#" \\
-		-e "s#@EXTRA_LIBS@#-lm $NJS_LIBS $NJS_LIB_AUX_LIBS#" \\
+		-e "s#@EXTRA_LIBS@#$njs_pc_extra_libs#" \\
+		-e "s#@PRIVATE_LIBS@#$njs_pc_private_libs#" \\
 		src/njs.pc.in > \$@
 END
+
+. auto/install
 
 # Makefile.
 
