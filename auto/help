@@ -13,6 +13,9 @@ default: "$NJS_ADDR2LINE"
 default: "$NJS_ADDRESS_SANITIZER"
   --ar=FILE                 sets static linking program, default: "$AR"
   --build-dir=DIR           sets build directory, default: "$NJS_BUILD_DIR"
+  --prefix=DIR              sets installation prefix, default: "$NJS_PREFIX"
+  --libdir=DIR              sets installation library directory
+  --includedir=DIR          sets installation header directory
   --cc=FILE                 sets C compiler filename, default: "$CC"
   --cc-opt=OPTIONS          sets additional C compiler options, \
 default: "$NJS_CC_OPT"
@@ -54,5 +57,10 @@ default: "$NJS_LD_OPT"
   --quickjs-inc=DIRS        sets QuickJS include directories;
                             requires --quickjs-lib.
   --quickjs-lib=OPTIONS     sets QuickJS linker options.
+  --quickjs-pc=NAME         selects QuickJS via pkg-config.
   --with-quickjs            requires QuickJS engine.
+  --with-shared             also builds versioned shared libraries (ELF).
+                            QuickJS bindings require shared QuickJS and
+                            pkg-config metadata. Install with make install;
+                            DESTDIR is supported.
 END

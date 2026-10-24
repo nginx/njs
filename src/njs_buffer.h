@@ -21,15 +21,16 @@ typedef struct {
 } njs_buffer_encoding_t;
 
 
-njs_int_t njs_buffer_set(njs_vm_t *vm, njs_value_t *value, const u_char *start,
-    uint32_t size);
-njs_int_t njs_buffer_new(njs_vm_t *vm, njs_value_t *value, const u_char *start,
-    uint32_t size);
+NJS_EXPORT njs_int_t njs_buffer_set(njs_vm_t *vm, njs_value_t *value,
+    const u_char *start, uint32_t size);
+NJS_EXPORT njs_int_t njs_buffer_new(njs_vm_t *vm, njs_value_t *value,
+    const u_char *start, uint32_t size);
 
-const njs_buffer_encoding_t *njs_buffer_encoding(njs_vm_t *vm,
+NJS_EXPORT const njs_buffer_encoding_t *njs_buffer_encoding(njs_vm_t *vm,
     njs_value_t *value, njs_bool_t thrw);
-njs_int_t njs_buffer_decode_string(njs_vm_t *vm, const njs_value_t *value,
-    njs_value_t *dst, const njs_buffer_encoding_t *encoding);
+NJS_EXPORT njs_int_t njs_buffer_decode_string(njs_vm_t *vm,
+    const njs_value_t *value, njs_value_t *dst,
+    const njs_buffer_encoding_t *encoding);
 
 
 extern const njs_object_type_init_t  njs_buffer_type_init;

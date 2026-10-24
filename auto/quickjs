@@ -5,6 +5,23 @@
 
 NJS_HAVE_QUICKJS=NO
 NJS_QUICKJS_DEFAULT_INCS="src $NJS_BUILD_DIR"
+NJS_QUICKJS_SHARED_TEST=
+NJS_QUICKJS_SHARED_INCS=
+NJS_QUICKJS_SHARED_LIBS=
+
+if [ "$NJS_SHARED" = YES ]; then
+    NJS_QUICKJS_SHARED_INCS="#define _GNU_SOURCE
+                            #include <dlfcn.h>"
+    NJS_QUICKJS_SHARED_LIBS=-ldl
+    NJS_QUICKJS_SHARED_TEST="Dl_info library, executable;
+
+        if (!dladdr((void *) JS_NewRuntime, &library)
+            || !dladdr((void *) main, &executable)
+            || library.dli_fbase == executable.dli_fbase)
+        {
+            return 1;
+        }"
+fi
 
 if [ $NJS_TRY_QUICKJS = YES ]; then
     njs_found=no
@@ -14,18 +31,20 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
     njs_feature_run=yes
     njs_feature_incs="$NJS_QUICKJS_DEFAULT_INCS $NJS_QUICKJS_INCS"
     njs_feature_libs="-lquickjs.lto -lm -ldl -lpthread"
-    njs_feature_test="#include <quickjs_compat.h>
+    njs_feature_test="$NJS_QUICKJS_SHARED_INCS
+                      #include <quickjs_compat.h>
 
                       int main() {
                           JSRuntime *rt;
 
                           rt = JS_NewRuntime();
                           JS_FreeRuntime(rt);
+                          $NJS_QUICKJS_SHARED_TEST
                           return 0;
                      }"
     if [ -n "$NJS_QUICKJS_LIB" ]; then
         njs_feature="QuickJS library $NJS_QUICKJS_LIB"
-        njs_feature_libs="$NJS_QUICKJS_LIB"
+        njs_feature_libs="$NJS_QUICKJS_LIB $NJS_QUICKJS_SHARED_LIBS"
     fi
 
     . auto/feature
@@ -69,9 +88,13 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
 
             njs_feature_incs="$NJS_QUICKJS_DEFAULT_INCS"
             njs_feature_incs="$njs_feature_incs $(pkg-config quickjs-ng --cflags-only-I | sed -e 's/-I//g')"
-            njs_feature_libs=$(pkg-config quickjs-ng --libs)
+            njs_feature_libs="$(pkg-config quickjs-ng --libs) $NJS_QUICKJS_SHARED_LIBS"
 
             . auto/feature
+
+            if [ $njs_found = yes ]; then
+                NJS_QUICKJS_PC=quickjs-ng
+            fi
         fi
     fi
 

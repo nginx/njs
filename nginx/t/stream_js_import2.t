@@ -23,8 +23,12 @@ use Test::Nginx::Stream qw/ stream /;
 select STDERR; $| = 1;
 select STDOUT; $| = 1;
 
-my $t = Test::Nginx->new()->has(qw/stream stream_return/)
-	->write_file_expand('nginx.conf', <<'EOF');
+my $t = Test::Nginx->new()->has(qw/stream stream_return/);
+
+plan(skip_all => 'ngx.engine_id requires --with-debug')
+	unless $t->has_module('--with-debug');
+
+$t->write_file_expand('nginx.conf', <<'EOF');
 
 %%TEST_GLOBALS%%
 
@@ -74,22 +78,29 @@ $t->write_file('main.js', <<EOF);
 
 EOF
 
-$t->try_run('no njs available');
+$t->run()->plan(3);
 
 ###############################################################################
 
-my ($id_82) = stream('127.0.0.1:' . port(8082))->read() =~ /(\d+)/;
-plan(skip_all => 'ngx.engine_id requires --with-debug')
-    unless defined $id_82;
-
-$t->plan(3);
+my $id_82 = engine_id(8082);
 
 is(stream('127.0.0.1:' . port(8081))->read(), 'P-TEST', 'foo.bar.p');
 
-my ($id_83) = stream('127.0.0.1:' . port(8083))->read() =~ /(\d+)/;
-my ($id_84) = stream('127.0.0.1:' . port(8084))->read() =~ /(\d+)/;
+my $id_83 = engine_id(8083);
+my $id_84 = engine_id(8084);
 
 ok($id_82 == $id_83, 'same context for stream level import');
 ok($id_84 != $id_82, 'different context for server level import');
 
 ###############################################################################
+
+sub engine_id {
+	my ($port) = @_;
+
+	my $id = stream('127.0.0.1:' . port($port))->read();
+
+	die "invalid engine ID response from port $port\n"
+		unless defined $id && $id =~ /\A\d+\z/;
+
+	return $id;
+}

@@ -38,6 +38,16 @@ my $m32 = $configure_args =~ /-m32/ ? '-m32' : '';
 my $quickjs_inc = $configure_args =~ /(-I\S*quickjs(?:-ng)?[^\s'"]*)/
 	? $1 : undef;
 
+if (!$quickjs_inc) {
+	for my $package ('njs_qjs', 'quickjs-ng') {
+		if (system("pkg-config --exists $package >/dev/null 2>&1") == 0) {
+			$quickjs_inc = `pkg-config --cflags-only-I $package`;
+			chomp $quickjs_inc;
+			last;
+		}
+	}
+}
+
 plan(skip_all => "QuickJS development files not found") unless $quickjs_inc;
 
 my $t = Test::Nginx->new()->has(qw/stream stream_return/)

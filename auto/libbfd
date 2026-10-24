@@ -3,6 +3,7 @@
 
 
 NJS_HAVE_LIBBFD=NO
+NJS_LIBBFD_LIB=
 
 if [ $NJS_ADDR2LINE = YES ]; then
     njs_found=no
@@ -30,6 +31,7 @@ if [ $NJS_ADDR2LINE = YES ]; then
 
     if [ $njs_found = yes ]; then
         NJS_HAVE_LIBBFD=YES
+        NJS_LIBBFD_LIB="$njs_feature_libs"
         NJS_LIB_AUX_LIBS="$NJS_LIB_AUX_LIBS $njs_feature_libs"
     fi
 fi

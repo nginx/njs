@@ -1,0 +1,110 @@
+
+# Copyright (C) Dmitry Volyntsev
+# Copyright (C) F5, Inc.
+
+
+if ! command -v pkg-config >/dev/null 2>&1; then
+    echo "$0: error: NJS_SHARED=YES requires pkg-config."
+    exit 1
+fi
+
+njs_packages=njs
+if [ "$NJS_QUICKJS" != NO ]; then
+    njs_packages="njs_qjs njs"
+fi
+
+njs_version=`sed -n 's/^#define NJS_VERSION  *"\(.*\)"/\1/p' \
+             $ngx_addon_dir/../src/njs.h`
+
+for njs_package in $njs_packages; do
+    if ! pkg-config --exists "$njs_package = $njs_version"; then
+        echo "$0: error: NJS_SHARED=YES requires $njs_package $njs_version."
+        exit 1
+    fi
+
+    if [ "$(pkg-config --variable=shared $njs_package)" != YES ]; then
+        echo "$0: error: $njs_package was not configured with --with-shared."
+        exit 1
+    fi
+done
+
+if [ "$NJS_OPENSSL" != "$(pkg-config --variable=openssl njs)" \
+     -o "$NJS_LIBXSLT" != "$(pkg-config --variable=libxml2 njs)" \
+     -o "$NJS_ZLIB" != "$(pkg-config --variable=zlib njs)" ]
+then
+    echo "$0: error: crypto, XML and zlib options must match the shared njs build."
+    exit 1
+fi
+
+NJS_REGEX_LIB=
+NJS_ENGINE_LIB=`pkg-config --libs $njs_packages`
+NJS_ENGINE_INCS=`pkg-config --cflags-only-I $njs_packages | sed -e 's/-I//g'`
+NJS_ENGINE_INCS="$NJS_ENGINE_INCS \
+                $(pkg-config --variable=private_includedir njs)"
+NJS_ENGINE_DEP=
+
+for njs_package in $njs_packages; do
+    njs_libdir=`pkg-config --variable=libdir $njs_package`
+    if [ -n "${PKG_CONFIG_SYSROOT_DIR:-}" ]; then
+        case "$njs_libdir" in
+            "$PKG_CONFIG_SYSROOT_DIR"/*) ;;
+            *) njs_libdir="$PKG_CONFIG_SYSROOT_DIR$njs_libdir" ;;
+        esac
+    fi
+    NJS_ENGINE_DEP="$NJS_ENGINE_DEP $njs_libdir/lib$njs_package.so.$njs_version"
+done
+
+for njs_incdir in $NJS_ENGINE_INCS; do
+    for njs_header in $njs_incdir/*.h; do
+        if [ -f "$njs_header" ]; then
+            NJS_DEPS="$NJS_DEPS $njs_header"
+        fi
+    done
+done
+
+ngx_feature="shared njs libraries"
+ngx_feature_name=NJS_HAVE_SHARED
+ngx_feature_run=yes
+ngx_feature_path="$NJS_ENGINE_INCS"
+ngx_feature_libs="$NJS_ENGINE_LIB -ldl"
+ngx_feature_incs="#define _GNU_SOURCE
+                  #include <njs.h>
+                  #include <dlfcn.h>"
+ngx_feature_test="Dl_info library, executable;
+
+    if (!dladdr((void *) main, &executable)
+        || !dladdr((void *) njs_vm_create, &library)
+        || library.dli_fbase == executable.dli_fbase)
+    {
+        return 1;
+    }"
+
+if [ "$NJS_QUICKJS" != NO ]; then
+    ngx_feature_incs="$ngx_feature_incs
+                      #include <qjs.h>"
+    ngx_feature_test="$ngx_feature_test
+        if (!dladdr((void *) qjs_new_context, &library)
+            || library.dli_fbase == executable.dli_fbase
+            || !dladdr((void *) JS_NewRuntime, &library)
+            || library.dli_fbase == executable.dli_fbase)
+        {
+            return 1;
+        }
+
+        JSRuntime *rt = JS_NewRuntime();
+        JS_FreeRuntime(rt);"
+fi
+
+. auto/feature
+
+if [ $ngx_found != yes ]; then
+    echo "$0: error: shared njs libraries are not working (see autoconf.err)."
+    exit 1
+fi
+
+if [ "$NJS_QUICKJS" != NO ]; then
+    NJS_HAVE_QUICKJS=YES
+    echo " enabled shared QuickJS engine"
+fi
+
+echo " enabled shared njs engine"

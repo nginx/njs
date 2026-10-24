@@ -22,8 +22,12 @@ use Test::Nginx;
 select STDERR; $| = 1;
 select STDOUT; $| = 1;
 
-my $t = Test::Nginx->new()->has(qw/http/)
-	->write_file_expand('nginx.conf', <<'EOF');
+my $t = Test::Nginx->new()->has(qw/http/);
+
+plan(skip_all => 'ngx.engine_id requires --with-debug')
+	unless $t->has_module('--with-debug');
+
+$t->write_file_expand('nginx.conf', <<'EOF');
 
 %%TEST_GLOBALS%%
 
@@ -70,20 +74,19 @@ $t->write_file('main.js', <<EOF);
 
 EOF
 
-$t->try_run('no njs available');
+$t->run()->plan(1);
 
 ###############################################################################
 
 my %ids;
 for my $uri ('/a', '/b', '/c', '/d') {
-	http_get($uri) =~ /\x0d\x0a\x0d\x0a(\d+)/ms;
-	$ids{$1} = 1 if defined $1;
+	my ($id) = http_get($uri)
+		=~ /^HTTP\/1\.[01] 200 .*?\x0d\x0a\x0d\x0a(\d+)\z/s;
+
+	die "invalid engine ID response from $uri\n" unless defined $id;
+
+	$ids{$id} = 1;
 }
-
-plan(skip_all => 'ngx.engine_id requires --with-debug')
-    unless scalar keys %ids;
-
-$t->plan(1);
 
 is(scalar keys %ids, 1, 'http js block imported once');
 

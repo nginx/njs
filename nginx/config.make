@@ -1,8 +1,12 @@
+if [ "$NJS_SHARED" = YES ]; then
+    return
+fi
+
 NJS_BUILD_TARGETS=libnjs
 NJS_QUICKJS_OPT=--no-quickjs
 
 if [ "$NJS_HAVE_QUICKJS" = YES ]; then
-    NJS_BUILD_TARGETS="libnjs libqjs"
+    NJS_BUILD_TARGETS="libnjs libnjs_qjs"
     NJS_QUICKJS_OPT="--with-quickjs --quickjs-inc=\"$NJS_QUICKJS_INC\" \
                      --quickjs-lib=\"$NJS_QUICKJS_LIB\""
 fi
@@ -33,7 +37,7 @@ END
 if [ "$NJS_HAVE_QUICKJS" = YES ]; then
     cat << END                                        >> $NGX_MAKEFILE
 
-$NJS_BUILD_DIR/libqjs.a: $NJS_BUILD_DIR/libnjs.a
+$NJS_BUILD_DIR/libnjs_qjs.a: $NJS_BUILD_DIR/libnjs.a
 
 END
 fi
