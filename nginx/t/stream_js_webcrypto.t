@@ -23,7 +23,7 @@ use Test::Nginx::Stream qw/ stream /;
 select STDERR; $| = 1;
 select STDOUT; $| = 1;
 
-my $t = Test::Nginx->new()->has(qw/http stream stream_return/)
+my $t = Test::Nginx->new()->has(qw/stream stream_return/)
 	->write_file_expand('nginx.conf', <<'EOF');
 
 %%TEST_GLOBALS%%
@@ -33,27 +33,18 @@ daemon off;
 events {
 }
 
-http {
-    %%TEST_GLOBALS_HTTP%%
-
-    js_import test.js;
-
-    server {
-        listen       127.0.0.1:8080;
-        server_name  localhost;
-
-        location /has_crypto {
-            js_content test.has_crypto;
-        }
-    }
-}
-
 stream {
     %%TEST_GLOBALS_STREAM%%
 
     js_import test.js;
 
+    js_set $has_crypto test.has_crypto;
     js_set $test test.random_values_test;
+
+    server {
+        listen  127.0.0.1:8080;
+        return  $has_crypto;
+    }
 
     server {
         listen  127.0.0.1:8081;
@@ -85,8 +76,8 @@ stream {
 EOF
 
 $t->write_file('test.js', <<EOF);
-    function has_crypto(r) {
-        r.return(200, (crypto !== undefined).toString());
+    function has_crypto(s) {
+        return (typeof crypto !== 'undefined').toString();
     }
 
     function count1(v) {
@@ -180,10 +171,19 @@ $t->write_file('test.js', <<EOF);
                     test_ed25519, test_x25519, test_aes_kw};
 EOF
 
-$t->try_run('no stream js_var');
+$t->run();
 
-plan(skip_all => 'njs crypto module not available')
-	if http_get('/has_crypto') !~ /true/;
+my $has_crypto = stream('127.0.0.1:' . port(8080))->read();
+
+die "invalid WebCrypto capability response\n"
+	unless defined $has_crypto && $has_crypto =~ /\A(true|false)\z/;
+
+if ($has_crypto eq 'false') {
+	die "WebCrypto is unavailable in an SSL-enabled CI job\n"
+		if defined $ENV{CI_SSL} && $ENV{CI_SSL} eq 'yes';
+
+	plan(skip_all => 'njs crypto module not available');
+}
 
 $t->plan(4);
 
