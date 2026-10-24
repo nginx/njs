@@ -10,6 +10,7 @@ prepare() {
     sudo apt-get update
     sudo apt-get install -y libssl-dev zlib1g-dev libpcre2-dev libxslt1-dev \
         libgeoip-dev libgd-dev libxml2-dev libedit-dev libperl-dev \
+        libio-socket-ssl-perl \
         libtest-harness-perl libgd-perl expect meson ninja-build
 
     local cc_opt ld_opt
