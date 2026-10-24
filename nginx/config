@@ -4,6 +4,12 @@ NJS_OPENSSL=${NJS_OPENSSL:-YES}
 NJS_LIBXSLT=${NJS_LIBXSLT:-YES}
 NJS_ZLIB=${NJS_ZLIB:-YES}
 NJS_QUICKJS=${NJS_QUICKJS:-YES}
+NJS_SHARED=${NJS_SHARED:-NO}
+
+case "$NJS_SHARED" in
+    YES | NO) ;;
+    *) echo "$0: error: NJS_SHARED must be YES or NO."; exit 1 ;;
+esac
 
 NJS_BUILD_DIR="$(pwd)/$NGX_OBJS/njs"
 case "$NGX_OBJS" in
@@ -20,7 +26,6 @@ NJS_SRCS="$ngx_addon_dir/ngx_js.c \
     $ngx_addon_dir/ngx_js_form.c \
     $ngx_addon_dir/ngx_js_http.c \
     $ngx_addon_dir/ngx_js_fetch.c \
-    $ngx_addon_dir/ngx_js_regex.c \
     $ngx_addon_dir/ngx_js_shared_dict.c"
 
 QJS_DEPS=""
@@ -29,10 +34,17 @@ QJS_SRCS=""
 NJS_OPENSSL_LIB=
 NJS_XSLT_LIB=
 NJS_ZLIB_LIB=
-NJS_QUICKJS_LIB=
-NJS_QUICKJS_INC=
+NJS_QUICKJS_LIB=${NJS_QUICKJS_LIB:-}
+NJS_QUICKJS_INC=${NJS_QUICKJS_INC:-}
 NJS_QUICKJS_DEFAULT_INCS="$ngx_addon_dir/../src"
 NJS_HAVE_QUICKJS=
+
+if [ "$NJS_SHARED" = YES ]; then
+    . $ngx_addon_dir/config.shared
+else
+
+NJS_SRCS="$NJS_SRCS $ngx_addon_dir/ngx_js_regex.c"
+NJS_REGEX_LIB=PCRE
 
 if [ $NJS_QUICKJS != NO ]; then
 
@@ -40,14 +52,24 @@ if [ $NJS_QUICKJS != NO ]; then
     ngx_feature_name=NJS_HAVE_QUICKJS
     ngx_feature_run=yes
     ngx_feature_incs="#include <quickjs_compat.h>"
-    ngx_feature_path="$NJS_QUICKJS_DEFAULT_INCS"
+    ngx_feature_path="$NJS_QUICKJS_DEFAULT_INCS $NJS_QUICKJS_INC"
     ngx_feature_libs="-lquickjs.lto -lm -ldl -lpthread"
     ngx_feature_test="JSRuntime *rt;
 
                       rt = JS_NewRuntime();
                       JS_FreeRuntime(rt);
                       return 0;"
+    if [ -n "$NJS_QUICKJS_LIB" ]; then
+        ngx_feature="QuickJS library $NJS_QUICKJS_LIB"
+        ngx_feature_libs="$NJS_QUICKJS_LIB"
+    fi
+
     . auto/feature
+
+    if [ -n "$NJS_QUICKJS_LIB" -a $ngx_found = no ]; then
+        echo "$0: error: the specified QuickJS library is not working."
+        exit 1
+    fi
 
     if [ $ngx_found = no ]; then
         ngx_feature="QuickJS library -lquickjs"
@@ -160,22 +182,27 @@ fi
 NJS_ENGINE_LIB="$NJS_BUILD_DIR/libnjs.a"
 if [ "$NJS_HAVE_QUICKJS" = "YES" ];  then
     NJS_ENGINE_LIB="$NJS_ENGINE_LIB $NJS_BUILD_DIR/libnjs_qjs.a"
-    QJS_SRCS="$QJS_SRCS $ngx_addon_dir/ngx_qjs_fetch.c"
 fi
 
 NJS_ENGINE_DEP="$NJS_ENGINE_LIB $NJS_BUILD_DIR/njs_auto_config.h"
 NJS_DEPS="$NJS_DEPS `echo $ngx_addon_dir/../src/*.h` \
           `echo $ngx_addon_dir/../external/*.h` \
           $ngx_addon_dir/../external/njs_regex.c"
+NJS_ENGINE_INCS="$ngx_addon_dir/../src $NJS_BUILD_DIR $NJS_QUICKJS_INC"
+
+fi
+
+if [ "$NJS_HAVE_QUICKJS" = YES ]; then
+    QJS_SRCS="$QJS_SRCS $ngx_addon_dir/ngx_qjs_fetch.c"
+fi
 
 if [ $HTTP != NO ]; then
     ngx_module_type=HTTP_AUX_FILTER
     ngx_module_name="ngx_http_js_module ngx_http_js_core_module"
-    ngx_module_incs="$ngx_addon_dir/../src $NJS_BUILD_DIR \
-                     $NJS_QUICKJS_INC"
+    ngx_module_incs="$NJS_ENGINE_INCS"
     ngx_module_deps="$NJS_ENGINE_DEP $NJS_DEPS $QJS_DEPS"
     ngx_module_srcs="$ngx_addon_dir/ngx_http_js_module.c $NJS_SRCS $QJS_SRCS"
-    ngx_module_libs="PCRE $NJS_OPENSSL_LIB $NJS_XSLT_LIB $NJS_ZLIB_LIB \
+    ngx_module_libs="$NJS_REGEX_LIB $NJS_OPENSSL_LIB $NJS_XSLT_LIB $NJS_ZLIB_LIB \
                      $NJS_QUICKJS_LIB $NJS_ENGINE_LIB -lm"
 
     . auto/module
@@ -188,11 +215,10 @@ fi
 if [ $STREAM != NO ]; then
     ngx_module_type=STREAM
     ngx_module_name="ngx_stream_js_module ngx_stream_js_core_module"
-    ngx_module_incs="$ngx_addon_dir/../src $NJS_BUILD_DIR \
-                     $NJS_QUICKJS_INC"
+    ngx_module_incs="$NJS_ENGINE_INCS"
     ngx_module_deps="$NJS_ENGINE_DEP $NJS_DEPS $QJS_DEPS"
     ngx_module_srcs="$ngx_addon_dir/ngx_stream_js_module.c $NJS_SRCS $QJS_SRCS"
-    ngx_module_libs="PCRE $NJS_OPENSSL_LIB $NJS_XSLT_LIB $NJS_ZLIB_LIB \
+    ngx_module_libs="$NJS_REGEX_LIB $NJS_OPENSSL_LIB $NJS_XSLT_LIB $NJS_ZLIB_LIB \
                      $NJS_QUICKJS_LIB $NJS_ENGINE_LIB -lm"
 
     . auto/module
