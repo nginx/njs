@@ -1,3 +1,7 @@
+if [ "$NJS_SHARED" = YES ]; then
+    return
+fi
+
 NJS_BUILD_TARGETS=libnjs
 NJS_QUICKJS_OPT=--no-quickjs
 
