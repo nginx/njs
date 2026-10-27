@@ -74,6 +74,8 @@ let parse_tsuite = {
 
         { value: 'baz=fuz&baz=bar', sep: '&', eq: '=', expected: { baz:['fuz', 'bar'] } },
         { value: 'baz=fuz&baz=bar&baz=zap', expected: { baz:['fuz', 'bar', 'zap'] } },
+        { value: 'toString=fuz&constructor=bar', expected: { toString: 'fuz', constructor: 'bar' } },
+        { value: 'hasOwnProperty=fuz&hasOwnProperty=bar', expected: { hasOwnProperty: ['fuz', 'bar'] } },
         { value: 'baz=', expected: { baz:'' } },
         { value: '=fuz', expected: { '':'fuz' } },
         { value: '=fuz=', expected: { '':'fuz=' } },
@@ -122,6 +124,28 @@ let parse_tsuite = {
 
         { value: {toString: () => { throw 'Oops'; }}, sep: "&", eq: "=",
           exception: 'TypeError: Cannot convert object to primitive value' },
+]};
+
+let parse_proto_tsuite = {
+    name: "querystring.parse() prototype tests",
+    T: async (params) => {
+        let r = qs.parse(params.value);
+
+        if (Object.getPrototypeOf(r) !== Object.prototype) {
+            throw Error(`unexpected prototype of "${JSON.stringify(r)}"`);
+        }
+
+        if (JSON.stringify(r) !== params.expected) {
+            throw Error(`unexpected output "${JSON.stringify(r)}" != "${params.expected}"`);
+        }
+
+        return 'SUCCESS';
+    },
+
+    tests: [
+        { value: '__proto__=fuz', expected: '{"__proto__":"fuz"}' },
+        { value: '__proto__=fuz&__proto__=bar', expected: '{"__proto__":["fuz","bar"]}' },
+        { value: '__proto__=fuz&1=bar', expected: '{"1":"bar","__proto__":"fuz"}' },
 ]};
 
 let stringify_tsuite = {
@@ -219,6 +243,7 @@ let unescape_tsuite = {
 run([
     escape_tsuite,
     parse_tsuite,
+    parse_proto_tsuite,
     stringify_tsuite,
     unescape_tsuite,
 ])

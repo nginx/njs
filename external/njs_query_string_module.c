@@ -6,8 +6,7 @@
  */
 
 
-#include <njs.h>
-#include <njs_string.h>
+#include <njs_main.h>
 
 
 static njs_int_t njs_query_string_parser(njs_vm_t *vm, u_char *query,
@@ -232,9 +231,10 @@ njs_query_string_append(njs_vm_t *vm, njs_value_t *object, const u_char *key,
     size_t key_size, const u_char *val, size_t val_size,
     njs_function_t *decoder)
 {
-    njs_int_t           ret;
-    njs_value_t         *push;
-    njs_opaque_value_t  array, name, value, retval;
+    njs_int_t             ret;
+    njs_value_t           *push, *prev;
+    njs_opaque_value_t    array, name, value;
+    njs_property_query_t  pq;
 
     if (njs_query_string_is_native_decoder(decoder)) {
         ret = njs_query_string_decode(vm, njs_value_arg(&name), key, key_size);
@@ -294,45 +294,59 @@ njs_query_string_append(njs_vm_t *vm, njs_value_t *object, const u_char *key,
         }
     }
 
-    ret = njs_value_property_val(vm, object, njs_value_arg(&name),
-                                 njs_value_arg(&retval));
+    /*
+     * Only own properties are consulted and only own data properties
+     * are created, so a key like "__proto__" or "toString" neither reads
+     * nor writes through the prototype chain of the result object.
+     */
 
-    if (ret == NJS_OK) {
-        if (njs_value_is_array(njs_value_arg(&retval))) {
-            push = njs_vm_array_push(vm, njs_value_arg(&retval));
-            if (njs_slow_path(push == NULL)) {
-                return NJS_ERROR;
-            }
+    njs_property_query_init(&pq, NJS_PROPERTY_QUERY_GET, 1);
 
-            njs_value_assign(push, njs_value_arg(&value));
+    ret = njs_property_query_val(vm, &pq, object, njs_value_arg(&name));
+    if (njs_slow_path(ret == NJS_ERROR)) {
+        return ret;
+    }
 
-            return NJS_OK;
-        }
+    if (ret == NJS_DECLINED) {
+        return njs_value_create_data_prop(vm, object, njs_value_arg(&name),
+                                          njs_value_arg(&value), 0);
+    }
 
-        ret = njs_vm_array_alloc(vm, njs_value_arg(&array), 2);
-        if (njs_slow_path(ret != NJS_OK)) {
-            return ret;
-        }
+    prev = njs_prop_value(pq.fhq.value);
 
-        push = njs_vm_array_push(vm, njs_value_arg(&array));
-        if (njs_slow_path(push == NULL)) {
-            return NJS_ERROR;
-        }
-
-        njs_value_assign(push, njs_value_arg(&retval));
-
-        push = njs_vm_array_push(vm, njs_value_arg(&array));
+    if (njs_value_is_array(prev)) {
+        push = njs_vm_array_push(vm, prev);
         if (njs_slow_path(push == NULL)) {
             return NJS_ERROR;
         }
 
         njs_value_assign(push, njs_value_arg(&value));
 
-        njs_value_assign(&value, &array);
+        return NJS_OK;
     }
 
-    return njs_value_property_val_set(vm, object, njs_value_arg(&name),
-                                      njs_value_arg(&value));
+    ret = njs_vm_array_alloc(vm, njs_value_arg(&array), 2);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return ret;
+    }
+
+    push = njs_vm_array_push(vm, njs_value_arg(&array));
+    if (njs_slow_path(push == NULL)) {
+        return NJS_ERROR;
+    }
+
+    njs_value_assign(push, prev);
+
+    push = njs_vm_array_push(vm, njs_value_arg(&array));
+    if (njs_slow_path(push == NULL)) {
+        return NJS_ERROR;
+    }
+
+    njs_value_assign(push, njs_value_arg(&value));
+
+    njs_value_assign(prev, njs_value_arg(&array));
+
+    return NJS_OK;
 }
 
 
