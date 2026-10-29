@@ -985,7 +985,7 @@ qjs_bn_counter128(njs_str_t *ctr, unsigned bits)
 njs_inline unsigned
 qjs_ceiling_div(unsigned dend, unsigned dsor)
 {
-    return (dsor == 0) ? 0 : 1 + (dend - 1) / dsor;
+    return (dsor == 0) ? 0 : (dend + dsor - 1) / dsor;
 }
 
 

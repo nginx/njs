@@ -87,6 +87,8 @@ let aes_tsuite = {
         { name: "AES-CTR", data: "aabbcc", key: "001122330011223300112233001122330011223300112233" },
         { name: "AES-CTR", data: "aabbccdd", length: 129,
           exception: "TypeError: AES-CTR algorithm.length must be between 1 and 128" },
+        { name: "AES-CTR", data: "", length: 128 },
+        { name: "AES-CTR", data: "", counter: "ffffffffffffffffffffffffffffffff", length: 128 },
 
         { name: "AES-CBC", data: "aa" },
         { name: "AES-CBC", data: "aabbccdd".repeat(4) },
