@@ -1185,7 +1185,7 @@ fail:
 njs_inline njs_uint_t
 njs_ceil_div(njs_uint_t dend, njs_uint_t dsor)
 {
-    return (dsor == 0) ? 0 : 1 + (dend - 1) / dsor;
+    return (dsor == 0) ? 0 : (dend + dsor - 1) / dsor;
 }
 
 
