@@ -22033,6 +22033,12 @@ static njs_unit_test_t  njs_externals_test[] =
     { njs_str("new Uint8Array($r.buffer.sort().slice(0,3))"),
       njs_str("129,144,145") },
 
+    { njs_str("var b = $r.buffer; "
+              "var v = new DataView(b.buffer, b.byteOffset);"
+              "v.setUint8(0, '@'.codePointAt(0));"
+              "[b[0], $r.buffer[0]]"),
+      njs_str("64,208") },
+
     { njs_str("$r.buffer instanceof Buffer"),
       njs_str("true") },
 

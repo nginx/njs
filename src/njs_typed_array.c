@@ -2603,7 +2603,11 @@ njs_data_view_prototype_set(njs_vm_t *vm, njs_value_t *args,
         return NJS_ERROR;
     }
 
-    buffer = view->buffer;
+    buffer = njs_typed_array_writable(vm, view);
+    if (njs_slow_path(buffer == NULL)) {
+        return NJS_ERROR;
+    }
+
     u8 = &buffer->u.u8[index + view->offset];
 
     switch (type) {
