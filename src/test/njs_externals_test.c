@@ -231,6 +231,16 @@ njs_unit_test_r_buffer(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
 
 
 static njs_int_t
+njs_unit_test_r_array_buffer(njs_vm_t *vm, njs_object_prop_t *prop,
+    uint32_t unused, njs_value_t *value, njs_value_t *setval,
+    njs_value_t *retval)
+{
+    return njs_vm_value_array_buffer_set(vm, retval,
+                                         (u_char *) "АБВГДЕЁЖЗИЙ", 22);
+}
+
+
+static njs_int_t
 njs_unit_test_r_vars(njs_vm_t *vm, njs_object_prop_t *self, uint32_t atom_id,
     njs_value_t *value, njs_value_t *setval, njs_value_t *retval)
 {
@@ -847,6 +857,15 @@ static njs_external_t  njs_unit_test_r_external[] = {
         .enumerable = 1,
         .u.property = {
             .handler = njs_unit_test_r_buffer,
+        }
+    },
+
+    {
+        .flags = NJS_EXTERN_PROPERTY,
+        .name.string = njs_str("arrayBuffer"),
+        .enumerable = 1,
+        .u.property = {
+            .handler = njs_unit_test_r_array_buffer,
         }
     },
 
