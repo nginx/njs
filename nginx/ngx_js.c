@@ -1432,12 +1432,13 @@ ngx_engine_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
 
         /*
          * After the request object is freed, the runtime's memory usage should
-         * be low. It can only remain high if the global scope was
-         * modified.
+         * be low. It can remain high if values were retained, for example in
+         * the global scope, or if garbage was not yet collected.
          *
          * To prevent unlimited memory consumption growth, check whether memory
          * usage exceeds the configured limit. The check is performed rarely to
          * avoid performance impact of JS_ComputeMemoryUsage() which is slow.
+         * Memory outside of the runtime, such as nginx pools, is not counted.
          */
 
         if ((ngx_random() & 0xff) == 1) {
