@@ -199,8 +199,7 @@ njs_text_encoder_encode_into(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     end = start + str.length;
 
     array = njs_typed_array(dest);
-    if (njs_slow_path(njs_is_detached_buffer(array->buffer))) {
-        njs_type_error(vm, "detached buffer");
+    if (njs_slow_path(njs_typed_array_writable(vm, array) == NULL)) {
         return NJS_ERROR;
     }
 
