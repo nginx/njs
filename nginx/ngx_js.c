@@ -1202,11 +1202,20 @@ ngx_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
     }
 
     rc = ngx_qjs_await(cx, ctx->log, &rv);
-    JS_FreeValue(cx, rv);
-    if (rc == NGX_ERROR) {
+    if (rc == NGX_ERROR || JS_IsException(rv)) {
+        JS_FreeValue(cx, rv);
         ngx_qjs_log_exception(engine, ctx->log, "await exception");
         goto failed;
     }
+
+    if (JS_PromiseState(cx, rv) == JS_PROMISE_PENDING) {
+        JS_FreeValue(cx, rv);
+        ngx_log_error(NGX_LOG_ERR, ctx->log, 0,
+                      "js top-level await is not settled");
+        goto failed;
+    }
+
+    JS_FreeValue(cx, rv);
 
     return engine;
 
