@@ -2737,6 +2737,8 @@ qjs_fs_result(JSContext *cx, JSValue result, int calltype, JSValue callback)
             return JS_EXCEPTION;
         }
 
+        JS_FreeValue(cx, promise);
+
         return JS_UNDEFINED;
 
     default:
