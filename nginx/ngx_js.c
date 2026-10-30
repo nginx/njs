@@ -1902,11 +1902,15 @@ ngx_qjs_ext_clear_timeout(JSContext *cx, JSValueConst this_val,
 
     rb = njs_rbtree_find(&ctx->waiting_events, &event_lookup.node);
     if (rb == NULL) {
-        return JS_ThrowReferenceError(cx, "failed to find timer");
+        return JS_UNDEFINED;
     }
 
     event = (ngx_qjs_event_t *) ((u_char *) rb
                                  - offsetof(ngx_qjs_event_t, node));
+
+    if (event->destructor != ngx_qjs_clear_timer) {
+        return JS_UNDEFINED;
+    }
 
     ngx_js_del_event(ctx, event);
 
@@ -3334,12 +3338,17 @@ njs_clear_timeout(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     event_lookup.fd = njs_value_number(njs_argument(args, 1));
 
     rb = njs_rbtree_find(&ctx->waiting_events, &event_lookup.node);
-    if (njs_slow_path(rb == NULL)) {
-        njs_vm_internal_error(vm, "failed to find timer");
-        return NJS_ERROR;
+    if (rb == NULL) {
+        njs_value_undefined_set(retval);
+        return NJS_OK;
     }
 
     event = (ngx_js_event_t *) ((u_char *) rb - offsetof(ngx_js_event_t, node));
+
+    if (event->destructor != ngx_js_clear_timer) {
+        njs_value_undefined_set(retval);
+        return NJS_OK;
+    }
 
     ngx_js_del_event(ctx, event);
 
