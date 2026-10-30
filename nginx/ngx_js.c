@@ -83,6 +83,7 @@ static ngx_int_t ngx_engine_qjs_string(ngx_engine_t *e,
     njs_opaque_value_t *value, ngx_str_t *str);
 static void ngx_qjs_clear_events(ngx_js_ctx_t *ctx);
 static void ngx_qjs_detach_ctx(ngx_js_ctx_t *ctx, JSContext *cx);
+static void ngx_qjs_clear_timer(ngx_qjs_event_t *event);
 
 static JSValue ngx_qjs_process_getter(JSContext *ctx, JSValueConst this_val);
 static JSValue ngx_qjs_ext_set_timeout(JSContext *cx, JSValueConst this_val,
@@ -1788,9 +1789,11 @@ ngx_qjs_timer_handler(ngx_event_t *ev)
     external = JS_GetContextOpaque(cx);
     ctx = ngx_qjs_external_ctx(cx, external);
 
+    njs_rbtree_delete(&ctx->waiting_events, &event->node);
+
     rc = ngx_qjs_call(cx, event->function, event->args, event->nargs);
 
-    ngx_js_del_event(ctx, event);
+    ngx_qjs_clear_timer(event);
 
     ngx_qjs_external_event_finalize(cx)(external, rc);
 }
@@ -3217,11 +3220,11 @@ ngx_js_timer_handler(ngx_event_t *ev)
 
     vm = event->ctx;
 
+    ctx = ngx_external_ctx(vm, njs_vm_external_ptr(vm));
+    njs_rbtree_delete(&ctx->waiting_events, &event->node);
+
     rc = ngx_js_call(vm, njs_value_function(njs_value_arg(&event->function)),
                      event->args, event->nargs);
-
-    ctx = ngx_external_ctx(vm, njs_vm_external_ptr(vm));
-    ngx_js_del_event(ctx, event);
 
     ngx_external_event_finalize(vm)(njs_vm_external_ptr(vm), rc);
 }

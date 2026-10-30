@@ -67,6 +67,14 @@ http {
             js_content test.set_timeout_many;
         }
 
+        location /clear_timeout {
+            js_content test.clear_timeout;
+        }
+
+        location /clear_immediate {
+            js_content test.clear_immediate;
+        }
+
         location /clear_timeout_fetch {
             js_content test.clear_timeout_fetch;
         }
@@ -133,6 +141,45 @@ $t->write_file('test.js', <<EOF);
         }
 
         setTimeout(timeout_cb_reply, 10, r);
+    }
+
+    async function clear_timeout(r) {
+        let ids = [], fired = [];
+
+        await new Promise(resolve => {
+            for (let i = 0; i < 8; i++) {
+                ids.push(setTimeout((arg) => {
+                    clearTimeout(ids[arg]);
+
+                    if (arg == 2) {
+                        clearTimeout(ids[5]);
+                        clearTimeout(ids[6]);
+                        clearTimeout(ids[7]);
+                    }
+
+                    fired.push(arg);
+
+                    if (fired.length == 5) {
+                        setTimeout(resolve, 1);
+                    }
+                }, 10 * i, i));
+            }
+        });
+
+        clearTimeout(ids[0]);
+        clearTimeout(2147483647);
+        r.return(200, fired.join(','));
+    }
+
+    async function clear_immediate(r) {
+        let result = await new Promise(resolve => {
+            let id = setImmediate(arg => {
+                clearTimeout(id);
+                resolve(arg);
+            }, 'immediate');
+        });
+
+        r.return(200, result);
     }
 
     async function clear_timeout_fetch(r) {
@@ -260,17 +307,21 @@ $t->write_file('test.js', <<EOF);
 
     export default {njs:test_njs, set_timeout, set_timeout_data,
                     set_timeout_many, context_var, shared_ctx, limit_rate,
-                    clear_timeout_fetch, clear_timeout_unknown,
+                    clear_timeout, clear_immediate, clear_timeout_fetch,
+                    clear_timeout_unknown,
                     async_content, set_rv_var, set_promise_var, await_reject};
 
 EOF
 
-$t->try_run('no njs available')->plan(13);
+$t->try_run('no njs available')->plan(15);
 
 ###############################################################################
 
 like(http_get('/set_timeout'), qr/Content-Type: foo/, 'setTimeout');
 like(http_get('/set_timeout_many'), qr/Content-Type: reply/, 'setTimeout many');
+like(http_get('/clear_timeout'), qr/0,1,2,3,4$/,
+     'clearTimeout self and sibling timers');
+like(http_get('/clear_immediate'), qr/immediate$/, 'clearTimeout immediate');
 like(http_get('/clear_timeout_fetch'), qr/fetch$/,
      'clearTimeout fetch id');
 like(http_get('/clear_timeout_unknown'), qr/cleared$/,
