@@ -6155,6 +6155,7 @@ ngx_http_qjs_ext_args(JSContext *cx, JSValueConst this_val)
     ngx_int_t                rc;
     njs_chb_t                chain;
     ngx_http_request_t      *r;
+    JSPropertyDescriptor     desc;
     ngx_http_qjs_request_t  *req;
 
     req = JS_GetOpaque(this_val, NGX_QJS_CLASS_ID_HTTP_REQUEST);
@@ -6220,18 +6221,32 @@ ngx_http_qjs_ext_args(JSContext *cx, JSValueConst this_val)
             return JS_EXCEPTION;
         }
 
-        prev = JS_GetProperty(cx, args, key);
-        if (JS_IsException(prev)) {
+        /*
+         * Only own properties are consulted and only own data properties
+         * are created, so a key like "__proto__" or "toString" neither
+         * reads nor writes through the prototype chain of the args object.
+         */
+
+        ret = JS_GetOwnProperty(cx, &desc, args, key);
+        if (ret < 0) {
             chain.free(cx, decoded.start);
             JS_FreeAtom(cx, key);
             JS_FreeValue(cx, val);
             return JS_EXCEPTION;
         }
 
+        prev = JS_UNDEFINED;
+
+        if (ret) {
+            prev = desc.value;
+            JS_FreeValue(cx, desc.getter);
+            JS_FreeValue(cx, desc.setter);
+        }
+
         arr = JS_UNDEFINED;
 
         if (JS_IsUndefined(prev)) {
-            if (JS_SetProperty(cx, args, key, val) < 0) {
+            if (JS_DefinePropertyValue(cx, args, key, val, JS_PROP_C_W_E) < 0) {
                 val = JS_UNDEFINED;
                 goto exception;
             }
@@ -6276,7 +6291,7 @@ ngx_http_qjs_ext_args(JSContext *cx, JSValueConst this_val)
 
             val = JS_UNDEFINED;
 
-            if (JS_SetProperty(cx, args, key, arr) < 0) {
+            if (JS_DefinePropertyValue(cx, args, key, arr, JS_PROP_C_W_E) < 0) {
                 arr = JS_UNDEFINED;
                 goto exception;
             }
