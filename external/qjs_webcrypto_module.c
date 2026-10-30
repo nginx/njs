@@ -727,7 +727,7 @@ qjs_cipher_aes_gcm(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
 {
     int               len, outlen, dstlen;
     u_char            *dst, *p;
-    JSValue           ret, value;
+    JSValue           ret, value, taglen_value;
     int64_t           taglen;
     njs_str_t         iv, aad;
     EVP_CIPHER_CTX    *ctx;
@@ -761,32 +761,44 @@ qjs_cipher_aes_gcm(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
         return JS_EXCEPTION;
     }
 
-    ret = qjs_typed_array_data(cx, value, &iv);
-    if (JS_IsException(ret)) {
-        return JS_EXCEPTION;
-    }
-
-    JS_FreeValue(cx, value);
-
     taglen = 128;
 
-    value = JS_GetPropertyStr(cx, options, "tagLength");
-    if (JS_IsException(value)) {
+    /*
+     * Read the tagLength property before taking a direct pointer to the
+     * iv storage: a getter could detach the iv ArrayBuffer, leaving a
+     * dangling pointer for the OpenSSL calls below.
+     */
+    taglen_value = JS_GetPropertyStr(cx, options, "tagLength");
+    if (JS_IsException(taglen_value)) {
+        JS_FreeValue(cx, value);
         return JS_EXCEPTION;
     }
 
-    if (!JS_IsUndefined(value)) {
-        if (JS_ToInt64(cx, &taglen, value) < 0) {
+    if (!JS_IsUndefined(taglen_value)) {
+        if (JS_ToInt64(cx, &taglen, taglen_value) < 0) {
+            JS_FreeValue(cx, taglen_value);
+            JS_FreeValue(cx, value);
             return JS_EXCEPTION;
         }
     }
 
+    JS_FreeValue(cx, taglen_value);
+
     if (taglen != 32 && taglen != 64 && taglen != 96 && taglen != 104
         && taglen != 112 && taglen != 120 && taglen != 128)
     {
+        JS_FreeValue(cx, value);
         JS_ThrowTypeError(cx, "AES-GCM invalid tagLength");
         return JS_EXCEPTION;
     }
+
+    ret = qjs_typed_array_data(cx, value, &iv);
+    if (JS_IsException(ret)) {
+        JS_FreeValue(cx, value);
+        return JS_EXCEPTION;
+    }
+
+    JS_FreeValue(cx, value);
 
     taglen /= 8;
 
@@ -2143,7 +2155,7 @@ qjs_webcrypto_derive(JSContext *cx, JSValueConst this_val, int argc,
     u_char                     *k;
     size_t                     olen;
     int64_t                    iterations, length;
-    JSValue                    ret, val, aobject, dobject, dkey_value;
+    JSValue                    ret, val, info_val, aobject, dobject, dkey_value;
     unsigned                   usage, mask;
     njs_str_t                  salt, info;
     const EVP_MD               *md;
@@ -2282,6 +2294,32 @@ qjs_webcrypto_derive(JSContext *cx, JSValueConst this_val, int argc,
             goto fail;
         }
 
+        /*
+         * Read the iterations property before taking a direct pointer to
+         * the salt storage: a getter could detach the salt ArrayBuffer,
+         * leaving a dangling pointer for PKCS5_PBKDF2_HMAC() below.
+         */
+        ret = JS_GetPropertyStr(cx, aobject, "iterations");
+        if (JS_IsException(ret)) {
+            JS_FreeValue(cx, val);
+            goto fail;
+        }
+
+        if (JS_IsUndefined(ret)) {
+            JS_FreeValue(cx, val);
+            JS_FreeValue(cx, ret);
+            JS_ThrowTypeError(cx, "PBKDF2 algorithm.iterations is not provided");
+            goto fail;
+        }
+
+        if (JS_ToInt64(cx, &iterations, ret) < 0) {
+            JS_FreeValue(cx, val);
+            JS_FreeValue(cx, ret);
+            goto fail;
+        }
+
+        JS_FreeValue(cx, ret);
+
         ret = qjs_typed_array_data(cx, val, &salt);
         JS_FreeValue(cx, val);
         if (JS_IsException(ret)) {
@@ -2293,22 +2331,6 @@ qjs_webcrypto_derive(JSContext *cx, JSValueConst this_val, int argc,
                               "16 bytes long");
             goto fail;
         }
-
-        ret = JS_GetPropertyStr(cx, aobject, "iterations");
-        if (JS_IsException(ret)) {
-            goto fail;
-        }
-
-        if (JS_IsUndefined(ret)) {
-            JS_ThrowTypeError(cx, "PBKDF2 algorithm.iterations is not provided");
-            goto fail;
-        }
-
-        if (JS_ToInt64(cx, &iterations, ret) < 0) {
-            goto fail;
-        }
-
-        JS_FreeValue(cx, ret);
 
         md = qjs_algorithm_hash_digest(hash);
 
@@ -2334,19 +2356,26 @@ qjs_webcrypto_derive(JSContext *cx, JSValueConst this_val, int argc,
             goto fail;
         }
 
+        /*
+         * Read the info property before taking a direct pointer to the
+         * salt storage: a getter could detach the salt ArrayBuffer,
+         * leaving a dangling pointer for EVP_PKEY_CTX_set1_hkdf_salt().
+         */
+        info_val = JS_GetPropertyStr(cx, aobject, "info");
+        if (JS_IsException(info_val)) {
+            JS_FreeValue(cx, val);
+            goto fail;
+        }
+
         ret = qjs_typed_array_data(cx, val, &salt);
         JS_FreeValue(cx, val);
         if (JS_IsException(ret)) {
+            JS_FreeValue(cx, info_val);
             goto fail;
         }
 
-        val = JS_GetPropertyStr(cx, aobject, "info");
-        if (JS_IsException(val)) {
-            goto fail;
-        }
-
-        ret = qjs_typed_array_data(cx, val, &info);
-        JS_FreeValue(cx, val);
+        ret = qjs_typed_array_data(cx, info_val, &info);
+        JS_FreeValue(cx, info_val);
         if (JS_IsException(ret)) {
             goto fail;
         }
@@ -4381,12 +4410,10 @@ qjs_webcrypto_import_key(JSContext *cx, JSValueConst this_val, int argc,
 
 
 static int
-qjs_set_rsa_padding(JSContext *cx, JSValue options, EVP_PKEY *pkey,
-    EVP_PKEY_CTX *ctx, qjs_webcrypto_alg_t type)
+qjs_set_rsa_padding(JSContext *cx, EVP_PKEY_CTX *ctx,
+    qjs_webcrypto_alg_t type, int64_t salt_length)
 {
     int      padding, rc;
-    int64_t  salt_length;
-    JSValue  value;
 
     if (type == QJS_ALGORITHM_ECDSA) {
         return 0;
@@ -4401,23 +4428,6 @@ qjs_set_rsa_padding(JSContext *cx, JSValue options, EVP_PKEY *pkey,
     }
 
     if (padding == RSA_PKCS1_PSS_PADDING) {
-        value = JS_GetPropertyStr(cx, options, "saltLength");
-        if (JS_IsException(value)) {
-            return -1;
-        }
-
-        if (JS_IsUndefined(value)) {
-            JS_ThrowTypeError(cx, "RSA-PSS algorithm.saltLength is not "
-                              "provided");
-            return -1;
-        }
-
-        rc = JS_ToInt64(cx, &salt_length, value);
-        JS_FreeValue(cx, value);
-        if (rc < 0) {
-            return -1;
-        }
-
         rc = EVP_PKEY_CTX_set_rsa_pss_saltlen(ctx, salt_length);
         if (rc <= 0) {
             qjs_webcrypto_error(cx,
@@ -4600,7 +4610,8 @@ qjs_webcrypto_sign(JSContext *cx, JSValueConst this_val, int argc,
     int                        rc;
     u_char                     *dst, *p, *p1363;
     size_t                     olen, outlen;
-    JSValue                    ret, options;
+    int64_t                    salt_length;
+    JSValue                    ret, options, value;
     unsigned                   mask, m_len;
     njs_str_t                  data, sig;
     EVP_MD_CTX                 *mctx;
@@ -4643,6 +4654,54 @@ qjs_webcrypto_sign(JSContext *cx, JSValueConst this_val, int argc,
         return JS_EXCEPTION;
     }
 
+    md = NULL;
+
+    if (alg->type == QJS_ALGORITHM_ECDSA) {
+        /*
+         * Read the hash property before taking direct pointers to the
+         * signature/data storage: a getter could detach the ArrayBuffers,
+         * leaving dangling pointers for the OpenSSL calls below.
+         */
+        ret = qjs_algorithm_hash(cx, options, &hash);
+        if (JS_IsException(ret)) {
+            return JS_EXCEPTION;
+        }
+
+        md = qjs_algorithm_hash_digest(hash);
+
+    } else if (alg->type != QJS_ALGORITHM_ED25519) {
+        hash = key->hash;
+        md = qjs_algorithm_hash_digest(hash);
+    }
+
+    salt_length = 0;
+
+    if (alg->type == QJS_ALGORITHM_RSA_PSS) {
+        /*
+         * Read the saltLength property before taking direct pointers to
+         * the signature/data storage: a getter could detach the
+         * ArrayBuffers, leaving dangling pointers for the OpenSSL calls.
+         */
+        value = JS_GetPropertyStr(cx, options, "saltLength");
+        if (JS_IsException(value)) {
+            return JS_EXCEPTION;
+        }
+
+        if (JS_IsUndefined(value)) {
+            JS_FreeValue(cx, value);
+            JS_ThrowTypeError(cx, "RSA-PSS algorithm.saltLength is not "
+                              "provided");
+            return JS_EXCEPTION;
+        }
+
+        if (JS_ToInt64(cx, &salt_length, value) < 0) {
+            JS_FreeValue(cx, value);
+            return JS_EXCEPTION;
+        }
+
+        JS_FreeValue(cx, value);
+    }
+
     if (verify) {
         ret = qjs_typed_array_data(cx, argv[2], &sig);
         if (JS_IsException(ret)) {
@@ -4659,21 +4718,6 @@ qjs_webcrypto_sign(JSContext *cx, JSValueConst this_val, int argc,
         if (JS_IsException(ret)) {
             return JS_EXCEPTION;
         }
-    }
-
-    md = NULL;
-
-    if (alg->type == QJS_ALGORITHM_ECDSA) {
-        ret = qjs_algorithm_hash(cx, options, &hash);
-        if (JS_IsException(ret)) {
-            return JS_EXCEPTION;
-        }
-
-        md = qjs_algorithm_hash_digest(hash);
-
-    } else if (alg->type != QJS_ALGORITHM_ED25519) {
-        hash = key->hash;
-        md = qjs_algorithm_hash_digest(hash);
     }
 
     /* Clang complains about uninitialized rc. */
@@ -4830,7 +4874,7 @@ qjs_webcrypto_sign(JSContext *cx, JSValueConst this_val, int argc,
             }
         }
 
-        rc = qjs_set_rsa_padding(cx, options, key->u.a.pkey, pctx, alg->type);
+        rc = qjs_set_rsa_padding(cx, pctx, alg->type, salt_length);
         if (rc < 0) {
             goto fail;
         }
