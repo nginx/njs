@@ -1350,7 +1350,7 @@ qjs_string_create_chb(JSContext *cx, njs_chb_t *chain)
 
     val = JS_NewStringLen(cx, (const char *) str.start, str.length);
 
-    chain->free(cx, str.start);
+    chain->free(chain->pool, str.start);
 
     return val;
 }
