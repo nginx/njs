@@ -5555,7 +5555,7 @@ njs_ext_get_random_values(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     buffer = njs_arg(args, nargs, 1);
 
-    ret = njs_vm_value_to_bytes(vm, &fill, buffer);
+    ret = njs_value_buffer_get(vm, buffer, &fill);
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }
