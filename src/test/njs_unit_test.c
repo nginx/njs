@@ -22033,6 +22033,35 @@ static njs_unit_test_t  njs_externals_test[] =
     { njs_str("new Uint8Array($r.buffer.sort().slice(0,3))"),
       njs_str("129,144,145") },
 
+    { njs_str("var b = $r.buffer; "
+              "var v = new DataView(b.buffer, b.byteOffset);"
+              "v.setUint8(0, '@'.codePointAt(0));"
+              "[b[0], $r.buffer[0]]"),
+      njs_str("64,208") },
+
+    { njs_str("var b = new Uint8Array($r.arrayBuffer);"
+              "b[0] = '@'.codePointAt(0);"
+              "[b[0], new Uint8Array($r.arrayBuffer)[0]]"),
+      njs_str("64,208") },
+
+    { njs_str("var b = $r.buffer;"
+              "(new TextEncoder()).encodeInto('@', b);"
+              "[b[0], $r.buffer[0]]"),
+      njs_str("64,208") },
+
+#if (NJS_HAVE_OPENSSL)
+    { njs_str("var b = $r.buffer; crypto.getRandomValues(b);"
+              "[b.length, $r.buffer[0]]"),
+      njs_str("22,208") },
+
+    { njs_str("var v = new DataView(new ArrayBuffer(4));"
+              "crypto.getRandomValues(v) === v"),
+      njs_str("true") },
+
+    { njs_str("var s = 'abc' + 'defgh'; crypto.getRandomValues(s)"),
+      njs_str("TypeError: first argument must be a Buffer or DataView") },
+#endif
+
     { njs_str("$r.buffer instanceof Buffer"),
       njs_str("true") },
 

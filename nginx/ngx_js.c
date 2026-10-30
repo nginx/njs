@@ -83,6 +83,7 @@ static ngx_int_t ngx_engine_qjs_string(ngx_engine_t *e,
     njs_opaque_value_t *value, ngx_str_t *str);
 static void ngx_qjs_clear_events(ngx_js_ctx_t *ctx);
 static void ngx_qjs_detach_ctx(ngx_js_ctx_t *ctx, JSContext *cx);
+static void ngx_qjs_clear_timer(ngx_qjs_event_t *event);
 
 static JSValue ngx_qjs_process_getter(JSContext *ctx, JSValueConst this_val);
 static JSValue ngx_qjs_ext_set_timeout(JSContext *cx, JSValueConst this_val,
@@ -1202,11 +1203,20 @@ ngx_qjs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf, void *external)
     }
 
     rc = ngx_qjs_await(cx, ctx->log, &rv);
-    JS_FreeValue(cx, rv);
-    if (rc == NGX_ERROR) {
+    if (rc == NGX_ERROR || JS_IsException(rv)) {
+        JS_FreeValue(cx, rv);
         ngx_qjs_log_exception(engine, ctx->log, "await exception");
         goto failed;
     }
+
+    if (JS_PromiseState(cx, rv) == JS_PROMISE_PENDING) {
+        JS_FreeValue(cx, rv);
+        ngx_log_error(NGX_LOG_ERR, ctx->log, 0,
+                      "js top-level await is not settled");
+        goto failed;
+    }
+
+    JS_FreeValue(cx, rv);
 
     return engine;
 
@@ -1423,12 +1433,13 @@ ngx_engine_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
 
         /*
          * After the request object is freed, the runtime's memory usage should
-         * be low. It can only remain high if the global scope was
-         * modified.
+         * be low. It can remain high if values were retained, for example in
+         * the global scope, or if garbage was not yet collected.
          *
          * To prevent unlimited memory consumption growth, check whether memory
          * usage exceeds the configured limit. The check is performed rarely to
          * avoid performance impact of JS_ComputeMemoryUsage() which is slow.
+         * Memory outside of the runtime, such as nginx pools, is not counted.
          */
 
         if ((ngx_random() & 0xff) == 1) {
@@ -1778,9 +1789,11 @@ ngx_qjs_timer_handler(ngx_event_t *ev)
     external = JS_GetContextOpaque(cx);
     ctx = ngx_qjs_external_ctx(cx, external);
 
+    njs_rbtree_delete(&ctx->waiting_events, &event->node);
+
     rc = ngx_qjs_call(cx, event->function, event->args, event->nargs);
 
-    ngx_js_del_event(ctx, event);
+    ngx_qjs_clear_timer(event);
 
     ngx_qjs_external_event_finalize(cx)(external, rc);
 }
@@ -1892,11 +1905,15 @@ ngx_qjs_ext_clear_timeout(JSContext *cx, JSValueConst this_val,
 
     rb = njs_rbtree_find(&ctx->waiting_events, &event_lookup.node);
     if (rb == NULL) {
-        return JS_ThrowReferenceError(cx, "failed to find timer");
+        return JS_UNDEFINED;
     }
 
     event = (ngx_qjs_event_t *) ((u_char *) rb
                                  - offsetof(ngx_qjs_event_t, node));
+
+    if (event->destructor != ngx_qjs_clear_timer) {
+        return JS_UNDEFINED;
+    }
 
     ngx_js_del_event(ctx, event);
 
@@ -3203,11 +3220,11 @@ ngx_js_timer_handler(ngx_event_t *ev)
 
     vm = event->ctx;
 
+    ctx = ngx_external_ctx(vm, njs_vm_external_ptr(vm));
+    njs_rbtree_delete(&ctx->waiting_events, &event->node);
+
     rc = ngx_js_call(vm, njs_value_function(njs_value_arg(&event->function)),
                      event->args, event->nargs);
-
-    ctx = ngx_external_ctx(vm, njs_vm_external_ptr(vm));
-    ngx_js_del_event(ctx, event);
 
     ngx_external_event_finalize(vm)(njs_vm_external_ptr(vm), rc);
 }
@@ -3324,12 +3341,17 @@ njs_clear_timeout(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     event_lookup.fd = njs_value_number(njs_argument(args, 1));
 
     rb = njs_rbtree_find(&ctx->waiting_events, &event_lookup.node);
-    if (njs_slow_path(rb == NULL)) {
-        njs_vm_internal_error(vm, "failed to find timer");
-        return NJS_ERROR;
+    if (rb == NULL) {
+        njs_value_undefined_set(retval);
+        return NJS_OK;
     }
 
     event = (ngx_js_event_t *) ((u_char *) rb - offsetof(ngx_js_event_t, node));
+
+    if (event->destructor != ngx_js_clear_timer) {
+        njs_value_undefined_set(retval);
+        return NJS_OK;
+    }
 
     ngx_js_del_event(ctx, event);
 

@@ -2004,12 +2004,8 @@ ngx_qjs_ext_fetch_request_body(JSContext *cx, JSValueConst this_val,
 
     switch (magic) {
     case NGX_JS_BODY_ARRAY_BUFFER:
-        /*
-         * request->body is allocated from e->pool
-         * and will be freed when context is freed.
-         */
-        result = qjs_new_external_array_buffer(cx, request->body.data,
-                                               request->body.len, 0);
+        result = JS_NewArrayBufferCopy(cx, request->body.data,
+                                       request->body.len);
         if (JS_IsException(result)) {
             return JS_ThrowOutOfMemory(cx);
         }
@@ -2298,6 +2294,8 @@ static JSValue
 ngx_qjs_ext_fetch_response_body(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv, int magic)
 {
+    u_char             *p;
+    int64_t             size;
     JSValue             result;
     njs_int_t           ret;
     njs_str_t           string;
@@ -2316,30 +2314,31 @@ ngx_qjs_ext_fetch_response_body(JSContext *cx, JSValueConst this_val,
     response->body_used = 1;
 
     switch (magic) {
-    case NGX_JS_BODY_ARRAY_BUFFER:
     case NGX_JS_BODY_TEXT:
-        ret = njs_chb_join(&response->chain, &string);
-        if (ret != NJS_OK) {
-            return JS_ThrowOutOfMemory(cx);
-        }
-
-        if (magic == NGX_JS_BODY_TEXT) {
-            result = qjs_string_create(cx, string.start, string.length);
-            if (JS_IsException(result)) {
-                return JS_ThrowOutOfMemory(cx);
-            }
-
-            break;
-        }
-
-        /*
-         * string.start is allocated from e->pool
-         * and will be freed when context is freed.
-         */
-        result = qjs_new_external_array_buffer(cx, string.start,
-                                               string.length, 0);
+        result = qjs_string_create_chb(cx, &response->chain);
         if (JS_IsException(result)) {
+            return JS_EXCEPTION;
+        }
+
+        break;
+
+    case NGX_JS_BODY_ARRAY_BUFFER:
+        size = njs_chb_size(&response->chain);
+        if (size < 0) {
             return JS_ThrowOutOfMemory(cx);
+        }
+
+        p = js_malloc(cx, njs_max(size, 1));
+        if (p == NULL) {
+            return JS_EXCEPTION;
+        }
+
+        njs_chb_join_to(&response->chain, p);
+        njs_chb_destroy(&response->chain);
+
+        result = qjs_new_array_buffer(cx, p, size);
+        if (JS_IsException(result)) {
+            js_free(cx, p);
         }
 
         break;
@@ -2355,9 +2354,9 @@ ngx_qjs_ext_fetch_response_body(JSContext *cx, JSValueConst this_val,
 
         result = JS_ParseJSON(cx, (char *) string.start, string.length - 1,
                               "<input>");
-        if (JS_IsException(result)) {
-            break;
-        }
+
+        njs_chb_destroy(&response->chain);
+        response->chain.free(response->chain.pool, string.start);
     }
 
     return qjs_promise_result(cx, result);

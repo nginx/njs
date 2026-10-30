@@ -1020,6 +1020,7 @@ njs_vm_value_array_buffer_set(njs_vm_t *vm, njs_value_t *value,
         return NJS_ERROR;
     }
 
+    array->object.shared = 1;
     array->u.data = (u_char *) start;
     array->size = size;
 

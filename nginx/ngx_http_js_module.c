@@ -6597,6 +6597,9 @@ ngx_http_qjs_ext_response_body(JSContext *cx, JSValueConst this_val, int type)
         if ((buffer_type == NGX_JS_STRING) == JS_IsString(req->response_body)) {
             return JS_DupValue(cx, req->response_body);
         }
+
+        JS_FreeValue(cx, req->response_body);
+        req->response_body = JS_UNDEFINED;
     }
 
     r = req->request;
@@ -6687,8 +6690,8 @@ ngx_http_qjs_body_to_value(JSContext *cx, ngx_http_js_ctx_t *ctx,
 
     switch (type) {
     case NGX_JS_BODY_ARRAY_BUFFER:
-        return qjs_new_external_array_buffer(cx, ctx->body_read_data,
-                                             ctx->body_read_len, 0);
+        return JS_NewArrayBufferCopy(cx, ctx->body_read_data,
+                                     ctx->body_read_len);
 
     case NGX_JS_BODY_JSON:
         if (ctx->body_read_nul) {
