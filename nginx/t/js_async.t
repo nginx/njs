@@ -67,6 +67,18 @@ http {
             js_content test.set_timeout_many;
         }
 
+        location /clear_timeout_fetch {
+            js_content test.clear_timeout_fetch;
+        }
+
+        location /clear_timeout_unknown {
+            js_content test.clear_timeout_unknown;
+        }
+
+        location /fetch {
+            return 200 'fetch';
+        }
+
         location /set_timeout_data {
             postpone_output 0;
             js_content test.set_timeout_data;
@@ -98,6 +110,8 @@ http {
 
 EOF
 
+my $p0 = port(8080);
+
 $t->write_file('test.js', <<EOF);
     function test_njs(r) {
         r.return(200, njs.version);
@@ -119,6 +133,27 @@ $t->write_file('test.js', <<EOF);
         }
 
         setTimeout(timeout_cb_reply, 10, r);
+    }
+
+    async function clear_timeout_fetch(r) {
+        let id = setTimeout(() => {}, 1);
+        clearTimeout(id);
+
+        let promise = ngx.fetch('http://127.0.0.1:$p0/fetch');
+
+        /* Native events share the timer ID sequence. */
+        clearTimeout(id + 1);
+
+        let reply = await promise;
+        r.return(200, await reply.text());
+    }
+
+    function clear_timeout_unknown(r) {
+        let id = setTimeout(() => r.return(500), 1);
+        clearTimeout(id);
+        clearTimeout(id);
+        clearTimeout(2147483647);
+        r.return(200, 'cleared');
     }
 
     function timeout_cb_r(r, cnt) {
@@ -225,16 +260,21 @@ $t->write_file('test.js', <<EOF);
 
     export default {njs:test_njs, set_timeout, set_timeout_data,
                     set_timeout_many, context_var, shared_ctx, limit_rate,
+                    clear_timeout_fetch, clear_timeout_unknown,
                     async_content, set_rv_var, set_promise_var, await_reject};
 
 EOF
 
-$t->try_run('no njs available')->plan(11);
+$t->try_run('no njs available')->plan(13);
 
 ###############################################################################
 
 like(http_get('/set_timeout'), qr/Content-Type: foo/, 'setTimeout');
 like(http_get('/set_timeout_many'), qr/Content-Type: reply/, 'setTimeout many');
+like(http_get('/clear_timeout_fetch'), qr/fetch$/,
+     'clearTimeout fetch id');
+like(http_get('/clear_timeout_unknown'), qr/cleared$/,
+     'clearTimeout unknown and cancelled ids');
 like(http_get('/set_timeout_data'), qr/123456789/, 'setTimeout data');
 like(http_get('/shared_ctx?a=xxx'), qr/H: xxx/, 'shared context');
 like(http_get('/limit_rate'), qr/A{50}/, 'limit_rate');
