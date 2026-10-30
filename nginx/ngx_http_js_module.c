@@ -3680,7 +3680,7 @@ ngx_http_js_body_to_value(njs_vm_t *vm, ngx_http_js_ctx_t *ctx,
     case NGX_JS_BODY_ARRAY_BUFFER:
         return njs_vm_value_array_buffer_set(vm, retval,
                                              ctx->body_read_data,
-                                             ctx->body_read_len);
+                                             ctx->body_read_len, 1);
 
     case NGX_JS_BODY_JSON:
         ret = njs_vm_value_string_create(vm, njs_value_arg(&arg),

@@ -2033,7 +2033,7 @@ ngx_request_js_ext_body(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     case NGX_JS_BODY_ARRAY_BUFFER:
         ret = njs_vm_value_array_buffer_set(vm, njs_value_arg(&result),
                                             request->body.data,
-                                            request->body.len);
+                                            request->body.len, 1);
         if (ret != NJS_OK) {
             njs_vm_memory_error(vm);
             return NJS_ERROR;
@@ -2196,7 +2196,7 @@ ngx_response_js_ext_body(njs_vm_t *vm, njs_value_t *args,
     switch (type) {
     case NGX_JS_BODY_ARRAY_BUFFER:
         ret = njs_vm_value_array_buffer_set(vm, njs_value_arg(&result),
-                                            string.start, string.length);
+                                            string.start, string.length, 0);
         if (ret != NJS_OK) {
             njs_vm_memory_error(vm);
             return NJS_ERROR;

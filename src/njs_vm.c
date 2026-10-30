@@ -1011,7 +1011,7 @@ njs_value_string_get(njs_vm_t *vm, njs_value_t *value, njs_str_t *dst)
 
 njs_int_t
 njs_vm_value_array_buffer_set(njs_vm_t *vm, njs_value_t *value,
-    const u_char *start, uint32_t size)
+    const u_char *start, uint32_t size, njs_bool_t shared)
 {
     njs_array_buffer_t  *array;
 
@@ -1020,6 +1020,7 @@ njs_vm_value_array_buffer_set(njs_vm_t *vm, njs_value_t *value,
         return NJS_ERROR;
     }
 
+    array->object.shared = shared;
     array->u.data = (u_char *) start;
     array->size = size;
 

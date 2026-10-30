@@ -933,7 +933,7 @@ njs_cipher_pkey(njs_vm_t *vm, njs_str_t *data, njs_webcrypto_key_t *key,
         goto fail;
     }
 
-    ret = njs_vm_value_array_buffer_set(vm, retval, dst, outlen);
+    ret = njs_vm_value_array_buffer_set(vm, retval, dst, outlen, 0);
 
 fail:
 
@@ -1120,7 +1120,7 @@ njs_cipher_aes_gcm(njs_vm_t *vm, njs_str_t *data, njs_webcrypto_key_t *key,
         outlen += taglen;
     }
 
-    ret = njs_vm_value_array_buffer_set(vm, retval, dst, outlen);
+    ret = njs_vm_value_array_buffer_set(vm, retval, dst, outlen, 0);
 
 fail:
 
@@ -1416,7 +1416,7 @@ njs_cipher_aes_ctr(njs_vm_t *vm, njs_str_t *data, njs_webcrypto_key_t *key,
 
 done:
 
-    ret = njs_vm_value_array_buffer_set(vm, retval, dst, len);
+    ret = njs_vm_value_array_buffer_set(vm, retval, dst, len, 0);
 
 fail:
 
@@ -1535,7 +1535,7 @@ njs_cipher_aes_cbc(njs_vm_t *vm, njs_str_t *data, njs_webcrypto_key_t *key,
 
     olen += olen2;
 
-    ret = njs_vm_value_array_buffer_set(vm, retval, dst, olen);
+    ret = njs_vm_value_array_buffer_set(vm, retval, dst, olen, 0);
 
 fail:
 
@@ -1635,7 +1635,7 @@ njs_cipher_aes_kw(njs_vm_t *vm, njs_str_t *data, njs_webcrypto_key_t *key,
         goto fail;
     }
 
-    ret = njs_vm_value_array_buffer_set(vm, retval, dst, olen);
+    ret = njs_vm_value_array_buffer_set(vm, retval, dst, olen, 0);
 
 fail:
 
@@ -1815,7 +1815,7 @@ njs_ext_derive_ecdh(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                                      dkey, 0);
     } else {
         ret = njs_vm_value_array_buffer_set(vm, njs_value_arg(&lvalue), k,
-                                            length);
+                                            length, 0);
     }
 
     if (njs_slow_path(ret != NJS_OK)) {
@@ -2127,7 +2127,7 @@ free:
                                      dkey, 0);
     } else {
         ret = njs_vm_value_array_buffer_set(vm, njs_value_arg(&lvalue), k,
-                                            length);
+                                            length, 0);
     }
 
     if (njs_slow_path(ret != NJS_OK)) {
@@ -2179,7 +2179,7 @@ njs_ext_digest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         goto fail;
     }
 
-    ret = njs_vm_value_array_buffer_set(vm, njs_value_arg(&result), dst, olen);
+    ret = njs_vm_value_array_buffer_set(vm, njs_value_arg(&result), dst, olen, 0);
     if (njs_slow_path(ret != NJS_OK)) {
         goto fail;
     }
@@ -2490,7 +2490,7 @@ njs_export_raw_ec(njs_vm_t *vm, njs_webcrypto_key_t *key, njs_value_t *retval)
         return NJS_ERROR;
     }
 
-    return njs_vm_value_array_buffer_set(vm, retval, dst, size);
+    return njs_vm_value_array_buffer_set(vm, retval, dst, size, 0);
 }
 
 
@@ -4920,7 +4920,7 @@ njs_ext_sign(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     if (!verify) {
         ret = njs_vm_value_array_buffer_set(vm, njs_value_arg(&result), dst,
-                                            outlen);
+                                            outlen, 0);
         if (njs_slow_path(ret != NJS_OK)) {
             goto fail;
         }
@@ -5084,7 +5084,7 @@ njs_webcrypto_export_key_raw(njs_vm_t *vm, njs_webcrypto_key_t *key,
 #endif
 
         return njs_vm_value_array_buffer_set(vm, retval, key->u.s.raw.start,
-                                             key->u.s.raw.length);
+                                             key->u.s.raw.length, 1);
     }
 
     return NJS_ERROR;
@@ -6054,7 +6054,7 @@ njs_webcrypto_array_buffer(njs_vm_t *vm, njs_value_t *retval,
 
     memcpy(dst, start, length);
 
-    return njs_vm_value_array_buffer_set(vm, retval, dst, length);
+    return njs_vm_value_array_buffer_set(vm, retval, dst, length, 0);
 }
 
 

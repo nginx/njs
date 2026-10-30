@@ -432,8 +432,13 @@ NJS_EXPORT njs_int_t njs_vm_value_string_create_chb(njs_vm_t *vm,
 NJS_EXPORT njs_int_t njs_vm_string_compare(njs_vm_t *vm, const njs_value_t *v1,
     const njs_value_t *v2);
 
+/*
+ * Sets an ArrayBuffer value without copying data or taking ownership.
+ * Shared data is copied on the first write; otherwise it must be writable.
+ * The caller must keep the data alive while the buffer refers to it.
+ */
 NJS_EXPORT njs_int_t njs_vm_value_array_buffer_set(njs_vm_t *vm,
-    njs_value_t *value, const u_char *start, uint32_t size);
+    njs_value_t *value, const u_char *start, uint32_t size, njs_bool_t shared);
 
 NJS_EXPORT njs_int_t njs_value_buffer_get(njs_vm_t *vm, njs_value_t *value,
     njs_str_t *dst);
