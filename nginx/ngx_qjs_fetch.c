@@ -2005,11 +2005,13 @@ ngx_qjs_ext_fetch_request_body(JSContext *cx, JSValueConst this_val,
     switch (magic) {
     case NGX_JS_BODY_ARRAY_BUFFER:
         /*
-         * request->body is allocated from e->pool
-         * and will be freed when context is freed.
+         * The body is allocated from the request pool, which is destroyed
+         * at the end of the request, while the context may be reused by
+         * the next one.  The bytes are copied so that the buffer does not
+         * outlive its backing store.
          */
-        result = qjs_new_external_array_buffer(cx, request->body.data,
-                                               request->body.len, 0);
+        result = JS_NewArrayBufferCopy(cx, request->body.data,
+                                       request->body.len);
         if (JS_IsException(result)) {
             return JS_ThrowOutOfMemory(cx);
         }
@@ -2333,11 +2335,12 @@ ngx_qjs_ext_fetch_response_body(JSContext *cx, JSValueConst this_val,
         }
 
         /*
-         * string.start is allocated from e->pool
-         * and will be freed when context is freed.
+         * The body is allocated from the engine pool, which is destroyed at
+         * the end of the request, while the context may be reused by the
+         * next one.  The bytes are copied so that the buffer does not
+         * outlive its backing store.
          */
-        result = qjs_new_external_array_buffer(cx, string.start,
-                                               string.length, 0);
+        result = JS_NewArrayBufferCopy(cx, string.start, string.length);
         if (JS_IsException(result)) {
             return JS_ThrowOutOfMemory(cx);
         }
