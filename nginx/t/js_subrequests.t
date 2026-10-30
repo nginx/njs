@@ -100,6 +100,10 @@ http {
             js_content test.sr_body_pr;
         }
 
+        location /sr_body_types {
+            js_content test.sr_body_types;
+        }
+
         location /sr_body_special {
             js_content test.sr_body_special;
         }
@@ -339,6 +343,15 @@ $t->write_file('test.js', <<EOF);
         .then(body_fwd_cb);
     }
 
+    function sr_body_types(r) {
+        r.subrequest('/js_sub', reply => {
+            let body = [reply.responseText, reply.responseBuffer,
+                        reply.responseText, reply.responseBuffer];
+
+            r.return(200, '[' + body.map(v => v.toString()).join(',') + ']');
+        });
+    }
+
     function sr_body_special(r) {
         r.subrequest('/p/sub2', body_fwd_cb);
     }
@@ -524,7 +537,8 @@ $t->write_file('test.js', <<EOF);
     export default {njs:test_njs, sr, sr_pr, sr_args, sr_options_args,
                     sr_options_args_pr, sr_options_method, sr_options_method_pr,
                     sr_options_method_head, sr_options_body, sr_body,
-                    sr_body_pr, sr_body_special, body, delayed, detached,
+                    sr_body_pr, sr_body_types, sr_body_special, body, delayed,
+                    detached,
                     sr_in_variable_handler, async_var, sr_error_page,
                     subrequest_var, sr_file, sr_cache, sr_unavail, sr_parent,
                     sr_unavail_pr, sr_broken, sr_too_large, sr_in_sr,
@@ -537,7 +551,7 @@ EOF
 
 $t->write_file('t', '["SEE-THIS"]');
 
-$t->try_run('no njs available')->plan(34);
+$t->try_run('no njs available')->plan(35);
 $t->run_daemon(\&http_daemon);
 
 ###############################################################################
@@ -550,6 +564,9 @@ is(get_json('/sr_options_method?m=PURGE'), '["PURGE"]', 'sr method PURGE');
 is(get_json('/sr_options_body'), '["REQ-BODY"]', 'sr_options_body');
 is(get_json('/sr_options_method_head'), '{"c":200}', 'sr_options_method_head');
 is(get_json('/sr_body'), '{"a":{"b":1}}', 'sr_body');
+is(get_json('/sr_body_types'),
+   '[["JS-SUB"],["JS-SUB"],["JS-SUB"],["JS-SUB"]]',
+   'subrequest responseText and responseBuffer');
 is(get_json('/sr_body_special'), '{"e":"msg"}', 'sr_body_special');
 is(get_json('/sr_in_variable_handler'), '["CB-VAR"]', 'sr_in_variable_handler');
 is(get_json('/sr_file'), '["SEE-THIS"]', 'sr_file');
