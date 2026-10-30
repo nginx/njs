@@ -22044,6 +22044,11 @@ static njs_unit_test_t  njs_externals_test[] =
               "[b[0], new Uint8Array($r.arrayBuffer)[0]]"),
       njs_str("64,208") },
 
+    { njs_str("var b = $r.buffer;"
+              "(new TextEncoder()).encodeInto('@', b);"
+              "[b[0], $r.buffer[0]]"),
+      njs_str("64,208") },
+
     { njs_str("$r.buffer instanceof Buffer"),
       njs_str("true") },
 
