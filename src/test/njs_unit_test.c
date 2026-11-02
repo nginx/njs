@@ -9340,6 +9340,18 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("String.fromCharCode(0xD83D) + String.fromCharCode(0xDCA9)"),
       njs_str("��") },
 
+    { njs_str("String.fromCharCode(0xD83D, 0x41, 0x42)"),
+      njs_str("�AB") },
+
+    { njs_str("String.fromCharCode(0xD83D, 0x41, 0x42).length"),
+      njs_str("3") },
+
+    { njs_str("String.fromCharCode(0xD83D, 0xD83D)"),
+      njs_str("��") },
+
+    { njs_str("String.fromCharCode(0xD83D, 0xD83D, 0xDCA9)"),
+      njs_str("�💩") },
+
     { njs_str("String.fromCodePoint(65 + 65536)"),
       njs_str("𐁁") },
 
@@ -9354,6 +9366,9 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("String.fromCodePoint(0xD83D).length"),
       njs_str("1") },
+
+    { njs_str("String.fromCodePoint(0xD83D, 0x41, 0x42)"),
+      njs_str("�AB") },
 
     { njs_str("String.fromCharCode(2**53 + 10)"),
       njs_str("\n") },
