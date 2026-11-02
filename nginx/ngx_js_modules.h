@@ -17,7 +17,7 @@
  */
 
 
-#ifdef NJS_HAVE_OPENSSL
+#if defined(NJS_HAVE_OPENSSL) && !NJS_HAVE_SHARED
 extern njs_module_t  njs_crypto_module;
 extern njs_module_t  njs_webcrypto_module;
 #define NGX_JS_NJS_ADDONS_OPENSSL   &njs_crypto_module, &njs_webcrypto_module,
@@ -25,14 +25,14 @@ extern njs_module_t  njs_webcrypto_module;
 #define NGX_JS_NJS_ADDONS_OPENSSL
 #endif
 
-#ifdef NJS_HAVE_XML
+#if defined(NJS_HAVE_XML) && !NJS_HAVE_SHARED
 extern njs_module_t  njs_xml_module;
 #define NGX_JS_NJS_ADDONS_XML       &njs_xml_module,
 #else
 #define NGX_JS_NJS_ADDONS_XML
 #endif
 
-#ifdef NJS_HAVE_ZLIB
+#if defined(NJS_HAVE_ZLIB) && !NJS_HAVE_SHARED
 extern njs_module_t  njs_zlib_module;
 #define NGX_JS_NJS_ADDONS_ZLIB      &njs_zlib_module,
 #else
@@ -51,7 +51,7 @@ extern njs_module_t  njs_zlib_module;
 
 #if (NJS_HAVE_QUICKJS)
 
-#ifdef NJS_HAVE_OPENSSL
+#if defined(NJS_HAVE_OPENSSL) && !NJS_HAVE_SHARED
 extern qjs_module_t  qjs_crypto_module;
 extern qjs_module_t  qjs_webcrypto_module;
 #define NGX_JS_QJS_ADDONS_OPENSSL   &qjs_crypto_module, &qjs_webcrypto_module,
@@ -59,14 +59,14 @@ extern qjs_module_t  qjs_webcrypto_module;
 #define NGX_JS_QJS_ADDONS_OPENSSL
 #endif
 
-#ifdef NJS_HAVE_XML
+#if defined(NJS_HAVE_XML) && !NJS_HAVE_SHARED
 extern qjs_module_t  qjs_xml_module;
 #define NGX_JS_QJS_ADDONS_XML       &qjs_xml_module,
 #else
 #define NGX_JS_QJS_ADDONS_XML
 #endif
 
-#ifdef NJS_HAVE_ZLIB
+#if defined(NJS_HAVE_ZLIB) && !NJS_HAVE_SHARED
 extern qjs_module_t  qjs_zlib_module;
 #define NGX_JS_QJS_ADDONS_ZLIB      &qjs_zlib_module,
 #else

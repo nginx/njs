@@ -1,0 +1,48 @@
+
+# Copyright (C) Dmitry Volyntsev
+# Copyright (C) F5, Inc.
+
+
+NJS_SHARED_LINK=
+NJS_CORE_LIBS="-lm $NJS_LIBS $NJS_PCRE_LIB $NJS_OPENSSL_LIB \
+               $NJS_LIBXML2_LIB $NJS_ZLIB_LIB $NJS_LIBBFD_LIB"
+
+if [ "$NJS_SHARED" = YES ]; then
+    case "$NJS_SYSTEM" in
+        Linux | FreeBSD | NetBSD | OpenBSD | SunOS) ;;
+        *)
+            echo "$0: error: shared libraries require an ELF platform."
+            exit 1
+        ;;
+    esac
+
+    if [ -z "$NJS_PIC" ]; then
+        echo "$0: error: shared libraries require position independent code."
+        exit 1
+    fi
+
+    if [ "$NJS_PCRE" = NO ]; then
+        echo "$0: error: shared libnjs requires its own RegExp backend."
+        exit 1
+    fi
+
+    if [ "$NJS_HAVE_QUICKJS" = YES -a -z "$NJS_QUICKJS_PC" ]; then
+        echo "$0: error: shared QuickJS bindings require --quickjs-pc metadata."
+        exit 1
+    fi
+
+    NJS_SHARED_LINK="-shared -Wl,-z,defs"
+    njs_feature="shared library linking"
+    njs_feature_name=NJS_HAVE_SHARED
+    njs_feature_run=no
+    njs_feature_incs=
+    njs_feature_libs="$NJS_SHARED_LINK -Wl,-soname,libnjs-test.so"
+    njs_feature_test="int main(void) { return 0; }"
+
+    . auto/feature
+
+    if [ $njs_found = no ]; then
+        echo "$0: error: shared library linking is not supported."
+        exit 1
+    fi
+fi

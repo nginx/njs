@@ -115,8 +115,23 @@ jobs:
             asan: 'no'
             debug: 'no'
             debug-memory: 'no'
+          - name: shared libraries
+            linkage: dynamic
+            libraries: shared
+            ssl: 'yes'
+            asan: 'no'
+            debug: 'yes'
+            debug-memory: 'no'
+          - name: shared libraries SSL=no
+            linkage: dynamic
+            libraries: shared
+            ssl: 'no'
+            asan: 'no'
+            debug: 'no'
+            debug-memory: 'no'
     env:
       CI_ENGINE: quickjs-ng
+      CI_LIBRARIES: ${{ matrix.libraries || 'static' }}
       CI_LINKAGE: ${{ matrix.linkage }}
       CI_SSL: ${{ matrix.ssl }}
       CI_ASAN: ${{ matrix.asan }}

@@ -28,6 +28,54 @@ my $t = Test::Nginx->new()->has(qw/http rewrite/)
 %%TEST_GLOBALS%%
 
 daemon off;
+
+events {
+}
+
+http {
+    %%TEST_GLOBALS_HTTP%%
+
+    js_import engine.js;
+
+    server {
+        listen       127.0.0.1:8080;
+        server_name  localhost;
+
+        location /engine {
+            js_content engine.name;
+        }
+    }
+}
+
+EOF
+
+$t->write_file('engine.js', <<'EOF');
+    function name(r) {
+        r.return(200, njs.engine);
+    }
+
+    export default { name };
+
+EOF
+
+$t->run();
+
+my $response = http_get('/engine');
+my ($engine) = $response =~ /\x0d\x0a\x0d\x0a(njs|QuickJS)\z/;
+
+die "failed to determine js_engine\n"
+    unless $response =~ /^HTTP\/1\.[01] 200 / && defined $engine;
+
+$t->stop();
+
+plan(skip_all => 'Fetch object finalization requires the QuickJS engine')
+    if $engine ne 'QuickJS';
+
+$t->write_file_expand('nginx.conf', <<'EOF');
+
+%%TEST_GLOBALS%%
+
+daemon off;
 worker_processes 1;
 
 events {
@@ -36,7 +84,6 @@ events {
 http {
     %%TEST_GLOBALS_HTTP%%
 
-    js_engine qjs;
     js_import test.js;
 
     server {
@@ -134,7 +181,7 @@ $t->write_file('test.js', <<EOF);
     export default {reuse, no_reuse};
 EOF
 
-$t->try_run('no QuickJS support')->plan(11);
+$t->run()->plan(11);
 
 ###############################################################################
 

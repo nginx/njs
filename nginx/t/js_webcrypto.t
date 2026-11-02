@@ -59,7 +59,7 @@ EOF
 
 $t->write_file('test.js', <<EOF);
     function has_crypto(r) {
-        r.return(200, (crypto !== undefined).toString());
+        r.return(200, (typeof crypto !== 'undefined').toString());
     }
 
     function count1(v) {
@@ -151,10 +151,20 @@ $t->write_file('test.js', <<EOF);
 
 EOF
 
-$t->try_run('no njs');
+$t->run();
 
-plan(skip_all => 'njs crypto module not available')
-	if http_get('/has_crypto') !~ /true/;
+my $response = http_get('/has_crypto');
+my ($has_crypto) = $response =~ /\x0d\x0a\x0d\x0a(true|false)\z/;
+
+die "invalid WebCrypto capability response\n"
+	unless $response =~ /^HTTP\/1\.[01] 200 / && defined $has_crypto;
+
+if ($has_crypto eq 'false') {
+	die "WebCrypto is unavailable in an SSL-enabled CI job\n"
+		if defined $ENV{CI_SSL} && $ENV{CI_SSL} eq 'yes';
+
+	plan(skip_all => 'njs crypto module not available');
+}
 
 $t->plan(4);
 

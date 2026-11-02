@@ -1,8 +1,14 @@
 prefix=@PREFIX@
 libdir=@LIBDIR@
+private_includedir=@PRIVATE_INCLUDEDIR@
+shared=@SHARED@
+openssl=@OPENSSL@
+libxml2=@LIBXML2@
+zlib=@ZLIB@
 
 Name: njs
 Description: library to embed njs scripting language
 Version: @VERSION@
 Libs: -L${libdir} -lnjs @EXTRA_LIBS@
+Libs.private: @PRIVATE_LIBS@
 Cflags: @CFLAGS@

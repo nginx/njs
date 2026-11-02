@@ -59,19 +59,22 @@ typedef struct {
 #define QJS_BUFFER_MAX_LENGTH  INT32_MAX
 
 
-JSContext *qjs_new_context(JSRuntime *rt, qjs_module_t **addons);
-JSValue qjs_call_exit_hook(JSContext *ctx);
-void *qjs_chb_ctx_alloc(void *ctx, size_t size);
-void qjs_chb_ctx_free(void *ctx, void *p);
+NJS_EXPORT JSContext *qjs_new_context(JSRuntime *rt, qjs_module_t **addons);
+NJS_EXPORT JSValue qjs_call_exit_hook(JSContext *ctx);
+NJS_EXPORT void *qjs_chb_ctx_alloc(void *ctx, size_t size);
+NJS_EXPORT void qjs_chb_ctx_free(void *ctx, void *p);
 
 
-JSValue qjs_new_uint8_array(JSContext *ctx, int argc, JSValueConst *argv);
-JSValue qjs_new_array_buffer(JSContext *cx, uint8_t *src, size_t len);
-JSValue qjs_new_external_array_buffer(JSContext *cx, uint8_t *src, size_t len,
-    int is_shared);
-JSValue qjs_buffer_alloc(JSContext *ctx, uint64_t size);
-JSValue qjs_buffer_create(JSContext *ctx, u_char *start, size_t size);
-JSValue qjs_buffer_chb_alloc(JSContext *ctx, njs_chb_t *chain);
+NJS_EXPORT JSValue qjs_new_uint8_array(JSContext *ctx, int argc,
+    JSValueConst *argv);
+NJS_EXPORT JSValue qjs_new_array_buffer(JSContext *cx, uint8_t *src,
+    size_t len);
+NJS_EXPORT JSValue qjs_new_external_array_buffer(JSContext *cx, uint8_t *src,
+    size_t len, int is_shared);
+NJS_EXPORT JSValue qjs_buffer_alloc(JSContext *ctx, uint64_t size);
+NJS_EXPORT JSValue qjs_buffer_create(JSContext *ctx, u_char *start,
+    size_t size);
+NJS_EXPORT JSValue qjs_buffer_chb_alloc(JSContext *ctx, njs_chb_t *chain);
 
 typedef int (*qjs_buffer_encode_t)(JSContext *ctx, const njs_str_t *src,
     njs_str_t *dst);
@@ -86,26 +89,32 @@ typedef struct {
     qjs_buffer_encode_length_t  decode_length;
 } qjs_buffer_encoding_t;
 
-const qjs_buffer_encoding_t *qjs_buffer_encoding(JSContext *ctx,
+NJS_EXPORT const qjs_buffer_encoding_t *qjs_buffer_encoding(JSContext *ctx,
     JSValueConst value, JS_BOOL thrw);
 
-int qjs_base64_encode(JSContext *ctx, const njs_str_t *src,
+NJS_EXPORT int qjs_base64_encode(JSContext *ctx, const njs_str_t *src,
     njs_str_t *dst);
-size_t qjs_base64_encode_length(JSContext *ctx, const njs_str_t *src);
-int qjs_base64_decode(JSContext *ctx, const njs_str_t *src,
+NJS_EXPORT size_t qjs_base64_encode_length(JSContext *ctx,
+    const njs_str_t *src);
+NJS_EXPORT int qjs_base64_decode(JSContext *ctx, const njs_str_t *src,
     njs_str_t *dst);
-size_t qjs_base64_decode_length(JSContext *ctx, const njs_str_t *src);
-int qjs_base64url_encode(JSContext *ctx, const njs_str_t *src,
+NJS_EXPORT size_t qjs_base64_decode_length(JSContext *ctx,
+    const njs_str_t *src);
+NJS_EXPORT int qjs_base64url_encode(JSContext *ctx, const njs_str_t *src,
     njs_str_t *dst);
-int qjs_base64url_decode(JSContext *ctx, const njs_str_t *src,
+NJS_EXPORT int qjs_base64url_decode(JSContext *ctx, const njs_str_t *src,
     njs_str_t *dst);
-size_t qjs_base64url_decode_length(JSContext *ctx, const njs_str_t *src);
-int qjs_hex_encode(JSContext *ctx, const njs_str_t *src, njs_str_t *dst);
-size_t qjs_hex_encode_length(JSContext *ctx, const njs_str_t *src);
-int qjs_hex_decode(JSContext *ctx, const njs_str_t *src, njs_str_t *dst);
-size_t qjs_hex_decode_length(JSContext *ctx, const njs_str_t *src);
+NJS_EXPORT size_t qjs_base64url_decode_length(JSContext *ctx,
+    const njs_str_t *src);
+NJS_EXPORT int qjs_hex_encode(JSContext *ctx, const njs_str_t *src,
+    njs_str_t *dst);
+NJS_EXPORT size_t qjs_hex_encode_length(JSContext *ctx, const njs_str_t *src);
+NJS_EXPORT int qjs_hex_decode(JSContext *ctx, const njs_str_t *src,
+    njs_str_t *dst);
+NJS_EXPORT size_t qjs_hex_decode_length(JSContext *ctx, const njs_str_t *src);
 
-JSValue qjs_process_object(JSContext *ctx, int argc, const char **argv);
+NJS_EXPORT JSValue qjs_process_object(JSContext *ctx, int argc,
+    const char **argv);
 
 typedef struct {
     int                         tag;
@@ -150,26 +159,29 @@ qjs_is_typed_array(JSContext *cx, JSValue val)
 }
 
 
-int qjs_to_bytes(JSContext *ctx, qjs_bytes_t *data, JSValueConst value);
-void qjs_bytes_free(JSContext *ctx, qjs_bytes_t *data);
-JSValue qjs_typed_array_data(JSContext *ctx, JSValueConst value,
+NJS_EXPORT int qjs_to_bytes(JSContext *ctx, qjs_bytes_t *data,
+    JSValueConst value);
+NJS_EXPORT void qjs_bytes_free(JSContext *ctx, qjs_bytes_t *data);
+NJS_EXPORT JSValue qjs_typed_array_data(JSContext *ctx, JSValueConst value,
     njs_str_t *data);
 
 #define qjs_string_create(ctx, data, len)                                   \
     JS_NewStringLen(ctx, (const char *) (data), len)
-JSValue qjs_string_create_chb(JSContext *cx, njs_chb_t *chain);
+NJS_EXPORT JSValue qjs_string_create_chb(JSContext *cx, njs_chb_t *chain);
 
-void qjs_free_prop_enum(JSContext *ctx, JSPropertyEnum *tab, uint32_t len);
+NJS_EXPORT void qjs_free_prop_enum(JSContext *ctx, JSPropertyEnum *tab,
+    uint32_t len);
 
-int qjs_array_length(JSContext *cx, JSValueConst arr, uint32_t *plen);
+NJS_EXPORT int qjs_array_length(JSContext *cx, JSValueConst arr,
+    uint32_t *plen);
 
-JSValue qjs_promise_result(JSContext *cx, JSValue result);
+NJS_EXPORT JSValue qjs_promise_result(JSContext *cx, JSValue result);
 
-JSValue qjs_string_hex(JSContext *cx, const njs_str_t *src);
-JSValue qjs_string_base64(JSContext *cx, const njs_str_t *src);
-JSValue qjs_string_base64url(JSContext *cx, const njs_str_t *src);
-JSValue qjs_string_btoa(JSContext *cx, const njs_str_t *src);
-JSValue qjs_string_atob(JSContext *cx, const njs_str_t *src);
+NJS_EXPORT JSValue qjs_string_hex(JSContext *cx, const njs_str_t *src);
+NJS_EXPORT JSValue qjs_string_base64(JSContext *cx, const njs_str_t *src);
+NJS_EXPORT JSValue qjs_string_base64url(JSContext *cx, const njs_str_t *src);
+NJS_EXPORT JSValue qjs_string_btoa(JSContext *cx, const njs_str_t *src);
+NJS_EXPORT JSValue qjs_string_atob(JSContext *cx, const njs_str_t *src);
 
 static inline JS_BOOL JS_IsNullOrUndefined(JSValueConst v)
 {
@@ -218,6 +230,6 @@ static inline JSValue qjs_new_error(JSContext *cx)
 #define qjs_is_error(cx, a) JS_IsError(cx, a)
 #endif
 
-extern qjs_module_t              *qjs_modules[];
+NJS_EXPORT extern qjs_module_t   *qjs_modules[];
 
 #endif /* _QJS_H_INCLUDED_ */

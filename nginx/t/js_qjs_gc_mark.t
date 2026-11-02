@@ -36,7 +36,72 @@ events {
 http {
     %%TEST_GLOBALS_HTTP%%
 
-    js_engine qjs;
+    js_import engine.js;
+
+    server {
+        listen       127.0.0.1:8080;
+        server_name  localhost;
+
+        location /engine {
+            js_content engine.name;
+        }
+    }
+}
+
+stream {
+    %%TEST_GLOBALS_STREAM%%
+
+    js_import engine.js;
+    js_set $js_engine engine.stream;
+
+    server {
+        listen       127.0.0.1:8081;
+        return       $js_engine;
+    }
+}
+
+EOF
+
+$t->write_file('engine.js', <<'EOF');
+    function name(r) {
+        r.return(200, njs.engine);
+    }
+
+    function stream(s) {
+        return njs.engine;
+    }
+
+    export default { name, stream };
+
+EOF
+
+$t->run();
+
+my $response = http_get('/engine');
+my ($engine) = $response =~ /\x0d\x0a\x0d\x0a(njs|QuickJS)\z/;
+my $stream_engine = stream('127.0.0.1:' . port(8081))->read();
+
+die "failed to determine js_engine\n"
+    unless $response =~ /^HTTP\/1\.[01] 200 / && defined $engine
+    && $stream_engine =~ /\A(njs|QuickJS)\z/;
+
+$t->stop();
+
+plan(skip_all => 'wrapper GC marking requires QuickJS in HTTP and stream')
+    if $engine ne 'QuickJS' || $stream_engine ne 'QuickJS';
+
+$t->write_file_expand('nginx.conf', <<'EOF');
+
+%%TEST_GLOBALS%%
+
+daemon off;
+
+events {
+}
+
+http {
+    %%TEST_GLOBALS_HTTP%%
+
     js_context_reuse 0;
     js_import test.js;
 
@@ -65,7 +130,6 @@ http {
 stream {
     %%TEST_GLOBALS_STREAM%%
 
-    js_engine qjs;
     js_context_reuse 0;
     js_import test.js;
 
@@ -111,7 +175,7 @@ $t->write_file('test.js', <<'EOF');
                     stream_cycle};
 EOF
 
-$t->try_run('no QuickJS support')->plan(4);
+$t->run()->plan(4);
 
 ###############################################################################
 

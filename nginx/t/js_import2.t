@@ -22,8 +22,12 @@ use Test::Nginx;
 select STDERR; $| = 1;
 select STDOUT; $| = 1;
 
-my $t = Test::Nginx->new()->has(qw/http proxy rewrite/)
-	->write_file_expand('nginx.conf', <<'EOF');
+my $t = Test::Nginx->new()->has(qw/http proxy rewrite/);
+
+plan(skip_all => 'ngx.engine_id requires --with-debug')
+	unless $t->has_module('--with-debug');
+
+$t->write_file_expand('nginx.conf', <<'EOF');
 
 %%TEST_GLOBALS%%
 
@@ -124,37 +128,43 @@ $t->write_file('main.js', <<EOF);
 
 EOF
 
-$t->try_run('no njs available');
+$t->run()->plan(5);
 
 ###############################################################################
 
-my ($mainid) = http_get('/test_foo') =~ /MAIN-TEST:(\d+)/s;
-
-plan(skip_all => 'ngx.engine_id requires --with-debug')
-    unless defined $mainid;
-
-$t->plan(5);
-
-my ($barid) = http_get('/test_bar') =~ /MAIN-TEST:(\d+)/s;
+my $mainid = engine_id('/test_foo', 'MAIN-TEST');
+my $barid = engine_id('/test_bar', 'MAIN-TEST');
 
 ok($barid == $mainid, 'same context for main.js');
 
-my ($libid) = http_get('/test_lib') =~ /LIB-TEST:(\d+)/s;
+my $libid = engine_id('/test_lib', 'LIB-TEST');
 
 ok($libid != $mainid, 'different context for lib.js');
 
-my ($funid) = http_get('/test_fun') =~ /FUN-TEST:(\d+)/s;
+my $funid = engine_id('/test_fun', 'FUN-TEST');
 
 ok($funid != $mainid && $funid != $libid,
    'different context for fun.js');
 
-my ($pfunid) = http_get('/proxy/test_fun') =~ /FUN-TEST:(\d+)/s;
+my $pfunid = engine_id('/proxy/test_fun', 'FUN-TEST');
 
 ok($pfunid != $funid && $pfunid != $mainid && $pfunid != $libid,
    'different context for fun.js in proxy');
 
-my ($varid) = http_get('/test_var') =~ /P-TEST:(\d+)/s;
+my $varid = engine_id('/test_var', 'P-TEST');
 
 ok($varid == $mainid, 'variable from main.js');
 
 ###############################################################################
+
+sub engine_id {
+	my ($uri, $prefix) = @_;
+
+	my $response = http_get($uri);
+	my ($id) = $response =~ /\x0d\x0a\x0d\x0a\Q$prefix\E:(\d+)\z/;
+
+	die "invalid engine ID response from $uri\n"
+		unless $response =~ /^HTTP\/1\.[01] 200 / && defined $id;
+
+	return $id;
+}

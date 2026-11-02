@@ -6,10 +6,19 @@ export DEB_BUILD_MAINT_OPTIONS=hardening=+all
 export DEB_CFLAGS_MAINT_APPEND=-fPIC
 export DEB_LDFLAGS_MAINT_APPEND=-Wl,--as-needed
 
+CI_LIBRARIES=${CI_LIBRARIES:-static}
+
+shared_environment() {
+    export PKG_CONFIG_PATH="$PWD/shared-stage/usr/lib/pkgconfig"
+    export PKG_CONFIG_SYSROOT_DIR="$PWD/shared-stage"
+    export LD_LIBRARY_PATH="$PWD/shared-stage/usr/lib"
+}
+
 prepare() {
     sudo apt-get update
     sudo apt-get install -y libssl-dev zlib1g-dev libpcre2-dev libxslt1-dev \
         libgeoip-dev libgd-dev libxml2-dev libedit-dev libperl-dev \
+        libio-socket-ssl-perl \
         libtest-harness-perl libgd-perl expect meson ninja-build
 
     local cc_opt ld_opt
@@ -29,11 +38,20 @@ prepare() {
         quickjs-ng)
             git clone --branch v0.16.2 --depth=1 \
                 https://github.com/quickjs-ng/quickjs quickjs-ng
+            local prefix="$HOME/.local"
+            if [ "$CI_LIBRARIES" = shared ]; then
+                prefix=/usr
+            fi
             CFLAGS="$cc_opt -fPIC" LDFLAGS="$ld_opt" \
                 meson setup quickjs-ng/build quickjs-ng \
-                    --prefix="$HOME/.local" --libdir=lib -Ddefault_library=static
+                    --prefix="$prefix" --libdir=lib \
+                    -Ddefault_library="$CI_LIBRARIES"
             meson compile -C quickjs-ng/build
-            meson install -C quickjs-ng/build
+            if [ "$CI_LIBRARIES" = shared ]; then
+                meson install -C quickjs-ng/build --destdir="$PWD/shared-stage"
+            else
+                meson install -C quickjs-ng/build
+            fi
             ;;
         *) echo "Unknown engine: $CI_ENGINE" >&2; exit 1 ;;
     esac
@@ -71,12 +89,23 @@ test_engine() {
     esac
 
     asan_environment
+    if [ "$CI_ENGINE" = quickjs-ng ]; then
+        export PKG_CONFIG_PATH="$HOME/.local/lib/pkgconfig"
+    fi
     export TEST_NGINX_BINARY="$PWD/nginx-source/objs/nginx"
     export TEST_NGINX_VERBOSE=1
     if [ "$CI_LINKAGE" = dynamic ]; then
         TEST_NGINX_GLOBALS="load_module $PWD/nginx-source/objs/ngx_http_js_module.so;"
         TEST_NGINX_GLOBALS+=" load_module $PWD/nginx-source/objs/ngx_stream_js_module.so;"
         export TEST_NGINX_GLOBALS
+    fi
+
+    if [ "$CI_LIBRARIES" = shared ]; then
+        shared_environment
+        export TEST_NGINX_BINARY="$PWD/shared-stage/usr/sbin/nginx"
+        export TEST_NGINX_GLOBALS="load_module $PWD/shared-stage/usr/lib/nginx/modules/ngx_http_js_module.so; load_module $PWD/shared-stage/usr/lib/nginx/modules/ngx_stream_js_module.so;"
+        local perl_lib="$PWD/nginx-source/objs/src/http/modules/perl"
+        TEST_NGINX_GLOBALS+=" env PERL5LIB=$perl_lib:$perl_lib/blib/arch;"
     fi
 
     case "$engine" in
@@ -94,7 +123,10 @@ test_engine() {
     export TMPDIR
     TMPDIR=$(mktemp -d)
     prove -v -j"$(nproc)" -Inginx-tests/lib --state=save nginx/t . \
-        || prove -v -Inginx-tests/lib --state=failed
+        || (
+            TMPDIR=$(mktemp -d)
+            prove -v -Inginx-tests/lib --state=failed
+        )
 }
 
 case "${1:-}" in
@@ -193,6 +225,27 @@ esac
 
 asan_environment
 
+if [ "$CI_LIBRARIES" = shared ]; then
+    if [ "$CI_ENGINE" != quickjs-ng -o "$CI_LINKAGE" != dynamic ]; then
+        echo "Shared library coverage requires dynamic QuickJS-NG modules" >&2
+        exit 1
+    fi
+    shared_environment
+    export NJS_SHARED=YES
+    njs_options=(--no-root-makefile --build-dir=shared-build --with-shared
+        --with-quickjs --quickjs-pc=quickjs-ng --prefix=/usr --libdir=/usr/lib
+        --cc-opt="$cc_opt" --ld-opt="$ld_opt")
+    if [ "$CI_SSL" = no ]; then
+        njs_options+=(--no-openssl)
+    fi
+    if [ "$CI_DEBUG_MEMORY" = yes ]; then
+        njs_options+=(--debug-memory=YES)
+    fi
+    ./configure "${njs_options[@]}"
+    make -f shared-build/Makefile -j"$(nproc)" install \
+        DESTDIR="$PWD/shared-stage"
+fi
+
 (
     cd nginx-source
     auto/configure "${options[@]}" --with-cc-opt="$cc_opt" \
@@ -203,6 +256,19 @@ asan_environment
 
 # Do not silently lose QuickJS coverage if library detection fails.
 if [ "$CI_ENGINE" != njs ]; then
+    njs_config=nginx-source/objs/njs/njs_auto_config.h
+    if [ "$CI_LIBRARIES" = shared ]; then
+        njs_config=shared-stage/usr/include/njs/njs_auto_config.h
+    fi
     grep -q '^#define NJS_HAVE_QUICKJS  1' \
-        nginx-source/objs/njs/njs_auto_config.h
+        "$njs_config"
+fi
+
+if [ "$CI_LIBRARIES" = shared ]; then
+    install -d shared-stage/usr/sbin shared-stage/usr/lib/nginx/modules
+    install -m 755 nginx-source/objs/nginx shared-stage/usr/sbin/
+    for module in http stream; do
+        library="nginx-source/objs/ngx_${module}_js_module.so"
+        install -m 755 "$library" shared-stage/usr/lib/nginx/modules/
+    done
 fi
