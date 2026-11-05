@@ -1991,6 +1991,11 @@ ngx_qjs_ext_engine_id(JSContext *cx, JSValueConst this_val)
     external = JS_GetContextOpaque(cx);
     ctx = ngx_qjs_external_ctx(cx, external);
 
+    if (ctx->engine == NULL) {
+        return JS_ThrowTypeError(cx, "engine is not available "
+                                    "during module initialization");
+    }
+
     return JS_NewUint32(cx, ctx->engine->id);
 }
 #endif
@@ -3006,6 +3011,12 @@ ngx_js_ext_engine_id(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
     ngx_js_ctx_t  *ctx;
 
     ctx = ngx_external_ctx(vm, njs_vm_external_ptr(vm));
+
+    if (ctx->engine == NULL) {
+        njs_vm_type_error(vm, "engine is not available "
+                             "during module initialization");
+        return NJS_ERROR;
+    }
 
     njs_value_number_set(retval, ctx->engine->id);
     return NJS_OK;
