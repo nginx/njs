@@ -603,10 +603,17 @@ ngx_qjs_request_ctor(JSContext *cx, ngx_js_request_t *request,
     request->method.len = 3;
     request->body.data = NULL;
     request->body.len = 0;
-    request->headers.guard = GUARD_REQUEST;
     pool = ngx_qjs_external_pool(cx, JS_GetContextOpaque(cx));
 
-    rc = ngx_list_init(&request->headers.header_list, pool, 4,
+    request->headers = ngx_pcalloc(pool, sizeof(ngx_js_headers_t));
+    if (request->headers == NULL) {
+        JS_ThrowOutOfMemory(cx);
+        return NGX_ERROR;
+    }
+
+    request->headers->guard = GUARD_REQUEST;
+
+    rc = ngx_list_init(&request->headers->header_list, pool, 4,
                        sizeof(ngx_js_tb_elt_t));
     if (rc != NGX_OK) {
         JS_ThrowOutOfMemory(cx);
@@ -641,7 +648,7 @@ ngx_qjs_request_ctor(JSContext *cx, ngx_js_request_t *request,
         request->credentials = orig->credentials;
         request->mode = orig->mode;
 
-        rc = ngx_qjs_headers_inherit(cx, &request->headers, &orig->headers);
+        rc = ngx_qjs_headers_inherit(cx, request->headers, orig->headers);
         if (rc != NGX_OK) {
             return NGX_ERROR;
         }
@@ -747,10 +754,10 @@ ngx_qjs_request_ctor(JSContext *cx, ngx_js_request_t *request,
              * just allocating a new one.
              */
 
-            ngx_memset(&request->headers, 0, sizeof(ngx_js_headers_t));
-            request->headers.guard = GUARD_REQUEST;
+            ngx_memset(request->headers, 0, sizeof(ngx_js_headers_t));
+            request->headers->guard = GUARD_REQUEST;
 
-            rc = ngx_list_init(&request->headers.header_list, pool, 4,
+            rc = ngx_list_init(&request->headers->header_list, pool, 4,
                                sizeof(ngx_js_tb_elt_t));
             if (rc != NGX_OK) {
                 JS_FreeValue(cx, value);
@@ -758,7 +765,7 @@ ngx_qjs_request_ctor(JSContext *cx, ngx_js_request_t *request,
                 return NGX_ERROR;
             }
 
-            rc = ngx_qjs_headers_fill(cx, &request->headers, value);
+            rc = ngx_qjs_headers_fill(cx, request->headers, value);
             JS_FreeValue(cx, value);
 
             if (rc != NGX_OK) {
@@ -781,12 +788,12 @@ ngx_qjs_request_ctor(JSContext *cx, ngx_js_request_t *request,
                 return NGX_ERROR;
             }
 
-            if (!ngx_js_headers_has(&request->headers,
+            if (!ngx_js_headers_has(request->headers,
                                     (u_char *) "Content-Type",
                                     sizeof("Content-Type") - 1)
                 && JS_IsString(value))
             {
-                rc = ngx_qjs_headers_append(cx, &request->headers,
+                rc = ngx_qjs_headers_append(cx, request->headers,
                                         (u_char *) "Content-Type",
                                         sizeof("Content-Type") - 1,
                                         (u_char *) "text/plain;charset=UTF-8",
@@ -834,8 +841,13 @@ ngx_qjs_fetch_response_ctor(JSContext *cx, JSValueConst new_target, int argc,
      */
 
     response->code = 200;
-    response->headers.guard = GUARD_RESPONSE;
-    ret = ngx_list_init(&response->headers.header_list, pool, 4,
+    response->headers = ngx_pcalloc(pool, sizeof(ngx_js_headers_t));
+    if (response->headers == NULL) {
+        return JS_ThrowOutOfMemory(cx);
+    }
+
+    response->headers->guard = GUARD_RESPONSE;
+    ret = ngx_list_init(&response->headers->header_list, pool, 4,
                         sizeof(ngx_js_tb_elt_t));
     if (ret != NGX_OK) {
         return JS_ThrowOutOfMemory(cx);
@@ -905,7 +917,7 @@ ngx_qjs_fetch_response_ctor(JSContext *cx, JSValueConst new_target, int argc,
                 return JS_ThrowTypeError(cx, "Headers is not an object");
             }
 
-            rc = ngx_qjs_headers_fill(cx, &response->headers, value);
+            rc = ngx_qjs_headers_fill(cx, response->headers, value);
             JS_FreeValue(cx, value);
 
             if (rc != NGX_OK) {
@@ -955,7 +967,7 @@ string:
         }
 
         if (JS_IsString(body)) {
-            rc = ngx_qjs_headers_append(cx, &response->headers,
+            rc = ngx_qjs_headers_append(cx, response->headers,
                                       (u_char *) "Content-Type",
                                       sizeof("Content-Type") - 1,
                                       (u_char *) "text/plain;charset=UTF-8",
@@ -1388,7 +1400,7 @@ ngx_qjs_fetch_append_headers(ngx_js_http_t *http, ngx_js_headers_t *headers,
 
     fetch = (ngx_qjs_fetch_t *) http;
 
-    return ngx_qjs_headers_append(fetch->cx, &http->response.headers,
+    return ngx_qjs_headers_append(fetch->cx, http->response.headers,
                                   name, len, value, vlen);
 }
 
@@ -2118,7 +2130,7 @@ ngx_qjs_ext_fetch_request_headers(JSContext *cx, JSValueConst this_val)
             return JS_ThrowOutOfMemory(cx);
         }
 
-        JS_SetOpaque(header, &request->headers);
+        JS_SetOpaque(header, request->headers);
 
         object->header_value = header;
     }
@@ -2270,7 +2282,7 @@ ngx_qjs_ext_fetch_response_headers(JSContext *cx, JSValueConst this_val)
             return JS_ThrowOutOfMemory(cx);
         }
 
-        JS_SetOpaque(header, &response->headers);
+        JS_SetOpaque(header, response->headers);
 
         object->header_value = header;
     }

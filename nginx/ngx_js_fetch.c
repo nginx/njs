@@ -798,12 +798,19 @@ ngx_js_ext_response_constructor(njs_vm_t *vm, njs_value_t *args,
      *  request->status_text.length = 0;
      */
 
-    response->code = 200;
-    response->headers.guard = GUARD_RESPONSE;
-
     pool = ngx_external_pool(vm, njs_vm_external_ptr(vm));
 
-    rc = ngx_list_init(&response->headers.header_list, pool, 4,
+    response->code = 200;
+    response->headers = njs_mp_zalloc(njs_vm_memory_pool(vm),
+                                      sizeof(ngx_js_headers_t));
+    if (response->headers == NULL) {
+        njs_vm_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    response->headers->guard = GUARD_RESPONSE;
+
+    rc = ngx_list_init(&response->headers->header_list, pool, 4,
                        sizeof(ngx_js_tb_elt_t));
     if (rc != NGX_OK) {
         njs_vm_memory_error(vm);
@@ -852,7 +859,7 @@ ngx_js_ext_response_constructor(njs_vm_t *vm, njs_value_t *args,
                 return NJS_ERROR;
             }
 
-            ret = ngx_js_headers_fill(vm, &response->headers, value);
+            ret = ngx_js_headers_fill(vm, response->headers, value);
             if (ret != NJS_OK) {
                 return NJS_ERROR;
             }
@@ -871,7 +878,7 @@ ngx_js_ext_response_constructor(njs_vm_t *vm, njs_value_t *args,
         njs_chb_append(&response->chain, bd.start, bd.length);
 
         if (njs_value_is_string(body)) {
-            ret = ngx_js_headers_append(vm, &response->headers,
+            ret = ngx_js_headers_append(vm, response->headers,
                                     (u_char *) "Content-Type",
                                     njs_length("Content-Type"),
                                     (u_char *) "text/plain;charset=UTF-8",
@@ -1332,11 +1339,18 @@ ngx_js_request_constructor(njs_vm_t *vm, ngx_js_request_t *request,
     request->method.len = 3;
     request->body.data = (u_char *) "";
     request->body.len = 0;
-    request->headers.guard = GUARD_REQUEST;
-
     pool = ngx_external_pool(vm, external);
 
-    rc = ngx_list_init(&request->headers.header_list, pool, 4,
+    request->headers = njs_mp_zalloc(njs_vm_memory_pool(vm),
+                                     sizeof(ngx_js_headers_t));
+    if (request->headers == NULL) {
+        njs_vm_memory_error(vm);
+        return NJS_ERROR;
+    }
+
+    request->headers->guard = GUARD_REQUEST;
+
+    rc = ngx_list_init(&request->headers->header_list, pool, 4,
                        sizeof(ngx_js_tb_elt_t));
     if (rc != NGX_OK) {
         njs_vm_memory_error(vm);
@@ -1364,7 +1378,7 @@ ngx_js_request_constructor(njs_vm_t *vm, ngx_js_request_t *request,
         request->credentials = orig->credentials;
         request->mode = orig->mode;
 
-        ret = ngx_js_headers_inherit(vm, &request->headers, &orig->headers);
+        ret = ngx_js_headers_inherit(vm, request->headers, orig->headers);
         if (ret != NJS_OK) {
             return NJS_ERROR;
         }
@@ -1465,17 +1479,17 @@ ngx_js_request_constructor(njs_vm_t *vm, ngx_js_request_t *request,
              * just allocating a new one.
              */
 
-            ngx_memset(&request->headers, 0, sizeof(ngx_js_headers_t));
-            request->headers.guard = GUARD_REQUEST;
+            ngx_memset(request->headers, 0, sizeof(ngx_js_headers_t));
+            request->headers->guard = GUARD_REQUEST;
 
-            rc = ngx_list_init(&request->headers.header_list, pool, 4,
+            rc = ngx_list_init(&request->headers->header_list, pool, 4,
                                sizeof(ngx_js_tb_elt_t));
             if (rc != NGX_OK) {
                 njs_vm_memory_error(vm);
                 return NJS_ERROR;
             }
 
-            ret = ngx_js_headers_fill(vm, &request->headers, headers);
+            ret = ngx_js_headers_fill(vm, request->headers, headers);
             if (ret != NJS_OK) {
                 return NJS_ERROR;
             }
@@ -1487,12 +1501,12 @@ ngx_js_request_constructor(njs_vm_t *vm, ngx_js_request_t *request,
                 return NJS_ERROR;
             }
 
-            if (!ngx_js_headers_has(&request->headers,
+            if (!ngx_js_headers_has(request->headers,
                                     (u_char *) "Content-Type",
                                     njs_length("Content-Type"))
                 && njs_value_is_string(value))
             {
-                ret = ngx_js_headers_append(vm, &request->headers,
+                ret = ngx_js_headers_append(vm, request->headers,
                                         (u_char *) "Content-Type",
                                         njs_length("Content-Type"),
                                         (u_char *) "text/plain;charset=UTF-8",
@@ -2142,7 +2156,7 @@ ngx_request_js_ext_headers(njs_vm_t *vm, njs_object_prop_t *prop,
     if (njs_value_is_null(njs_value_arg(&request->header_value))) {
         ret = njs_vm_external_create(vm, njs_value_arg(&request->header_value),
                                      ngx_http_js_fetch_headers_proto_id,
-                                     &request->headers, 0);
+                                     request->headers, 0);
         if (ret != NJS_OK) {
             njs_vm_memory_error(vm);
             return NJS_ERROR;
@@ -2269,7 +2283,7 @@ ngx_response_js_ext_headers(njs_vm_t *vm, njs_object_prop_t *prop,
     if (njs_value_is_null(njs_value_arg(&response->header_value))) {
         ret = njs_vm_external_create(vm, njs_value_arg(&response->header_value),
                                      ngx_http_js_fetch_headers_proto_id,
-                                     &response->headers, 0);
+                                     response->headers, 0);
         if (ret != NJS_OK) {
             njs_vm_memory_error(vm);
             return NJS_ERROR;

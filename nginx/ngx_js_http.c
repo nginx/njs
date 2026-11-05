@@ -848,8 +848,17 @@ ngx_js_http_process_headers(ngx_js_http_t *http)
 
     hp = &http->http_parse;
 
-    if (http->response.headers.header_list.size == 0) {
-        rc = ngx_list_init(&http->response.headers.header_list, http->pool, 4,
+    if (http->response.headers == NULL) {
+        http->response.headers = ngx_pcalloc(http->pool,
+                                             sizeof(ngx_js_headers_t));
+        if (http->response.headers == NULL) {
+            ngx_js_http_error(http, "alloc failed");
+            return NGX_ERROR;
+        }
+    }
+
+    if (http->response.headers->header_list.size == 0) {
+        rc = ngx_list_init(&http->response.headers->header_list, http->pool, 4,
                            sizeof(ngx_js_tb_elt_t));
         if (rc != NGX_OK) {
             ngx_js_http_error(http, "alloc failed");
@@ -864,7 +873,7 @@ ngx_js_http_process_headers(ngx_js_http_t *http)
             len = hp->header_name_end - hp->header_name_start;
             vlen = hp->header_end - hp->header_start;
 
-            rc = http->append_headers(http, &http->response.headers,
+            rc = http->append_headers(http, http->response.headers,
                                        hp->header_name_start, len,
                                        hp->header_start, vlen);
 
@@ -935,7 +944,7 @@ ngx_js_http_process_headers(ngx_js_http_t *http)
         }
 
         if (rc == NGX_DONE) {
-            http->response.headers.guard = GUARD_IMMUTABLE;
+            http->response.headers->guard = GUARD_IMMUTABLE;
             break;
         }
 
@@ -2413,7 +2422,7 @@ ngx_js_fetch_append_request_headers(njs_chb_t *chain,
     ngx_list_part_t  *part;
     ngx_js_tb_elt_t  *h;
 
-    part = &request->headers.header_list.part;
+    part = &request->headers->header_list.part;
     h = part->elts;
 
     for (i = 0; /* void */; i++) {
@@ -2498,7 +2507,7 @@ ngx_js_fetch_build_request(ngx_js_http_t *http, ngx_js_request_t *request,
 
     has_host = 0;
     has_user_agent = 0;
-    part = &request->headers.header_list.part;
+    part = &request->headers->header_list.part;
     h = part->elts;
 
     for (i = 0; /* void */; i++) {
