@@ -2090,7 +2090,7 @@ ngx_http_js_variable_set(ngx_http_request_t *r, ngx_http_variable_value_t *v,
         return NGX_ERROR;
     }
 
-    if (ctx->engine->string(ctx->engine, &ctx->retval, &value) != NGX_OK) {
+    if (ngx_js_ctx_string((ngx_js_ctx_t *) ctx, r->pool, &value) != NGX_OK) {
         return NGX_ERROR;
     }
 

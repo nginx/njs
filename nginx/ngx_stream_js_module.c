@@ -1150,7 +1150,9 @@ ngx_stream_js_variable_set(ngx_stream_session_t *s,
         return NGX_ERROR;
     }
 
-    if (ctx->engine->string(ctx->engine, &ctx->retval, &value) != NGX_OK) {
+    if (ngx_js_ctx_string((ngx_js_ctx_t *) ctx, s->connection->pool, &value)
+        != NGX_OK)
+    {
         return NGX_ERROR;
     }
 
