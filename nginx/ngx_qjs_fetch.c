@@ -257,6 +257,12 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
     ngx_resolver_ctx_t  *rs;
 
     external = JS_GetContextOpaque(cx);
+    ctx = ngx_qjs_external_ctx(cx, external);
+    if (ctx->engine == NULL) {
+        return JS_ThrowTypeError(cx, "async operations are not allowed "
+                                    "during module initialization");
+    }
+
     c = ngx_qjs_external_connection(cx, external);
     pool = ngx_qjs_external_pool(cx, external);
 
@@ -352,8 +358,6 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
     {
         http->header_only = 1;
     }
-
-    ctx = ngx_qjs_external_ctx(cx, JS_GetContextOpaque(cx));
 
     NJS_CHB_MP_INIT(&http->chain, ctx->engine->pool);
     NJS_CHB_MP_INIT(&http->response.chain, ctx->engine->pool);

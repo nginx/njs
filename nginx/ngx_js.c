@@ -1832,6 +1832,13 @@ ngx_qjs_ext_set_timeout(JSContext *cx, JSValueConst this_val, int argc,
     ngx_qjs_event_t   *event;
     ngx_connection_t  *c;
 
+    external = JS_GetContextOpaque(cx);
+    ctx = ngx_qjs_external_ctx(cx, external);
+    if (ctx->engine == NULL) {
+        return JS_ThrowTypeError(cx, "async operations are not allowed "
+                                    "during module initialization");
+    }
+
     if (!JS_IsFunction(cx, argv[0])) {
         return JS_ThrowTypeError(cx, "first arg must be a function");
     }
@@ -1846,9 +1853,6 @@ ngx_qjs_ext_set_timeout(JSContext *cx, JSValueConst this_val, int argc,
 
     n = immediate ? 1 : 2;
     argc = (argc >= n) ? argc - n : 0;
-    external = JS_GetContextOpaque(cx);
-    ctx = ngx_qjs_external_ctx(cx, external);
-
     event = ngx_pcalloc(ngx_qjs_external_pool(cx, external),
                         sizeof(ngx_qjs_event_t) + sizeof(JSValue) * argc);
     if (event == NULL) {
@@ -3285,6 +3289,13 @@ njs_set_timer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     ngx_js_event_t    *event;
     ngx_connection_t  *c;
 
+    ctx = ngx_external_ctx(vm, njs_vm_external_ptr(vm));
+    if (ctx->engine == NULL) {
+        njs_vm_type_error(vm, "async operations are not allowed "
+                             "during module initialization");
+        return NJS_ERROR;
+    }
+
     if (njs_slow_path(nargs < 2)) {
         njs_vm_type_error(vm, "too few arguments");
         return NJS_ERROR;
@@ -3320,7 +3331,6 @@ njs_set_timer(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     event->args = (njs_opaque_value_t *) &event[1];
     event->destructor = ngx_js_clear_timer;
 
-    ctx = ngx_external_ctx(vm, njs_vm_external_ptr(vm));
     event->fd = ctx->event_id++;
 
     c = ngx_external_connection(vm, njs_vm_external_ptr(vm));
