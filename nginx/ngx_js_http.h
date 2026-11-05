@@ -101,7 +101,7 @@ typedef struct {
     u_char                         m[8];
     uint8_t                        body_used;
     ngx_str_t                      body;
-    ngx_js_headers_t               headers;
+    ngx_js_headers_t              *headers;
     njs_opaque_value_t             header_value;
 } ngx_js_request_t;
 
@@ -112,7 +112,7 @@ typedef struct {
     ngx_str_t                      status_text;
     uint8_t                        body_used;
     njs_chb_t                      chain;
-    ngx_js_headers_t               headers;
+    ngx_js_headers_t              *headers;
     njs_opaque_value_t             header_value;
 } ngx_js_response_t;
 
