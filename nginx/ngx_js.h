@@ -359,6 +359,8 @@ void ngx_js_ctx_init(ngx_js_ctx_t *ctx, ngx_log_t *log);
 
 
 void ngx_js_ctx_destroy(ngx_js_ctx_t *ctx);
+ngx_int_t ngx_js_ctx_string(ngx_js_ctx_t *ctx, ngx_pool_t *pool,
+    ngx_str_t *str);
 ngx_int_t ngx_js_call(njs_vm_t *vm, njs_function_t *func,
     njs_opaque_value_t *args, njs_uint_t nargs);
 ngx_int_t ngx_js_log_exception(njs_vm_t *vm, ngx_log_t *log, const char *txt);
