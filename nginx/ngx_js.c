@@ -1694,19 +1694,12 @@ ngx_qjs_string(JSContext *cx, ngx_pool_t *pool, JSValueConst val,
     u_char        *start;
     JSValue        buffer;
     const char    *str;
-    ngx_js_ctx_t  *ctx;
-    ngx_engine_t  *e;
-
-    ctx = ngx_qjs_external_ctx(cx, JS_GetContextOpaque(cx));
-    e = ctx->engine;
 
     if (JS_IsNullOrUndefined(val)) {
         dst->data = NULL;
         dst->len = 0;
         return NGX_OK;
     }
-
-    cx = e->u.qjs.ctx;
 
     if (JS_IsString(val)) {
         goto string;
