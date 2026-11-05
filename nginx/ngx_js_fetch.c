@@ -510,6 +510,7 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     ngx_str_t           *resolve_host;
     ngx_pool_t          *pool;
     njs_value_t         *init, *value;
+    ngx_js_ctx_t        *jsctx;
     ngx_js_http_t       *http;
     ngx_js_fetch_t      *fetch;
     ngx_js_request_t     request;
@@ -525,6 +526,13 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 #endif
 
     external = njs_vm_external_ptr(vm);
+    jsctx = ngx_external_ctx(vm, external);
+    if (jsctx->engine == NULL) {
+        njs_vm_type_error(vm, "async operations are not allowed "
+                             "during module initialization");
+        return NJS_ERROR;
+    }
+
     c = ngx_external_connection(vm, external);
     pool = ngx_external_pool(vm, external);
 
