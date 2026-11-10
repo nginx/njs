@@ -416,7 +416,7 @@ JSValue ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
 
 #define ngx_qjs_prop(cx, type, start, len)                                   \
     ((type == NGX_JS_STRING) ? qjs_string_create(cx, start, len)             \
-                             : qjs_buffer_create(cx, (u_char *) start, len))
+                             : qjs_buffer_copy(cx, (u_char *) start, len))
 
 #define ngx_qjs_meta(cx, i)                                                  \
     ((uintptr_t *) JS_GetRuntimeOpaque(JS_GetRuntime(cx)))[i]

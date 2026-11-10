@@ -711,7 +711,7 @@ qjs_cipher_pkey(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
         goto fail;
     }
 
-    ret = qjs_new_array_buffer(cx, dst, outlen);
+    ret = qjs_array_buffer_adopt(cx, dst, outlen);
 
 fail:
 
@@ -892,7 +892,7 @@ qjs_cipher_aes_gcm(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
         outlen += taglen;
     }
 
-    ret = qjs_new_array_buffer(cx, dst, outlen);
+    ret = qjs_array_buffer_adopt(cx, dst, outlen);
 
     EVP_CIPHER_CTX_free(ctx);
 
@@ -1197,7 +1197,7 @@ qjs_cipher_aes_ctr(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
 
 done:
 
-    ret = qjs_new_array_buffer(cx, dst, len);
+    ret = qjs_array_buffer_adopt(cx, dst, len);
 
 fail:
 
@@ -1320,7 +1320,7 @@ qjs_cipher_aes_cbc(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
 
     olen += olen2;
 
-    ret = qjs_new_array_buffer(cx, dst, olen);
+    ret = qjs_array_buffer_adopt(cx, dst, olen);
 
 fail:
 
@@ -1420,7 +1420,7 @@ qjs_cipher_aes_kw(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
         goto fail;
     }
 
-    ret = qjs_new_array_buffer(cx, dst, olen);
+    ret = qjs_array_buffer_adopt(cx, dst, olen);
 
 fail:
 
@@ -1945,7 +1945,7 @@ qjs_export_raw_ec(JSContext *cx, qjs_webcrypto_key_t *key)
         return JS_EXCEPTION;
     }
 
-    return qjs_new_array_buffer(cx, dst, size);
+    return qjs_array_buffer_adopt(cx, dst, size);
 }
 
 
@@ -2123,7 +2123,7 @@ qjs_derive_ecdh(JSContext *cx, JSValueConst *argv, int argc, int derive_key,
         dkey->u.s.raw.length = length;
 
     } else {
-        result = qjs_new_array_buffer(cx, k, length);
+        result = qjs_array_buffer_adopt(cx, k, length);
     }
 
     return qjs_promise_result(cx, result);
@@ -2433,7 +2433,7 @@ free:
 
     } else {
 
-        ret = qjs_new_array_buffer(cx, k, length);
+        ret = qjs_array_buffer_adopt(cx, k, length);
     }
 
     return qjs_promise_result(cx, ret);
@@ -2484,7 +2484,7 @@ qjs_webcrypto_digest(JSContext *cx, JSValueConst this_val, int argc,
         return JS_EXCEPTION;
     }
 
-    ret = qjs_new_array_buffer(cx, dst, olen);
+    ret = qjs_array_buffer_adopt(cx, dst, olen);
 
     return ret;
 }
@@ -4899,7 +4899,7 @@ qjs_webcrypto_sign(JSContext *cx, JSValueConst this_val, int argc,
     }
 
     if (!verify) {
-        ret = qjs_new_array_buffer(cx, dst, outlen);
+        ret = qjs_array_buffer_adopt(cx, dst, outlen);
         if (JS_IsException(ret)) {
             goto fail;
         }

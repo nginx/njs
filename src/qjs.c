@@ -1318,23 +1318,15 @@ qjs_array_buffer_free(JSRuntime *rt, void *opaque, void *ptr)
 #endif
 
 
-JSValue
-qjs_new_array_buffer(JSContext *cx, uint8_t *src, size_t len)
-{
-    return qjs_array_buffer_create(cx, src, len, qjs_array_buffer_free, 0);
-}
-
-
 /*
- * The memory is not managed by the engine, the caller is responsible for
- * keeping it alive while the buffer is reachable.
+ * The allocation must use the runtime allocator.  Ownership is transferred
+ * on success; the caller retains it on failure.
  */
 
 JSValue
-qjs_new_external_array_buffer(JSContext *cx, uint8_t *src, size_t len,
-    int is_shared)
+qjs_array_buffer_adopt(JSContext *cx, uint8_t *src, size_t len)
 {
-    return qjs_array_buffer_create(cx, src, len, NULL, is_shared);
+    return qjs_array_buffer_create(cx, src, len, qjs_array_buffer_free, 0);
 }
 
 

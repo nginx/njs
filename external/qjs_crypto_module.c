@@ -583,7 +583,7 @@ qjs_crypto_encoding(JSContext *cx, JSValueConst val)
 static JSValue
 qjs_buffer_digest(JSContext *cx, const njs_str_t *src)
 {
-    return qjs_buffer_create(cx, src->start, src->length);
+    return qjs_buffer_copy(cx, src->start, src->length);
 }
 
 
