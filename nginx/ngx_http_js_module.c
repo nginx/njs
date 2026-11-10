@@ -159,10 +159,10 @@ typedef int (*njs_http_qjs_header_handler_t)(JSContext *cx,
 
 
 typedef struct {
-    ngx_http_request_t  *request;
-    JSValue              args;
-    JSValue              request_body;
-    JSValue              response_body;
+    ngx_js_opaque_t  opaque;
+    JSValue          args;
+    JSValue          request_body;
+    JSValue          response_body;
 } ngx_http_qjs_request_t;
 
 #endif
@@ -6173,7 +6173,7 @@ ngx_http_qjs_ext_args(JSContext *cx, JSValueConst this_val)
 
     NJS_CHB_CTX_INIT(&chain, cx);
 
-    r = req->request;
+    r = req->opaque.external;
 
     rc = ngx_http_qjs_query_string_decode(&chain, r->args.data, r->args.len);
     if (rc != NGX_OK) {
@@ -6530,7 +6530,8 @@ ngx_http_qjs_ext_periodic_variables(JSContext *cx,
      * Using lowest bit of the pointer to store the buffer type.
      */
     type = (type == NGX_JS_BUFFER) ? 1 : 0;
-    JS_SetOpaque(obj, (void *) ((uintptr_t) req->request | (uintptr_t) type));
+    JS_SetOpaque(obj, (void *) ((uintptr_t) req->opaque.external
+                              | (uintptr_t) type));
 
     return obj;
 }
@@ -6602,7 +6603,7 @@ ngx_http_qjs_ext_response_body(JSContext *cx, JSValueConst this_val, int type)
         req->response_body = JS_UNDEFINED;
     }
 
-    r = req->request;
+    r = req->opaque.external;
 
     b = r->out ? r->out->buf : NULL;
 
@@ -6656,7 +6657,7 @@ ngx_http_qjs_ext_request_body(JSContext *cx, JSValueConst this_val, int type)
         JS_FreeValue(cx, req->request_body);
     }
 
-    r = req->request;
+    r = req->opaque.external;
 
     if (r->request_body == NULL || r->request_body->bufs == NULL) {
         return JS_UNDEFINED;
@@ -6778,7 +6779,7 @@ ngx_http_qjs_ext_read_request_body(JSContext *cx, JSValueConst this_val,
         return JS_ThrowTypeError(cx, "\"this\" is not a request object");
     }
 
-    r = req->request;
+    r = req->opaque.external;
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
     if (r->request_body) {
@@ -6931,7 +6932,7 @@ ngx_http_qjs_ext_read_request_form(JSContext *cx, JSValueConst this_val,
         return JS_EXCEPTION;
     }
 
-    r = req->request;
+    r = req->opaque.external;
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
     if (r->request_body) {
@@ -9399,7 +9400,7 @@ ngx_http_qjs_request(JSValueConst val)
         return NULL;
     }
 
-    return req->request;
+    return req->opaque.external;
 }
 
 
@@ -9421,7 +9422,7 @@ ngx_http_qjs_request_make(JSContext *cx, ngx_int_t proto_id,
         return JS_ThrowOutOfMemory(cx);
     }
 
-    req->request = r;
+    req->opaque.external = r;
     req->args = JS_UNDEFINED;
     req->request_body = JS_UNDEFINED;
     req->response_body = JS_UNDEFINED;
