@@ -2866,7 +2866,7 @@ qjs_fs_encode(JSContext *cx, const qjs_buffer_encoding_t *encoding,
     njs_str_t  data;
 
     if (encoding == NULL) {
-        return qjs_buffer_create(cx, str->start, str->length);
+        return qjs_buffer_copy(cx, str->start, str->length);
 
     } else if (encoding->encode_length != NULL) {
         data.length = encoding->encode_length(cx, str);

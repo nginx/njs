@@ -2606,7 +2606,7 @@ qjs_buffer_alloc(JSContext *ctx, uint64_t size)
 
 
 JSValue
-qjs_buffer_create(JSContext *ctx, u_char *start, size_t size)
+qjs_buffer_copy(JSContext *ctx, u_char *start, size_t size)
 {
     JSValue    buffer, ret;
     njs_str_t  dst;
@@ -2629,7 +2629,7 @@ qjs_buffer_create(JSContext *ctx, u_char *start, size_t size)
 
 
 JSValue
-qjs_buffer_chb_alloc(JSContext *ctx, njs_chb_t *chain)
+qjs_buffer_chb_copy(JSContext *ctx, njs_chb_t *chain)
 {
     ssize_t      size;
     JSValue      ret;

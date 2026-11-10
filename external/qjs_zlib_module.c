@@ -284,7 +284,7 @@ qjs_zlib_ext_deflate(JSContext *ctx, JSValueConst this_val, int argc,
 
     js_free(ctx, dictionary_copy);
 
-    ret = qjs_buffer_chb_alloc(ctx, &chain);
+    ret = qjs_buffer_chb_copy(ctx, &chain);
 
     njs_chb_destroy(&chain);
 
@@ -468,7 +468,7 @@ qjs_zlib_ext_inflate(JSContext *ctx, JSValueConst this_val, int argc,
 
     js_free(ctx, dictionary_copy);
 
-    ret = qjs_buffer_chb_alloc(ctx, &chain);
+    ret = qjs_buffer_chb_copy(ctx, &chain);
 
     njs_chb_destroy(&chain);
 

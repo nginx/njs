@@ -390,7 +390,7 @@ qjs_xml_canonicalization(JSContext *cx, JSValueConst this_val, int argc,
         ret = qjs_string_create_chb(cx, &chain);
 
     } else {
-        ret = qjs_buffer_chb_alloc(cx, &chain);
+        ret = qjs_buffer_chb_copy(cx, &chain);
         njs_chb_destroy(&chain);
     }
 

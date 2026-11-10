@@ -2352,7 +2352,7 @@ ngx_qjs_ext_fetch_response_body(JSContext *cx, JSValueConst this_val,
         njs_chb_join_to(&response->chain, p);
         njs_chb_destroy(&response->chain);
 
-        result = qjs_new_array_buffer(cx, p, size);
+        result = qjs_array_buffer_adopt(cx, p, size);
         if (JS_IsException(result)) {
             js_free(cx, p);
         }

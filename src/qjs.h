@@ -68,12 +68,10 @@ void qjs_chb_rt_free(void *rt, void *p);
 
 
 JSValue qjs_new_uint8_array(JSContext *ctx, int argc, JSValueConst *argv);
-JSValue qjs_new_array_buffer(JSContext *cx, uint8_t *src, size_t len);
-JSValue qjs_new_external_array_buffer(JSContext *cx, uint8_t *src, size_t len,
-    int is_shared);
+JSValue qjs_array_buffer_adopt(JSContext *cx, uint8_t *src, size_t len);
 JSValue qjs_buffer_alloc(JSContext *ctx, uint64_t size);
-JSValue qjs_buffer_create(JSContext *ctx, u_char *start, size_t size);
-JSValue qjs_buffer_chb_alloc(JSContext *ctx, njs_chb_t *chain);
+JSValue qjs_buffer_copy(JSContext *ctx, u_char *start, size_t size);
+JSValue qjs_buffer_chb_copy(JSContext *ctx, njs_chb_t *chain);
 
 typedef int (*qjs_buffer_encode_t)(JSContext *ctx, const njs_str_t *src,
     njs_str_t *dst);
