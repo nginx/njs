@@ -235,8 +235,20 @@ struct ngx_js_ctx_s {
 };
 
 
+#if (NJS_HAVE_QUICKJS)
+typedef struct {
+    JSRuntime                   *runtime;
+    ngx_uint_t                   references;
+    unsigned                     alive:1;
+} ngx_qjs_owner_t;
+#endif
+
+
 typedef struct {
     void                        *external;
+#if (NJS_HAVE_QUICKJS)
+    ngx_qjs_owner_t              *owner;
+#endif
 } ngx_js_opaque_t;
 
 
@@ -408,6 +420,13 @@ ngx_int_t ngx_qjs_bytes_copy(JSContext *cx, ngx_str_t *dst,
     const ngx_str_t *src);
 ngx_int_t ngx_qjs_value_bytes_copy(JSContext *cx, JSValueConst value,
     ngx_str_t *str);
+ngx_js_opaque_t *ngx_qjs_opaque_alloc(JSContext *cx, size_t size,
+    void *external, ngx_qjs_owner_t *owner);
+ngx_js_opaque_t *ngx_qjs_opaque_get(JSContext *cx, JSValueConst value,
+    JSClassID class_id);
+void ngx_qjs_owner_release(JSRuntime *rt, ngx_qjs_owner_t *owner);
+void ngx_qjs_opaque_free(JSRuntime *rt, ngx_js_opaque_t *opaque);
+void ngx_qjs_opaque_finalizer(JSRuntime *rt, JSValue value);
 ngx_int_t ngx_qjs_header_value(JSContext *cx, ngx_pool_t *pool,
     JSValueConst val, ngx_str_t *dst);
 
