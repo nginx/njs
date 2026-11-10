@@ -87,8 +87,8 @@ typedef struct {
 } ngx_stream_qjs_event_t;
 
 typedef struct {
-    ngx_stream_session_t   *session;
-    JSValue                 callbacks[NGX_JS_EVENT_MAX];
+    ngx_js_opaque_t  opaque;
+    JSValue          callbacks[NGX_JS_EVENT_MAX];
 } ngx_stream_qjs_session_t;
 
 #endif
@@ -2287,6 +2287,7 @@ ngx_stream_qjs_ext_on(JSContext *cx, JSValueConst this_val, int argc,
     JSValueConst *argv)
 {
     ngx_stream_js_ctx_t           *ctx;
+    ngx_stream_session_t          *s;
     ngx_stream_qjs_session_t      *ses;
     const ngx_stream_qjs_event_t  *e;
 
@@ -2295,9 +2296,10 @@ ngx_stream_qjs_ext_on(JSContext *cx, JSValueConst this_val, int argc,
         return JS_ThrowTypeError(cx, "\"this\" is not a session object");
     }
 
-    ctx = ngx_stream_get_module_ctx(ses->session, ngx_stream_js_module);
+    s = ses->opaque.external;
+    ctx = ngx_stream_get_module_ctx(s, ngx_stream_js_module);
 
-    e = ngx_stream_qjs_event(ses->session, cx, argv[0]);
+    e = ngx_stream_qjs_event(s, cx, argv[0]);
     if (e == NULL) {
         return JS_EXCEPTION;
     }
@@ -2365,7 +2367,8 @@ ngx_stream_qjs_ext_periodic_variables(JSContext *cx,
      * Using lowest bit of the pointer to store the buffer type.
      */
     type = (type == NGX_JS_BUFFER) ? 1 : 0;
-    JS_SetOpaque(obj, (void *) ((uintptr_t) ses->session | (uintptr_t) type));
+    JS_SetOpaque(obj, (void *) ((uintptr_t) ses->opaque.external
+                              | (uintptr_t) type));
 
     return obj;
 }
@@ -3015,7 +3018,7 @@ ngx_stream_qjs_session(JSValueConst val)
         return NULL;
     }
 
-    return ses->session;
+    return ses->opaque.external;
 }
 
 
@@ -3038,7 +3041,7 @@ ngx_stream_qjs_session_make(JSContext *cx, ngx_int_t proto_id,
         return JS_ThrowOutOfMemory(cx);
     }
 
-    ses->session = s;
+    ses->opaque.external = s;
 
     for (i = 0; i < NGX_JS_EVENT_MAX; i++) {
         ses->callbacks[i] = JS_UNDEFINED;
