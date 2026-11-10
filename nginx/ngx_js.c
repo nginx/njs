@@ -1301,6 +1301,10 @@ ngx_qjs_detach_ctx(ngx_js_ctx_t *ctx, JSContext *cx)
         opaque = JS_GetOpaque(ngx_qjs_arg(ctx->args[0]), class_id);
 
         if (opaque != NULL) {
+            if (opaque->owner != NULL) {
+                opaque->owner->alive = 0;
+            }
+
             opaque->external = NULL;
         }
     }
@@ -1829,6 +1833,103 @@ ngx_qjs_value_bytes_copy(JSContext *cx, JSValueConst value, ngx_str_t *str)
     JS_FreeCString(cx, p);
 
     return rc;
+}
+
+
+ngx_js_opaque_t *
+ngx_qjs_opaque_alloc(JSContext *cx, size_t size, void *external,
+    ngx_qjs_owner_t *owner)
+{
+    ngx_js_opaque_t  *opaque;
+
+    if (owner != NULL && owner->runtime != JS_GetRuntime(cx)) {
+        JS_ThrowTypeError(cx, "native object belongs to a different runtime");
+        return NULL;
+    }
+
+    opaque = js_malloc(cx, size);
+    if (opaque == NULL) {
+        return NULL;
+    }
+
+    if (owner == NULL) {
+        owner = js_mallocz(cx, sizeof(ngx_qjs_owner_t));
+        if (owner == NULL) {
+            js_free(cx, opaque);
+            return NULL;
+        }
+
+        owner->alive = 1;
+        owner->runtime = JS_GetRuntime(cx);
+    }
+
+    owner->references++;
+    opaque->external = external;
+    opaque->owner = owner;
+
+    return opaque;
+}
+
+
+ngx_js_opaque_t *
+ngx_qjs_opaque_get(JSContext *cx, JSValueConst value, JSClassID class_id)
+{
+    ngx_js_opaque_t  *opaque;
+
+    opaque = JS_GetOpaque2(cx, value, class_id);
+    if (opaque == NULL) {
+        return NULL;
+    }
+
+    if (opaque->owner != NULL
+        && opaque->owner->runtime != JS_GetRuntime(cx))
+    {
+        JS_ThrowTypeError(cx, "native object belongs to a different runtime");
+        return NULL;
+    }
+
+    if (opaque->external == NULL
+        || (opaque->owner != NULL && !opaque->owner->alive))
+    {
+        JS_ThrowTypeError(cx, "native object is no longer valid");
+        return NULL;
+    }
+
+    return opaque;
+}
+
+
+void
+ngx_qjs_owner_release(JSRuntime *rt, ngx_qjs_owner_t *owner)
+{
+    if (owner != NULL) {
+        njs_assert(owner->runtime == rt);
+        njs_assert(owner->references != 0);
+
+        if (--owner->references == 0) {
+            js_free_rt(rt, owner);
+        }
+    }
+}
+
+
+void
+ngx_qjs_opaque_free(JSRuntime *rt, ngx_js_opaque_t *opaque)
+{
+    ngx_qjs_owner_release(rt, opaque->owner);
+    js_free_rt(rt, opaque);
+}
+
+
+void
+ngx_qjs_opaque_finalizer(JSRuntime *rt, JSValue value)
+{
+    ngx_js_opaque_t  *opaque;
+
+    opaque = JS_GetOpaque(value, JS_GetClassID(value));
+    if (opaque != NULL) {
+        ngx_qjs_opaque_free(rt, opaque);
+    }
 }
 
 
