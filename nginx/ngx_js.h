@@ -404,6 +404,10 @@ ngx_int_t ngx_qjs_log_exception(ngx_engine_t *e, ngx_log_t *log,
 ngx_int_t ngx_qjs_integer(JSContext *cx, JSValueConst val, ngx_int_t *n);
 ngx_int_t ngx_qjs_string(JSContext *cx, ngx_pool_t *pool, JSValueConst val,
     ngx_str_t *dst);
+ngx_int_t ngx_qjs_bytes_copy(JSContext *cx, ngx_str_t *dst,
+    const ngx_str_t *src);
+ngx_int_t ngx_qjs_value_bytes_copy(JSContext *cx, JSValueConst value,
+    ngx_str_t *str);
 ngx_int_t ngx_qjs_header_value(JSContext *cx, ngx_pool_t *pool,
     JSValueConst val, ngx_str_t *dst);
 

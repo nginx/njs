@@ -338,6 +338,20 @@ qjs_chb_ctx_free(void *ctx, void *p)
 }
 
 
+void *
+qjs_chb_rt_alloc(void *rt, size_t size)
+{
+    return js_malloc_rt(rt, size);
+}
+
+
+void
+qjs_chb_rt_free(void *rt, void *p)
+{
+    js_free_rt(rt, p);
+}
+
+
 JSValue
 qjs_call_exit_hook(JSContext *ctx)
 {
