@@ -1769,6 +1769,69 @@ ngx_qjs_header_value(JSContext *cx, ngx_pool_t *pool, JSValueConst val,
 }
 
 
+ngx_int_t
+ngx_qjs_bytes_copy(JSContext *cx, ngx_str_t *dst, const ngx_str_t *src)
+{
+    dst->data = js_malloc(cx, njs_max(src->len, 1));
+    if (dst->data == NULL) {
+        return NGX_ERROR;
+    }
+
+    dst->len = src->len;
+
+    if (src->len != 0) {
+        ngx_memcpy(dst->data, src->data, src->len);
+    }
+
+    return NGX_OK;
+}
+
+
+ngx_int_t
+ngx_qjs_value_bytes_copy(JSContext *cx, JSValueConst value, ngx_str_t *str)
+{
+    size_t       offset, length;
+    JSValue      buffer;
+    ngx_int_t    rc;
+    ngx_str_t    source;
+    const char  *p;
+
+    if (JS_IsNullOrUndefined(value)) {
+        ngx_str_null(&source);
+
+        return ngx_qjs_bytes_copy(cx, str, &source);
+    }
+
+    if (!JS_IsString(value)) {
+        buffer = JS_GetTypedArrayBuffer(cx, value, &offset, &length, NULL);
+        if (!JS_IsException(buffer)) {
+            source.data = JS_GetArrayBuffer(cx, &source.len, buffer);
+            if (source.data != NULL) {
+                source.data += offset;
+                source.len = length;
+                rc = ngx_qjs_bytes_copy(cx, str, &source);
+                JS_FreeValue(cx, buffer);
+
+                return rc;
+            }
+
+            JS_FreeValue(cx, buffer);
+        }
+    }
+
+    p = JS_ToCStringLen(cx, &source.len, value);
+    if (p == NULL) {
+        return NGX_ERROR;
+    }
+
+    source.data = (u_char *) p;
+    rc = ngx_qjs_bytes_copy(cx, str, &source);
+    JS_FreeCString(cx, p);
+
+    return rc;
+}
+
+
 static void
 ngx_qjs_timer_handler(ngx_event_t *ev)
 {
