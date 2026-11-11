@@ -37,6 +37,8 @@ http {
 
     js_import test.js;
     js_set $retval test.variable;
+    js_set $reply_uri test.reply_uri;
+    js_var $read_result;
 
     server {
         listen       127.0.0.1:8080;
@@ -68,6 +70,19 @@ http {
 
         location /variable {
             return 200 $retval;
+        }
+
+        location /access_read {
+            js_access test.access_read;
+            js_content test.read_result;
+        }
+
+        location /content_read {
+            js_content test.content_read;
+        }
+
+        location /reply_variable {
+            js_content test.reply_variable;
         }
     }
 }
@@ -139,10 +154,45 @@ $t->write_file('test.js', <<'EOF');
         r.setReturnValue('own result');
     }
 
-    export default {content, child, variable};
+    function read_reply(reply) {
+        return ['readRequestText', 'readRequestForm'].map(method => {
+            try {
+                reply[method]();
+                return 'accepted';
+            } catch (e) {
+                return e instanceof TypeError ? 'rejected' : e.name;
+            }
+        }).join(',');
+    }
+
+    async function access_read(r) {
+        const reply = await r.subrequest('/native');
+        r.variables.read_result = read_reply(reply);
+    }
+
+    function read_result(r) {
+        r.return(200, r.variables.read_result);
+    }
+
+    async function content_read(r) {
+        const reply = await r.subrequest('/native');
+        r.return(200, read_reply(reply));
+    }
+
+    function reply_uri(r) {
+        return r.uri;
+    }
+
+    async function reply_variable(r) {
+        const reply = await r.subrequest('/native');
+        r.return(200, reply.variables.reply_uri);
+    }
+
+    export default {content, child, variable, access_read, read_result,
+                    content_read, reply_uri, reply_variable};
 EOF
 
-$t->try_run('no njs available')->plan(19);
+$t->try_run('no njs available')->plan(22);
 
 for my $scope ('zero', 'reuse') {
     for my $mode ('parent', 'shape', 'args', 'parent_set') {
@@ -162,5 +212,10 @@ for my $scope ('zero', 'reuse') {
 }
 
 like(http_get('/variable'), qr/own result$/m, 'own async js_set result');
+like(http_get('/access_read'), qr/rejected,rejected$/m,
+    'reply body read in access handler');
+like(http_get('/content_read'), qr/rejected,rejected$/m,
+    'reply body read in content handler');
+like(http_get('/reply_variable'), qr/\/native$/m, 'reply js_set variable');
 
 ###############################################################################
