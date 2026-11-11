@@ -56,6 +56,12 @@ stream {
         js_filter   test.send_direct;
         proxy_pass  127.0.0.1:8090;
     }
+
+    server {
+        listen      127.0.0.1:8084;
+        js_filter   test.send_upstream;
+        proxy_pass  127.0.0.1:8090;
+    }
 }
 
 EOF
@@ -98,11 +104,28 @@ $t->write_file('test.js', <<'EOF');
         });
     }
 
-    export default {send, send_options, send_direct};
+    function send_upstream(s) {
+        const stale = {
+            get flush() {
+                throw Error('stale options');
+            }
+        };
+
+        later(s, () => {
+            /*
+             * Leaves an options-like object in the argument slot that
+             * sendUpstream() could read past its declared length.
+             */
+            Math.max(0, stale);
+            s.sendUpstream('up');
+        });
+    }
+
+    export default {send, send_options, send_direct, send_upstream};
 EOF
 
 $t->run_daemon(\&stream_daemon, port(8090));
-$t->try_run('no stream njs available')->plan(3);
+$t->try_run('no stream njs available')->plan(4);
 $t->waitforsocket('127.0.0.1:' . port(8090));
 
 ###############################################################################
@@ -113,6 +136,8 @@ is(stream('127.0.0.1:' . port(8082))->io('go'), 'TypeError',
     'async send with options without direction');
 is(stream('127.0.0.1:' . port(8083))->io('go', read => 2), 'ab',
     'async send with direction');
+is(stream('127.0.0.1:' . port(8084))->io('go', read => 2), 'up',
+    'async send upstream without options');
 
 $t->stop();
 
@@ -132,6 +157,7 @@ sub stream_daemon {
     while (my $client = $server->accept()) {
         $client->autoflush(1);
         $client->sysread(my $buffer, 65536);
+        $client->syswrite($buffer) if $buffer eq 'up';
         close $client;
     }
 }

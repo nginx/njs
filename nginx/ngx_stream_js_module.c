@@ -2439,7 +2439,7 @@ ngx_stream_qjs_ext_send(JSContext *cx, JSValueConst this_val, int argc,
         last_buf = 0;
     }
 
-    if (JS_IsObject(argv[1])) {
+    if (argc > 1 && JS_IsObject(argv[1])) {
         val = JS_GetPropertyStr(cx, argv[1], "flush");
         if (JS_IsException(val)) {
             return JS_EXCEPTION;
