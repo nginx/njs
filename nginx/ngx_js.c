@@ -915,11 +915,16 @@ ngx_engine_njs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
 
         (void) ngx_njs_execute_pending_jobs(e->u.njs.vm, ctx->log);
 
-        ngx_njs_clear_events(ctx);
+        /*
+         * Logging can run user code that starts asynchronous work,
+         * clearing events after it releases such work.
+         */
 
         if (ngx_js_unhandled_rejection(ctx)) {
             ngx_js_log_exception(e->u.njs.vm, ctx->log, "unhandled rejection");
         }
+
+        ngx_njs_clear_events(ctx);
     }
 
     njs_vm_destroy(e->u.njs.vm);
@@ -1390,13 +1395,18 @@ ngx_engine_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
             reusable = 0;
         }
 
-        ngx_qjs_clear_events(ctx);
-
         JS_SetHostPromiseRejectionTracker(JS_GetRuntime(cx), NULL, NULL);
+
+        /*
+         * Logging can run user code that starts asynchronous work,
+         * clearing events after it releases such work.
+         */
 
         if (ngx_qjs_unhandled_rejection(ctx)) {
             ngx_qjs_log_exception(e, ctx->log, "unhandled rejection");
         }
+
+        ngx_qjs_clear_events(ctx);
 
         ngx_qjs_detach_ctx(ctx, cx);
 
