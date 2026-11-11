@@ -68,6 +68,15 @@ http {
             js_engine qjs;
             js_content test.test;
         }
+
+        location /parent {
+            js_content test.parent;
+        }
+
+        location /child {
+            js_engine qjs;
+            js_content test.child;
+        }
     }
 
     server {
@@ -84,6 +93,15 @@ http {
             js_engine njs;
             js_content test.test;
         }
+
+        location /parent {
+            js_content test.parent;
+        }
+
+        location /child {
+            js_engine njs;
+            js_content test.child;
+        }
     }
 }
 
@@ -98,11 +116,27 @@ $t->write_file('test.js', <<EOF);
         r.return(200, njs.engine);
     }
 
-    export default {njs: test_njs, test};
+    async function parent(r) {
+        const reply = await r.subrequest('/child');
+        let result = 'accepted';
+        try {
+            reply.setReturnValue({local: [1, 2, 3]});
+        } catch (e) {
+            result = e instanceof TypeError ? 'rejected' : e.name;
+        }
+        r.return(200, [njs.engine, reply.responseText,
+                       reply.parent === r, result].join(':'));
+    }
+
+    function child(r) {
+        r.return(200, njs.engine + ':' + (r.parent === undefined));
+    }
+
+    export default {njs: test_njs, test, parent, child};
 
 EOF
 
-$t->try_run('no njs js_engine')->plan(4);
+$t->try_run('no njs js_engine')->plan(6);
 
 ###############################################################################
 
@@ -113,6 +147,11 @@ like(http_get('/njs/test'), qr/njs/, 'js_engine njs server');
 like(http_get('/njs/override'), qr/QuickJS/, 'js_engine override');
 like(http_get('/qjs/test'), qr/QuickJS/, 'js_engine qjs server');
 like(http_get('/qjs/override'), qr/njs/, 'js_engine override');
+
+like(http_get('/njs/parent'), qr/njs:QuickJS:true:true:rejected$/m,
+    'njs host with QuickJS child');
+like(http_get('/qjs/parent'), qr/QuickJS:njs:true:true:rejected$/m,
+    'QuickJS host with njs child');
 
 }
 
