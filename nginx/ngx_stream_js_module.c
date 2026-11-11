@@ -1068,12 +1068,16 @@ ngx_stream_js_body_filter(ngx_stream_session_t *s, ngx_chain_t *in,
     ctx->last_out = &out;
 
     rc = ctx->body_filter(s, ctx, in, from_upstream);
+
+    ctx->buf = NULL;
+
     if (rc != NGX_OK) {
+        ctx->last_out = NULL;
         return NGX_ERROR;
     }
 
-    ctx->buf = NULL;
     *ctx->last_out = NULL;
+    ctx->last_out = NULL;
 
     return ngx_stream_js_next_filter(s, ctx, out, from_upstream);
 }
@@ -1709,11 +1713,11 @@ ngx_stream_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             if (value != NULL) {
                 from_upstream = njs_value_bool(value);
             }
-
-            if (value == NULL && ctx->buf == NULL) {
-                goto exception;
-            }
         }
+    }
+
+    if (from_upstream == NGX_JS_BOOL_UNSET && ctx->last_out == NULL) {
+        goto exception;
     }
 
     cl = ngx_chain_get_free_buf(c->pool, &ctx->free);
@@ -2466,13 +2470,12 @@ ngx_stream_qjs_ext_send(JSContext *cx, JSValueConst this_val, int argc,
                 from_upstream = JS_ToBool(cx, val);
                 JS_FreeValue(cx, val);
             }
-
-            if (from_upstream == NGX_JS_BOOL_UNSET && ctx->buf == NULL) {
-                return JS_ThrowTypeError(cx, "from_upstream flag is "
-                                         "expected when called "
-                                         "asynchronously");
-            }
         }
+    }
+
+    if (from_upstream == NGX_JS_BOOL_UNSET && ctx->last_out == NULL) {
+        return JS_ThrowTypeError(cx, "from_upstream flag is expected when "
+                                 "called asynchronously");
     }
 
     val = argv[0];
