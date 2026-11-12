@@ -2777,7 +2777,9 @@ njs_string_match_multiple(njs_vm_t *vm, njs_value_t *args,
 
         } while (p <= end);
 
-        njs_set_array(retval, array);
+        if (array->length != 0) {
+            njs_set_array(retval, array);
+        }
     }
 
     return NJS_OK;

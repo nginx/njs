@@ -10639,6 +10639,34 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'ab]cd'.match(/\\]/)"),
       njs_str("]") },
 
+    { njs_str("'abc'.match(/x/g) === null"),
+      njs_str("true") },
+
+    { njs_str("'abc'.match(/(x)/gi) === null"),
+      njs_str("true") },
+
+    { njs_str("''.match(/x/g) === null"),
+      njs_str("true") },
+
+    { njs_str("'αβγ'.match(/x/g) === null"),
+      njs_str("true") },
+
+    { njs_str("'abc'.match(/x/) === null"),
+      njs_str("true") },
+
+    { njs_str("var re = /x/g; re.lastIndex = 2;"
+              "['abc'.match(re) === null, re.lastIndex]"),
+      njs_str("true,0") },
+
+    { njs_str("JSON.stringify(''.match(/(?:)/g))"),
+      njs_str("[\"\"]") },
+
+    { njs_str("JSON.stringify('abc'.match(/b/g))"),
+      njs_str("[\"b\"]") },
+
+    { njs_str("JSON.stringify('αβα'.match(/α/g))"),
+      njs_str("[\"α\",\"α\"]") },
+
     { njs_str("'abc'.match(/a*/g)"),
       njs_str("a,,,") },
 
