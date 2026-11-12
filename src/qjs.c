@@ -394,7 +394,8 @@ done:
 static int
 qjs_add_intrinsic_njs(JSContext *cx, JSValueConst global)
 {
-    JSValue  obj, proto;
+    JSValue    obj, proto;
+    qjs_njs_t  *njs;
 
     if (JS_NewClass(JS_GetRuntime(cx), QJS_CORE_CLASS_ID_NJS,
                     &qjs_njs_class) < 0)
@@ -416,6 +417,16 @@ qjs_add_intrinsic_njs(JSContext *cx, JSValueConst global)
     if (JS_IsException(obj)) {
         return -1;
     }
+
+    njs = js_mallocz(cx, sizeof(qjs_njs_t));
+    if (njs == NULL) {
+        JS_FreeValue(cx, obj);
+        return -1;
+    }
+
+    njs->hooks[QJS_NJS_HOOK_EXIT] = JS_UNDEFINED;
+
+    JS_SetOpaque(obj, njs);
 
     if (JS_SetPropertyStr(cx, global, "njs", obj) < 0) {
         return -1;
@@ -469,14 +480,9 @@ qjs_njs_on(JSContext *ctx, JSValueConst this_val, int argc,
         njs_str("exit"),
     };
 
-    njs = JS_GetOpaque(this_val, QJS_CORE_CLASS_ID_NJS);
+    njs = JS_GetOpaque2(ctx, this_val, QJS_CORE_CLASS_ID_NJS);
     if (njs == NULL) {
-        njs = js_mallocz(ctx, sizeof(qjs_njs_t));
-        if (njs == NULL) {
-            return JS_ThrowOutOfMemory(ctx);
-        }
-
-        JS_SetOpaque(this_val, njs);
+        return JS_EXCEPTION;
     }
 
     name.start = (u_char *) JS_ToCStringLen(ctx, &name.length, argv[0]);
