@@ -442,6 +442,9 @@ njs_vm_clone(njs_vm_t *vm, njs_external_ptr_t external)
     nvm->trace.data = nvm;
     nvm->external = external;
 
+    nvm->active_frame = NULL;
+    nvm->top_frame = NULL;
+
     nvm->shared_atom_count = vm->atom_id_generator;
 
     njs_flathsh_init(&nvm->atom_hash);
