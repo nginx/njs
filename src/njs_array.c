@@ -1612,7 +1612,7 @@ njs_array_prototype_to_string(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
 
         if (njs_is_function(&value)) {
-            return njs_function_apply(vm, njs_function(&value), args, nargs,
+            return njs_function_apply(vm, njs_function(&value), args, 1,
                                       retval);
         }
     }
