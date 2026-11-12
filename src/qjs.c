@@ -355,7 +355,7 @@ qjs_chb_rt_free(void *rt, void *p)
 JSValue
 qjs_call_exit_hook(JSContext *ctx)
 {
-    JSValue    global, obj, ret;
+    JSValue    global, obj, hook, ret;
     qjs_njs_t  *njs;
 
     global = JS_GetGlobalObject(ctx);
@@ -367,11 +367,12 @@ qjs_call_exit_hook(JSContext *ctx)
 
     njs = JS_GetOpaque(obj, QJS_CORE_CLASS_ID_NJS);
     if (njs != NULL && JS_IsFunction(ctx, njs->hooks[QJS_NJS_HOOK_EXIT])) {
-        ret = JS_Call(ctx, njs->hooks[QJS_NJS_HOOK_EXIT], JS_UNDEFINED,
-                      0, NULL);
-
-        JS_FreeValue(ctx, njs->hooks[QJS_NJS_HOOK_EXIT]);
+        hook = njs->hooks[QJS_NJS_HOOK_EXIT];
         njs->hooks[QJS_NJS_HOOK_EXIT] = JS_UNDEFINED;
+
+        ret = JS_Call(ctx, hook, JS_UNDEFINED, 0, NULL);
+
+        JS_FreeValue(ctx, hook);
 
         if (JS_IsException(ret)) {
             JS_FreeValue(ctx, obj);
