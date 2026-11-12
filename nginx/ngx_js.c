@@ -1406,6 +1406,7 @@ ngx_engine_qjs_destroy(ngx_engine_t *e, ngx_js_ctx_t *ctx,
             ngx_qjs_log_exception(e, ctx->log, "unhandled rejection");
         }
 
+        qjs_clear_hooks(cx);
         ngx_qjs_clear_events(ctx);
 
         ngx_qjs_detach_ctx(ctx, cx);
