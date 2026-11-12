@@ -20794,6 +20794,49 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("let x = [123]; x"),
       njs_str("123") },
 
+    { njs_str("function f() {let x = 1; x; return x} f()"),
+      njs_str("1") },
+
+    { njs_str("function f() {const x = 1; x; return x} f()"),
+      njs_str("1") },
+
+    { njs_str("var result; {let x = 1; x; result = x} result"),
+      njs_str("1") },
+
+    { njs_str("function f() {let x; x; return x} f()"),
+      njs_str("undefined") },
+
+    { njs_str("function f() {let x = 1; x; x++; x; return x} f()"),
+      njs_str("2") },
+
+    { njs_str("function f() {let x = 1; {const x = 2; x;} x; return x}"
+              "f()"),
+      njs_str("1") },
+
+    { njs_str("function f() {let x = 1; return () => {x; return x}}"
+              "f()()"),
+      njs_str("1") },
+
+    { njs_str("function f() {let x = 1; if (true) {x;} return x} f()"),
+      njs_str("1") },
+
+    { njs_str("function f() {x; let x = 1} f()"),
+      njs_str("ReferenceError: cannot access variable before initialization") },
+
+    { njs_str("function f() {x; const x = 1} f()"),
+      njs_str("ReferenceError: cannot access variable before initialization") },
+
+    { njs_str("function f() {let x = 1; {x; let x = 2}} f()"),
+      njs_str("ReferenceError: cannot access variable before initialization") },
+
+    { njs_str("function f() {function g() {x;} g(); let x = 1} f()"),
+      njs_str("ReferenceError: cannot access variable before initialization") },
+
+    { njs_str("function f() {var result = 0;"
+              "try {result = 1; x; let x = 2} catch (e) {return result}}"
+              "f()"),
+      njs_str("1") },
+
     { njs_str("let x = () => x; x()"),
       njs_str("[object Function]") },
 
