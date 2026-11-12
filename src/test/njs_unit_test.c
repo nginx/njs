@@ -5277,6 +5277,32 @@ static njs_unit_test_t  njs_test[] =
 
     /* Array.toString(). */
 
+    { njs_str("[1, 2].toString('-')"),
+      njs_str("1,2") },
+
+    { njs_str("[1, [2, 3]].toString(0)"),
+      njs_str("1,2,3") },
+
+    { njs_str("[1, 2].toString({toString() {throw 'unexpected'}})"),
+      njs_str("1,2") },
+
+    { njs_str("var a = [1, 2];"
+              "a.join = function() {return [this === a, arguments.length]};"
+              "a.toString('-', 42)"),
+      njs_str("true,0") },
+
+    { njs_str("Array.prototype.toString.call({join: function() {"
+              "return arguments.length}}, '-', 42)"),
+      njs_str("0") },
+
+    { njs_str("new Uint8Array([1, 2]).toString('-')"),
+      njs_str("1,2") },
+
+    { njs_str("var a = new Uint8Array([1, 2]);"
+              "a.join = function() {return [this === a, arguments.length]};"
+              "a.toString('-', 42)"),
+      njs_str("true,0") },
+
     { njs_str("var a = [1,2,3]; a.join = 'NO';"
                  "Object.prototype.toString = function () { return 'A' }; a"),
       njs_str("[object Array]") },
