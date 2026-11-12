@@ -87,6 +87,13 @@ $t->write_file('test.js', <<'EOF');
                 ngx.log(ngx.ERR, 'exit hook ' + r.uri);
             });
 
+        } else if (mode === 'reinstall') {
+            njs.on('exit', () => {
+                Promise.resolve().then(() => {
+                    njs.on('exit', late('reinstalled exit hook'));
+                });
+            });
+
         }
 
         r.return(200, 'ok');
@@ -95,12 +102,12 @@ $t->write_file('test.js', <<'EOF');
     export default {content};
 EOF
 
-$t->try_run('no njs available')->plan(9);
+$t->try_run('no njs available')->plan(11);
 
 ###############################################################################
 
 for my $scope ('zero', 'reuse') {
-    for my $mode ('timer', 'fetch', 'exit') {
+    for my $mode ('timer', 'fetch', 'exit', 'reinstall') {
         like(http_get("/$scope?mode=$mode"), qr/ok$/, "$scope $mode");
     }
 }

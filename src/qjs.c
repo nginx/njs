@@ -401,6 +401,24 @@ qjs_call_exit_hook(JSContext *ctx)
 }
 
 
+void
+qjs_clear_hooks(JSContext *ctx)
+{
+    unsigned   i;
+    qjs_njs_t  *njs;
+
+    njs = qjs_njs(ctx);
+    if (njs == NULL) {
+        return;
+    }
+
+    for (i = 0; i < njs_nitems(njs->hooks); i++) {
+        JS_FreeValue(ctx, njs->hooks[i]);
+        njs->hooks[i] = JS_UNDEFINED;
+    }
+}
+
+
 static int
 qjs_add_intrinsic_njs(JSContext *cx, JSValueConst global)
 {
