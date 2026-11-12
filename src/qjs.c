@@ -55,6 +55,7 @@ static JSValue qjs_global_atob(JSContext *ctx, JSValueConst this_val, int argc,
     JSValueConst *argv);
 
 static int qjs_add_intrinsic_njs(JSContext *cx, JSValueConst global);
+static qjs_njs_t *qjs_njs(JSContext *ctx);
 static JSValue qjs_njs_on(JSContext *ctx, JSValueConst this_val, int argc,
     JSValueConst *argv);
 static void qjs_njs_mark(JSRuntime *rt, JSValueConst val,
@@ -156,6 +157,12 @@ static JSClassDef qjs_njs_class = {
     "njs",
     .finalizer = qjs_njs_finalizer,
     .gc_mark = qjs_njs_mark,
+};
+
+
+static JSClassDef qjs_njs_object_class = {
+    "njsObject",
+    .finalizer = NULL,
 };
 
 
@@ -352,41 +359,43 @@ qjs_chb_rt_free(void *rt, void *p)
 }
 
 
+static qjs_njs_t *
+qjs_njs(JSContext *ctx)
+{
+    JSValue    obj;
+    qjs_njs_t  *njs;
+
+    obj = JS_GetClassProto(ctx, QJS_CORE_CLASS_ID_NJS_OBJECT);
+    njs = JS_GetOpaque(obj, QJS_CORE_CLASS_ID_NJS);
+    JS_FreeValue(ctx, obj);
+
+    return njs;
+}
+
+
 JSValue
 qjs_call_exit_hook(JSContext *ctx)
 {
-    JSValue    global, obj, hook, ret;
+    JSValue    hook, ret;
     qjs_njs_t  *njs;
 
-    global = JS_GetGlobalObject(ctx);
-
-    obj = JS_GetPropertyStr(ctx, global, "njs");
-    if (JS_IsException(obj) || JS_IsUndefined(obj)) {
-        goto done;
+    njs = qjs_njs(ctx);
+    if (njs == NULL || !JS_IsFunction(ctx, njs->hooks[QJS_NJS_HOOK_EXIT])) {
+        return JS_UNDEFINED;
     }
 
-    njs = JS_GetOpaque(obj, QJS_CORE_CLASS_ID_NJS);
-    if (njs != NULL && JS_IsFunction(ctx, njs->hooks[QJS_NJS_HOOK_EXIT])) {
-        hook = njs->hooks[QJS_NJS_HOOK_EXIT];
-        njs->hooks[QJS_NJS_HOOK_EXIT] = JS_UNDEFINED;
+    hook = njs->hooks[QJS_NJS_HOOK_EXIT];
+    njs->hooks[QJS_NJS_HOOK_EXIT] = JS_UNDEFINED;
 
-        ret = JS_Call(ctx, hook, JS_UNDEFINED, 0, NULL);
+    ret = JS_Call(ctx, hook, JS_UNDEFINED, 0, NULL);
 
-        JS_FreeValue(ctx, hook);
+    JS_FreeValue(ctx, hook);
 
-        if (JS_IsException(ret)) {
-            JS_FreeValue(ctx, obj);
-            JS_FreeValue(ctx, global);
-            return ret;
-        }
-
-        JS_FreeValue(ctx, ret);
+    if (JS_IsException(ret)) {
+        return ret;
     }
 
-done:
-
-    JS_FreeValue(ctx, obj);
-    JS_FreeValue(ctx, global);
+    JS_FreeValue(ctx, ret);
 
     return JS_UNDEFINED;
 }
@@ -400,6 +409,17 @@ qjs_add_intrinsic_njs(JSContext *cx, JSValueConst global)
 
     if (JS_NewClass(JS_GetRuntime(cx), QJS_CORE_CLASS_ID_NJS,
                     &qjs_njs_class) < 0)
+    {
+        return -1;
+    }
+
+    /*
+     * The class is used only to keep the njs object in its prototype
+     * slot, so the exit hook does not depend on the "njs" global property.
+     */
+
+    if (JS_NewClass(JS_GetRuntime(cx), QJS_CORE_CLASS_ID_NJS_OBJECT,
+                    &qjs_njs_object_class) < 0)
     {
         return -1;
     }
@@ -428,6 +448,8 @@ qjs_add_intrinsic_njs(JSContext *cx, JSValueConst global)
     njs->hooks[QJS_NJS_HOOK_EXIT] = JS_UNDEFINED;
 
     JS_SetOpaque(obj, njs);
+
+    JS_SetClassProto(cx, QJS_CORE_CLASS_ID_NJS_OBJECT, JS_DupValue(cx, obj));
 
     if (JS_SetPropertyStr(cx, global, "njs", obj) < 0) {
         return -1;
