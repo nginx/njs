@@ -51,6 +51,11 @@ http {
         location /test {
             js_content test.test;
         }
+
+        location /replaced {
+            js_context_reuse 0;
+            js_content test.replaced;
+        }
     }
 }
 
@@ -68,6 +73,14 @@ $t->write_file('test.js', <<EOF);
         r.return(200, `bs: \${r.variables.bytes_sent}`);
     }
 
+    function replaced(r) {
+        njs.on('exit', () => ngx.log(ngx.WARN, "replaced exit hook"));
+
+        globalThis.njs = {};
+
+        r.return(200, 'replaced');
+    }
+
     function bytes_sent(r) {
         return r.variables.bytes_sent;
     }
@@ -80,11 +93,11 @@ $t->write_file('test.js', <<EOF);
         return r.uri;
     }
 
-    export default { test, bytes_sent, foo_header, url };
+    export default { test, replaced, bytes_sent, foo_header, url };
 
 EOF
 
-$t->try_run('no njs')->plan(4);
+$t->try_run('no njs')->plan(6);
 
 ###############################################################################
 
@@ -93,6 +106,7 @@ like(http(
 	. 'Foo: bar' . CRLF
 	. 'Host: localhost' . CRLF . CRLF
 ), qr/bs: 0/, 'response');
+like(http_get('/replaced'), qr/replaced$/, 'replaced njs response');
 
 $t->stop();
 
@@ -100,6 +114,8 @@ my $error_log = $t->read_file('error.log');
 
 like($error_log, qr/\[warn\].*exit hook: bs: \d+/, 'exit hook logged');
 like($error_log, qr/\[warn\].*exit hook promise/, 'exit hook promise logged');
+like($error_log, qr/\[warn\].*replaced exit hook/,
+	'exit hook with replaced njs');
 like($t->read_file('access.log'), qr/\[var:\d+ header:626172 url:\/test\]/,
 	'access log has bytes_sent');
 
