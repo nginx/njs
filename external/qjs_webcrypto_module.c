@@ -1956,7 +1956,7 @@ qjs_derive_ecdh(JSContext *cx, JSValueConst *argv, int argc, int derive_key,
     u_char                     *k;
     size_t                     olen;
     int64_t                    length;
-    JSValue                    ret, result, value, dobject;
+    JSValue                    ret, result, value, dobject, public_value;
     unsigned                   usage;
     EVP_PKEY                   *priv_pkey, *pub_pkey;
     EVP_PKEY_CTX               *pctx;
@@ -1964,6 +1964,7 @@ qjs_derive_ecdh(JSContext *cx, JSValueConst *argv, int argc, int derive_key,
     qjs_webcrypto_algorithm_t  *dalg;
 
     result = JS_UNDEFINED;
+    public_value = JS_UNDEFINED;
     dobject = argv[2];
 
     if (derive_key) {
@@ -2029,8 +2030,9 @@ qjs_derive_ecdh(JSContext *cx, JSValueConst *argv, int argc, int derive_key,
         goto fail;
     }
 
-    pkey = JS_GetOpaque(value, QJS_CORE_CLASS_ID_WEBCRYPTO_KEY);
-    JS_FreeValue(cx, value);
+    public_value = value;
+
+    pkey = JS_GetOpaque(public_value, QJS_CORE_CLASS_ID_WEBCRYPTO_KEY);
     if (pkey == NULL) {
         JS_ThrowTypeError(cx, "algorithm.public is not a CryptoKey object");
         goto fail;
@@ -2108,6 +2110,9 @@ qjs_derive_ecdh(JSContext *cx, JSValueConst *argv, int argc, int derive_key,
 
     EVP_PKEY_CTX_free(pctx);
 
+    JS_FreeValue(cx, public_value);
+    public_value = JS_UNDEFINED;
+
     if (derive_key) {
         if (dalg->type == QJS_ALGORITHM_HMAC) {
             ret = qjs_algorithm_hash(cx, dobject, &dkey->hash);
@@ -2129,6 +2134,7 @@ qjs_derive_ecdh(JSContext *cx, JSValueConst *argv, int argc, int derive_key,
     return qjs_promise_result(cx, result);
 
 fail:
+    JS_FreeValue(cx, public_value);
     JS_FreeValue(cx, result);
 
     return qjs_promise_result(cx, JS_EXCEPTION);
