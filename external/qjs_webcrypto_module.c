@@ -2270,7 +2270,7 @@ qjs_webcrypto_derive(JSContext *cx, JSValueConst this_val, int argc,
         dkey = JS_GetOpaque(dkey_value, QJS_CORE_CLASS_ID_WEBCRYPTO_KEY);
     }
 
-    k = js_malloc(cx, length);
+    k = js_malloc(cx, njs_max(length, 1));
     if (k == NULL) {
         JS_ThrowOutOfMemory(cx);
         return JS_EXCEPTION;
@@ -3786,7 +3786,7 @@ qjs_import_jwk_oct(JSContext *cx, JSValue jwk, qjs_webcrypto_key_t *key)
     size = qjs_base64url_decode_length(cx, &b64);
 
     key->u.s.raw.length = size;
-    key->u.s.raw.start = js_malloc(cx, size);
+    key->u.s.raw.start = js_malloc(cx, njs_max(size, 1));
     if (key->u.s.raw.start == NULL) {
         JS_FreeCString(cx, (char *) b64.start);
         JS_ThrowOutOfMemory(cx);
@@ -4271,7 +4271,7 @@ qjs_webcrypto_import_key_internal(JSContext *cx, qjs_webcrypto_key_format_t fmt,
                 goto fail;
             }
 
-            wkey->u.s.raw.start = js_malloc(cx, kd.length);
+            wkey->u.s.raw.start = js_malloc(cx, njs_max(kd.length, 1));
             if (wkey->u.s.raw.start == NULL) {
                 JS_ThrowOutOfMemory(cx);
                 goto fail;
@@ -4327,7 +4327,7 @@ qjs_webcrypto_import_key_internal(JSContext *cx, qjs_webcrypto_key_format_t fmt,
     case QJS_ALGORITHM_PBKDF2:
     case QJS_ALGORITHM_HKDF:
     default:
-        wkey->u.s.raw.start = js_malloc(cx, kd.length);
+        wkey->u.s.raw.start = js_malloc(cx, njs_max(kd.length, 1));
         if (wkey->u.s.raw.start == NULL) {
             JS_ThrowOutOfMemory(cx);
             goto fail;
