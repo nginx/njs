@@ -4294,6 +4294,11 @@ qjs_webcrypto_import_key_internal(JSContext *cx, qjs_webcrypto_key_format_t fmt,
             }
         }
 
+        if (wkey->u.s.raw.length == 0) {
+            JS_ThrowTypeError(cx, "HMAC key cannot be empty");
+            goto fail;
+        }
+
         break;
 
     case QJS_ALGORITHM_AES_GCM:
