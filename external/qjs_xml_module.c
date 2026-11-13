@@ -240,7 +240,7 @@ qjs_xml_parse(JSContext *cx, JSValueConst this_val, int argc,
     ctx = xmlNewParserCtxt();
     if (ctx == NULL) {
         qjs_bytes_free(cx, &data);
-        JS_ThrowInternalError(cx, "xmlNewParserCtxt() failed");
+        qjs_throw_error(cx, "xmlNewParserCtxt() failed");
         qjs_xml_doc_free(JS_GetRuntime(cx), tree);
         return JS_EXCEPTION;
     }
@@ -371,7 +371,7 @@ qjs_xml_canonicalization(JSContext *cx, JSValueConst this_val, int argc,
     buf = xmlOutputBufferCreateIO(qjs_xml_buf_write_cb, NULL,
                                   &chain, NULL);
     if (buf == NULL) {
-        JS_ThrowInternalError(cx, "xmlOutputBufferCreateIO() failed");
+        qjs_throw_error(cx, "xmlOutputBufferCreateIO() failed");
         goto fail;
     }
 
@@ -382,7 +382,7 @@ qjs_xml_canonicalization(JSContext *cx, JSValueConst this_val, int argc,
     if (size < 0) {
         njs_chb_destroy(&chain);
         (void) xmlOutputBufferClose(buf);
-        JS_ThrowInternalError(cx, "xmlC14NExecute() failed");
+        qjs_throw_error(cx, "xmlC14NExecute() failed");
         goto fail;
     }
 
@@ -723,7 +723,7 @@ qjs_xml_attr_value(JSContext *cx, xmlAttr *attr)
 
     text = xmlNodeGetContent((xmlNode *) attr);
     if (text == NULL) {
-        JS_ThrowInternalError(cx, "xmlNodeGetContent() failed");
+        qjs_throw_error(cx, "xmlNodeGetContent() failed");
         return JS_EXCEPTION;
     }
 
@@ -780,7 +780,7 @@ qjs_xml_node_attr_modify(JSContext *cx, JSValue current, const u_char *name,
     attr = xmlSetProp(node->node, name, value);
     JS_FreeCString(cx, (char *) value);
     if (attr == NULL) {
-        JS_ThrowInternalError(cx, "xmlSetProp() failed");
+        qjs_throw_error(cx, "xmlSetProp() failed");
         return -1;
     }
 
@@ -912,7 +912,7 @@ qjs_xml_node_tags_modify(JSContext *cx, JSValue obj, njs_str_t *name,
         node = xmlDocCopyNode(node, current->doc->doc, 1);
         JS_FreeValue(cx, v);
         if (node == NULL) {
-            JS_ThrowInternalError(cx, "xmlDocCopyNode() failed");
+            qjs_throw_error(cx, "xmlDocCopyNode() failed");
             goto error;
         }
 
@@ -1001,7 +1001,7 @@ qjs_xml_node_text_handler(JSContext *cx, JSValue current, JSValue setval)
         text = xmlNewDocTextLen(node->doc->doc, content.start, content.length);
         JS_FreeCString(cx, (char *) content.start);
         if (text == NULL) {
-            JS_ThrowInternalError(cx, "xmlNewDocTextLen() failed");
+            qjs_throw_error(cx, "xmlNewDocTextLen() failed");
             return -1;
         }
     }
@@ -1535,7 +1535,7 @@ qjs_xml_node_get_attribute_ns(JSContext *cx, JSValueConst this_val,
 
         text = xmlNodeGetContent((xmlNode *) attr);
         if (text == NULL) {
-            value = JS_ThrowInternalError(cx, "xmlNodeGetContent() failed");
+            value = qjs_throw_error(cx, "xmlNodeGetContent() failed");
             break;
         }
 
@@ -1611,7 +1611,7 @@ qjs_xml_node_add_child(JSContext *cx, JSValueConst this_val,
 
     node = xmlDocCopyNode(node, current->doc->doc, 1);
     if (node == NULL) {
-        JS_ThrowInternalError(cx, "xmlDocCopyNode() failed");
+        qjs_throw_error(cx, "xmlDocCopyNode() failed");
         return JS_EXCEPTION;
     }
 

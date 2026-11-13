@@ -6034,7 +6034,7 @@ njs_webcrypto_result(njs_vm_t *vm, njs_opaque_value_t *result, njs_int_t rc,
 
 error:
 
-    njs_vm_internal_error(vm, "cannot make webcrypto result");
+    njs_vm_error(vm, "cannot make webcrypto result");
 
     return NJS_ERROR;
 }

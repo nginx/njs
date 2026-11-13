@@ -465,7 +465,7 @@ njs_xml_ext_parse(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     ctx = xmlNewParserCtxt();
     if (njs_slow_path(ctx == NULL)) {
-        njs_vm_internal_error(vm, "xmlNewParserCtxt() failed");
+        njs_vm_error(vm, "xmlNewParserCtxt() failed");
         return NJS_ERROR;
     }
 
@@ -778,7 +778,7 @@ njs_xml_node_ext_add_child(njs_vm_t *vm, njs_value_t *args,
 
     node = xmlDocCopyNode(node, current->doc, 1);
     if (njs_slow_path(node == NULL)) {
-        njs_vm_internal_error(vm, "xmlDocCopyNode() failed");
+        njs_vm_error(vm, "xmlDocCopyNode() failed");
         return NJS_ERROR;
     }
 
@@ -812,7 +812,7 @@ njs_xml_node_ext_get_attribute_ns(njs_vm_t *vm, njs_value_t *args,
 
         text = xmlNodeGetContent((xmlNode *) attr);
         if (njs_slow_path(text == NULL)) {
-            njs_vm_internal_error(vm, "xmlNodeGetContent() failed");
+            njs_vm_error(vm, "xmlNodeGetContent() failed");
             return NJS_ERROR;
         }
 
@@ -1127,7 +1127,7 @@ njs_xml_node_ext_text(njs_vm_t *vm, njs_object_prop_t *unused, uint32_t unused1,
     if (retval != NULL && setval != NULL) {
         text = xmlNewDocTextLen(current->doc, content.start, content.length);
         if (njs_slow_path(text == NULL)) {
-            njs_vm_internal_error(vm, "xmlNewDocTextLen() failed");
+            njs_vm_error(vm, "xmlNewDocTextLen() failed");
             return NJS_ERROR;
         }
     }
@@ -1234,7 +1234,7 @@ njs_xml_node_attr_handler(njs_vm_t *vm, xmlNode *current, njs_str_t *name,
 
     attr = xmlSetProp(current, name_c, value);
     if (njs_slow_path(attr == NULL)) {
-        njs_vm_internal_error(vm, "xmlSetProp() failed");
+        njs_vm_error(vm, "xmlSetProp() failed");
         return NJS_ERROR;
     }
 
@@ -1252,7 +1252,7 @@ njs_xml_attr_value(njs_vm_t *vm, xmlAttr *attr, njs_value_t *retval)
 
     text = xmlNodeGetContent((xmlNode *) attr);
     if (njs_slow_path(text == NULL)) {
-        njs_vm_internal_error(vm, "xmlNodeGetContent() failed");
+        njs_vm_error(vm, "xmlNodeGetContent() failed");
         return NJS_ERROR;
     }
 
@@ -1452,7 +1452,7 @@ njs_xml_node_tags_handler(njs_vm_t *vm, njs_value_t *value, njs_str_t *name,
 
         node = xmlDocCopyNode(node, current->doc, 1);
         if (njs_slow_path(node == NULL)) {
-            njs_vm_internal_error(vm, "xmlDocCopyNode() failed");
+            njs_vm_error(vm, "xmlDocCopyNode() failed");
             goto error;
         }
 
@@ -2045,7 +2045,7 @@ njs_xml_ext_canonicalization(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     buf = xmlOutputBufferCreateIO(njs_xml_buf_write_cb, NULL, &chain, NULL);
     if (njs_slow_path(buf == NULL)) {
-        njs_vm_internal_error(vm, "xmlOutputBufferCreateIO() failed");
+        njs_vm_error(vm, "xmlOutputBufferCreateIO() failed");
         return NJS_ERROR;
     }
 
@@ -2054,7 +2054,7 @@ njs_xml_ext_canonicalization(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                          prefix_list, comments, buf);
 
     if (njs_slow_path(ret < 0)) {
-        njs_vm_internal_error(vm, "xmlC14NExecute() failed");
+        njs_vm_error(vm, "xmlC14NExecute() failed");
         ret = NJS_ERROR;
         goto error;
     }

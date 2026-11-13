@@ -262,7 +262,7 @@ njs_crypto_create_hash(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     cln->data = dgst;
 
     if (EVP_DigestInit_ex(dgst->ctx, md, NULL) <= 0) {
-        njs_vm_internal_error(vm, "EVP_DigestInit_ex() failed");
+        njs_vm_error(vm, "EVP_DigestInit_ex() failed");
         return NJS_ERROR;
     }
 
@@ -343,13 +343,13 @@ njs_hash_prototype_update(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     if (!hmac) {
         if (EVP_DigestUpdate(dgst->ctx, data.start, data.length) <= 0) {
-            njs_vm_internal_error(vm, "EVP_DigestUpdate() failed");
+            njs_vm_error(vm, "EVP_DigestUpdate() failed");
             return NJS_ERROR;
         }
 
     } else {
         if (HMAC_Update(ctx->ctx, data.start, data.length) <= 0) {
-            njs_vm_internal_error(vm, "HMAC_Update() failed");
+            njs_vm_error(vm, "HMAC_Update() failed");
             return NJS_ERROR;
         }
     }
@@ -408,7 +408,7 @@ njs_hash_prototype_digest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     if (!hmac) {
         if (EVP_DigestFinal_ex(dgst->ctx, digest, &len) <= 0) {
-            njs_vm_internal_error(vm, "EVP_DigestFinal_ex() failed");
+            njs_vm_error(vm, "EVP_DigestFinal_ex() failed");
             return NJS_ERROR;
         }
 
@@ -417,7 +417,7 @@ njs_hash_prototype_digest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     } else {
         if (HMAC_Final(ctx->ctx, digest, &len) <= 0) {
-            njs_vm_internal_error(vm, "HMAC_Final() failed");
+            njs_vm_error(vm, "HMAC_Final() failed");
             return NJS_ERROR;
         }
 
@@ -479,7 +479,7 @@ njs_hash_prototype_copy(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     cln->data = copy;
 
     if (EVP_MD_CTX_copy_ex(copy->ctx, dgst->ctx) <= 0) {
-        njs_vm_internal_error(vm, "EVP_MD_CTX_copy_ex() failed");
+        njs_vm_error(vm, "EVP_MD_CTX_copy_ex() failed");
         return NJS_ERROR;
     }
 
@@ -556,7 +556,7 @@ njs_crypto_create_hmac(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     cln->data = ctx;
 
     if (HMAC_Init_ex(ctx->ctx, key.start, (int) key.length, md, NULL) <= 0) {
-        njs_vm_internal_error(vm, "HMAC_Init_ex() failed");
+        njs_vm_error(vm, "HMAC_Init_ex() failed");
         return NJS_ERROR;
     }
 

@@ -1747,7 +1747,7 @@ ngx_stream_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     } else {
 
         if (ngx_stream_js_next_filter(s, ctx, cl, from_upstream) == NGX_ERROR) {
-            njs_vm_internal_error(vm, "ngx_stream_js_next_filter() failed");
+            njs_vm_error(vm, "ngx_stream_js_next_filter() failed");
             return NJS_ERROR;
         }
     }
@@ -2569,8 +2569,8 @@ string:
                     JS_FreeCString(cx, str);
                 }
 
-                return JS_ThrowInternalError(cx, "ngx_stream_js_next_filter() "
-                                             "failed");
+                return qjs_throw_error(cx, "ngx_stream_js_next_filter() "
+                                       "failed");
             }
         }
 

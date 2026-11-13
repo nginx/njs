@@ -551,7 +551,7 @@ njs_js_ext_global_shared_prop(njs_vm_t *vm, njs_object_prop_t *prop,
                                          ngx_js_shared_dict_proto_id,
                                          shm_zone, 0);
             if (ret != NJS_OK) {
-                njs_vm_internal_error(vm, "sharedDict creation failed");
+                njs_vm_error(vm, "sharedDict creation failed");
                 return NJS_ERROR;
             }
 

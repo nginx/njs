@@ -71,6 +71,7 @@ void qjs_chb_rt_free(void *rt, void *p);
 
 JSValue qjs_new_uint8_array(JSContext *ctx, int argc, JSValueConst *argv);
 JSValue qjs_array_buffer_adopt(JSContext *cx, uint8_t *src, size_t len);
+JSValue qjs_throw_error(JSContext *cx, const char *fmt, ...);
 JSValue qjs_buffer_alloc(JSContext *ctx, uint64_t size);
 JSValue qjs_buffer_copy(JSContext *ctx, u_char *start, size_t size);
 JSValue qjs_buffer_chb_copy(JSContext *ctx, njs_chb_t *chain);

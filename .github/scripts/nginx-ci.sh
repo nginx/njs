@@ -27,7 +27,7 @@ prepare() {
                 make -C quickjs -j"$(nproc)" libquickjs.a
             ;;
         quickjs-ng)
-            git clone --branch v0.16.2 --depth=1 \
+            git clone --branch v0.18.0 --depth=1 \
                 https://github.com/quickjs-ng/quickjs quickjs-ng
             CFLAGS="$cc_opt -fPIC" LDFLAGS="$ld_opt" \
                 meson setup quickjs-ng/build quickjs-ng \

@@ -143,7 +143,7 @@ qjs_crypto_create_hash(JSContext *cx, JSValueConst this_val, int argc,
     if (EVP_DigestInit_ex(dgst->ctx, md, NULL) <= 0) {
         njs_evp_md_ctx_free(dgst->ctx);
         js_free(cx, dgst);
-        JS_ThrowInternalError(cx, "EVP_DigestInit_ex() failed");
+        qjs_throw_error(cx, "EVP_DigestInit_ex() failed");
         return JS_EXCEPTION;
     }
 
@@ -227,7 +227,7 @@ qjs_hash_prototype_update(JSContext *cx, JSValueConst this_val, int argc,
                     <= 0)
                 {
                     js_free(cx, content.start);
-                    JS_ThrowInternalError(cx, "EVP_DigestUpdate() failed");
+                    qjs_throw_error(cx, "EVP_DigestUpdate() failed");
                     return JS_EXCEPTION;
                 }
 
@@ -235,7 +235,7 @@ qjs_hash_prototype_update(JSContext *cx, JSValueConst this_val, int argc,
                 if (HMAC_Update(hctx->ctx, content.start, content.length) <= 0)
                 {
                     js_free(cx, content.start);
-                    JS_ThrowInternalError(cx, "HMAC_Update() failed");
+                    qjs_throw_error(cx, "HMAC_Update() failed");
                     return JS_EXCEPTION;
                 }
             }
@@ -246,14 +246,14 @@ qjs_hash_prototype_update(JSContext *cx, JSValueConst this_val, int argc,
             if (!hmac) {
                 if (EVP_DigestUpdate(dgst->ctx, str.start, str.length) <= 0) {
                     JS_FreeCString(cx, (const char *) str.start);
-                    JS_ThrowInternalError(cx, "EVP_DigestUpdate() failed");
+                    qjs_throw_error(cx, "EVP_DigestUpdate() failed");
                     return JS_EXCEPTION;
                 }
 
             } else {
                 if (HMAC_Update(hctx->ctx, str.start, str.length) <= 0) {
                     JS_FreeCString(cx, (const char *) str.start);
-                    JS_ThrowInternalError(cx, "HMAC_Update() failed");
+                    qjs_throw_error(cx, "HMAC_Update() failed");
                     return JS_EXCEPTION;
                 }
             }
@@ -268,13 +268,13 @@ qjs_hash_prototype_update(JSContext *cx, JSValueConst this_val, int argc,
 
         if (!hmac) {
             if (EVP_DigestUpdate(dgst->ctx, bytes.start, bytes.length) <= 0) {
-                JS_ThrowInternalError(cx, "EVP_DigestUpdate() failed");
+                qjs_throw_error(cx, "EVP_DigestUpdate() failed");
                 return JS_EXCEPTION;
             }
 
         } else {
             if (HMAC_Update(hctx->ctx, bytes.start, bytes.length) <= 0) {
-                JS_ThrowInternalError(cx, "HMAC_Update() failed");
+                qjs_throw_error(cx, "HMAC_Update() failed");
                 return JS_EXCEPTION;
             }
         }
@@ -310,7 +310,7 @@ qjs_hash_prototype_digest(JSContext *cx, JSValueConst this_val, int argc,
         }
 
         if (EVP_DigestFinal_ex(dgst->ctx, digest, &len) <= 0) {
-            JS_ThrowInternalError(cx, "EVP_DigestFinal_ex() failed");
+            qjs_throw_error(cx, "EVP_DigestFinal_ex() failed");
             return JS_EXCEPTION;
         }
 
@@ -328,7 +328,7 @@ qjs_hash_prototype_digest(JSContext *cx, JSValueConst this_val, int argc,
         }
 
         if (HMAC_Final(hctx->ctx, digest, &len) <= 0) {
-            JS_ThrowInternalError(cx, "HMAC_Final() failed");
+            qjs_throw_error(cx, "HMAC_Final() failed");
             return JS_EXCEPTION;
         }
 
@@ -382,7 +382,7 @@ qjs_hash_prototype_copy(JSContext *cx, JSValueConst this_val, int argc,
     if (EVP_MD_CTX_copy_ex(copy->ctx, dgst->ctx) <= 0) {
         njs_evp_md_ctx_free(copy->ctx);
         js_free(cx, copy);
-        JS_ThrowInternalError(cx, "EVP_MD_CTX_copy_ex() failed");
+        qjs_throw_error(cx, "EVP_MD_CTX_copy_ex() failed");
         return JS_EXCEPTION;
     }
 
@@ -461,7 +461,7 @@ qjs_crypto_create_hmac(JSContext *cx, JSValueConst this_val, int argc,
             JS_FreeCString(cx, (const char *) key.start);
         }
 
-        JS_ThrowInternalError(cx, "HMAC_Init_ex() failed");
+        qjs_throw_error(cx, "HMAC_Init_ex() failed");
         return JS_EXCEPTION;
     }
 
