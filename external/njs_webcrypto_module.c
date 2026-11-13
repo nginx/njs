@@ -4298,6 +4298,11 @@ njs_webcrypto_import_key_internal(njs_vm_t *vm, njs_webcrypto_key_format_t fmt,
             }
         }
 
+        if (key->u.s.raw.length == 0) {
+            njs_vm_type_error(vm, "HMAC key cannot be empty");
+            goto fail;
+        }
+
         break;
 
     case NJS_ALGORITHM_AES_GCM:
