@@ -403,7 +403,7 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
                                            &http->proxy.url, &http->proxy.auth)
                 != NGX_OK)
             {
-                JS_ThrowInternalError(cx, "failed to evaluate proxy URL");
+                qjs_throw_error(cx, "failed to evaluate proxy URL");
                 goto fail;
             }
 
@@ -444,7 +444,7 @@ ngx_qjs_ext_fetch(JSContext *cx, JSValueConst this_val, int argc,
         }
 
         if (rs == NGX_NO_RESOLVER) {
-            JS_ThrowInternalError(cx, "no resolver defined");
+            qjs_throw_error(cx, "no resolver defined");
             goto fail;
         }
 
@@ -1661,7 +1661,7 @@ fail:
     JS_FreeValue(cx, fetch->promise_callbacks[0]);
     JS_FreeValue(cx, fetch->promise_callbacks[1]);
 
-    JS_ThrowInternalError(cx, "internal error");
+    qjs_throw_error(cx, "internal error");
 
     return NULL;
 }

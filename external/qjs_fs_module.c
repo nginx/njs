@@ -507,7 +507,7 @@ qjs_fs_make_path(JSContext *cx, char *path, mode_t md, int recursive)
         }
 
         if ((p - path) > NJS_MAX_PATH) {
-            JS_ThrowInternalError(cx, "too large path");
+            qjs_throw_error(cx, "too large path");
             return JS_EXCEPTION;
         }
 
@@ -2646,8 +2646,8 @@ qjs_fs_dirent_test(JSContext *cx, JSValueConst this_val, int argc,
     JS_FreeValue(cx, type);
 
     if (value == QJS_DT_INVALID) {
-        JS_ThrowInternalError(cx, "dentry type is not supported on this "
-                              "platform");
+        qjs_throw_error(cx, "dentry type is not supported on this "
+                        "platform");
         return JS_EXCEPTION;
     }
 

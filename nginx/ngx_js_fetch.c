@@ -623,7 +623,7 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                                            &http->proxy.url, &http->proxy.auth)
                 != NGX_OK)
             {
-                njs_vm_internal_error(vm, "failed to evaluate proxy URL");
+                njs_vm_error(vm, "failed to evaluate proxy URL");
                 goto fail;
             }
 
@@ -664,7 +664,7 @@ ngx_js_ext_fetch(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         }
 
         if (ctx == NGX_NO_RESOLVER) {
-            njs_vm_internal_error(vm, "no resolver defined");
+            njs_vm_error(vm, "no resolver defined");
             goto fail;
         }
 
@@ -1163,7 +1163,7 @@ ngx_js_fetch_alloc(njs_vm_t *vm, ngx_pool_t *pool, ngx_log_t *log,
 
 failed:
 
-    njs_vm_internal_error(vm, "internal error");
+    njs_vm_error(vm, "internal error");
 
     return NULL;
 }
@@ -1240,7 +1240,7 @@ ngx_js_fetch_promissified_result(njs_vm_t *vm, njs_value_t *result,
 
 error:
 
-    njs_vm_internal_error(vm, "internal error");
+    njs_vm_error(vm, "internal error");
 
     return NJS_ERROR;
 }

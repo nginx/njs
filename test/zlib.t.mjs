@@ -100,7 +100,7 @@ let inflateSync_tsuite = {
           exception: 'RangeError: windowBits must be in the range -15..-8' },
 
         { value: zlib.deflateRawSync('WAKA', {dictionary: Buffer.from('WAKA')}),
-          exception: 'InternalError: failed to inflate the compressed data: invalid distance too far back' },
+          exception: 'Error: failed to inflate the compressed data: invalid distance too far back' },
 
         { value: zlib.deflateSync('WAKA WAKA WAKA', {dictionary: Buffer.from('WAKA')}),
           raw: false,
