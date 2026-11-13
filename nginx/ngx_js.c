@@ -1509,7 +1509,7 @@ ngx_qjs_value(JSContext *cx, const ngx_str_t *path)
         key = JS_NewAtomLen(cx, (char *) start, size);
         if (key == JS_ATOM_NULL) {
             JS_FreeValue(cx, value);
-            return JS_ThrowInternalError(cx, "could not create atom");
+            return qjs_throw_error(cx, "could not create atom");
         }
 
         rv = JS_GetProperty(cx, value, key);
@@ -2507,8 +2507,8 @@ ngx_qjs_module_loader(JSContext *cx, const char *module_name, void *opaque)
     (void) close(info.fd);
 
     if (ret != NJS_OK) {
-        JS_ThrowInternalError(cx, "while reading \"%.*s\" module",
-                              (int) info.file.length, info.file.start);
+        qjs_throw_error(cx, "while reading \"%.*s\" module",
+                        (int) info.file.length, info.file.start);
         return NULL;
     }
 
@@ -2542,7 +2542,7 @@ ngx_qjs_module_loader(JSContext *cx, const char *module_name, void *opaque)
                               JS_WRITE_OBJ_BYTECODE);
     if (pc->code == NULL) {
         JS_FreeValue(cx, func_val);
-        JS_ThrowInternalError(cx, "could not write module bytecode");
+        qjs_throw_error(cx, "could not write module bytecode");
         return NULL;
     }
 
@@ -4622,7 +4622,7 @@ ngx_js_module_loader(njs_vm_t *vm, njs_external_ptr_t external, njs_str_t *name)
     (void) close(info.fd);
 
     if (ret != NJS_OK) {
-        njs_vm_internal_error(vm, "while reading \"%V\" module", &info.file);
+        njs_vm_error(vm, "while reading \"%V\" module", &info.file);
         return NULL;
     }
 
@@ -4630,8 +4630,8 @@ ngx_js_module_loader(njs_vm_t *vm, njs_external_ptr_t external, njs_str_t *name)
 
     ret = ngx_js_set_cwd(njs_vm_memory_pool(vm), conf, &info.file);
     if (ret != NJS_OK) {
-        njs_vm_internal_error(vm, "while setting cwd for \"%V\" module",
-                              &info.file);
+        njs_vm_error(vm, "while setting cwd for \"%V\" module",
+                     &info.file);
         return NULL;
     }
 

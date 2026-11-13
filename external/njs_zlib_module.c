@@ -310,14 +310,14 @@ njs_zlib_ext_deflate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     rc = deflateInit2(&stream, level, Z_DEFLATED, window_bits, mem_level,
                       strategy);
     if (njs_slow_path(rc != Z_OK)) {
-        njs_vm_internal_error(vm, "deflateInit2() failed");
+        njs_vm_error(vm, "deflateInit2() failed");
         return NJS_ERROR;
     }
 
     if (dictionary.start != NULL) {
         rc = deflateSetDictionary(&stream, dictionary.start, dictionary.length);
         if (njs_slow_path(rc != Z_OK)) {
-            njs_vm_internal_error(vm, "deflateSetDictionary() failed");
+            njs_vm_error(vm, "deflateSetDictionary() failed");
             return NJS_ERROR;
         }
     }
@@ -335,8 +335,8 @@ njs_zlib_ext_deflate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
         rc = deflate(&stream, Z_FINISH);
         if (njs_slow_path(rc < 0)) {
-            njs_vm_internal_error(vm, "failed to deflate the data: %s",
-                                  stream.msg);
+            njs_vm_error(vm, "failed to deflate the data: %s",
+                         stream.msg);
             goto fail;
         }
 
@@ -451,14 +451,14 @@ njs_zlib_ext_inflate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     rc = inflateInit2(&stream, window_bits);
     if (njs_slow_path(rc != Z_OK)) {
-        njs_vm_internal_error(vm, "inflateInit2() failed");
+        njs_vm_error(vm, "inflateInit2() failed");
         return NJS_ERROR;
     }
 
     if (dictionary.start != NULL) {
         rc = inflateSetDictionary(&stream, dictionary.start, dictionary.length);
         if (njs_slow_path(rc != Z_OK)) {
-            njs_vm_internal_error(vm, "deflateSetDictionary() failed");
+            njs_vm_error(vm, "deflateSetDictionary() failed");
             return NJS_ERROR;
         }
     }
@@ -476,8 +476,8 @@ njs_zlib_ext_inflate(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
         rc = inflate(&stream, Z_NO_FLUSH);
         if (njs_slow_path(rc < 0)) {
-            njs_vm_internal_error(vm, "failed to inflate the compressed "
-                                  "data: %s", stream.msg);
+            njs_vm_error(vm, "failed to inflate the compressed "
+                         "data: %s", stream.msg);
             goto fail;
         }
 

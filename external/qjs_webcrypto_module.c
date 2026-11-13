@@ -1447,7 +1447,7 @@ qjs_export_base64url_bignum(JSContext *cx, const BIGNUM *v, size_t size)
     }
 
     if (njs_bn_bn2binpad(v, &buf[0], size) <= 0) {
-        JS_ThrowInternalError(cx, "njs_bn_bn2binpad() failed");
+        qjs_throw_error(cx, "njs_bn_bn2binpad() failed");
         return JS_EXCEPTION;
     }
 

@@ -79,7 +79,7 @@ jobs:
       - name: Build QuickJS-NG
         if: matrix.engine == 'quickjs-ng'
         run: |
-          git clone --branch v0.16.2 --depth=1 \
+          git clone --branch v0.18.0 --depth=1 \
               https://github.com/quickjs-ng/quickjs quickjs-ng
           CFLAGS="$(dpkg-buildflags --get CFLAGS) -fPIC" \
           LDFLAGS="$(dpkg-buildflags --get LDFLAGS)" \

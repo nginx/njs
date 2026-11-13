@@ -3015,14 +3015,14 @@ ngx_http_js_ext_send_header(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (ngx_http_set_content_type(r) != NGX_OK) {
-        njs_vm_internal_error(vm, "failed to set content type");
+        njs_vm_error(vm, "failed to set content type");
         return NJS_ERROR;
     }
 
     r->disable_not_modified = 1;
 
     if (ngx_http_send_header(r) == NGX_ERROR) {
-        njs_vm_internal_error(vm, "failed to send header");
+        njs_vm_error(vm, "failed to send header");
         return NJS_ERROR;
     }
 
@@ -3096,7 +3096,7 @@ ngx_http_js_ext_send(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     *ll = NULL;
 
     if (ngx_http_output_filter(r, out) == NGX_ERROR) {
-        njs_vm_internal_error(vm, "failed to send response");
+        njs_vm_error(vm, "failed to send response");
         return NJS_ERROR;
     }
 
@@ -3266,7 +3266,7 @@ ngx_http_js_ext_finish(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     if (ngx_http_send_special(r, NGX_HTTP_LAST) == NGX_ERROR) {
-        njs_vm_internal_error(vm, "failed to send response");
+        njs_vm_error(vm, "failed to send response");
         return NJS_ERROR;
     }
 
@@ -3334,7 +3334,7 @@ ngx_http_js_ext_return(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         ctx->status = ngx_http_send_response(r, status, NULL, &cv);
 
         if (ctx->status == NGX_ERROR) {
-            njs_vm_internal_error(vm, "failed to send response");
+            njs_vm_error(vm, "failed to send response");
             return NJS_ERROR;
         }
 
@@ -3579,7 +3579,7 @@ ngx_http_js_ext_get_request_body(njs_vm_t *vm, njs_object_prop_t *prop,
     }
 
     if (ngx_http_js_collect_body(r, ctx) != NGX_OK) {
-        njs_vm_internal_error(vm, "failed to read request body");
+        njs_vm_error(vm, "failed to read request body");
         return NJS_ERROR;
     }
 
@@ -4000,7 +4000,7 @@ ngx_http_js_ext_read_request_body(njs_vm_t *vm, njs_value_t *args,
 resolve:
 
     if (ngx_http_js_collect_body(r, ctx) != NGX_OK) {
-        njs_vm_internal_error(vm, "failed to read request body");
+        njs_vm_error(vm, "failed to read request body");
         return NJS_ERROR;
     }
 
@@ -4119,7 +4119,7 @@ ngx_http_js_ext_read_request_form(njs_vm_t *vm, njs_value_t *args,
 resolve:
 
     if (ngx_http_js_collect_body(r, ctx) != NGX_OK) {
-        njs_vm_internal_error(vm, "failed to read request body");
+        njs_vm_error(vm, "failed to read request body");
         return NJS_ERROR;
     }
 
@@ -4989,7 +4989,7 @@ ngx_http_js_ext_subrequest(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     if (ngx_http_subrequest(r, &uri, rargs.len ? &rargs : NULL, &sr, ps, flags)
         != NGX_OK)
     {
-        njs_vm_internal_error(vm, "subrequest creation failed");
+        njs_vm_error(vm, "subrequest creation failed");
         return NJS_ERROR;
     }
 
@@ -6391,7 +6391,7 @@ ngx_http_qjs_ext_finish(JSContext *cx, JSValueConst this_val,
     }
 
     if (ngx_http_send_special(r, NGX_HTTP_LAST) == NGX_ERROR) {
-        return JS_ThrowInternalError(cx, "failed to send response");
+        return qjs_throw_error(cx, "failed to send response");
     }
 
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
@@ -6684,7 +6684,7 @@ ngx_http_qjs_ext_request_body(JSContext *cx, JSValueConst this_val, int type)
     ctx = ngx_http_get_module_ctx(r, ngx_http_js_module);
 
     if (ngx_http_js_collect_body(r, ctx) != NGX_OK) {
-        return JS_ThrowInternalError(cx, "failed to read request body");
+        return qjs_throw_error(cx, "failed to read request body");
     }
 
     body = ngx_qjs_prop(cx, buffer_type, ctx->body_read_data,
@@ -6844,7 +6844,7 @@ ngx_http_qjs_ext_read_request_body(JSContext *cx, JSValueConst this_val,
 resolve:
 
     if (ngx_http_js_collect_body(r, ctx) != NGX_OK) {
-        return JS_ThrowInternalError(cx, "failed to read request body");
+        return qjs_throw_error(cx, "failed to read request body");
     }
 
     return ngx_http_qjs_body_to_value(cx, ctx, (ngx_uint_t) magic);
@@ -7005,7 +7005,7 @@ ngx_http_qjs_ext_read_request_form(JSContext *cx, JSValueConst this_val,
 resolve:
 
     if (ngx_http_js_collect_body(r, ctx) != NGX_OK) {
-        return JS_ThrowInternalError(cx, "failed to read request body");
+        return qjs_throw_error(cx, "failed to read request body");
     }
 
     return ngx_http_qjs_form_to_value(cx, r, ctx, max_keys, this_val);
@@ -7300,7 +7300,7 @@ ngx_http_qjs_ext_return(JSContext *cx, JSValueConst this_val,
         ctx->status = ngx_http_send_response(r, status, NULL, &cv);
 
         if (ctx->status == NGX_ERROR) {
-            return JS_ThrowInternalError(cx, "failed to send response");
+            return qjs_throw_error(cx, "failed to send response");
         }
 
     } else {
@@ -7444,7 +7444,7 @@ ngx_http_qjs_ext_send(JSContext *cx, JSValueConst this_val,
     *ll = NULL;
 
     if (ngx_http_output_filter(r, out) == NGX_ERROR) {
-        return JS_ThrowInternalError(cx, "failed to send response");
+        return qjs_throw_error(cx, "failed to send response");
     }
 
     return JS_UNDEFINED;
@@ -7614,13 +7614,13 @@ ngx_http_qjs_ext_send_header(JSContext *cx, JSValueConst this_val,
     }
 
     if (ngx_http_set_content_type(r) != NGX_OK) {
-        return JS_ThrowInternalError(cx, "failed to set content type");
+        return qjs_throw_error(cx, "failed to set content type");
     }
 
     r->disable_not_modified = 1;
 
     if (ngx_http_send_header(r) == NGX_ERROR) {
-        return JS_ThrowInternalError(cx, "failed to send header");
+        return qjs_throw_error(cx, "failed to send header");
     }
 
     return JS_UNDEFINED;
@@ -7983,7 +7983,7 @@ ngx_http_qjs_ext_subrequest(JSContext *cx, JSValueConst this_val,
         }
 
         JS_FreeValue(cx, retval);
-        return JS_ThrowInternalError(cx, "subrequest creation failed");
+        return qjs_throw_error(cx, "subrequest creation failed");
     }
 
     if (event != NULL) {

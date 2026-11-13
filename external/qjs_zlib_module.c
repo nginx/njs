@@ -246,14 +246,14 @@ qjs_zlib_ext_deflate(JSContext *ctx, JSValueConst this_val, int argc,
     rc = deflateInit2(&stream, level, Z_DEFLATED, window_bits, mem_level,
                       strategy);
     if (njs_slow_path(rc != Z_OK)) {
-        JS_ThrowInternalError(ctx, "deflateInit2() failed");
+        qjs_throw_error(ctx, "deflateInit2() failed");
         goto fail;
     }
 
     if (dictionary_copy != NULL) {
         rc = deflateSetDictionary(&stream, dictionary_copy, dictionary_length);
         if (rc != Z_OK) {
-            JS_ThrowInternalError(ctx, "deflateSetDictionary() failed");
+            qjs_throw_error(ctx, "deflateSetDictionary() failed");
             goto fail;
         }
     }
@@ -269,8 +269,8 @@ qjs_zlib_ext_deflate(JSContext *ctx, JSValueConst this_val, int argc,
 
         rc = deflate(&stream, Z_FINISH);
         if (njs_slow_path(rc < 0)) {
-            JS_ThrowInternalError(ctx, "failed to deflate the data: %s",
-                                  stream.msg);
+            qjs_throw_error(ctx, "failed to deflate the data: %s",
+                            stream.msg);
             goto fail;
         }
 
@@ -422,14 +422,14 @@ qjs_zlib_ext_inflate(JSContext *ctx, JSValueConst this_val, int argc,
 
     rc = inflateInit2(&stream, window_bits);
     if (njs_slow_path(rc != Z_OK)) {
-        JS_ThrowInternalError(ctx, "inflateInit2() failed");
+        qjs_throw_error(ctx, "inflateInit2() failed");
         goto fail;
     }
 
     if (dictionary_copy != NULL) {
         rc = inflateSetDictionary(&stream, dictionary_copy, dictionary_length);
         if (rc != Z_OK) {
-            JS_ThrowInternalError(ctx, "inflateSetDictionary() failed");
+            qjs_throw_error(ctx, "inflateSetDictionary() failed");
             goto fail;
         }
     }
@@ -445,8 +445,8 @@ qjs_zlib_ext_inflate(JSContext *ctx, JSValueConst this_val, int argc,
 
         rc = inflate(&stream, Z_NO_FLUSH);
         if (njs_slow_path(rc < 0)) {
-            JS_ThrowInternalError(ctx, "failed to inflate the data: %s",
-                                  stream.msg);
+            qjs_throw_error(ctx, "failed to inflate the data: %s",
+                            stream.msg);
             goto fail;
         }
 
@@ -460,7 +460,7 @@ qjs_zlib_ext_inflate(JSContext *ctx, JSValueConst this_val, int argc,
 
     rc = inflateEnd(&stream);
     if (njs_slow_path(rc != Z_OK)) {
-        JS_ThrowInternalError(ctx, "inflateEnd() failed");
+        qjs_throw_error(ctx, "inflateEnd() failed");
         goto fail;
     }
 

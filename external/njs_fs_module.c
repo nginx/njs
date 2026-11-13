@@ -2941,7 +2941,7 @@ njs_fs_make_path(njs_vm_t *vm, char *path, mode_t md, njs_bool_t recursive,
         }
 
         if (njs_slow_path((p - path) > NJS_MAX_PATH)) {
-            njs_vm_internal_error(vm, "too large path");
+            njs_vm_error(vm, "too large path");
             return NJS_ERROR;
         }
 
@@ -3234,8 +3234,8 @@ njs_fs_path(njs_vm_t *vm, char storage[NJS_MAX_PATH + 1], njs_value_t *src,
     }
 
     if (njs_slow_path(str.length > NJS_MAX_PATH - 1)) {
-        njs_vm_internal_error(vm, "\"%s\" is too long >= %d", prop_name,
-                              NJS_MAX_PATH);
+        njs_vm_range_error(vm, "\"%s\" is too long >= %d", prop_name,
+                           NJS_MAX_PATH);
         return NULL;
     }
 
@@ -3520,8 +3520,8 @@ njs_fs_dirent_test(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     if (njs_slow_path(njs_value_is_number(type)
                       && (njs_value_number(type) == NJS_DT_INVALID)))
     {
-        njs_vm_internal_error(vm, "dentry type is not supported on this "
-                              "platform");
+        njs_vm_error(vm, "dentry type is not supported on this "
+                     "platform");
         return NJS_ERROR;
     }
 
