@@ -2002,7 +2002,7 @@ qjs_fs_write(JSContext *cx, JSValueConst this_val, int argc,
 
         if (encoding->decode_length != NULL) {
             content.length = encoding->decode_length(cx, &str);
-            content.start = js_malloc(cx, content.length);
+            content.start = js_malloc(cx, njs_max(content.length, 1));
             if (content.start == NULL) {
                 JS_FreeCString(cx, (const char *) str.start);
                 JS_ThrowOutOfMemory(cx);
@@ -2237,7 +2237,7 @@ decode:
 
         if (encoding->decode_length != NULL) {
             content.length = encoding->decode_length(cx, &str);
-            content.start = js_malloc(cx, content.length);
+            content.start = js_malloc(cx, njs_max(content.length, 1));
             if (content.start == NULL) {
                 JS_FreeCString(cx, (const char *) str.start);
                 JS_ThrowOutOfMemory(cx);
@@ -2871,7 +2871,7 @@ qjs_fs_encode(JSContext *cx, const qjs_buffer_encoding_t *encoding,
     } else if (encoding->encode_length != NULL) {
         data.length = encoding->encode_length(cx, str);
 
-        data.start = js_malloc(cx, data.length);
+        data.start = js_malloc(cx, njs_max(data.length, 1));
         if (data.start == NULL) {
             JS_ThrowOutOfMemory(cx);
             return JS_EXCEPTION;

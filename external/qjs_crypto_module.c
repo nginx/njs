@@ -208,7 +208,7 @@ qjs_hash_prototype_update(JSContext *cx, JSValueConst this_val, int argc,
 
         if (enc->decode_length != NULL) {
             content.length = enc->decode_length(cx, &str);
-            content.start = js_malloc(cx, content.length);
+            content.start = js_malloc(cx, njs_max(content.length, 1));
             if (content.start == NULL) {
                 JS_FreeCString(cx, (const char *) str.start);
                 return JS_ThrowOutOfMemory(cx);
