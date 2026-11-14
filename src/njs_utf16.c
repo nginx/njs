@@ -54,9 +54,9 @@ njs_utf16_decode(njs_unicode_decode_t *ctx, const u_char **start,
     uint32_t  unit;
     unsigned  lead;
 
-    if (ctx->upper != 0x00) {
-        lead = ctx->upper - 0x01;
-        ctx->upper = 0x00;
+    if (ctx->need != 0x00) {
+        lead = ctx->upper;
+        ctx->need = 0x00;
 
         goto lead_state;
     }
@@ -66,7 +66,8 @@ pair_state:
     lead = *(*start)++;
 
     if (*start >= end) {
-        ctx->upper = lead + 0x01;
+        ctx->upper = lead;
+        ctx->need = 0x01;
         return NJS_UNICODE_CONTINUE;
     }
 
@@ -89,7 +90,8 @@ lead_state:
 
         (*start)--;
 
-        ctx->upper = lead + 0x01;
+        ctx->upper = lead;
+        ctx->need = 0x01;
         ctx->codepoint = 0x00;
 
         return NJS_UNICODE_ERROR;

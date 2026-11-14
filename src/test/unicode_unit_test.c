@@ -211,7 +211,7 @@ utf16_unit_test()
 {
     int8_t                length, length_to;
     u_char                *start, *end, *end_to;
-    uint32_t              cp, i;
+    uint32_t              cp, i, j;
     njs_unicode_decode_t  ctx;
     u_char                buf[8], to[4];
 
@@ -261,6 +261,43 @@ utf16_unit_test()
 
         if (length_to != length || njs_strncmp(buf, to, length) != 0) {
             njs_printf("utf16 test decode-encode failed\n");
+            return NJS_ERROR;
+        }
+
+        njs_utf16_decode_init(&ctx);
+        start = buf;
+
+        for (j = 0; j < (uint32_t) length; j++) {
+            cp = njs_utf16_decode(&ctx, (const u_char **) &start, start + 1);
+
+            if (cp != (j + 1 == (uint32_t) length ? i : NJS_UNICODE_CONTINUE)) {
+                njs_printf("utf16 test byte decoding failed for %05uXD\n", i);
+                return NJS_ERROR;
+            }
+        }
+
+        start = to;
+        (void) njs_utf16_encode(0xD800, &start, end_to);
+
+        njs_utf16_decode_init(&ctx);
+        start = to;
+
+        cp = njs_utf16_decode(&ctx, (const u_char **) &start, to + 2);
+        if (cp != NJS_UNICODE_CONTINUE) {
+            njs_printf("utf16 test pending surrogate failed\n");
+            return NJS_ERROR;
+        }
+
+        start = buf;
+        cp = njs_utf16_decode(&ctx, (const u_char **) &start, buf + length);
+        if (cp != NJS_UNICODE_ERROR || start != buf + 1) {
+            njs_printf("utf16 test unpaired surrogate failed for %05uXD\n", i);
+            return NJS_ERROR;
+        }
+
+        cp = njs_utf16_decode(&ctx, (const u_char **) &start, buf + length);
+        if (cp != i || start != buf + length) {
+            njs_printf("utf16 test rereading code point failed for %05uXD\n", i);
             return NJS_ERROR;
         }
     }
