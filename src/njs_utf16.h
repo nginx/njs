@@ -17,6 +17,7 @@ NJS_EXPORT uint32_t njs_utf16_decode(njs_unicode_decode_t *ctx,
 njs_inline void
 njs_utf16_decode_init(njs_unicode_decode_t *ctx)
 {
+    ctx->need = 0x00;
     ctx->upper = 0x00;
     ctx->codepoint = 0x00;
 }
