@@ -172,6 +172,7 @@ qjs_query_string_decode(JSContext *cx, const u_char *start, size_t size)
 {
     u_char                *dst;
     uint32_t              cp;
+    njs_bool_t            consumed;
     njs_chb_t             chain;
     const u_char          *p, *end;
     njs_unicode_decode_t  ctx;
@@ -207,13 +208,18 @@ qjs_query_string_decode(JSContext *cx, const u_char *start, size_t size)
 
     while (p < end) {
         if (*p == '%' && end - p > 2 && hex[p[1]] >= 0 && hex[p[2]] >= 0) {
-            cp = njs_utf8_consume(&ctx, (hex[p[1]] << 4) | hex[p[2]]);
-            p += 3;
+            cp = njs_utf8_consume(&ctx, (hex[p[1]] << 4) | hex[p[2]],
+                                  &consumed);
+            if (consumed) {
+                p += 3;
+            }
 
         } else {
             if (*p == '+') {
-                cp = ' ';
-                p++;
+                cp = njs_utf8_consume(&ctx, ' ', &consumed);
+                if (consumed) {
+                    p++;
+                }
 
             } else {
                 cp = njs_utf8_decode(&ctx, &p, end);
