@@ -94,7 +94,7 @@ $t->write_file('test.js', <<EOF);
 
 EOF
 
-$t->try_run('no njs')->plan(15);
+$t->try_run('no njs')->plan(17);
 
 ###############################################################################
 
@@ -129,6 +129,8 @@ like(http_get('/iter?foo=1&foo=2'), qr/1,2/m, 'r.args iteration 5');
 like(http_get('/keys?b=1&c=2&a=5'), qr/a,b,c/m, 'r.args sorted keys');
 like(http_get('/keys?b=1&b=2'), qr/b/m, 'r.args duplicate keys');
 like(http_get('/keys?b=1&a&c='), qr/a,b,c/m, 'r.args empty value');
+like(http_get('/keys?__proto__=1&toString=2&a=3'), qr/__proto__,a,toString/m,
+	'r.args inherited names keys');
 
 is(get_json('/object'), '{}', 'empty object');
 is(get_json('/object?a=1&b=2&c=3'), '{"a":"1","b":"2","c":"3"}',
@@ -144,6 +146,8 @@ is(get_json('/object?a=%62%63&b=%63%64'), '{"a":"bc","b":"cd"}',
 is(get_json('/object?a=%6&b=%&c=%%&d=%zz'),
 	'{"a":"%6","b":"%","c":"%%","d":"%zz"}',
 	'values percent-encoded broken object');
+is(get_json('/object?__proto__=1&toString=2&toString=3'),
+	'{"__proto__":"1","toString":["2","3"]}', 'inherited names object');
 
 ###############################################################################
 

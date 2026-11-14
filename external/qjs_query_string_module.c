@@ -339,9 +339,11 @@ static int
 qjs_query_string_append(JSContext *cx, JSValue object, const u_char *key,
     size_t key_size, const u_char *val, size_t val_size, JSValue decoder)
 {
-    JSAtom    prop;
-    JSValue   name, value, prev, length, ret;
-    uint32_t  len;
+    int                   rc;
+    JSAtom                prop;
+    JSValue               name, value, prev, length, ret;
+    uint32_t              len;
+    JSPropertyDescriptor  desc;
 
     if (JS_IsNullOrUndefined(decoder)) {
         name = qjs_query_string_decode(cx, key, key_size);
@@ -391,15 +393,31 @@ qjs_query_string_append(JSContext *cx, JSValue object, const u_char *key,
         return -1;
     }
 
-    prev = JS_GetProperty(cx, object, prop);
-    if (JS_IsException(prev)) {
+    /*
+     * Only own properties are consulted and only own data properties
+     * are created, so a key like "__proto__" or "toString" neither reads
+     * nor writes through the prototype chain of the result object.
+     */
+
+    rc = JS_GetOwnProperty(cx, &desc, object, prop);
+    if (rc < 0) {
         JS_FreeAtom(cx, prop);
         JS_FreeValue(cx, value);
         return -1;
     }
 
+    prev = JS_UNDEFINED;
+
+    if (rc) {
+        prev = desc.value;
+        JS_FreeValue(cx, desc.getter);
+        JS_FreeValue(cx, desc.setter);
+    }
+
     if (JS_IsUndefined(prev)) {
-        if (JS_SetProperty(cx, object, prop, value) < 0) {
+        if (JS_DefinePropertyValue(cx, object, prop, value, JS_PROP_C_W_E)
+            < 0)
+        {
             value = JS_UNDEFINED;
             goto exception;
         }
@@ -444,7 +462,7 @@ qjs_query_string_append(JSContext *cx, JSValue object, const u_char *key,
 
         value = JS_UNDEFINED;
 
-        if (JS_SetProperty(cx, object, prop, ret) < 0) {
+        if (JS_DefinePropertyValue(cx, object, prop, ret, JS_PROP_C_W_E) < 0) {
             goto exception;
         }
     }
