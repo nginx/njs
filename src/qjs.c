@@ -1377,6 +1377,45 @@ qjs_array_buffer_adopt(JSContext *cx, uint8_t *src, size_t len)
 }
 
 
+/*
+ * Library and host failures are reported as Error, since QuickJS-NG makes
+ * InternalError uncatchable by JavaScript code.
+ */
+
+JSValue
+qjs_throw_error(JSContext *cx, const char *fmt, ...)
+{
+    char     buf[256];
+    JSValue  error, message;
+    va_list  args;
+
+    va_start(args, fmt);
+    vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+
+    error = qjs_new_error(cx);
+    if (JS_IsException(error)) {
+        return JS_EXCEPTION;
+    }
+
+    message = JS_NewString(cx, buf);
+    if (JS_IsException(message)) {
+        JS_FreeValue(cx, error);
+        return JS_EXCEPTION;
+    }
+
+    if (JS_DefinePropertyValueStr(cx, error, "message", message,
+                                  JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE)
+        < 0)
+    {
+        JS_FreeValue(cx, error);
+        return JS_EXCEPTION;
+    }
+
+    return JS_Throw(cx, error);
+}
+
+
 JSValue
 qjs_string_create_chb(JSContext *cx, njs_chb_t *chain)
 {
@@ -1391,7 +1430,7 @@ qjs_string_create_chb(JSContext *cx, njs_chb_t *chain)
             val = JS_ThrowRangeError(cx, "invalid string length");
 
         } else {
-            val = JS_ThrowInternalError(cx, "failed to create string");
+            val = qjs_throw_error(cx, "failed to create string");
         }
 
         njs_chb_destroy(chain);

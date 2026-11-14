@@ -1447,7 +1447,7 @@ qjs_export_base64url_bignum(JSContext *cx, const BIGNUM *v, size_t size)
     }
 
     if (njs_bn_bn2binpad(v, &buf[0], size) <= 0) {
-        JS_ThrowInternalError(cx, "njs_bn_bn2binpad() failed");
+        qjs_throw_error(cx, "njs_bn_bn2binpad() failed");
         return JS_EXCEPTION;
     }
 
@@ -1956,7 +1956,7 @@ qjs_derive_ecdh(JSContext *cx, JSValueConst *argv, int argc, int derive_key,
     u_char                     *k;
     size_t                     olen;
     int64_t                    length;
-    JSValue                    ret, result, value, dobject;
+    JSValue                    ret, result, value, dobject, public_value;
     unsigned                   usage;
     EVP_PKEY                   *priv_pkey, *pub_pkey;
     EVP_PKEY_CTX               *pctx;
@@ -1964,6 +1964,7 @@ qjs_derive_ecdh(JSContext *cx, JSValueConst *argv, int argc, int derive_key,
     qjs_webcrypto_algorithm_t  *dalg;
 
     result = JS_UNDEFINED;
+    public_value = JS_UNDEFINED;
     dobject = argv[2];
 
     if (derive_key) {
@@ -2029,8 +2030,9 @@ qjs_derive_ecdh(JSContext *cx, JSValueConst *argv, int argc, int derive_key,
         goto fail;
     }
 
-    pkey = JS_GetOpaque(value, QJS_CORE_CLASS_ID_WEBCRYPTO_KEY);
-    JS_FreeValue(cx, value);
+    public_value = value;
+
+    pkey = JS_GetOpaque(public_value, QJS_CORE_CLASS_ID_WEBCRYPTO_KEY);
     if (pkey == NULL) {
         JS_ThrowTypeError(cx, "algorithm.public is not a CryptoKey object");
         goto fail;
@@ -2108,6 +2110,9 @@ qjs_derive_ecdh(JSContext *cx, JSValueConst *argv, int argc, int derive_key,
 
     EVP_PKEY_CTX_free(pctx);
 
+    JS_FreeValue(cx, public_value);
+    public_value = JS_UNDEFINED;
+
     if (derive_key) {
         if (dalg->type == QJS_ALGORITHM_HMAC) {
             ret = qjs_algorithm_hash(cx, dobject, &dkey->hash);
@@ -2129,6 +2134,7 @@ qjs_derive_ecdh(JSContext *cx, JSValueConst *argv, int argc, int derive_key,
     return qjs_promise_result(cx, result);
 
 fail:
+    JS_FreeValue(cx, public_value);
     JS_FreeValue(cx, result);
 
     return qjs_promise_result(cx, JS_EXCEPTION);
@@ -2264,7 +2270,7 @@ qjs_webcrypto_derive(JSContext *cx, JSValueConst this_val, int argc,
         dkey = JS_GetOpaque(dkey_value, QJS_CORE_CLASS_ID_WEBCRYPTO_KEY);
     }
 
-    k = js_malloc(cx, length);
+    k = js_malloc(cx, njs_max(length, 1));
     if (k == NULL) {
         JS_ThrowOutOfMemory(cx);
         return JS_EXCEPTION;
@@ -3780,7 +3786,7 @@ qjs_import_jwk_oct(JSContext *cx, JSValue jwk, qjs_webcrypto_key_t *key)
     size = qjs_base64url_decode_length(cx, &b64);
 
     key->u.s.raw.length = size;
-    key->u.s.raw.start = js_malloc(cx, size);
+    key->u.s.raw.start = js_malloc(cx, njs_max(size, 1));
     if (key->u.s.raw.start == NULL) {
         JS_FreeCString(cx, (char *) b64.start);
         JS_ThrowOutOfMemory(cx);
@@ -4265,7 +4271,7 @@ qjs_webcrypto_import_key_internal(JSContext *cx, qjs_webcrypto_key_format_t fmt,
                 goto fail;
             }
 
-            wkey->u.s.raw.start = js_malloc(cx, kd.length);
+            wkey->u.s.raw.start = js_malloc(cx, njs_max(kd.length, 1));
             if (wkey->u.s.raw.start == NULL) {
                 JS_ThrowOutOfMemory(cx);
                 goto fail;
@@ -4286,6 +4292,11 @@ qjs_webcrypto_import_key_internal(JSContext *cx, qjs_webcrypto_key_format_t fmt,
                 JS_ThrowTypeError(cx, "HMAC JWK hash mismatch");
                 goto fail;
             }
+        }
+
+        if (wkey->u.s.raw.length == 0) {
+            JS_ThrowTypeError(cx, "HMAC key cannot be empty");
+            goto fail;
         }
 
         break;
@@ -4321,7 +4332,7 @@ qjs_webcrypto_import_key_internal(JSContext *cx, qjs_webcrypto_key_format_t fmt,
     case QJS_ALGORITHM_PBKDF2:
     case QJS_ALGORITHM_HKDF:
     default:
-        wkey->u.s.raw.start = js_malloc(cx, kd.length);
+        wkey->u.s.raw.start = js_malloc(cx, njs_max(kd.length, 1));
         if (wkey->u.s.raw.start == NULL) {
             JS_ThrowOutOfMemory(cx);
             goto fail;

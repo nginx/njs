@@ -4298,6 +4298,11 @@ njs_webcrypto_import_key_internal(njs_vm_t *vm, njs_webcrypto_key_format_t fmt,
             }
         }
 
+        if (key->u.s.raw.length == 0) {
+            njs_vm_type_error(vm, "HMAC key cannot be empty");
+            goto fail;
+        }
+
         break;
 
     case NJS_ALGORITHM_AES_GCM:
@@ -6034,7 +6039,7 @@ njs_webcrypto_result(njs_vm_t *vm, njs_opaque_value_t *result, njs_int_t rc,
 
 error:
 
-    njs_vm_internal_error(vm, "cannot make webcrypto result");
+    njs_vm_error(vm, "cannot make webcrypto result");
 
     return NJS_ERROR;
 }

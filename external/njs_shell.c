@@ -1288,7 +1288,7 @@ njs_module_loader(njs_vm_t *vm, njs_external_ptr_t external, njs_str_t *name)
     (void) close(info.fd);
 
     if (njs_slow_path(ret != NJS_OK)) {
-        njs_vm_internal_error(vm, "while reading \"%V\" module", &info.file);
+        njs_vm_error(vm, "while reading \"%V\" module", &info.file);
         return NULL;
     }
 
@@ -1296,8 +1296,8 @@ njs_module_loader(njs_vm_t *vm, njs_external_ptr_t external, njs_str_t *name)
 
     ret = njs_console_set_cwd(console, &info.file);
     if (njs_slow_path(ret != NJS_OK)) {
-        njs_vm_internal_error(vm, "while setting cwd for \"%V\" module",
-                              &info.file);
+        njs_vm_error(vm, "while setting cwd for \"%V\" module",
+                     &info.file);
         return NULL;
     }
 
@@ -2688,8 +2688,8 @@ njs_qjs_module_loader(JSContext *ctx, const char *module_name, void *opaque)
     (void) close(info.fd);
 
     if (njs_slow_path(ret != NJS_OK)) {
-        JS_ThrowInternalError(ctx, "while reading \"%.*s\" module",
-                              (int) info.file.length, info.file.start);
+        qjs_throw_error(ctx, "while reading \"%.*s\" module",
+                        (int) info.file.length, info.file.start);
         return NULL;
     }
 
@@ -2697,8 +2697,8 @@ njs_qjs_module_loader(JSContext *ctx, const char *module_name, void *opaque)
 
     ret = njs_console_set_cwd(console, &info.file);
     if (njs_slow_path(ret != NJS_OK)) {
-        JS_ThrowInternalError(ctx, "while setting cwd for \"%.*s\" module",
-                              (int) info.file.length, info.file.start);
+        qjs_throw_error(ctx, "while setting cwd for \"%.*s\" module",
+                        (int) info.file.length, info.file.start);
         return NULL;
     }
 
