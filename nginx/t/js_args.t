@@ -94,7 +94,7 @@ $t->write_file('test.js', <<EOF);
 
 EOF
 
-$t->try_run('no njs')->plan(15);
+$t->try_run('no njs')->plan(20);
 
 ###############################################################################
 
@@ -144,6 +144,18 @@ is(get_json('/object?a=%62%63&b=%63%64'), '{"a":"bc","b":"cd"}',
 is(get_json('/object?a=%6&b=%&c=%%&d=%zz'),
 	'{"a":"%6","b":"%","c":"%%","d":"%zz"}',
 	'values percent-encoded broken object');
+
+is(get_json('/object?%D8%41%42=%E2%82%41%42'),
+	qq/{"\x{fffd}AB":"\x{fffd}AB"}/,
+	'percent-encoded units after invalid UTF-8');
+is(get_json('/object?a=%D8+%41'), qq/{"a":"\x{fffd} A"}/,
+	'plus after invalid UTF-8');
+is(get_json('/object?a=%E2%82+'), qq/{"a":"\x{fffd} "}/,
+	'final plus after invalid UTF-8');
+is(get_json('/object?a=%D8%C2%A2'), qq/{"a":"\x{fffd}\x{a2}"}/,
+	'valid UTF-8 after invalid UTF-8');
+is(get_json('/object?a=%ED%A0%80'), qq/{"a":"\x{fffd}\x{fffd}\x{fffd}"}/,
+	'UTF-8 encoded surrogate');
 
 ###############################################################################
 

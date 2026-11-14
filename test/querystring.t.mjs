@@ -117,6 +117,13 @@ let parse_tsuite = {
         { value: 'baz=%F', expected: { baz:'%F' } },
         { value: 'baz=%', expected: { baz:'%' } },
         { value: 'ba+z=f+uz', expected: { 'ba z':'f uz' } },
+        { value: '%D8%41%42=%E2%82%41%42',
+          expected: { '�AB':'�AB' } },
+        { value: 'baz=%D8+%41', expected: { baz:'� A' } },
+        { value: 'baz=%E2%82+', expected: { baz:'� ' } },
+        { value: 'baz=%D8%C2%A2', expected: { baz:'�¢' } },
+        { value: 'baz=%D8%F0%9F%92%A9', expected: { baz:'�💩' } },
+        { value: 'baz=%ED%A0%80', expected: { baz:'���' } },
         { value: 'X=' + 'α'.repeat(33), expected: { X:'α'.repeat(33) } },
         { value: 'X=' + 'α1'.repeat(33), expected: { X:'α1'.repeat(33) } },
 
@@ -214,6 +221,12 @@ let unescape_tsuite = {
         { value: '', expected: '' },
         { value: 'baz%3Dfuz', expected: 'baz=fuz' },
         { value: 'abc%CE%B1def', expected: 'abcαdef' },
+        { value: '%D8%41%42', expected: '�AB' },
+        { value: '%E2%41%42', expected: '�AB' },
+        { value: '%E2%82%41%42', expected: '�AB' },
+        { value: '%D8%C2%A2', expected: '�¢' },
+        { value: '%D8%F0%9F%92%A9', expected: '�💩' },
+        { value: '%ED%A0%80', expected: '���' },
 ]};
 
 run([

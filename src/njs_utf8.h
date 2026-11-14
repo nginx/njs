@@ -27,13 +27,19 @@ NJS_EXPORT njs_bool_t njs_utf8_is_valid(const u_char *p, size_t len);
 
 
 njs_inline uint32_t
-njs_utf8_consume(njs_unicode_decode_t *ctx, u_char byte)
+njs_utf8_consume(njs_unicode_decode_t *ctx, u_char byte, njs_bool_t *consumed)
 {
+    uint32_t      cp;
     const u_char  *p;
 
     p = &byte;
 
-    return njs_utf8_decode(ctx, &p, p + 1);
+    cp = njs_utf8_decode(ctx, &p, p + 1);
+
+    /* An error may leave the byte to be decoded again. */
+    *consumed = (p != &byte);
+
+    return cp;
 }
 
 
