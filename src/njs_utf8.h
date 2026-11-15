@@ -149,18 +149,33 @@ njs_utf8_length(const u_char *p, size_t len)
 }
 
 
-njs_inline size_t
-njs_utf8_bom(const u_char *start, const u_char *end)
+njs_inline njs_bool_t
+njs_utf8_bom(njs_unicode_decode_t *ctx, const u_char **start,
+    const u_char *end)
 {
-    if (start + 3 > end) {
+    uint32_t              cp;
+    const u_char          *p;
+    njs_unicode_decode_t  next;
+
+    if (*start == end) {
         return 0;
     }
 
-    if (start[0] == 0xEF && start[1] == 0xBB && start[2] == 0xBF) {
-        return 3;
+    next = *ctx;
+    p = *start;
+
+    cp = njs_utf8_decode(&next, &p, end);
+
+    if (cp == NJS_UNICODE_CONTINUE) {
+        return 0;
     }
 
-    return 0;
+    if (cp == NJS_UNICODE_BOM) {
+        *ctx = next;
+        *start = p;
+    }
+
+    return 1;
 }
 
 
