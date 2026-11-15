@@ -8878,7 +8878,7 @@ njs_parser_escape_string_calc_length(njs_parser_t *parser,
 
                 src++;
                 hex_length = 0;
-                hex_end = end;
+                hex_end = (end - src > 7) ? src + 7 : end;
 
                 goto hex;
 

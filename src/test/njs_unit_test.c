@@ -8696,6 +8696,12 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'\\u{a00000}'"),
       njs_str("SyntaxError: Invalid Unicode code point \"\\u{a00000}\"") },
 
+    { njs_str("'\\u{11111111111111110}'"),
+      njs_str("SyntaxError: Invalid Unicode code point \"\\u{11111111111111110}\"") },
+
+    { njs_str("`\\u{11111111111111110`"),
+      njs_str("SyntaxError: Invalid Unicode code point \"\\u{11111111111111110\"") },
+
     { njs_str("'\\x61'"),
       njs_str("a") },
 
