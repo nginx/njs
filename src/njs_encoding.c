@@ -17,6 +17,8 @@ typedef struct {
     njs_encoding_t        encoding;
     njs_bool_t            fatal;
     njs_bool_t            ignore_bom;
+    njs_bool_t            bom_seen;
+    njs_bool_t            stream;
 
     njs_unicode_decode_t  ctx;
 } njs_encoding_decode_t;
@@ -332,6 +334,8 @@ njs_text_decoder_constructor(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     }
 
     njs_utf8_decode_init(&data->ctx);
+    data->bom_seen = 0;
+    data->stream = 0;
 
     njs_set_data(&decoder->value, data, NJS_DATA_TAG_TEXT_DECODER);
     njs_set_object_value(retval, decoder);
@@ -491,10 +495,10 @@ njs_text_decoder_decode(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     size_t                    size;
     ssize_t                   length;
     njs_int_t                 ret;
-    njs_bool_t                stream;
+    njs_bool_t                stream, bom_seen;
     njs_value_t               *this, *value, *options;
     const u_char              *start, *end;
-    njs_unicode_decode_t      ctx;
+    njs_unicode_decode_t      ctx, next;
     njs_encoding_decode_t     *data;
     const njs_typed_array_t   *array;
     const njs_array_buffer_t  *buffer;
@@ -560,17 +564,27 @@ njs_text_decoder_decode(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     data = njs_object_data(this);
 
+    if (!data->stream) {
+        njs_utf8_decode_init(&data->ctx);
+        data->bom_seen = 0;
+    }
+
+    data->stream = stream;
     ctx = data->ctx;
+    bom_seen = data->bom_seen;
 
     /* Looking for BOM. */
 
-    if (start != NULL && !data->ignore_bom) {
-        start += njs_utf8_bom(start, end);
+    if (!data->ignore_bom && !bom_seen) {
+        bom_seen = njs_utf8_bom(&ctx, &start, end);
     }
 
-    length = njs_utf8_stream_length(&ctx, start, end - start, !stream,
+    next = ctx;
+
+    length = njs_utf8_stream_length(&next, start, end - start, !stream,
                                     data->fatal, &size);
     if (length == -1) {
+        data->ctx = next;
         njs_type_error(vm, "The encoded data was not valid");
         return NJS_ERROR;
     }
@@ -580,11 +594,10 @@ njs_text_decoder_decode(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    (void) njs_utf8_stream_encode(&data->ctx, start, end, dst, !stream, 0);
+    (void) njs_utf8_stream_encode(&ctx, start, end, dst, !stream, 0);
 
-    if (!stream) {
-        njs_utf8_decode_init(&data->ctx);
-    }
+    data->ctx = ctx;
+    data->bom_seen = bom_seen;
 
     return NJS_OK;
 }
