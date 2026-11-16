@@ -712,6 +712,9 @@ qjs_cipher_pkey(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
     }
 
     ret = qjs_array_buffer_adopt(cx, dst, outlen);
+    if (JS_IsException(ret)) {
+        js_free(cx, dst);
+    }
 
 fail:
 
@@ -893,6 +896,9 @@ qjs_cipher_aes_gcm(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
     }
 
     ret = qjs_array_buffer_adopt(cx, dst, outlen);
+    if (JS_IsException(ret)) {
+        js_free(cx, dst);
+    }
 
     EVP_CIPHER_CTX_free(ctx);
 
@@ -1198,6 +1204,9 @@ qjs_cipher_aes_ctr(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
 done:
 
     ret = qjs_array_buffer_adopt(cx, dst, len);
+    if (JS_IsException(ret)) {
+        js_free(cx, dst);
+    }
 
 fail:
 
@@ -1321,6 +1330,9 @@ qjs_cipher_aes_cbc(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
     olen += olen2;
 
     ret = qjs_array_buffer_adopt(cx, dst, olen);
+    if (JS_IsException(ret)) {
+        js_free(cx, dst);
+    }
 
 fail:
 
@@ -1421,6 +1433,9 @@ qjs_cipher_aes_kw(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
     }
 
     ret = qjs_array_buffer_adopt(cx, dst, olen);
+    if (JS_IsException(ret)) {
+        js_free(cx, dst);
+    }
 
 fail:
 
@@ -1907,6 +1922,7 @@ qjs_export_raw_ec(JSContext *cx, qjs_webcrypto_key_t *key)
 {
     size_t                   size;
     u_char                   *dst;
+    JSValue                  ret;
     const EC_KEY             *ec;
     const EC_GROUP           *group;
     const EC_POINT           *point;
@@ -1945,7 +1961,12 @@ qjs_export_raw_ec(JSContext *cx, qjs_webcrypto_key_t *key)
         return JS_EXCEPTION;
     }
 
-    return qjs_array_buffer_adopt(cx, dst, size);
+    ret = qjs_array_buffer_adopt(cx, dst, size);
+    if (JS_IsException(ret)) {
+        js_free(cx, dst);
+    }
+
+    return ret;
 }
 
 
@@ -2129,6 +2150,9 @@ qjs_derive_ecdh(JSContext *cx, JSValueConst *argv, int argc, int derive_key,
 
     } else {
         result = qjs_array_buffer_adopt(cx, k, length);
+        if (JS_IsException(result)) {
+            js_free(cx, k);
+        }
     }
 
     return qjs_promise_result(cx, result);
@@ -2440,6 +2464,9 @@ free:
     } else {
 
         ret = qjs_array_buffer_adopt(cx, k, length);
+        if (JS_IsException(ret)) {
+            goto fail;
+        }
     }
 
     return qjs_promise_result(cx, ret);
@@ -2491,6 +2518,9 @@ qjs_webcrypto_digest(JSContext *cx, JSValueConst this_val, int argc,
     }
 
     ret = qjs_array_buffer_adopt(cx, dst, olen);
+    if (JS_IsException(ret)) {
+        js_free(cx, dst);
+    }
 
     return ret;
 }
