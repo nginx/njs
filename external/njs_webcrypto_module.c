@@ -1065,7 +1065,8 @@ njs_cipher_aes_gcm(njs_vm_t *vm, njs_str_t *data, njs_webcrypto_key_t *key,
     if (value != NULL && !njs_value_is_undefined(value)) {
         ret = njs_vm_value_to_bytes(vm, &aad, value);
         if (njs_slow_path(ret != NJS_OK)) {
-            return NJS_ERROR;
+            ret = NJS_ERROR;
+            goto fail;
         }
     }
 
@@ -1083,7 +1084,8 @@ njs_cipher_aes_gcm(njs_vm_t *vm, njs_str_t *data, njs_webcrypto_key_t *key,
     dst = njs_mp_alloc(njs_vm_memory_pool(vm), dstlen);
     if (njs_slow_path(dst == NULL)) {
         njs_vm_memory_error(vm);
-        return NJS_ERROR;
+        ret = NJS_ERROR;
+        goto fail;
     }
 
     ret = EVP_CipherUpdate(ctx, dst, &outlen, data->start,
