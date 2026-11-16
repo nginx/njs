@@ -3360,12 +3360,20 @@ fail1:
     JS_FreeValue(cx, dp);
     JS_FreeValue(cx, dq);
     JS_FreeValue(cx, qi);
+    p = JS_UNDEFINED;
+    q = JS_UNDEFINED;
+    dp = JS_UNDEFINED;
+    dq = JS_UNDEFINED;
+    qi = JS_UNDEFINED;
 
 done:
 
     JS_FreeValue(cx, n);
     JS_FreeValue(cx, e);
     JS_FreeValue(cx, d);
+    n = JS_UNDEFINED;
+    e = JS_UNDEFINED;
+    d = JS_UNDEFINED;
 
     pkey = EVP_PKEY_new();
     if (pkey == NULL) {
