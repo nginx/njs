@@ -515,9 +515,9 @@ njs_text_decoder_decode(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
-    if (nargs > 2) {
-        options = njs_argument(args, 2);
+    options = njs_arg(args, nargs, 2);
 
+    if (!njs_is_null_or_undefined(options)) {
         if (njs_slow_path(!njs_is_object(options))) {
             njs_type_error(vm, "The \"options\" argument must be "
                            "of type object");
@@ -532,9 +532,9 @@ njs_text_decoder_decode(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         stream = njs_bool(retval);
     }
 
-    if (njs_fast_path(nargs > 1)) {
-        value = njs_argument(args, 1);
+    value = njs_arg(args, nargs, 1);
 
+    if (njs_fast_path(!njs_is_undefined(value))) {
         if (njs_is_typed_array(value)) {
             array = njs_typed_array(value);
             if (njs_slow_path(njs_is_detached_buffer(array->buffer))) {
