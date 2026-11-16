@@ -910,7 +910,7 @@ qjs_text_decoder_decode(JSContext *cx, JSValueConst this_val, int argc,
 
     stream = 0;
 
-    if (argc > 1) {
+    if (argc > 1 && !JS_IsNullOrUndefined(argv[1])) {
         ret = JS_GetPropertyStr(cx, argv[1], "stream");
         if (JS_IsException(ret)) {
             return JS_EXCEPTION;
@@ -920,9 +920,14 @@ qjs_text_decoder_decode(JSContext *cx, JSValueConst this_val, int argc,
         JS_FreeValue(cx, ret);
     }
 
-    ret = qjs_typed_array_data(cx, argv[0], &data);
-    if (JS_IsException(ret)) {
-        return ret;
+    data.start = NULL;
+    data.length = 0;
+
+    if (!JS_IsUndefined(argv[0])) {
+        ret = qjs_typed_array_data(cx, argv[0], &data);
+        if (JS_IsException(ret)) {
+            return ret;
+        }
     }
 
     end = data.start + data.length;

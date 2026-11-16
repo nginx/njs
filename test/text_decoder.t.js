@@ -172,6 +172,37 @@ let reuse_tsuite = {
     ],
 };
 
+let args_tsuite = {
+    name: "TextDecoder() optional arguments tests",
+    T: async (params) => {
+        let td = new TextDecoder('utf-8');
+        let r = params.prefix ? td.decode(params.prefix, {stream: true}) : '';
+
+        r += td.decode.apply(td, params.args);
+
+        if (params.exception) {
+            return `expected ${params.exception} not thrown`;
+        }
+
+        if (r !== params.expected) {
+            throw Error(`unexpected output "${r}" != "${params.expected}"`);
+        }
+
+        return 'SUCCESS';
+    },
+
+    tests: [
+        { args: [], expected: '' },
+        { args: [undefined], expected: '' },
+        { args: [new Uint8Array([0x41]), undefined], expected: 'A' },
+        { args: [new Uint8Array([0x41]), null], expected: 'A' },
+        { prefix: new Uint8Array([0xE2, 0x82]), args: [], expected: '\uFFFD' },
+        { prefix: new Uint8Array([0xE2]),
+          args: [undefined, {stream: true}], expected: '' },
+        { args: [null], exception: 'TypeError' },
+    ],
+};
+
 let ignoreBOM_tsuite = {
     name: "TextDecoder() ignoreBOM tests",
     T: async (params) => {
@@ -269,6 +300,7 @@ run([
     stream_tsuite,
     fatal_tsuite,
     reuse_tsuite,
+    args_tsuite,
     ignoreBOM_tsuite,
     detached_tsuite,
     detached_options_tsuite,
