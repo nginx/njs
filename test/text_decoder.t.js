@@ -229,6 +229,41 @@ let detached_tsuite = {
     ],
 };
 
+let detached_options_tsuite = {
+    name: "TextDecoder() detach in options test",
+    skip: () => !is_detach_available(),
+
+    T: async (params) => {
+        let td = new TextDecoder('utf-8');
+        let uint8 = new Uint8Array(4096);
+        let input = params.buffer ? uint8.buffer : uint8;
+        let options = {
+            get stream() {
+                detach(uint8.buffer);
+                return false;
+            }
+        };
+
+        try {
+            td.decode(input, options);
+
+        } catch (e) {
+            if (e.toString().startsWith('TypeError:')) {
+                return 'SUCCESS';
+            }
+
+            throw e;
+        }
+
+        throw Error('Expected TypeError not thrown');
+    },
+
+    tests: [
+        { buffer: false },
+        { buffer: true },
+    ],
+};
+
 
 run([
     stream_tsuite,
@@ -236,5 +271,6 @@ run([
     reuse_tsuite,
     ignoreBOM_tsuite,
     detached_tsuite,
+    detached_options_tsuite,
 ])
 .then($DONE, $DONE);

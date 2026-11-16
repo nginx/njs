@@ -515,6 +515,23 @@ njs_text_decoder_decode(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
+    if (nargs > 2) {
+        options = njs_argument(args, 2);
+
+        if (njs_slow_path(!njs_is_object(options))) {
+            njs_type_error(vm, "The \"options\" argument must be "
+                           "of type object");
+            return NJS_ERROR;
+        }
+
+        ret = njs_value_property(vm, options, NJS_ATOM_STRING_stream, retval);
+        if (njs_slow_path(ret == NJS_ERROR)) {
+            return ret;
+        }
+
+        stream = njs_bool(retval);
+    }
+
     if (njs_fast_path(nargs > 1)) {
         value = njs_argument(args, 1);
 
@@ -543,23 +560,6 @@ njs_text_decoder_decode(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
                            "of TypedArray");
             return NJS_ERROR;
         }
-    }
-
-    if (nargs > 2) {
-        options = njs_argument(args, 2);
-
-        if (njs_slow_path(!njs_is_object(options))) {
-            njs_type_error(vm, "The \"options\" argument must be "
-                           "of type object");
-            return NJS_ERROR;
-        }
-
-        ret = njs_value_property(vm, options, NJS_ATOM_STRING_stream, retval);
-        if (njs_slow_path(ret == NJS_ERROR)) {
-            return ret;
-        }
-
-        stream = njs_bool(retval);
     }
 
     data = njs_object_data(this);

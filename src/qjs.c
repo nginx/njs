@@ -908,11 +908,6 @@ qjs_text_decoder_decode(JSContext *cx, JSValueConst this_val, int argc,
         return JS_ThrowTypeError(cx, "'this' is not a TextDecoder");
     }
 
-    ret = qjs_typed_array_data(cx, argv[0], &data);
-    if (JS_IsException(ret)) {
-        return ret;
-    }
-
     stream = 0;
 
     if (argc > 1) {
@@ -923,6 +918,11 @@ qjs_text_decoder_decode(JSContext *cx, JSValueConst this_val, int argc,
 
         stream = JS_ToBool(cx, ret);
         JS_FreeValue(cx, ret);
+    }
+
+    ret = qjs_typed_array_data(cx, argv[0], &data);
+    if (JS_IsException(ret)) {
+        return ret;
     }
 
     end = data.start + data.length;
