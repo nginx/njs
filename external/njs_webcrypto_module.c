@@ -4144,6 +4144,7 @@ njs_webcrypto_import_key_internal(njs_vm_t *vm, njs_webcrypto_key_format_t fmt,
 
         key->hash = hash;
         key->u.a.pkey = pkey;
+        pkey = NULL;
 
         break;
 
@@ -4213,6 +4214,7 @@ njs_webcrypto_import_key_internal(njs_vm_t *vm, njs_webcrypto_key_format_t fmt,
         }
 
         key->u.a.pkey = pkey;
+        pkey = NULL;
 
         break;
 
@@ -4241,6 +4243,7 @@ njs_webcrypto_import_key_internal(njs_vm_t *vm, njs_webcrypto_key_format_t fmt,
         }
 
         key->u.a.pkey = pkey;
+        pkey = NULL;
 
         break;
 
@@ -4273,6 +4276,7 @@ njs_webcrypto_import_key_internal(njs_vm_t *vm, njs_webcrypto_key_format_t fmt,
         }
 
         key->u.a.pkey = pkey;
+        pkey = NULL;
 
         break;
 #endif
