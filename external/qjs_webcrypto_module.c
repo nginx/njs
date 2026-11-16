@@ -4771,15 +4771,12 @@ qjs_webcrypto_sign(JSContext *cx, JSValueConst this_val, int argc,
                 JS_ThrowOutOfMemory(cx);
                 return JS_EXCEPTION;
             }
-
-        } else {
-            dst = (u_char *) &m[0];
         }
 
         outlen = m_len;
 
         p = HMAC(md, key->u.s.raw.start, key->u.s.raw.length, data.start,
-                 data.length, dst, &m_len);
+                 data.length, verify ? m : dst, &m_len);
 
         if (p == NULL || m_len != outlen) {
             qjs_webcrypto_error(cx, "HMAC() failed");
@@ -4788,7 +4785,7 @@ qjs_webcrypto_sign(JSContext *cx, JSValueConst this_val, int argc,
 
         if (verify) {
             rc = (sig.length == outlen
-                  && CRYPTO_memcmp(sig.start, dst, outlen) == 0);
+                  && CRYPTO_memcmp(sig.start, m, outlen) == 0);
         }
 
         break;
