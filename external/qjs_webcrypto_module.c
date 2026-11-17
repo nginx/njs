@@ -10,6 +10,22 @@
 #include "njs_openssl.h"
 
 typedef enum {
+    QJS_SUBTLE_DECRYPT,
+    QJS_SUBTLE_DERIVE_BITS,
+    QJS_SUBTLE_DERIVE_KEY,
+    QJS_SUBTLE_DIGEST,
+    QJS_SUBTLE_ENCRYPT,
+    QJS_SUBTLE_EXPORT_KEY,
+    QJS_SUBTLE_GENERATE_KEY,
+    QJS_SUBTLE_IMPORT_KEY,
+    QJS_SUBTLE_SIGN,
+    QJS_SUBTLE_UNWRAP_KEY,
+    QJS_SUBTLE_VERIFY,
+    QJS_SUBTLE_WRAP_KEY,
+} qjs_webcrypto_subtle_method_t;
+
+
+typedef enum {
     QJS_KEY_FORMAT_RAW          = 1 << 1,
     QJS_KEY_FORMAT_PKCS8        = 1 << 2,
     QJS_KEY_FORMAT_SPKI         = 1 << 3,
@@ -109,6 +125,8 @@ typedef int (*EVP_PKEY_cipher_init_t)(EVP_PKEY_CTX *ctx);
 typedef int (*EVP_PKEY_cipher_t)(EVP_PKEY_CTX *ctx, unsigned char *out,
     size_t *outlen, const unsigned char *in, size_t inlen);
 
+static JSValue qjs_webcrypto_subtle_call(JSContext *cx, JSValueConst this_val,
+    int argc, JSValueConst *argv, int method);
 static JSValue qjs_webcrypto_cipher(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv, int encrypt);
 static JSValue qjs_cipher_pkey(JSContext *cx, njs_str_t *data,
@@ -509,18 +527,30 @@ static njs_str_t qjs_webcrypto_alg_aes_name[4][3 + 1] = {
 
 
 static const JSCFunctionListEntry qjs_webcrypto_subtle[] = {
-    JS_CFUNC_DEF("importKey", 5, qjs_webcrypto_import_key),
-    JS_CFUNC_MAGIC_DEF("decrypt", 4, qjs_webcrypto_cipher, 0),
-    JS_CFUNC_MAGIC_DEF("deriveBits", 4, qjs_webcrypto_derive, 0),
-    JS_CFUNC_MAGIC_DEF("deriveKey", 5, qjs_webcrypto_derive, 1),
-    JS_CFUNC_DEF("digest", 3, qjs_webcrypto_digest),
-    JS_CFUNC_MAGIC_DEF("encrypt", 4, qjs_webcrypto_cipher, 1),
-    JS_CFUNC_DEF("exportKey", 3, qjs_webcrypto_export_key),
-    JS_CFUNC_DEF("generateKey", 3, qjs_webcrypto_generate_key),
-    JS_CFUNC_MAGIC_DEF("sign", 4, qjs_webcrypto_sign, 0),
-    JS_CFUNC_DEF("unwrapKey", 7, qjs_webcrypto_unwrap_key),
-    JS_CFUNC_MAGIC_DEF("verify", 4, qjs_webcrypto_sign, 1),
-    JS_CFUNC_DEF("wrapKey", 4, qjs_webcrypto_wrap_key),
+    JS_CFUNC_MAGIC_DEF("importKey", 5, qjs_webcrypto_subtle_call,
+                       QJS_SUBTLE_IMPORT_KEY),
+    JS_CFUNC_MAGIC_DEF("decrypt", 4, qjs_webcrypto_subtle_call,
+                       QJS_SUBTLE_DECRYPT),
+    JS_CFUNC_MAGIC_DEF("deriveBits", 4, qjs_webcrypto_subtle_call,
+                       QJS_SUBTLE_DERIVE_BITS),
+    JS_CFUNC_MAGIC_DEF("deriveKey", 5, qjs_webcrypto_subtle_call,
+                       QJS_SUBTLE_DERIVE_KEY),
+    JS_CFUNC_MAGIC_DEF("digest", 3, qjs_webcrypto_subtle_call,
+                       QJS_SUBTLE_DIGEST),
+    JS_CFUNC_MAGIC_DEF("encrypt", 4, qjs_webcrypto_subtle_call,
+                       QJS_SUBTLE_ENCRYPT),
+    JS_CFUNC_MAGIC_DEF("exportKey", 3, qjs_webcrypto_subtle_call,
+                       QJS_SUBTLE_EXPORT_KEY),
+    JS_CFUNC_MAGIC_DEF("generateKey", 3, qjs_webcrypto_subtle_call,
+                       QJS_SUBTLE_GENERATE_KEY),
+    JS_CFUNC_MAGIC_DEF("sign", 4, qjs_webcrypto_subtle_call,
+                       QJS_SUBTLE_SIGN),
+    JS_CFUNC_MAGIC_DEF("unwrapKey", 7, qjs_webcrypto_subtle_call,
+                       QJS_SUBTLE_UNWRAP_KEY),
+    JS_CFUNC_MAGIC_DEF("verify", 4, qjs_webcrypto_subtle_call,
+                       QJS_SUBTLE_VERIFY),
+    JS_CFUNC_MAGIC_DEF("wrapKey", 4, qjs_webcrypto_subtle_call,
+                       QJS_SUBTLE_WRAP_KEY),
 };
 
 
@@ -554,6 +584,67 @@ qjs_module_t  qjs_webcrypto_module = {
     .name = "webcrypto",
     .init = qjs_webcrypto_init,
 };
+
+
+static JSValue
+qjs_webcrypto_subtle_call(JSContext *cx, JSValueConst this_val, int argc,
+    JSValueConst *argv, int method)
+{
+    JSValue  ret;
+
+    switch (method) {
+    case QJS_SUBTLE_DECRYPT:
+        ret = qjs_webcrypto_cipher(cx, this_val, argc, argv, 0);
+        break;
+
+    case QJS_SUBTLE_DERIVE_BITS:
+        ret = qjs_webcrypto_derive(cx, this_val, argc, argv, 0);
+        break;
+
+    case QJS_SUBTLE_DERIVE_KEY:
+        ret = qjs_webcrypto_derive(cx, this_val, argc, argv, 1);
+        break;
+
+    case QJS_SUBTLE_DIGEST:
+        ret = qjs_webcrypto_digest(cx, this_val, argc, argv);
+        break;
+
+    case QJS_SUBTLE_ENCRYPT:
+        ret = qjs_webcrypto_cipher(cx, this_val, argc, argv, 1);
+        break;
+
+    case QJS_SUBTLE_EXPORT_KEY:
+        ret = qjs_webcrypto_export_key(cx, this_val, argc, argv);
+        break;
+
+    case QJS_SUBTLE_GENERATE_KEY:
+        ret = qjs_webcrypto_generate_key(cx, this_val, argc, argv);
+        break;
+
+    case QJS_SUBTLE_IMPORT_KEY:
+        ret = qjs_webcrypto_import_key(cx, this_val, argc, argv);
+        break;
+
+    case QJS_SUBTLE_SIGN:
+        ret = qjs_webcrypto_sign(cx, this_val, argc, argv, 0);
+        break;
+
+    case QJS_SUBTLE_UNWRAP_KEY:
+        ret = qjs_webcrypto_unwrap_key(cx, this_val, argc, argv);
+        break;
+
+    case QJS_SUBTLE_VERIFY:
+        ret = qjs_webcrypto_sign(cx, this_val, argc, argv, 1);
+        break;
+
+    case QJS_SUBTLE_WRAP_KEY:
+    default:
+        ret = qjs_webcrypto_wrap_key(cx, this_val, argc, argv);
+        break;
+    }
+
+    return qjs_promise_result(cx, ret);
+}
 
 
 static JSValue
@@ -608,11 +699,11 @@ qjs_webcrypto_cipher(JSContext *cx, JSValueConst this_val,
         goto fail;
     }
 
-    return qjs_promise_result(cx, ret);
+    return ret;
 
 fail:
 
-    return qjs_promise_result(cx, JS_EXCEPTION);
+    return JS_EXCEPTION;
 }
 
 
@@ -2155,13 +2246,13 @@ qjs_derive_ecdh(JSContext *cx, JSValueConst *argv, int argc, int derive_key,
         }
     }
 
-    return qjs_promise_result(cx, result);
+    return result;
 
 fail:
     JS_FreeValue(cx, public_value);
     JS_FreeValue(cx, result);
 
-    return qjs_promise_result(cx, JS_EXCEPTION);
+    return JS_EXCEPTION;
 }
 
 
@@ -2471,7 +2562,7 @@ free:
         }
     }
 
-    return qjs_promise_result(cx, ret);
+    return ret;
 
 fail:
 
@@ -2479,7 +2570,7 @@ fail:
 
     js_free(cx, k);
 
-    return qjs_promise_result(cx, JS_EXCEPTION);
+    return JS_EXCEPTION;
 }
 
 
@@ -2496,12 +2587,12 @@ qjs_webcrypto_digest(JSContext *cx, JSValueConst this_val, int argc,
 
     ret = qjs_algorithm_hash(cx, argv[0], &hash);
     if (JS_IsException(ret)) {
-        return JS_EXCEPTION;
+        goto fail;
     }
 
     ret = qjs_typed_array_data(cx, argv[1], &data);
     if (JS_IsException(ret)) {
-        return JS_EXCEPTION;
+        goto fail;
     }
 
     md = qjs_algorithm_hash_digest(hash);
@@ -2510,13 +2601,13 @@ qjs_webcrypto_digest(JSContext *cx, JSValueConst this_val, int argc,
     dst = js_malloc(cx, olen);
     if (dst == NULL) {
         JS_ThrowOutOfMemory(cx);
-        return JS_EXCEPTION;
+        goto fail;
     }
 
     if (EVP_Digest(data.start, data.length, dst, &olen, md, NULL) <= 0) {
         js_free(cx, dst);
         qjs_webcrypto_error(cx, "EVP_Digest() failed");
-        return JS_EXCEPTION;
+        goto fail;
     }
 
     ret = qjs_array_buffer_adopt(cx, dst, olen);
@@ -2525,6 +2616,10 @@ qjs_webcrypto_digest(JSContext *cx, JSValueConst this_val, int argc,
     }
 
     return ret;
+
+fail:
+
+    return JS_EXCEPTION;
 }
 
 
@@ -2701,7 +2796,6 @@ static JSValue
 qjs_webcrypto_export_key(JSContext *cx, JSValueConst this_val, int argc,
     JSValueConst *argv)
 {
-    JSValue                     ret;
     qjs_webcrypto_key_t         *key;
     qjs_webcrypto_key_format_t  fmt;
 
@@ -2728,12 +2822,7 @@ qjs_webcrypto_export_key(JSContext *cx, JSValueConst this_val, int argc,
         return JS_EXCEPTION;
     }
 
-    ret = qjs_webcrypto_export_key_raw(cx, key, fmt);
-    if (JS_IsException(ret)) {
-        return qjs_promise_result(cx, JS_EXCEPTION);
-    }
-
-    return qjs_promise_result(cx, ret);
+    return qjs_webcrypto_export_key_raw(cx, key, fmt);
 }
 
 
@@ -3124,7 +3213,7 @@ qjs_webcrypto_generate_key(JSContext *cx, JSValueConst this_val,
         goto fail;
     }
 
-    return qjs_promise_result(cx, obj);
+    return obj;
 
 fail:
 
@@ -3136,7 +3225,7 @@ fail:
     JS_FreeValue(cx, keypub);
     JS_FreeValue(cx, obj);
 
-    return qjs_promise_result(cx, JS_EXCEPTION);
+    return JS_EXCEPTION;
 }
 
 
@@ -4404,7 +4493,7 @@ static JSValue
 qjs_webcrypto_import_key(JSContext *cx, JSValueConst this_val, int argc,
     JSValueConst *argv)
 {
-    JSValue                     ret, key;
+    JSValue                     ret;
     unsigned                    usage;
     qjs_webcrypto_algorithm_t   *alg;
     qjs_webcrypto_key_format_t  fmt;
@@ -4424,13 +4513,8 @@ qjs_webcrypto_import_key(JSContext *cx, JSValueConst this_val, int argc,
         return JS_EXCEPTION;
     }
 
-    key = qjs_webcrypto_import_key_internal(cx, fmt, argv[1], alg, argv[2],
-                                            JS_ToBool(cx, argv[3]), usage);
-    if (JS_IsException(key)) {
-        return qjs_promise_result(cx, JS_EXCEPTION);
-    }
-
-    return qjs_promise_result(cx, key);
+    return qjs_webcrypto_import_key_internal(cx, fmt, argv[1], alg, argv[2],
+                                             JS_ToBool(cx, argv[3]), usage);
 }
 
 
@@ -4964,7 +5048,7 @@ qjs_webcrypto_sign(JSContext *cx, JSValueConst this_val, int argc,
         ret = JS_NewBool(cx, rc != 0);
     }
 
-    return qjs_promise_result(cx, ret);
+    return ret;
 
 fail:
 
@@ -4980,7 +5064,7 @@ fail:
         js_free(cx, dst);
     }
 
-    return qjs_promise_result(cx, JS_EXCEPTION);
+    return JS_EXCEPTION;
 }
 
 
@@ -5082,11 +5166,11 @@ qjs_webcrypto_wrap_key(JSContext *cx, JSValueConst this_val, int argc,
         goto fail;
     }
 
-    return qjs_promise_result(cx, ret);
+    return ret;
 
 fail:
 
-    return qjs_promise_result(cx, JS_EXCEPTION);
+    return JS_EXCEPTION;
 }
 
 
@@ -5197,11 +5281,11 @@ qjs_webcrypto_unwrap_key(JSContext *cx, JSValueConst this_val, int argc,
         goto fail;
     }
 
-    return qjs_promise_result(cx, key_value);
+    return key_value;
 
 fail:
 
-    return qjs_promise_result(cx, JS_EXCEPTION);
+    return JS_EXCEPTION;
 }
 
 
