@@ -3218,7 +3218,7 @@ njs_ext_generate_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     default:
         njs_vm_internal_error(vm, "not implemented generateKey"
                               "algorithm: \"%V\"", njs_algorithm_string(alg));
-        return NJS_ERROR;
+        goto fail;
     }
 
     return njs_webcrypto_result(vm, &value, NJS_OK, retval);
