@@ -2424,6 +2424,7 @@ qjs_webcrypto_derive(JSContext *cx, JSValueConst this_val, int argc,
         rc = EVP_PKEY_derive(pctx, k, &olen);
         if (rc <= 0 || olen != (size_t) length) {
             qjs_webcrypto_error(cx, "EVP_PKEY_derive() failed");
+            rc = -1;
             goto free;
         }
 

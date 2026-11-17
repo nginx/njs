@@ -2087,6 +2087,7 @@ njs_ext_derive(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         ret = EVP_PKEY_derive(pctx, k, &olen);
         if (njs_slow_path(ret <= 0 || olen != (size_t) length)) {
             njs_webcrypto_error(vm, "EVP_PKEY_derive() failed");
+            ret = NJS_ERROR;
             goto free;
         }
 
