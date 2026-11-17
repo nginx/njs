@@ -857,6 +857,7 @@ qjs_cipher_aes_gcm(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
 
     ret = qjs_typed_array_data(cx, value, &iv);
     if (JS_IsException(ret)) {
+        JS_FreeValue(cx, value);
         return JS_EXCEPTION;
     }
 
@@ -871,6 +872,7 @@ qjs_cipher_aes_gcm(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
 
     if (!JS_IsUndefined(value)) {
         if (JS_ToInt64(cx, &taglen, value) < 0) {
+            JS_FreeValue(cx, value);
             return JS_EXCEPTION;
         }
     }
@@ -933,6 +935,7 @@ qjs_cipher_aes_gcm(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
     if (!JS_IsUndefined(value)) {
         ret = qjs_typed_array_data(cx, value, &aad);
         if (JS_IsException(ret)) {
+            JS_FreeValue(cx, value);
             goto fail;
         }
     }
@@ -1151,6 +1154,7 @@ qjs_cipher_aes_ctr(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
 
     ret = qjs_typed_array_data(cx, value, &iv);
     if (JS_IsException(ret)) {
+        JS_FreeValue(cx, value);
         return JS_EXCEPTION;
     }
 
@@ -1173,6 +1177,7 @@ qjs_cipher_aes_ctr(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
     }
 
     if (JS_ToInt64(cx, &length, value) < 0) {
+        JS_FreeValue(cx, value);
         return JS_EXCEPTION;
     }
 
@@ -1361,6 +1366,7 @@ qjs_cipher_aes_cbc(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
 
     ret = qjs_typed_array_data(cx, value, &iv);
     if (JS_IsException(ret)) {
+        JS_FreeValue(cx, value);
         return JS_EXCEPTION;
     }
 
@@ -2333,6 +2339,7 @@ qjs_webcrypto_derive(JSContext *cx, JSValueConst this_val, int argc,
     }
 
     if (JS_ToInt64(cx, &length, ret) < 0) {
+        JS_FreeValue(cx, ret);
         return JS_EXCEPTION;
     }
 
@@ -2429,6 +2436,7 @@ qjs_webcrypto_derive(JSContext *cx, JSValueConst this_val, int argc,
         }
 
         if (JS_ToInt64(cx, &iterations, ret) < 0) {
+            JS_FreeValue(cx, ret);
             goto fail;
         }
 
