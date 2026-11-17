@@ -1350,6 +1350,19 @@ njs_vm_prototype(njs_vm_t *vm, njs_value_t *value, njs_value_t *retval)
 
 
 njs_int_t
+njs_vm_prototype_set(njs_vm_t *vm, njs_value_t *value, njs_value_t *prototype)
+{
+    njs_value_t  arguments[3], retval;
+
+    njs_set_undefined(&arguments[0]);
+    njs_value_assign(&arguments[1], value);
+    njs_value_assign(&arguments[2], prototype);
+
+    return njs_object_set_prototype_of(vm, arguments, 3, 0, &retval);
+}
+
+
+njs_int_t
 njs_vm_array_alloc(njs_vm_t *vm, njs_value_t *retval, uint32_t spare)
 {
     njs_array_t  *array;

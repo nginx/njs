@@ -491,7 +491,7 @@ qjs_query_string_parser(JSContext *cx, u_char *query, u_char *end,
         eq->length = 1;
     }
 
-    obj = JS_NewObject(cx);
+    obj = JS_NewObjectProto(cx, JS_NULL);
     if (JS_IsException(obj)) {
         return JS_EXCEPTION;
     }

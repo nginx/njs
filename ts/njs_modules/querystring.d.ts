@@ -45,6 +45,10 @@ declare module "querystring" {
         /**
          * Parses the query string URL and returns an object.
          *
+         * The returned object has a null prototype. Methods inherited from
+         * Object.prototype, such as toString() and hasOwnProperty(),
+         * are absent.
+         *
          * By default, percent-encoded characters within the query string are assumed to use the
          * UTF-8 encoding, invalid UTF-8 sequences will be replaced with the `U+FFFD` replacement
          * character.

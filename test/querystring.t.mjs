@@ -74,6 +74,10 @@ let parse_tsuite = {
 
         { value: 'baz=fuz&baz=bar', sep: '&', eq: '=', expected: { baz:['fuz', 'bar'] } },
         { value: 'baz=fuz&baz=bar&baz=zap', expected: { baz:['fuz', 'bar', 'zap'] } },
+        { value: 'toString=fuz', expected: { toString: 'fuz' } },
+        { value: 'constructor=fuz', expected: { constructor: 'fuz' } },
+        { value: 'hasOwnProperty=fuz&hasOwnProperty=bar',
+          expected: { hasOwnProperty: ['fuz', 'bar'] } },
         { value: 'baz=', expected: { baz:'' } },
         { value: '=fuz', expected: { '':'fuz' } },
         { value: '=fuz=', expected: { '':'fuz=' } },
@@ -129,6 +133,87 @@ let parse_tsuite = {
 
         { value: {toString: () => { throw 'Oops'; }}, sep: "&", eq: "=",
           exception: 'TypeError: Cannot convert object to primitive value' },
+]};
+
+let parse_prototype_tsuite = {
+    name: "querystring.parse() null prototype tests",
+    T: async (params) => {
+        let r = qs.parse(params.value, null, null, params.options);
+
+        if (Object.getPrototypeOf(r) !== null) {
+            throw Error('unexpected prototype');
+        }
+
+        if (JSON.stringify(r) !== params.expected) {
+            throw Error(`unexpected output "${JSON.stringify(r)}"`);
+        }
+
+        let keys = Object.keys(r).sort();
+        let enumerated = [];
+
+        for (let key in r) {
+            enumerated.push(key);
+        }
+
+        if (JSON.stringify(enumerated.sort()) !== JSON.stringify(keys)) {
+            throw Error('unexpected inherited keys');
+        }
+
+        for (let i = 0; i < keys.length; i++) {
+            let key = keys[i];
+            let desc = Object.getOwnPropertyDescriptor(r, key);
+
+            if (!desc.enumerable || !desc.configurable || !desc.writable
+                || !Object.prototype.hasOwnProperty.call(desc, 'value'))
+            {
+                throw Error(`unexpected descriptor for "${key}"`);
+            }
+        }
+
+        let names = ['__proto__', 'constructor', 'toString',
+                     'hasOwnProperty', 'valueOf'];
+
+        for (let i = 0; i < names.length; i++) {
+            let key = names[i];
+
+            if (!Object.prototype.hasOwnProperty.call(r, key)
+                && r[key] !== undefined)
+            {
+                throw Error(`unexpected inherited value for "${key}"`);
+            }
+        }
+
+        let roundtrip = qs.parse(qs.stringify(r));
+
+        if (Object.getPrototypeOf(roundtrip) !== null
+            || JSON.stringify(roundtrip) !== params.expected)
+        {
+            throw Error('unexpected roundtrip result');
+        }
+
+        return 'SUCCESS';
+    },
+
+    tests: [
+        { value: '', expected: '{}' },
+        { value: '&&', expected: '{}' },
+        { value: 'a=1', expected: '{"a":"1"}' },
+        { value: '__proto__=fuz', expected: '{"__proto__":"fuz"}' },
+        { value: '__proto__=fuz&__proto__=bar&__proto__=zap',
+          expected: '{"__proto__":["fuz","bar","zap"]}' },
+        { value: '__%70roto__=fuz&__proto__=bar',
+          expected: '{"__proto__":["fuz","bar"]}' },
+        { value: '__proto__=fuz&1=bar',
+          expected: '{"1":"bar","__proto__":"fuz"}' },
+        { value: 'toString=fuz&constructor=bar&valueOf=zap',
+          expected: '{"toString":"fuz","constructor":"bar",'
+                    + '"valueOf":"zap"}' },
+        { value: 'hasOwnProperty=fuz&hasOwnProperty=bar',
+          expected: '{"hasOwnProperty":["fuz","bar"]}' },
+        { value: '__proto__&__proto__=', expected: '{"__proto__":["",""]}' },
+        { value: 'name=fuz',
+          options: { decodeURIComponent: s => s == 'name' ? '__proto__' : s },
+          expected: '{"__proto__":"fuz"}' },
 ]};
 
 let stringify_tsuite = {
@@ -232,6 +317,7 @@ let unescape_tsuite = {
 run([
     escape_tsuite,
     parse_tsuite,
+    parse_prototype_tsuite,
     stringify_tsuite,
     unescape_tsuite,
 ])
