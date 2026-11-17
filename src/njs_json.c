@@ -708,22 +708,20 @@ njs_json_parse_string(njs_json_parse_ctx_t *ctx, njs_value_t *value,
                     continue;
                 }
 
-                p += 2;
+                utf_low = njs_json_unicode(p + 2);
 
-                utf_low = njs_json_unicode(p);
-                p += 4;
-
-                if (njs_fast_path(njs_surrogate_trailing(utf_low))) {
-                    utf = njs_surrogate_pair(utf, utf_low);
-
-                } else if (njs_surrogate_leading(utf_low)) {
-                    utf = NJS_UNICODE_REPLACEMENT;
+                if (njs_slow_path(!njs_surrogate_trailing(utf_low))) {
+                    /*
+                     * The next escape is left to the next iteration,
+                     * a leading surrogate there can start a new pair.
+                     */
                     s = njs_utf8_encode(s, NJS_UNICODE_REPLACEMENT);
-
-                } else {
-                    utf = utf_low;
-                    s = njs_utf8_encode(s, NJS_UNICODE_REPLACEMENT);
+                    continue;
                 }
+
+                p += 6;
+
+                utf = njs_surrogate_pair(utf, utf_low);
             }
 
             s = njs_utf8_encode(s, utf);

@@ -8800,18 +8800,14 @@ next_char:
             if (njs_fast_path(njs_surrogate_trailing(cp))) {
                 cp = njs_surrogate_pair(cp_pair, cp);
 
-            } else if (njs_slow_path(njs_surrogate_leading(cp))) {
-                cp = NJS_UNICODE_REPLACEMENT;
-
-                dst = njs_utf8_encode(dst, (uint32_t) cp);
-
             } else {
                 dst = njs_utf8_encode(dst, NJS_UNICODE_REPLACEMENT);
             }
 
             cp_pair = 0;
+        }
 
-        } else if (njs_surrogate_any(cp)) {
+        if (njs_surrogate_any(cp)) {
             if (cp <= 0xdbff && (end - src) >= 2
                 && src[0] == '\\' && src[1] == 'u')
             {
@@ -8957,20 +8953,15 @@ njs_parser_escape_string_calc_length(njs_parser_t *parser,
             if (njs_fast_path(njs_surrogate_trailing(cp))) {
                 cp = njs_surrogate_pair(cp_pair, cp);
 
-            } else if (njs_slow_path(njs_surrogate_leading(cp))) {
-                cp = NJS_UNICODE_REPLACEMENT;
-
-                size += njs_utf8_size(cp);
-                length++;
-
             } else {
                 size += njs_utf8_size(NJS_UNICODE_REPLACEMENT);
                 length++;
             }
 
             cp_pair = 0;
+        }
 
-        } else if (njs_surrogate_any(cp)) {
+        if (njs_surrogate_any(cp)) {
             if (cp <= 0xdbff && (end - src) >= 2
                 && src[0] == '\\' && src[1] == 'u')
             {
