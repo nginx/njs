@@ -14,6 +14,32 @@ async function test(params) {
     return 'SUCCESS';
 }
 
+function test_promise(params) {
+    let promise = crypto.subtle.digest(params.name, params.data);
+
+    if (!(promise instanceof Promise)) {
+        throw Error('digest did not return a Promise');
+    }
+
+    return promise.then(digest => {
+        if (params.rejected) {
+            throw Error('digest unexpectedly resolved');
+        }
+
+        if (!(digest instanceof ArrayBuffer)) {
+            throw Error('digest did not resolve with an ArrayBuffer');
+        }
+
+        return 'SUCCESS';
+    }, error => {
+        if (!params.rejected) {
+            throw error;
+        }
+
+        return 'SUCCESS';
+    });
+}
+
 function p(args) {
     let params = Object.assign({}, args);
     params.data = Buffer.from(params.data, "hex");
@@ -55,5 +81,17 @@ let digest_tsuite = {
           expected: "cdea58919606ea9ae078f7595b192b84446f2189" },
 ]};
 
-run([digest_tsuite])
+let digest_promise_tsuite = {
+    name: "SHA digest Promise",
+    skip: () => (!has_buffer() || !has_webcrypto()),
+    T: test_promise,
+    tests: [
+        { name: 'SHA-256', data: new Uint8Array() },
+        { name: 'XXX', data: new Uint8Array(), rejected: true },
+        { name: Symbol.toStringTag, data: new Uint8Array(), rejected: true },
+        { name: 'SHA-256', data: Symbol.toStringTag, rejected: true },
+    ],
+};
+
+run([digest_tsuite, digest_promise_tsuite])
 .then($DONE, $DONE);
