@@ -8738,6 +8738,12 @@ static njs_unit_test_t  njs_test[] =
     { njs_str("'\\u{d800}\\u{dB00}'"),
       njs_str("��") },
 
+    { njs_str("'\\ud83d\\ud83d\\ude00'"),
+      njs_str("\xef\xbf\xbd\xf0\x9f\x98\x80") },
+
+    { njs_str("'\\u{d83d}\\u{d83d}\\u{de00}'.length"),
+      njs_str("2") },
+
     { njs_str("'\\u{d800}\\u{d7ff}'"),
       njs_str("�퟿") },
 
@@ -19793,6 +19799,12 @@ static njs_unit_test_t  njs_test[] =
 
     { njs_str("JSON.parse('\"\\\\uD800\\\\uDB00\"')"),
       njs_str("��") },
+
+    { njs_str("JSON.parse('\"\\\\uD83D\\\\uD83D\\\\uDE00\"')"),
+      njs_str("\xef\xbf\xbd\xf0\x9f\x98\x80") },
+
+    { njs_str("JSON.parse('\"\\\\uD83D\\\\uD83D\\\\uDE00\"').length"),
+      njs_str("2") },
 
     { njs_str("JSON.parse('\"\\\\ud800[\"')"),
       njs_str("�[") },
