@@ -2296,6 +2296,7 @@ qjs_webcrypto_derive(JSContext *cx, JSValueConst this_val, int argc,
 
     k = js_malloc(cx, njs_max(length, 1));
     if (k == NULL) {
+        JS_FreeValue(cx, dkey_value);
         JS_ThrowOutOfMemory(cx);
         return JS_EXCEPTION;
     }
@@ -5292,6 +5293,7 @@ qjs_webcrypto_key_algorithm(JSContext *cx, JSValueConst this_val)
 
         ret = JS_NewObject(cx);
         if (JS_IsException(ret)) {
+            JS_FreeValue(cx, hash);
             JS_FreeValue(cx, obj);
             return JS_EXCEPTION;
         }
@@ -5510,6 +5512,7 @@ qjs_webcrypto_key_make(JSContext *cx, qjs_webcrypto_algorithm_t *alg,
 
     k = js_mallocz(cx, sizeof(qjs_webcrypto_key_t));
     if (k == NULL) {
+        JS_FreeValue(cx, key);
         return JS_ThrowOutOfMemory(cx);
     }
 
