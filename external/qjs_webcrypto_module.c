@@ -2704,6 +2704,9 @@ qjs_webcrypto_export_key(JSContext *cx, JSValueConst this_val, int argc,
     qjs_webcrypto_key_format_t  fmt;
 
     fmt = qjs_key_format(cx, argv[0]);
+    if (fmt == QJS_KEY_FORMAT_UNKNOWN) {
+        return JS_EXCEPTION;
+    }
 
     key = JS_GetOpaque2(cx, argv[1], QJS_CORE_CLASS_ID_WEBCRYPTO_KEY);
     if (key == NULL) {
@@ -4991,6 +4994,9 @@ qjs_webcrypto_wrap_key(JSContext *cx, JSValueConst this_val, int argc,
     qjs_webcrypto_key_format_t  fmt;
 
     fmt = qjs_key_format(cx, argv[0]);
+    if (fmt == QJS_KEY_FORMAT_UNKNOWN) {
+        goto fail;
+    }
 
     key = JS_GetOpaque2(cx, argv[1], QJS_CORE_CLASS_ID_WEBCRYPTO_KEY);
     if (key == NULL) {
@@ -5097,6 +5103,9 @@ qjs_webcrypto_unwrap_key(JSContext *cx, JSValueConst this_val, int argc,
     qjs_webcrypto_key_format_t  fmt;
 
     fmt = qjs_key_format(cx, argv[0]);
+    if (fmt == QJS_KEY_FORMAT_UNKNOWN) {
+        goto fail;
+    }
 
     ret = qjs_typed_array_data(cx, argv[1], &data);
     if (JS_IsException(ret)) {
