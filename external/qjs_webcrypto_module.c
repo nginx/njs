@@ -3248,7 +3248,6 @@ qjs_import_base64url_bignum(JSContext *cx, JSValue value)
 
     data.start = (u_char *) JS_ToCStringLen(cx, &data.length, value);
     if (data.start == NULL) {
-        JS_ThrowOutOfMemory(cx);
         return NULL;
     }
 
@@ -3309,11 +3308,11 @@ qjs_import_jwk_rsa(JSContext *cx, JSValue jwk, qjs_webcrypto_key_t *key)
         || !JS_IsString(e)
         || (!JS_IsUndefined(d) && !JS_IsString(d)))
     {
+        JS_ThrowTypeError(cx, "Invalid JWK RSA key");
 fail0:
         JS_FreeValue(cx, n);
         JS_FreeValue(cx, e);
         JS_FreeValue(cx, d);
-        JS_ThrowTypeError(cx, "Invalid JWK RSA key");
         return NULL;
     }
 
@@ -3338,7 +3337,6 @@ fail0:
         alg.start = (u_char *) JS_ToCStringLen(cx, &alg.length, ret);
         JS_FreeValue(cx, ret);
         if (alg.start == NULL) {
-            JS_ThrowOutOfMemory(cx);
             goto fail0;
         }
 
@@ -3402,27 +3400,27 @@ fail0:
 
     p = JS_GetPropertyStr(cx, jwk, "p");
     if (JS_IsException(p)) {
-        goto fail1;
+        goto fail;
     }
 
     q = JS_GetPropertyStr(cx, jwk, "q");
     if (JS_IsException(q)) {
-        goto fail1;
+        goto fail;
     }
 
     dp = JS_GetPropertyStr(cx, jwk, "dp");
     if (JS_IsException(dp)) {
-        goto fail1;
+        goto fail;
     }
 
     dq = JS_GetPropertyStr(cx, jwk, "dq");
     if (JS_IsException(dq)) {
-        goto fail1;
+        goto fail;
     }
 
     qi = JS_GetPropertyStr(cx, jwk, "qi");
     if (JS_IsException(qi)) {
-        goto fail1;
+        goto fail;
     }
 
     if (!JS_IsString(d)
@@ -3432,7 +3430,6 @@ fail0:
         || !JS_IsString(dq)
         || !JS_IsString(qi))
     {
-fail1:
         JS_ThrowTypeError(cx, "Invalid JWK RSA key");
         goto fail;
     }
@@ -3581,11 +3578,11 @@ qjs_import_jwk_ec(JSContext *cx, JSValue jwk, qjs_webcrypto_key_t *key)
         || !JS_IsString(y)
         || (!JS_IsUndefined(d) && !JS_IsString(d)))
     {
+        JS_ThrowTypeError(cx, "Invalid JWK EC key");
 fail0:
         JS_FreeValue(cx, x);
         JS_FreeValue(cx, y);
         JS_FreeValue(cx, d);
-        JS_ThrowTypeError(cx, "Invalid JWK EC key");
         return NULL;
     }
 
@@ -3626,7 +3623,6 @@ fail0:
         name.start = (u_char *) JS_ToCStringLen(cx, &name.length, ret);
         JS_FreeValue(cx, ret);
         if (name.start == NULL) {
-            JS_ThrowOutOfMemory(cx);
             goto fail0;
         }
 
@@ -3966,7 +3962,6 @@ qjs_import_jwk_oct(JSContext *cx, JSValue jwk, qjs_webcrypto_key_t *key)
     alg.start = (u_char *) JS_ToCStringLen(cx, &alg.length, val);
     JS_FreeValue(cx, val);
     if (alg.start == NULL) {
-        JS_ThrowOutOfMemory(cx);
         return JS_EXCEPTION;
     }
 
@@ -5966,7 +5961,6 @@ qjs_key_usage(JSContext *cx, JSValue value, unsigned *mask)
         s.start = (u_char *) JS_ToCStringLen(cx, &s.length, v);
         JS_FreeValue(cx, v);
         if (s.start == NULL) {
-            JS_ThrowOutOfMemory(cx);
             return JS_EXCEPTION;
         }
 
