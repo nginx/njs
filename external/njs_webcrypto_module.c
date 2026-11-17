@@ -4965,8 +4965,10 @@ njs_ext_sign(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     verify_done:
 
         njs_evp_md_ctx_free(mctx);
+        mctx = NULL;
 
         EVP_PKEY_CTX_free(pctx);
+        pctx = NULL;
 
         break;
     }
