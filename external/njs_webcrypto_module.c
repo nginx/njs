@@ -3363,6 +3363,7 @@ fail0:
 
     e_bn = njs_import_base64url_bignum(vm, &e);
     if (njs_slow_path(e_bn == NULL)) {
+        BN_free(n_bn);
         goto fail;
     }
 
