@@ -1691,11 +1691,13 @@ qjs_export_jwk_ec(JSContext *cx, qjs_webcrypto_key_t *key)
 
     x_bn = BN_new();
     if (x_bn == NULL) {
+        qjs_webcrypto_error(cx, "BN_new() failed");
         goto fail;
     }
 
     y_bn = BN_new();
     if (y_bn == NULL) {
+        qjs_webcrypto_error(cx, "BN_new() failed");
         goto fail;
     }
 
@@ -3257,6 +3259,10 @@ qjs_import_base64url_bignum(JSContext *cx, JSValue value)
     bn = BN_bin2bn(decoded.start, decoded.length, NULL);
     JS_FreeCString(cx, (char *) data.start);
 
+    if (bn == NULL) {
+        qjs_webcrypto_error(cx, "BN_bin2bn() failed");
+    }
+
     return bn;
 }
 
@@ -3501,10 +3507,12 @@ done:
 
     pkey = EVP_PKEY_new();
     if (pkey == NULL) {
+        qjs_webcrypto_error(cx, "EVP_PKEY_new() failed");
         goto fail;
     }
 
     if (!EVP_PKEY_set1_RSA(pkey, rsa)) {
+        qjs_webcrypto_error(cx, "EVP_PKEY_set1_RSA() failed");
         EVP_PKEY_free(pkey);
         goto fail;
     }
@@ -3677,6 +3685,7 @@ fail0:
 
     pkey = EVP_PKEY_new();
     if (pkey == NULL) {
+        qjs_webcrypto_error(cx, "EVP_PKEY_new() failed");
         goto fail;
     }
 
@@ -3832,6 +3841,10 @@ qjs_import_jwk_okp(JSContext *cx, JSValue jwk, qjs_webcrypto_key_t *key)
     x_str = JS_ToCStringLen(cx, &x_len, val);
     JS_FreeValue(cx, val);
 
+    if (x_str == NULL) {
+        return NULL;
+    }
+
     x_b64.start = (u_char *) x_str;
     x_b64.length = x_len;
     x_raw.start = x_buf;
@@ -3851,6 +3864,10 @@ qjs_import_jwk_okp(JSContext *cx, JSValue jwk, qjs_webcrypto_key_t *key)
     if (JS_IsString(val)) {
         d_str = JS_ToCStringLen(cx, &d_len, val);
         JS_FreeValue(cx, val);
+
+        if (d_str == NULL) {
+            return NULL;
+        }
 
         d_b64.start = (u_char *) d_str;
         d_b64.length = d_len;
@@ -4607,6 +4624,7 @@ qjs_convert_der_to_p1363(JSContext *cx, EVP_PKEY *pkey, const u_char *der,
 
     n = qjs_ec_rs_size(pkey);
     if (n == 0) {
+        qjs_webcrypto_error(cx, "cannot determine ECDSA signature length");
         return -1;
     }
 
@@ -4618,6 +4636,7 @@ qjs_convert_der_to_p1363(JSContext *cx, EVP_PKEY *pkey, const u_char *der,
 
     ec_sig = d2i_ECDSA_SIG(NULL, &der, der_len);
     if (ec_sig == NULL) {
+        qjs_webcrypto_error(cx, "d2i_ECDSA_SIG() failed");
         goto fail;
     }
 
@@ -4629,10 +4648,12 @@ qjs_convert_der_to_p1363(JSContext *cx, EVP_PKEY *pkey, const u_char *der,
 #endif
 
     if (njs_bn_bn2binpad(r, data, n) <= 0) {
+        qjs_webcrypto_error(cx, "njs_bn_bn2binpad() failed");
         goto fail;
     }
 
     if (njs_bn_bn2binpad(s, &data[n], n) <= 0) {
+        qjs_webcrypto_error(cx, "njs_bn_bn2binpad() failed");
         goto fail;
     }
 

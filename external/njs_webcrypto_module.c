@@ -2362,11 +2362,13 @@ njs_export_jwk_ec(njs_vm_t *vm, njs_webcrypto_key_t *key, njs_value_t *retval)
 
     x_bn = BN_new();
     if (x_bn == NULL) {
+        njs_webcrypto_error(vm, "BN_new() failed");
         goto fail;
     }
 
     y_bn = BN_new();
     if (y_bn == NULL) {
+        njs_webcrypto_error(vm, "BN_new() failed");
         goto fail;
     }
 
@@ -3236,6 +3238,7 @@ fail:
 static BIGNUM *
 njs_import_base64url_bignum(njs_vm_t *vm, njs_opaque_value_t *value)
 {
+    BIGNUM     *bn;
     njs_int_t  ret;
     njs_str_t  data, decoded;
     u_char     buf[512];
@@ -3256,7 +3259,12 @@ njs_import_base64url_bignum(njs_vm_t *vm, njs_opaque_value_t *value)
 
     njs_decode_base64url(&decoded, &data);
 
-    return BN_bin2bn(decoded.start, decoded.length, NULL);
+    bn = BN_bin2bn(decoded.start, decoded.length, NULL);
+    if (njs_slow_path(bn == NULL)) {
+        njs_webcrypto_error(vm, "BN_bin2bn() failed");
+    }
+
+    return bn;
 }
 
 
@@ -3468,10 +3476,12 @@ done:
 
     pkey = EVP_PKEY_new();
     if (njs_slow_path(pkey == NULL)) {
+        njs_webcrypto_error(vm, "EVP_PKEY_new() failed");
         goto fail;
     }
 
     if (!EVP_PKEY_set1_RSA(pkey, rsa)) {
+        njs_webcrypto_error(vm, "EVP_PKEY_set1_RSA() failed");
         EVP_PKEY_free(pkey);
         goto fail;
     }
@@ -3677,6 +3687,7 @@ fail0:
 
     pkey = EVP_PKEY_new();
     if (njs_slow_path(pkey == NULL)) {
+        njs_webcrypto_error(vm, "EVP_PKEY_new() failed");
         goto fail;
     }
 
@@ -4521,6 +4532,7 @@ njs_convert_der_to_p1363(njs_vm_t *vm, EVP_PKEY *pkey, const u_char *der,
 
     n = njs_ec_rs_size(pkey);
     if (n == 0) {
+        njs_webcrypto_error(vm, "cannot determine ECDSA signature length");
         goto fail;
     }
 
@@ -4531,6 +4543,7 @@ njs_convert_der_to_p1363(njs_vm_t *vm, EVP_PKEY *pkey, const u_char *der,
 
     ec_sig = d2i_ECDSA_SIG(NULL, &der, der_len);
     if (ec_sig == NULL) {
+        njs_webcrypto_error(vm, "d2i_ECDSA_SIG() failed");
         goto fail;
     }
 
@@ -4542,10 +4555,12 @@ njs_convert_der_to_p1363(njs_vm_t *vm, EVP_PKEY *pkey, const u_char *der,
 #endif
 
     if (njs_bn_bn2binpad(r, data, n) <= 0) {
+        njs_webcrypto_error(vm, "njs_bn_bn2binpad() failed");
         goto fail;
     }
 
     if (njs_bn_bn2binpad(s, &data[n], n) <= 0) {
+        njs_webcrypto_error(vm, "njs_bn_bn2binpad() failed");
         goto fail;
     }
 
@@ -4556,7 +4571,7 @@ njs_convert_der_to_p1363(njs_vm_t *vm, EVP_PKEY *pkey, const u_char *der,
 
 fail:
 
-    *out_len = 0;
+    ret = NJS_ERROR;
 
 done:
 
