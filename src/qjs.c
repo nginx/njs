@@ -1637,8 +1637,8 @@ qjs_promise_result(JSContext *cx, JSValue result)
 
     if (JS_EnqueueJob(cx, qjs_promise_fill_trampoline, 2, arguments) < 0) {
         JS_FreeValue(cx, promise);
-        JS_FreeValue(cx, callbacks[is_error]);
-        JS_FreeValue(cx, result);
+        JS_FreeValue(cx, arguments[0]);
+        JS_FreeValue(cx, arguments[1]);
         return JS_EXCEPTION;
     }
 
