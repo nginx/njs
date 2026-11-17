@@ -295,6 +295,9 @@ interface NginxHTTPRequest {
     /**
      * Request arguments object.
      *
+     * The object has a null prototype. Methods inherited from Object.prototype,
+     * such as toString() and hasOwnProperty(), are absent.
+     *
      * Since 0.7.6, duplicate keys are returned as an array, keys are
      * case-sensitive, both keys and values are percent-decoded.
      * For example, the query string

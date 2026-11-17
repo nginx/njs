@@ -61,12 +61,26 @@ http {
         location /object {
             js_content test.object;
         }
+
+        location /prototype {
+            js_content test.prototype;
+        }
+
+        location /enumerate {
+            js_content test.enumerate;
+        }
+
+        location /roundtrip {
+            js_content test.roundtrip;
+        }
     }
 }
 
 EOF
 
 $t->write_file('test.js', <<EOF);
+    import qs from 'querystring';
+
     function test_njs(r) {
         r.return(200, njs.version);
     }
@@ -90,11 +104,36 @@ $t->write_file('test.js', <<EOF);
         r.return(200, JSON.stringify(r.args));
     }
 
-    export default {njs: test_njs, iter, keys, object};
+    function prototype(r) {
+        var args = r.args;
+        r.return(200, JSON.stringify({
+            nullPrototype: Object.getPrototypeOf(args) === null,
+            missingToString: args.toString === undefined,
+            missingConstructor: args.constructor === undefined,
+            missingHasOwnProperty: args.hasOwnProperty === undefined,
+            cached: args === r.args
+        }));
+    }
+
+    function enumerate(r) {
+        var keys = [];
+        for (var key in r.args) {
+            keys.push(key);
+        }
+
+        r.return(200, keys.sort());
+    }
+
+    function roundtrip(r) {
+        r.return(200, JSON.stringify(qs.parse(qs.stringify(r.args))));
+    }
+
+    export default {njs: test_njs, iter, keys, object, prototype, enumerate,
+                    roundtrip};
 
 EOF
 
-$t->try_run('no njs')->plan(20);
+$t->try_run('no njs')->plan(29);
 
 ###############################################################################
 
@@ -129,6 +168,10 @@ like(http_get('/iter?foo=1&foo=2'), qr/1,2/m, 'r.args iteration 5');
 like(http_get('/keys?b=1&c=2&a=5'), qr/a,b,c/m, 'r.args sorted keys');
 like(http_get('/keys?b=1&b=2'), qr/b/m, 'r.args duplicate keys');
 like(http_get('/keys?b=1&a&c='), qr/a,b,c/m, 'r.args empty value');
+like(http_get('/keys?__proto__=1&toString=2&a=3'), qr/^__proto__,a,toString$/m,
+	'r.args special names keys');
+like(http_get('/enumerate?__proto__=1&__proto__=2&a=3'), qr/^__proto__,a$/m,
+	'r.args enumeration has no inherited keys');
 
 is(get_json('/object'), '{}', 'empty object');
 is(get_json('/object?a=1&b=2&c=3'), '{"a":"1","b":"2","c":"3"}',
@@ -144,6 +187,24 @@ is(get_json('/object?a=%62%63&b=%63%64'), '{"a":"bc","b":"cd"}',
 is(get_json('/object?a=%6&b=%&c=%%&d=%zz'),
 	'{"a":"%6","b":"%","c":"%%","d":"%zz"}',
 	'values percent-encoded broken object');
+is(get_json('/object?__proto__=1&__proto__=2&__proto__=3'),
+	'{"__proto__":["1","2","3"]}', 'duplicate __proto__ object');
+is(get_json('/object?__%70roto__=1&__proto__=2'),
+	'{"__proto__":["1","2"]}', 'percent-encoded __proto__ object');
+is(get_json('/object?toString=1&constructor=2&hasOwnProperty=3'),
+	'{"constructor":"2","hasOwnProperty":"3","toString":"1"}',
+	'special names object');
+is(get_json('/object?hasOwnProperty=1&hasOwnProperty=2'),
+	'{"hasOwnProperty":["1","2"]}', 'duplicate hasOwnProperty object');
+
+my $prototype = '{"cached":true,"missingConstructor":true,'
+	. '"missingHasOwnProperty":true,"missingToString":true,'
+	. '"nullPrototype":true}';
+
+is(get_json('/prototype'), $prototype, 'empty args null prototype');
+is(get_json('/prototype?a=1'), $prototype, 'args null prototype');
+is(get_json('/roundtrip?__proto__=1&__proto__=2&toString=3'),
+	'{"__proto__":["1","2"],"toString":"3"}', 'special names roundtrip');
 
 is(get_json('/object?%D8%41%42=%E2%82%41%42'),
 	qq/{"\x{fffd}AB":"\x{fffd}AB"}/,

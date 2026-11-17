@@ -483,12 +483,20 @@ njs_query_string_parser(njs_vm_t *vm, u_char *query, u_char *end,
     const njs_str_t *sep, const njs_str_t *eq, njs_function_t *decode,
     njs_uint_t max_keys, njs_value_t *retval)
 {
-    size_t      size;
-    u_char      *part, *key, *val;
-    njs_int_t   ret;
-    njs_uint_t  count;
+    size_t              size;
+    u_char              *part, *key, *val;
+    njs_int_t           ret;
+    njs_uint_t          count;
+    njs_opaque_value_t  prototype;
 
     ret = njs_vm_object_alloc(vm, retval, NULL);
+    if (njs_slow_path(ret != NJS_OK)) {
+        return NJS_ERROR;
+    }
+
+    njs_value_null_set(njs_value_arg(&prototype));
+
+    ret = njs_vm_prototype_set(vm, retval, njs_value_arg(&prototype));
     if (njs_slow_path(ret != NJS_OK)) {
         return NJS_ERROR;
     }

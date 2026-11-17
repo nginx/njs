@@ -1817,7 +1817,7 @@ njs_object_get_prototype_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 }
 
 
-static njs_int_t
+njs_int_t
 njs_object_set_prototype_of(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t unused, njs_value_t *retval)
 {

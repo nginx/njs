@@ -6226,7 +6226,7 @@ ngx_http_qjs_ext_args(JSContext *cx, JSValueConst this_val)
         return JS_DupValue(cx, req->args);
     }
 
-    args = JS_NewObject(cx);
+    args = JS_NewObjectProto(cx, JS_NULL);
     if (JS_IsException(args)) {
         return JS_EXCEPTION;
     }
