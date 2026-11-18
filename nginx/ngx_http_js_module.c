@@ -6114,105 +6114,11 @@ ngx_engine_njs_clone(ngx_js_ctx_t *ctx, ngx_js_loc_conf_t *cf,
 
 #if (NJS_HAVE_QUICKJS)
 
-static ngx_int_t
-ngx_http_qjs_query_string_decode(njs_chb_t *chain, const u_char *start,
-    size_t size)
-{
-    u_char                *dst;
-    uint32_t               cp;
-    njs_bool_t             consumed;
-    const u_char          *p, *end;
-    njs_unicode_decode_t   ctx;
-
-    static const int8_t  hex[256]
-        njs_aligned(32) =
-    {
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-         0,  1,  2,  3,  4,  5,  6,  7,  8,  9, -1, -1, -1, -1, -1, -1,
-        -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    };
-
-    njs_utf8_decode_init(&ctx);
-
-    cp = 0;
-
-    p = start;
-    end = p + size;
-
-    while (p < end) {
-        if (*p == '%' && end - p > 2 && hex[p[1]] >= 0 && hex[p[2]] >= 0) {
-            cp = njs_utf8_consume(&ctx, (hex[p[1]] << 4) | hex[p[2]],
-                                  &consumed);
-            if (consumed) {
-                p += 3;
-            }
-
-        } else {
-            if (*p == '+') {
-                cp = njs_utf8_consume(&ctx, ' ', &consumed);
-                if (consumed) {
-                    p++;
-                }
-
-            } else {
-                cp = njs_utf8_decode(&ctx, &p, end);
-            }
-        }
-
-        if (cp > NJS_UNICODE_MAX_CODEPOINT) {
-            if (cp == NJS_UNICODE_CONTINUE) {
-                continue;
-            }
-
-            cp = NJS_UNICODE_REPLACEMENT;
-        }
-
-        dst = njs_chb_reserve(chain, 4);
-        if (dst == NULL) {
-            return NGX_ERROR;
-        }
-
-        njs_chb_written(chain, njs_utf8_encode(dst, cp) - dst);
-    }
-
-    if (cp == NJS_UNICODE_CONTINUE) {
-        dst = njs_chb_reserve(chain, 3);
-        if (dst == NULL) {
-            return NGX_ERROR;
-        }
-
-        njs_chb_written(chain,
-                        njs_utf8_encode(dst, NJS_UNICODE_REPLACEMENT) - dst);
-    }
-
-    return NGX_OK;
-}
-
-
 static JSValue
 ngx_http_qjs_ext_args(JSContext *cx, JSValueConst this_val)
 {
-    u_char                  *start, *end, *p, *v;
-    uint32_t                 len;
-    JSAtom                   key;
-    JSValue                  args, val, prev, length, arr;
-    njs_str_t                decoded;
-    njs_int_t                ret;
-    ngx_int_t                rc;
-    njs_chb_t                chain;
+    u_char                  *data;
+    JSValue                  args;
     ngx_http_request_t      *r;
     ngx_http_qjs_request_t  *req;
 
@@ -6222,147 +6128,19 @@ ngx_http_qjs_ext_args(JSContext *cx, JSValueConst this_val)
         return JS_EXCEPTION;
     }
 
-    if (!JS_IsUndefined(req->args)) {
-        return JS_DupValue(cx, req->args);
-    }
+    if (JS_IsUndefined(req->args)) {
+        r = req->opaque.external;
+        data = (r->args.len != 0) ? r->args.data : (u_char *) "";
 
-    args = JS_NewObjectProto(cx, JS_NULL);
-    if (JS_IsException(args)) {
-        return JS_EXCEPTION;
-    }
-
-    NJS_CHB_CTX_INIT(&chain, cx);
-
-    r = req->opaque.external;
-
-    rc = ngx_http_qjs_query_string_decode(&chain, r->args.data, r->args.len);
-    if (rc != NGX_OK) {
-        njs_chb_destroy(&chain);
-        return JS_ThrowOutOfMemory(cx);
-    }
-
-    ret = njs_chb_join(&chain, &decoded);
-    njs_chb_destroy(&chain);
-
-    if (ret != NJS_OK) {
-        return JS_ThrowOutOfMemory(cx);
-    }
-
-    start = decoded.start;
-    end = start + decoded.length;
-
-    while (start < end) {
-        p = ngx_strlchr(start, end, '&');
-        if (p == NULL) {
-            p = end;
-        }
-
-        v = ngx_strlchr(start, p, '=');
-        if (v == NULL) {
-            v = p;
-        }
-
-        if (v == start) {
-            start = p + 1;
-            continue;
-        }
-
-        key = JS_NewAtomLen(cx, (const char *) start, v - start);
-        if (key == JS_ATOM_NULL) {
-            chain.free(cx, decoded.start);
+        args = qjs_vm_query_string_parse(cx, data, data + r->args.len);
+        if (JS_IsException(args)) {
             return JS_EXCEPTION;
         }
 
-        val = qjs_string_create(cx, v + 1, (p == v) ? 0 : p - v - 1);
-        if (JS_IsException(val)) {
-            chain.free(cx, decoded.start);
-            JS_FreeAtom(cx, key);
-            return JS_EXCEPTION;
-        }
-
-        prev = JS_GetProperty(cx, args, key);
-        if (JS_IsException(prev)) {
-            chain.free(cx, decoded.start);
-            JS_FreeAtom(cx, key);
-            JS_FreeValue(cx, val);
-            return JS_EXCEPTION;
-        }
-
-        arr = JS_UNDEFINED;
-
-        if (JS_IsUndefined(prev)) {
-            if (JS_SetProperty(cx, args, key, val) < 0) {
-                val = JS_UNDEFINED;
-                goto exception;
-            }
-
-        } else if (qjs_is_array(cx, prev)) {
-            length = JS_GetPropertyStr(cx, prev, "length");
-
-            if (JS_ToUint32(cx, &len, length)) {
-                JS_FreeValue(cx, length);
-                goto exception;
-            }
-
-            JS_FreeValue(cx, length);
-
-            if (JS_SetPropertyUint32(cx, prev, len, val) < 0) {
-                val = JS_UNDEFINED;
-                goto exception;
-            }
-
-            val = JS_UNDEFINED;
-            JS_FreeValue(cx, prev);
-            prev = JS_UNDEFINED;
-
-        } else {
-
-            arr = JS_NewArray(cx);
-            if (JS_IsException(arr)) {
-                goto exception;
-            }
-
-            if (JS_SetPropertyUint32(cx, arr, 0, prev) < 0) {
-                prev = JS_UNDEFINED;
-                goto exception;
-            }
-
-            prev = JS_UNDEFINED;
-
-            if (JS_SetPropertyUint32(cx, arr, 1, val) < 0) {
-                val = JS_UNDEFINED;
-                goto exception;
-            }
-
-            val = JS_UNDEFINED;
-
-            if (JS_SetProperty(cx, args, key, arr) < 0) {
-                arr = JS_UNDEFINED;
-                goto exception;
-            }
-
-            arr = JS_UNDEFINED;
-        }
-
-        JS_FreeAtom(cx, key);
-        start = p + 1;
+        req->args = args;
     }
 
-    chain.free(cx, decoded.start);
-    req->args = args;
-
-    return JS_DupValue(cx, args);
-
-exception:
-
-    chain.free(cx, decoded.start);
-    JS_FreeAtom(cx, key);
-    JS_FreeValue(cx, val);
-    JS_FreeValue(cx, prev);
-    JS_FreeValue(cx, arr);
-    JS_FreeValue(cx, args);
-
-    return JS_EXCEPTION;
+    return JS_DupValue(cx, req->args);
 }
 
 

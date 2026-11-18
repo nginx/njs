@@ -198,6 +198,10 @@ qjs_query_string_decode(JSContext *cx, const u_char *start, size_t size)
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     };
 
+    if (size == 0) {
+        return JS_NewStringLen(cx, "", 0);
+    }
+
     NJS_CHB_CTX_INIT(&chain, cx);
     njs_utf8_decode_init(&ctx);
 
@@ -236,8 +240,7 @@ qjs_query_string_decode(JSContext *cx, const u_char *start, size_t size)
 
         dst = njs_chb_reserve(&chain, 4);
         if (dst == NULL) {
-            JS_ThrowOutOfMemory(cx);
-            return JS_EXCEPTION;
+            goto failed;
         }
 
         njs_chb_written(&chain, njs_utf8_encode(dst, cp) - dst);
@@ -246,16 +249,19 @@ qjs_query_string_decode(JSContext *cx, const u_char *start, size_t size)
     if (cp == NJS_UNICODE_CONTINUE) {
         dst = njs_chb_reserve(&chain, 3);
         if (dst == NULL) {
-            JS_ThrowOutOfMemory(cx);
-            return JS_EXCEPTION;
+            goto failed;
         }
 
         njs_chb_written(&chain,
                         njs_utf8_encode(dst, NJS_UNICODE_REPLACEMENT) - dst);
     }
 
-
     return qjs_string_create_chb(cx, &chain);
+
+failed:
+
+    njs_chb_destroy(&chain);
+    return JS_ThrowOutOfMemory(cx);
 }
 
 
@@ -469,6 +475,13 @@ exception:
 }
 
 
+JSValue
+qjs_vm_query_string_parse(JSContext *cx, u_char *start, u_char *end)
+{
+    return qjs_query_string_parser(cx, start, end, NULL, NULL, JS_NULL, 1000);
+}
+
+
 static JSValue
 qjs_query_string_parser(JSContext *cx, u_char *query, u_char *end,
     njs_str_t *sep, njs_str_t *eq, JSValue decode, unsigned max_keys)
@@ -527,6 +540,10 @@ qjs_query_string_parser(JSContext *cx, u_char *query, u_char *end,
         }
 
 next:
+
+        if (part == end) {
+            break;
+        }
 
         key = part + sep->length;
     }

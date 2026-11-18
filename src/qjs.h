@@ -109,6 +109,7 @@ int qjs_hex_decode(JSContext *ctx, const njs_str_t *src, njs_str_t *dst);
 size_t qjs_hex_decode_length(JSContext *ctx, const njs_str_t *src);
 
 JSValue qjs_process_object(JSContext *ctx, int argc, const char **argv);
+JSValue qjs_vm_query_string_parse(JSContext *cx, u_char *start, u_char *end);
 
 typedef struct {
     int                         tag;
