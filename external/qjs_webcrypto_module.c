@@ -3930,7 +3930,12 @@ qjs_import_jwk_oct(JSContext *cx, JSValue jwk, qjs_webcrypto_key_t *key)
     };
 
     val = JS_GetPropertyStr(cx, jwk, "k");
-    if (JS_IsException(val) || !JS_IsString(val)) {
+    if (JS_IsException(val)) {
+        return JS_EXCEPTION;
+    }
+
+    if (!JS_IsString(val)) {
+        JS_FreeValue(cx, val);
         JS_ThrowTypeError(cx, "Invalid JWK oct key");
         return JS_EXCEPTION;
     }
