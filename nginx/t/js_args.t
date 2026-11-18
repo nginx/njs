@@ -133,7 +133,7 @@ $t->write_file('test.js', <<EOF);
 
 EOF
 
-$t->try_run('no njs')->plan(29);
+$t->try_run('no njs')->plan(32);
 
 ###############################################################################
 
@@ -176,6 +176,8 @@ like(http_get('/enumerate?__proto__=1&__proto__=2&a=3'), qr/^__proto__,a$/m,
 is(get_json('/object'), '{}', 'empty object');
 is(get_json('/object?a=1&b=2&c=3'), '{"a":"1","b":"2","c":"3"}',
 	'ordinary object');
+is(get_json('/object?=first&=second&a=3'), '{"":["first","second"],"a":"3"}',
+	'empty argument name');
 is(get_json('/object?a=1&A=2'), '{"A":"2","a":"1"}',
 	'case sensitive object');
 is(get_json('/object?a=1&A=2&a=3'), '{"A":"2","a":["1","3"]}',
@@ -184,6 +186,11 @@ is(get_json('/object?%61=1&a=2'), '{"a":["1","2"]}',
 	'keys percent-encoded object');
 is(get_json('/object?a=%62%63&b=%63%64'), '{"a":"bc","b":"cd"}',
 	'values percent-encoded object');
+is(get_json('/object?title=Salt+%26+Pepper&quantity=2'),
+	'{"quantity":"2","title":"Salt & Pepper"}',
+	'encoded ampersand in a value');
+is(get_json('/object?x%3Dy=first&x%3Dy=second'),
+	'{"x=y":["first","second"]}', 'encoded equals in a repeated key');
 is(get_json('/object?a=%6&b=%&c=%%&d=%zz'),
 	'{"a":"%6","b":"%","c":"%%","d":"%zz"}',
 	'values percent-encoded broken object');
