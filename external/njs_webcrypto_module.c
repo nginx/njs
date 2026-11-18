@@ -1674,6 +1674,12 @@ njs_ext_derive_ecdh(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             goto fail;
         }
 
+        if (njs_slow_path(!dalg->raw)) {
+            njs_vm_type_error(vm, "not implemented deriveKey: \"%V\"",
+                              njs_algorithm_string(dalg));
+            goto fail;
+        }
+
         value = njs_vm_object_prop(vm, dobject, &string_length, &lvalue);
         if (value == NULL) {
             njs_vm_type_error(vm, "derivedKeyAlgorithm.length is not provided");

@@ -181,8 +181,70 @@ let ecdh_key_tsuite = {
     ]
 };
 
+async function testDerivedKeyType(params) {
+    let pair = await load_key_pair('ec');
+    let peer = await load_key_pair('ec2');
+    let ecdh = { name: "ECDH", public: peer.publicKey };
+    let derived = { name: params.name, length: 256 };
+
+    if (params.name === "ECDSA") {
+        derived.namedCurve = "P-256";
+    }
+
+    let key;
+
+    try {
+        key = await crypto.subtle.deriveKey(ecdh, pair.privateKey, derived,
+                                            false, params.usage);
+
+    } catch (e) {
+        if (params.reject
+            && (e.name === "TypeError" || e.name === "NotSupportedError"))
+        {
+            return "SUCCESS";
+        }
+
+        throw e;
+    }
+
+    if (params.reject) {
+        throw Error("deriveKey accepted an asymmetric derived key");
+    }
+
+    let bits = await crypto.subtle.deriveBits(ecdh, pair.privateKey, 256);
+    let imported = await crypto.subtle.importKey("raw", bits, params.name,
+                                                 false, ["deriveBits"]);
+    let alg = { name: params.name, hash: "SHA-256",
+                salt: new Uint8Array(16), info: new Uint8Array(0),
+                iterations: 1 };
+
+    let a = await crypto.subtle.deriveBits(alg, key, 128);
+    let b = await crypto.subtle.deriveBits(alg, imported, 128);
+
+    if (Buffer.from(a).toString("hex") !== Buffer.from(b).toString("hex")) {
+        throw Error(`${params.name} derived key does not match deriveBits`);
+    }
+
+    return "SUCCESS";
+}
+
+let ecdh_key_type_tsuite = {
+    name: "ECDH-DeriveKey type",
+    skip: () => (!has_buffer() || !has_webcrypto()),
+    T: testDerivedKeyType,
+    opts: {
+        usage: ["deriveBits"]
+    },
+    tests: [
+        { name: "HKDF" },
+        { name: "PBKDF2" },
+        { name: "ECDSA", usage: ["sign"], reject: true },
+    ]
+};
+
 run([
     ecdh_bits_tsuite,
     ecdh_key_tsuite,
+    ecdh_key_type_tsuite,
 ])
 .then($DONE, $DONE);
