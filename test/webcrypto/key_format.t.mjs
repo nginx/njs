@@ -19,7 +19,8 @@ async function test(params) {
             break;
 
         case 'wrapKey':
-            await crypto.subtle.wrapKey('JWK', key, wrapping_key, 'AES-KW');
+            await crypto.subtle.wrapKey(params.format || 'JWK', key,
+                                        wrapping_key, 'AES-KW');
             break;
 
         default:
@@ -33,6 +34,10 @@ async function test(params) {
         }
 
     } catch (e) {
+        if (params.format) {
+            return 'SUCCESS';
+        }
+
         if (!(e instanceof TypeError) || !e.message.includes('JWK')) {
             throw Error(`unexpected ${params.op} error: ${e}`);
         }
@@ -40,17 +45,18 @@ async function test(params) {
         return 'SUCCESS';
     }
 
-    throw Error(`${params.op} accepted unknown key format`);
+    throw Error(`${params.op} accepted invalid key format`);
 }
 
 let key_format_tsuite = {
-    name: 'unknown key format',
+    name: 'invalid key format',
     skip: async () => !await has_webcrypto_algorithm('AES-KW', 128),
     T: test,
     tests: [
         {op: 'exportKey'},
         {op: 'wrapKey'},
         {op: 'unwrapKey'},
+        {op: 'wrapKey', format: 'pkcs8'},
     ],
 };
 
