@@ -2093,6 +2093,12 @@ qjs_derive_ecdh(JSContext *cx, JSValueConst *argv, int argc, int derive_key,
             goto fail;
         }
 
+        if (!dalg->raw) {
+            JS_ThrowTypeError(cx, "not implemented deriveKey: \"%s\"",
+                              qjs_algorithm_string(dalg));
+            goto fail;
+        }
+
         value = JS_GetPropertyStr(cx, dobject, "length");
         if (JS_IsException(value)) {
             goto fail;
