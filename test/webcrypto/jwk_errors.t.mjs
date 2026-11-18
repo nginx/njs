@@ -34,5 +34,32 @@ let jwk_errors_tsuite = {
     ],
 };
 
-run([jwk_errors_tsuite])
+/*
+ * Implementations may reject a non-string "k" or convert it to a string.
+ * The test only checks that the attempt does not leak "k".
+ */
+async function test_oct(params) {
+    try {
+        await crypto.subtle.importKey('jwk',
+                                      { kty: 'oct', alg: 'HS256', k: params.k },
+                                      { name: 'HMAC', hash: 'SHA-256' },
+                                      true, ['sign']);
+
+    } catch (e) {
+    }
+
+    return 'SUCCESS';
+}
+
+let jwk_oct_tsuite = {
+    name: 'JWK oct key',
+    skip: () => !has_webcrypto(),
+    T: test_oct,
+    prepare_args: (args) => args,
+    tests: [
+        { k: {} },
+    ],
+};
+
+run([jwk_errors_tsuite, jwk_oct_tsuite])
 .then($DONE, $DONE);
