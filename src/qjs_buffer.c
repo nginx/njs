@@ -514,10 +514,10 @@ qjs_buffer_concat(JSContext *ctx, JSValueConst this_val, int argc,
             return JS_EXCEPTION;
         }
 
-        JS_FreeValue(ctx, val);
-
         n = njs_min((size_t) len, buf.length);
         p = njs_cpymem(p, buf.start, n);
+
+        JS_FreeValue(ctx, val);
 
         len -= n;
     }
