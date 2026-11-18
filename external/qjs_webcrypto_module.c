@@ -2648,6 +2648,18 @@ qjs_webcrypto_export_key_raw(JSContext *cx, qjs_webcrypto_key_t *key,
     JSValue              ret;
     PKCS8_PRIV_KEY_INFO  *pkcs8;
 
+    if (!(fmt & key->alg->fmt)) {
+        JS_ThrowTypeError(cx, "unsupported key fmt \"%s\" for \"%s\" key",
+                          qjs_format_string(fmt),
+                          qjs_algorithm_string(key->alg));
+        return JS_EXCEPTION;
+    }
+
+    if (!key->extractable) {
+        JS_ThrowTypeError(cx, "provided key cannot be extracted");
+        return JS_EXCEPTION;
+    }
+
     switch (fmt) {
     case QJS_KEY_FORMAT_JWK:
         switch (key->alg->type) {
@@ -2823,18 +2835,6 @@ qjs_webcrypto_export_key(JSContext *cx, JSValueConst this_val, int argc,
     key = JS_GetOpaque2(cx, argv[1], QJS_CORE_CLASS_ID_WEBCRYPTO_KEY);
     if (key == NULL) {
         JS_ThrowTypeError(cx, "\"key\" is not a CryptoKey object");
-        return JS_EXCEPTION;
-    }
-
-    if (!(fmt & key->alg->fmt)) {
-        JS_ThrowTypeError(cx, "unsupported key fmt \"%s\" for \"%s\" key",
-                          qjs_format_string(fmt),
-                          qjs_algorithm_string(key->alg));
-        return JS_EXCEPTION;
-    }
-
-    if (!key->extractable) {
-        JS_ThrowTypeError(cx, "provided key cannot be extracted");
         return JS_EXCEPTION;
     }
 

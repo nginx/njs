@@ -2796,18 +2796,6 @@ njs_ext_export_key(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         goto fail;
     }
 
-    if (njs_slow_path(!(fmt & key->alg->fmt))) {
-        njs_vm_type_error(vm, "unsupported key fmt \"%V\" for \"%V\" key",
-                          njs_format_string(fmt),
-                          njs_algorithm_string(key->alg));
-        goto fail;
-    }
-
-    if (njs_slow_path(!key->extractable)) {
-        njs_vm_type_error(vm, "provided key cannot be extracted");
-        goto fail;
-    }
-
     ret = njs_webcrypto_export_key_raw(vm, key, fmt, njs_value_arg(&value));
     if (njs_slow_path(ret != NJS_OK)) {
         goto fail;
@@ -5020,6 +5008,18 @@ njs_webcrypto_export_key_raw(njs_vm_t *vm, njs_webcrypto_key_t *key,
     BUF_MEM              *mem;
     njs_int_t            ret;
     PKCS8_PRIV_KEY_INFO  *pkcs8;
+
+    if (njs_slow_path(!(fmt & key->alg->fmt))) {
+        njs_vm_type_error(vm, "unsupported key fmt \"%V\" for \"%V\" key",
+                          njs_format_string(fmt),
+                          njs_algorithm_string(key->alg));
+        return NJS_ERROR;
+    }
+
+    if (njs_slow_path(!key->extractable)) {
+        njs_vm_type_error(vm, "provided key cannot be extracted");
+        return NJS_ERROR;
+    }
 
     switch (fmt) {
     case NJS_KEY_FORMAT_JWK:
