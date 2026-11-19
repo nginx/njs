@@ -201,7 +201,7 @@ qjs_hash_prototype_update(JSContext *cx, JSValueConst this_val, int argc,
             return JS_EXCEPTION;
         }
 
-        str.start = (u_char *) JS_ToCStringLen(cx, &str.length, argv[0]);
+        str.start = (u_char *) qjs_to_utf8(cx, &str.length, argv[0]);
         if (str.start == NULL) {
             return JS_EXCEPTION;
         }
@@ -417,7 +417,7 @@ qjs_crypto_create_hmac(JSContext *cx, JSValueConst this_val, int argc,
 
     key_is_string = JS_IsString(argv[1]);
     if (key_is_string) {
-        key.start = (u_char *) JS_ToCStringLen(cx, &key.length, argv[1]);
+        key.start = (u_char *) qjs_to_utf8(cx, &key.length, argv[1]);
         if (key.start == NULL) {
             return JS_EXCEPTION;
         }

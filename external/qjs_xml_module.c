@@ -984,7 +984,7 @@ qjs_xml_node_text_handler(JSContext *cx, JSValue current, JSValue setval)
             return -1;
         }
 
-        content.start = (u_char *) JS_ToCStringLen(cx, &content.length, setval);
+        content.start = (u_char *) qjs_to_utf8(cx, &content.length, setval);
         if (content.start == NULL) {
             return -1;
         }

@@ -1104,7 +1104,7 @@ qjs_text_encoder_encode(JSContext *cx, JSValueConst this_val, int argc,
         return JS_ThrowTypeError(cx, "The input argument must be a string");
     }
 
-    utf8.start = (u_char *) JS_ToCStringLen(cx, &utf8.length, argv[0]);
+    utf8.start = (u_char *) qjs_to_utf8(cx, &utf8.length, argv[0]);
     if (utf8.start == NULL) {
         return JS_EXCEPTION;
     }
@@ -1185,7 +1185,7 @@ qjs_text_encoder_encode_into(JSContext *cx, JSValueConst this_val, int argc,
                                  " Uint8Array");
     }
 
-    utf8.start = (u_char *) JS_ToCStringLen(cx, &utf8.length, argv[0]);
+    utf8.start = (u_char *) qjs_to_utf8(cx, &utf8.length, argv[0]);
     if (utf8.start == NULL) {
         return JS_EXCEPTION;
     }
@@ -1244,6 +1244,47 @@ qjs_text_encoder_encode_into(JSContext *cx, JSValueConst this_val, int argc,
     return ret;
 }
 
+
+const char *
+qjs_to_utf8(JSContext *cx, size_t *len, JSValueConst value)
+{
+    u_char      *p, *end;
+    const char  *str;
+
+    str = JS_ToCStringLen(cx, len, value);
+    if (str == NULL) {
+        return NULL;
+    }
+
+    /*
+     * JS_ToCStringLen() keeps an unpaired surrogate as "ED A0..BF 80..BF",
+     * which is not valid UTF-8.  Such bytes only appear in a buffer allocated
+     * for the conversion, so they are replaced in place with U+FFFD, which
+     * has the same length.
+     */
+
+    p = (u_char *) str;
+    end = p + *len;
+
+    for ( ;; ) {
+        p = memchr(p, 0xED, end - p);
+        if (p == NULL || end - p < 3) {
+            break;
+        }
+
+        if (p[1] >= 0xA0) {
+            p[0] = 0xEF;
+            p[1] = 0xBF;
+            p[2] = 0xBD;
+        }
+
+        p += 3;
+    }
+
+    return str;
+}
+
+
 int
 qjs_to_bytes(JSContext *ctx, qjs_bytes_t *bytes, JSValueConst value)
 {
@@ -1294,7 +1335,7 @@ qjs_to_bytes(JSContext *ctx, qjs_bytes_t *bytes, JSValueConst value)
 string:
 
     bytes->tag = JS_TAG_STRING;
-    bytes->start = (u_char *) JS_ToCStringLen(ctx, &bytes->length, value);
+    bytes->start = (u_char *) qjs_to_utf8(ctx, &bytes->length, value);
 
     return (bytes->start != NULL) ? 0 : -1;
 }

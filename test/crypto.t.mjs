@@ -84,6 +84,8 @@ let createHash_tsuite = {
 
         { hash: 'md5', data: ['abc'.repeat(100)], digest: 'hex',
           expected: "f571117acbd8153c8dc3c81b8817773a" },
+        { hash: 'md5', data: ['\uD800A'], digest: 'hex',
+          expected: "f84d8fbf9898def6030a895c54117696" },
 
         { hash: 'md5', data: ['AB'], digest: 'base64',
           expected: "uG/GsFH2PXPeJi1MNOOgqQ==" },

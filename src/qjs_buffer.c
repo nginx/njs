@@ -1936,7 +1936,7 @@ qjs_buffer_from_string(JSContext *ctx, JSValueConst str,
         return JS_EXCEPTION;
     }
 
-    src.start = (u_char *) JS_ToCStringLen(ctx, &src.length, str);
+    src.start = (u_char *) qjs_to_utf8(ctx, &src.length, str);
     if (src.start == NULL) {
         return JS_EXCEPTION;
     }

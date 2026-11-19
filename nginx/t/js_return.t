@@ -59,6 +59,10 @@ http {
         location /status {
             js_content test.status;
         }
+
+        location /surrogate {
+            js_content test.surrogate;
+        }
     }
 }
 
@@ -88,11 +92,15 @@ $t->write_file('test.js', <<EOF);
         }
     }
 
-    export default {njs:test_njs, returnf, status};
+    function surrogate(r) {
+        r.return(200, String.fromCharCode(0xD800) + 'A');
+    }
+
+    export default {njs:test_njs, returnf, status, surrogate};
 
 EOF
 
-$t->try_run('no njs return')->plan(8);
+$t->try_run('no njs return')->plan(9);
 
 ###############################################################################
 
@@ -103,6 +111,8 @@ like(http_get('/?c=404'), qr/404 Not.*html/s, 'return error page');
 like(http_get('/?c=inv'), qr/ 500 /, 'return invalid');
 like(http_get('/status?c=1e100'), qr/RangeError: number is out of range/,
 	'status range');
+like(http_get('/surrogate'), qr/\x0d\x0a\x0d\x0a\xef\xbf\xbdA$/s,
+	'return unpaired surrogate');
 
 TODO: {
 local $TODO = 'not yet' unless has_version('0.8.6');
