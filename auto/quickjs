@@ -225,6 +225,19 @@ if [ $NJS_TRY_QUICKJS = YES ]; then
 
         . auto/feature
 
+        njs_feature="QuickJS JS_IsArrayBuffer()"
+        njs_feature_name=NJS_HAVE_QUICKJS_IS_ARRAY_BUFFER
+        njs_feature_run=no
+        njs_feature_test="#include <quickjs_compat.h>
+
+                          int main() {
+                              (void) JS_IsArrayBuffer(JS_UNDEFINED);
+                              (void) JS_GetTypedArrayType(JS_UNDEFINED);
+                              return 0;
+                         }"
+
+        . auto/feature
+
         njs_feature="QuickJS version"
         njs_feature_name=NJS_QUICKJS_VERSION
         njs_feature_run=value

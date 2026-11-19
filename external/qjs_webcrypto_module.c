@@ -121,6 +121,14 @@ typedef struct {
 } qjs_webcrypto_key_t;
 
 
+typedef struct {
+    njs_str_t                  iv;
+    njs_str_t                  aad;
+    int64_t                    length;
+    int64_t                    taglen;
+} qjs_webcrypto_cipher_params_t;
+
+
 typedef int (*EVP_PKEY_cipher_init_t)(EVP_PKEY_CTX *ctx);
 typedef int (*EVP_PKEY_cipher_t)(EVP_PKEY_CTX *ctx, unsigned char *out,
     size_t *outlen, const unsigned char *in, size_t inlen);
@@ -132,11 +140,14 @@ static JSValue qjs_webcrypto_cipher(JSContext *cx, JSValueConst this_val,
 static JSValue qjs_cipher_pkey(JSContext *cx, njs_str_t *data,
     qjs_webcrypto_key_t *key, int encrypt);
 static JSValue qjs_cipher_aes_gcm(JSContext *cx, njs_str_t *data,
-    qjs_webcrypto_key_t *key, JSValue options, int encrypt);
+    qjs_webcrypto_key_t *key, qjs_webcrypto_cipher_params_t *params,
+    int encrypt);
 static JSValue qjs_cipher_aes_ctr(JSContext *cx, njs_str_t *data,
-    qjs_webcrypto_key_t *key, JSValue options, int encrypt);
+    qjs_webcrypto_key_t *key, qjs_webcrypto_cipher_params_t *params,
+    int encrypt);
 static JSValue qjs_cipher_aes_cbc(JSContext *cx, njs_str_t *data,
-    qjs_webcrypto_key_t *key, JSValue options, int encrypt);
+    qjs_webcrypto_key_t *key, qjs_webcrypto_cipher_params_t *params,
+    int encrypt);
 #if defined(EVP_CIPHER_CTX_FLAG_WRAP_ALLOW)
 static JSValue qjs_cipher_aes_kw(JSContext *cx, njs_str_t *data,
     qjs_webcrypto_key_t *key, int encrypt);
@@ -180,7 +191,18 @@ static JSValue qjs_webcrypto_key_usages(JSContext *cx, JSValueConst this_val);
 static JSValue qjs_webcrypto_export_key_raw(JSContext *cx,
     qjs_webcrypto_key_t *key, qjs_webcrypto_key_format_t fmt);
 static JSValue qjs_webcrypto_cipher_core(JSContext *cx, njs_str_t *data,
-    qjs_webcrypto_key_t *key, JSValue options,
+    qjs_webcrypto_key_t *key, qjs_webcrypto_cipher_params_t *params,
+    qjs_webcrypto_algorithm_t *alg, int encrypt);
+static JSValue qjs_webcrypto_buffer_source(JSContext *cx, JSValueConst value,
+    njs_str_t *data);
+static JSValue qjs_webcrypto_buffer_source_copy(JSContext *cx,
+    JSValueConst options, const char *name, njs_str_t *data);
+static JSValue qjs_webcrypto_cipher_params(JSContext *cx, JSValue options,
+    qjs_webcrypto_algorithm_t *alg, qjs_webcrypto_cipher_params_t *params);
+static void qjs_webcrypto_cipher_params_free(JSContext *cx,
+    qjs_webcrypto_cipher_params_t *params);
+static JSValue qjs_webcrypto_cipher_buffer_source(JSContext *cx,
+    JSValueConst value, qjs_webcrypto_key_t *key, JSValue options,
     qjs_webcrypto_algorithm_t *alg, int encrypt);
 static JSValue qjs_get_random_values(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv);
@@ -653,7 +675,6 @@ qjs_webcrypto_cipher(JSContext *cx, JSValueConst this_val,
 {
     unsigned                   mask;
     JSValue                    ret, options;
-    njs_str_t                  data;
     qjs_webcrypto_key_t        *key;
     qjs_webcrypto_algorithm_t  *alg;
 
@@ -689,12 +710,8 @@ qjs_webcrypto_cipher(JSContext *cx, JSValueConst this_val,
         goto fail;
     }
 
-    ret = qjs_typed_array_data(cx, argv[2], &data);
-    if (JS_IsException(ret)) {
-        return ret;
-    }
-
-    ret = qjs_webcrypto_cipher_core(cx, &data, key, options, alg, encrypt);
+    ret = qjs_webcrypto_cipher_buffer_source(cx, argv[2], key, options, alg,
+                                             encrypt);
     if (JS_IsException(ret)) {
         goto fail;
     }
@@ -817,11 +834,11 @@ fail:
 
 static JSValue
 qjs_cipher_aes_gcm(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
-    JSValue options, int encrypt)
+    qjs_webcrypto_cipher_params_t *params, int encrypt)
 {
     int               len, outlen, dstlen;
     u_char            *dst, *p;
-    JSValue           ret, value;
+    JSValue           ret;
     int64_t           taglen;
     njs_str_t         iv, aad;
     EVP_CIPHER_CTX    *ctx;
@@ -845,46 +862,9 @@ qjs_cipher_aes_gcm(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
         return JS_EXCEPTION;
     }
 
-    value = JS_GetPropertyStr(cx, options, "iv");
-    if (JS_IsException(value)) {
-        return JS_EXCEPTION;
-    }
-
-    if (JS_IsUndefined(value)) {
-        JS_ThrowTypeError(cx, "AES-GCM algorithm.iv is not provided");
-        return JS_EXCEPTION;
-    }
-
-    ret = qjs_typed_array_data(cx, value, &iv);
-    if (JS_IsException(ret)) {
-        JS_FreeValue(cx, value);
-        return JS_EXCEPTION;
-    }
-
-    JS_FreeValue(cx, value);
-
-    taglen = 128;
-
-    value = JS_GetPropertyStr(cx, options, "tagLength");
-    if (JS_IsException(value)) {
-        return JS_EXCEPTION;
-    }
-
-    if (!JS_IsUndefined(value)) {
-        if (JS_ToInt64(cx, &taglen, value) < 0) {
-            JS_FreeValue(cx, value);
-            return JS_EXCEPTION;
-        }
-    }
-
-    if (taglen != 32 && taglen != 64 && taglen != 96 && taglen != 104
-        && taglen != 112 && taglen != 120 && taglen != 128)
-    {
-        JS_ThrowTypeError(cx, "AES-GCM invalid tagLength");
-        return JS_EXCEPTION;
-    }
-
-    taglen /= 8;
+    iv = params->iv;
+    aad = params->aad;
+    taglen = params->taglen;
 
     if (!encrypt && data->length < (size_t) taglen) {
         JS_ThrowTypeError(cx, "AES-GCM data is too short");
@@ -924,23 +904,6 @@ qjs_cipher_aes_gcm(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
             goto fail;
         }
     }
-
-    aad.length = 0;
-
-    value = JS_GetPropertyStr(cx, options, "additionalData");
-    if (JS_IsException(value)) {
-        goto fail;
-    }
-
-    if (!JS_IsUndefined(value)) {
-        ret = qjs_typed_array_data(cx, value, &aad);
-        if (JS_IsException(ret)) {
-            JS_FreeValue(cx, value);
-            goto fail;
-        }
-    }
-
-    JS_FreeValue(cx, value);
 
     if (aad.length != 0) {
         if (EVP_CipherUpdate(ctx, NULL, &outlen, aad.start, aad.length) <= 0) {
@@ -1112,13 +1075,13 @@ qjs_counter128_reset(u_char *src, u_char *dst, unsigned bits)
 
 static JSValue
 qjs_cipher_aes_ctr(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
-    JSValue options, int encrypt)
+    qjs_webcrypto_cipher_params_t *params, int encrypt)
 {
     int               len, len2;
     u_char            *dst;
     BIGNUM            *total, *blocks, *left, *ctr;
     size_t            size1;
-    JSValue           ret, value;
+    JSValue           ret;
     int64_t           length;
     njs_str_t         iv;
     const EVP_CIPHER  *cipher;
@@ -1142,50 +1105,8 @@ qjs_cipher_aes_ctr(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
         return JS_EXCEPTION;
     }
 
-    value = JS_GetPropertyStr(cx, options, "counter");
-    if (JS_IsException(value)) {
-        return JS_EXCEPTION;
-    }
-
-    if (JS_IsUndefined(value)) {
-        JS_ThrowTypeError(cx, "AES-CTR algorithm.counter is not provided");
-        return JS_EXCEPTION;
-    }
-
-    ret = qjs_typed_array_data(cx, value, &iv);
-    if (JS_IsException(ret)) {
-        JS_FreeValue(cx, value);
-        return JS_EXCEPTION;
-    }
-
-    JS_FreeValue(cx, value);
-
-    if (iv.length != 16) {
-        JS_ThrowTypeError(cx, "AES-CTR algorithm.counter must be 16 bytes "
-                          "long");
-        return JS_EXCEPTION;
-    }
-
-    value = JS_GetPropertyStr(cx, options, "length");
-    if (JS_IsException(value)) {
-        return JS_EXCEPTION;
-    }
-
-    if (JS_IsUndefined(value)) {
-        JS_ThrowTypeError(cx, "AES-CTR algorithm.length is not provided");
-        return JS_EXCEPTION;
-    }
-
-    if (JS_ToInt64(cx, &length, value) < 0) {
-        JS_FreeValue(cx, value);
-        return JS_EXCEPTION;
-    }
-
-    if (length == 0 || length > 128) {
-        JS_ThrowTypeError(cx, "AES-CTR algorithm.length must be between "
-                          "1 and 128");
-        return JS_EXCEPTION;
-    }
+    iv = params->iv;
+    length = params->length;
 
     ctr = NULL;
     blocks = NULL;
@@ -1326,11 +1247,11 @@ fail:
 
 static JSValue
 qjs_cipher_aes_cbc(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
-    JSValue options, int encrypt)
+    qjs_webcrypto_cipher_params_t *params, int encrypt)
 {
     int               rc, olen_max, olen, olen2;
     u_char            *dst;
-    JSValue           ret, value;
+    JSValue           ret;
     unsigned          remainder;
     njs_str_t         iv;
     EVP_CIPHER_CTX    *ctx;
@@ -1354,28 +1275,7 @@ qjs_cipher_aes_cbc(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
         return JS_EXCEPTION;
     }
 
-    value = JS_GetPropertyStr(cx, options, "iv");
-    if (JS_IsException(value)) {
-        return JS_EXCEPTION;
-    }
-
-    if (JS_IsUndefined(value)) {
-        JS_ThrowTypeError(cx, "AES-CBC algorithm.iv is not provided");
-        return JS_EXCEPTION;
-    }
-
-    ret = qjs_typed_array_data(cx, value, &iv);
-    if (JS_IsException(ret)) {
-        JS_FreeValue(cx, value);
-        return JS_EXCEPTION;
-    }
-
-    JS_FreeValue(cx, value);
-
-    if (iv.length != 16) {
-        JS_ThrowTypeError(cx, "AES-CBC algorithm.iv must be 16 bytes long");
-        return JS_EXCEPTION;
-    }
+    iv = params->iv;
 
     olen_max = data->length + AES_BLOCK_SIZE - 1;
     remainder = olen_max % AES_BLOCK_SIZE;
@@ -2272,7 +2172,7 @@ qjs_webcrypto_derive(JSContext *cx, JSValueConst this_val, int argc,
     u_char                     *k;
     size_t                     olen;
     int64_t                    iterations, length;
-    JSValue                    ret, val, aobject, dobject, dkey_value;
+    JSValue                    ret, aobject, dobject, dkey_value;
     unsigned                   usage, mask;
     njs_str_t                  salt, info;
     const EVP_MD               *md;
@@ -2348,6 +2248,8 @@ qjs_webcrypto_derive(JSContext *cx, JSValueConst this_val, int argc,
     dkey = NULL;
     length /= 8;
     dkey_value = JS_UNDEFINED;
+    salt.start = NULL;
+    info.start = NULL;
 
     if (derive_key) {
         switch (dalg->type) {
@@ -2408,23 +2310,6 @@ qjs_webcrypto_derive(JSContext *cx, JSValueConst this_val, int argc,
             goto fail;
         }
 
-        val = JS_GetPropertyStr(cx, aobject, "salt");
-        if (JS_IsException(val)) {
-            goto fail;
-        }
-
-        ret = qjs_typed_array_data(cx, val, &salt);
-        JS_FreeValue(cx, val);
-        if (JS_IsException(ret)) {
-            goto fail;
-        }
-
-        if (salt.length < 16) {
-            JS_ThrowTypeError(cx, "PBKDF2 algorithm.salt must be at least "
-                              "16 bytes long");
-            goto fail;
-        }
-
         ret = JS_GetPropertyStr(cx, aobject, "iterations");
         if (JS_IsException(ret)) {
             goto fail;
@@ -2435,12 +2320,27 @@ qjs_webcrypto_derive(JSContext *cx, JSValueConst this_val, int argc,
             goto fail;
         }
 
-        if (JS_ToInt64(cx, &iterations, ret) < 0) {
-            JS_FreeValue(cx, ret);
+        rc = JS_ToInt64(cx, &iterations, ret);
+        JS_FreeValue(cx, ret);
+        if (rc < 0) {
             goto fail;
         }
 
-        JS_FreeValue(cx, ret);
+        ret = qjs_webcrypto_buffer_source_copy(cx, aobject, "salt", &salt);
+        if (JS_IsException(ret)) {
+            goto fail;
+        }
+
+        if (salt.start == NULL) {
+            JS_ThrowTypeError(cx, "PBKDF2 algorithm.salt is not provided");
+            goto fail;
+        }
+
+        if (salt.length < 16) {
+            JS_ThrowTypeError(cx, "PBKDF2 algorithm.salt must be at least "
+                              "16 bytes long");
+            goto fail;
+        }
 
         md = qjs_algorithm_hash_digest(hash);
 
@@ -2461,25 +2361,19 @@ qjs_webcrypto_derive(JSContext *cx, JSValueConst this_val, int argc,
             goto fail;
         }
 
-        val = JS_GetPropertyStr(cx, aobject, "salt");
-        if (JS_IsException(val)) {
-            goto fail;
-        }
-
-        ret = qjs_typed_array_data(cx, val, &salt);
-        JS_FreeValue(cx, val);
+        ret = qjs_webcrypto_buffer_source_copy(cx, aobject, "info", &info);
         if (JS_IsException(ret)) {
             goto fail;
         }
 
-        val = JS_GetPropertyStr(cx, aobject, "info");
-        if (JS_IsException(val)) {
+        ret = qjs_webcrypto_buffer_source_copy(cx, aobject, "salt", &salt);
+        if (JS_IsException(ret)) {
             goto fail;
         }
 
-        ret = qjs_typed_array_data(cx, val, &info);
-        JS_FreeValue(cx, val);
-        if (JS_IsException(ret)) {
+        if (info.start == NULL || salt.start == NULL) {
+            JS_ThrowTypeError(cx, "HKDF algorithm.%s is not provided",
+                              (info.start == NULL) ? "info" : "salt");
             goto fail;
         }
 
@@ -2550,6 +2444,11 @@ free:
         goto fail;
     }
 
+    js_free(cx, salt.start);
+    js_free(cx, info.start);
+    salt.start = NULL;
+    info.start = NULL;
+
     if (derive_key) {
         if (dalg->type == QJS_ALGORITHM_HMAC) {
             ret = qjs_algorithm_hash(cx, dobject, &dkey->hash);
@@ -2576,6 +2475,8 @@ free:
 
 fail:
 
+    js_free(cx, salt.start);
+    js_free(cx, info.start);
     JS_FreeValue(cx, dkey_value);
 
     js_free(cx, k);
@@ -2600,7 +2501,7 @@ qjs_webcrypto_digest(JSContext *cx, JSValueConst this_val, int argc,
         goto fail;
     }
 
-    ret = qjs_typed_array_data(cx, argv[1], &data);
+    ret = qjs_webcrypto_buffer_source(cx, argv[1], &data);
     if (JS_IsException(ret)) {
         goto fail;
     }
@@ -2773,8 +2674,225 @@ qjs_webcrypto_export_key_raw(JSContext *cx, qjs_webcrypto_key_t *key,
 
 
 static JSValue
-qjs_webcrypto_cipher_core(JSContext *cx, njs_str_t *data,
+qjs_webcrypto_buffer_source(JSContext *cx, JSValueConst value,
+    njs_str_t *data)
+{
+    JSValue  ret;
+
+    ret = qjs_typed_array_data(cx, value, data);
+
+#ifdef NJS_HAVE_QUICKJS_IS_ARRAY_BUFFER
+    if (JS_IsException(ret)
+        && (JS_IsArrayBuffer(value) || JS_GetTypedArrayType(value) >= 0))
+    {
+        /*
+         * WebIDL copies the bytes of a detached buffer source
+         * as an empty byte sequence.
+         */
+        JS_FreeValue(cx, JS_GetException(cx));
+
+        data->start = (u_char *) "";
+        data->length = 0;
+
+        return JS_UNDEFINED;
+    }
+#endif
+
+    return ret;
+}
+
+
+/*
+ * Copies a BufferSource algorithm member when it is read, as WebIDL
+ * dictionary conversion does: getters of the members read later cannot
+ * change the copied bytes.  An absent member yields NULL data.
+ */
+
+static JSValue
+qjs_webcrypto_buffer_source_copy(JSContext *cx, JSValueConst options,
+    const char *name, njs_str_t *data)
+{
+    JSValue    value, ret;
+    njs_str_t  src;
+
+    data->start = NULL;
+    data->length = 0;
+
+    value = JS_GetPropertyStr(cx, options, name);
+    if (JS_IsException(value)) {
+        return JS_EXCEPTION;
+    }
+
+    if (JS_IsUndefined(value)) {
+        return JS_UNDEFINED;
+    }
+
+    ret = qjs_webcrypto_buffer_source(cx, value, &src);
+    if (JS_IsException(ret)) {
+        JS_FreeValue(cx, value);
+        return JS_EXCEPTION;
+    }
+
+    data->start = js_malloc(cx, njs_max(src.length, 1));
+    if (data->start == NULL) {
+        JS_FreeValue(cx, value);
+        return JS_EXCEPTION;
+    }
+
+    memcpy(data->start, src.start, src.length);
+    data->length = src.length;
+
+    JS_FreeValue(cx, value);
+
+    return JS_UNDEFINED;
+}
+
+
+static JSValue
+qjs_webcrypto_cipher_params(JSContext *cx, JSValue options,
+    qjs_webcrypto_algorithm_t *alg, qjs_webcrypto_cipher_params_t *params)
+{
+    int         rc;
+    JSValue     value, ret;
+    const char  *name;
+
+    params->iv.start = NULL;
+    params->iv.length = 0;
+    params->aad.start = NULL;
+    params->aad.length = 0;
+
+    switch (alg->type) {
+    case QJS_ALGORITHM_AES_GCM:
+    case QJS_ALGORITHM_AES_CTR:
+    case QJS_ALGORITHM_AES_CBC:
+        break;
+
+    default:
+        return JS_UNDEFINED;
+    }
+
+    /* Dictionary members are read in lexicographic order. */
+
+    if (alg->type == QJS_ALGORITHM_AES_GCM) {
+        ret = qjs_webcrypto_buffer_source_copy(cx, options, "additionalData",
+                                               &params->aad);
+        if (JS_IsException(ret)) {
+            return JS_EXCEPTION;
+        }
+    }
+
+    name = (alg->type == QJS_ALGORITHM_AES_CTR) ? "counter" : "iv";
+
+    ret = qjs_webcrypto_buffer_source_copy(cx, options, name, &params->iv);
+    if (JS_IsException(ret)) {
+        return JS_EXCEPTION;
+    }
+
+    if (params->iv.start == NULL) {
+        return JS_ThrowTypeError(cx, "%s algorithm.%s is not provided",
+                                 qjs_algorithm_string(alg), name);
+    }
+
+    if (alg->type != QJS_ALGORITHM_AES_GCM && params->iv.length != 16) {
+        return JS_ThrowTypeError(cx, "%s algorithm.%s must be 16 bytes long",
+                                 qjs_algorithm_string(alg), name);
+    }
+
+    if (alg->type == QJS_ALGORITHM_AES_GCM) {
+        params->taglen = 128;
+        value = JS_GetPropertyStr(cx, options, "tagLength");
+        if (JS_IsException(value)) {
+            return JS_EXCEPTION;
+        }
+
+        rc = 0;
+        if (!JS_IsUndefined(value)) {
+            rc = JS_ToInt64(cx, &params->taglen, value);
+        }
+
+        JS_FreeValue(cx, value);
+        if (rc < 0) {
+            return JS_EXCEPTION;
+        }
+
+        if (params->taglen != 32 && params->taglen != 64
+            && params->taglen != 96 && params->taglen != 104
+            && params->taglen != 112 && params->taglen != 120
+            && params->taglen != 128)
+        {
+            return JS_ThrowTypeError(cx, "AES-GCM invalid tagLength");
+        }
+
+        params->taglen /= 8;
+
+    } else if (alg->type == QJS_ALGORITHM_AES_CTR) {
+        value = JS_GetPropertyStr(cx, options, "length");
+        if (JS_IsException(value)) {
+            return JS_EXCEPTION;
+        }
+
+        if (JS_IsUndefined(value)) {
+            return JS_ThrowTypeError(cx, "AES-CTR algorithm.length is not "
+                                     "provided");
+        }
+
+        rc = JS_ToInt64(cx, &params->length, value);
+        JS_FreeValue(cx, value);
+        if (rc < 0) {
+            return JS_EXCEPTION;
+        }
+
+        if (params->length == 0 || params->length > 128) {
+            return JS_ThrowTypeError(cx, "AES-CTR algorithm.length must be "
+                                     "between 1 and 128");
+        }
+    }
+
+    return JS_UNDEFINED;
+}
+
+
+static void
+qjs_webcrypto_cipher_params_free(JSContext *cx,
+    qjs_webcrypto_cipher_params_t *params)
+{
+    js_free(cx, params->iv.start);
+    js_free(cx, params->aad.start);
+}
+
+
+static JSValue
+qjs_webcrypto_cipher_buffer_source(JSContext *cx, JSValueConst value,
     qjs_webcrypto_key_t *key, JSValue options,
+    qjs_webcrypto_algorithm_t *alg, int encrypt)
+{
+    JSValue                        ret;
+    njs_str_t                      data;
+    qjs_webcrypto_cipher_params_t  params;
+
+    ret = qjs_webcrypto_cipher_params(cx, options, alg, &params);
+    if (JS_IsException(ret)) {
+        goto done;
+    }
+
+    ret = qjs_webcrypto_buffer_source(cx, value, &data);
+    if (JS_IsException(ret)) {
+        goto done;
+    }
+
+    ret = qjs_webcrypto_cipher_core(cx, &data, key, &params, alg, encrypt);
+
+done:
+
+    qjs_webcrypto_cipher_params_free(cx, &params);
+
+    return ret;
+}
+
+
+static JSValue
+qjs_webcrypto_cipher_core(JSContext *cx, njs_str_t *data,
+    qjs_webcrypto_key_t *key, qjs_webcrypto_cipher_params_t *params,
     qjs_webcrypto_algorithm_t *alg, int encrypt)
 {
     switch (alg->type) {
@@ -2782,13 +2900,13 @@ qjs_webcrypto_cipher_core(JSContext *cx, njs_str_t *data,
         return qjs_cipher_pkey(cx, data, key, encrypt);
 
     case QJS_ALGORITHM_AES_GCM:
-        return qjs_cipher_aes_gcm(cx, data, key, options, encrypt);
+        return qjs_cipher_aes_gcm(cx, data, key, params, encrypt);
 
     case QJS_ALGORITHM_AES_CTR:
-        return qjs_cipher_aes_ctr(cx, data, key, options, encrypt);
+        return qjs_cipher_aes_ctr(cx, data, key, params, encrypt);
 
     case QJS_ALGORITHM_AES_CBC:
-        return qjs_cipher_aes_cbc(cx, data, key, options, encrypt);
+        return qjs_cipher_aes_cbc(cx, data, key, params, encrypt);
 
 #if defined(EVP_CIPHER_CTX_FLAG_WRAP_ALLOW)
     case QJS_ALGORITHM_AES_KW:
@@ -4079,19 +4197,58 @@ qjs_webcrypto_import_key_internal(JSContext *cx, qjs_webcrypto_key_format_t fmt,
         return JS_EXCEPTION;
     }
 
-    if (fmt != QJS_KEY_FORMAT_JWK) {
-        ret = qjs_typed_array_data(cx, key_data, &kd);
-        if (JS_IsException(ret)) {
-            return JS_EXCEPTION;
-        }
-    }
-
     key = qjs_webcrypto_key_make(cx, alg, usage, extractable);
     if (JS_IsException(key)) {
         return JS_EXCEPTION;
     }
 
     wkey = JS_GetOpaque(key, QJS_CORE_CLASS_ID_WEBCRYPTO_KEY);
+
+    hash = QJS_HASH_UNSET;
+
+    if (fmt != QJS_KEY_FORMAT_JWK) {
+        /*
+         * The key data bytes are taken after the algorithm is normalized,
+         * no JavaScript code may run while they are used.
+         */
+
+        switch (alg->type) {
+        case QJS_ALGORITHM_RSA_OAEP:
+        case QJS_ALGORITHM_RSA_PSS:
+        case QJS_ALGORITHM_RSASSA_PKCS1_v1_5:
+            ret = qjs_algorithm_hash(cx, options, &hash);
+            if (JS_IsException(ret)) {
+                goto fail;
+            }
+
+            break;
+
+        case QJS_ALGORITHM_HMAC:
+            ret = qjs_algorithm_hash(cx, options, &wkey->hash);
+            if (JS_IsException(ret)) {
+                goto fail;
+            }
+
+            break;
+
+        case QJS_ALGORITHM_ECDSA:
+        case QJS_ALGORITHM_ECDH:
+            ret = qjs_algorithm_curve(cx, options, &wkey->u.a.curve);
+            if (JS_IsException(ret)) {
+                goto fail;
+            }
+
+            break;
+
+        default:
+            break;
+        }
+
+        ret = qjs_webcrypto_buffer_source(cx, key_data, &kd);
+        if (JS_IsException(ret)) {
+            goto fail;
+        }
+    }
 
     switch (fmt) {
     case QJS_KEY_FORMAT_PKCS8:
@@ -4261,9 +4418,11 @@ qjs_webcrypto_import_key_internal(JSContext *cx, qjs_webcrypto_key_format_t fmt,
         }
 #endif
 
-        ret = qjs_algorithm_hash(cx, options, &hash);
-        if (JS_IsException(ret)) {
-            goto fail;
+        if (fmt == QJS_KEY_FORMAT_JWK) {
+            ret = qjs_algorithm_hash(cx, options, &hash);
+            if (JS_IsException(ret)) {
+                goto fail;
+            }
         }
 
         if (wkey->hash != QJS_HASH_UNSET && wkey->hash != hash) {
@@ -4294,11 +4453,6 @@ qjs_webcrypto_import_key_internal(JSContext *cx, qjs_webcrypto_key_format_t fmt,
 
     case QJS_ALGORITHM_ECDSA:
     case QJS_ALGORITHM_ECDH:
-        ret = qjs_algorithm_curve(cx, options, &wkey->u.a.curve);
-        if (JS_IsException(ret)) {
-            goto fail;
-        }
-
         if (fmt == QJS_KEY_FORMAT_RAW) {
             pkey = qjs_import_raw_ec(cx, &kd, wkey);
             if (pkey == NULL) {
@@ -4418,11 +4572,6 @@ qjs_webcrypto_import_key_internal(JSContext *cx, qjs_webcrypto_key_format_t fmt,
 
     case QJS_ALGORITHM_HMAC:
         if (fmt == QJS_KEY_FORMAT_RAW) {
-            ret = qjs_algorithm_hash(cx, options, &wkey->hash);
-            if (JS_IsException(ret)) {
-                goto fail;
-            }
-
             wkey->u.s.raw.start = js_malloc(cx, njs_max(kd.length, 1));
             if (wkey->u.s.raw.start == NULL) {
                 JS_ThrowOutOfMemory(cx);
@@ -4539,12 +4688,10 @@ qjs_webcrypto_import_key(JSContext *cx, JSValueConst this_val, int argc,
 
 
 static int
-qjs_set_rsa_padding(JSContext *cx, JSValue options, EVP_PKEY *pkey,
-    EVP_PKEY_CTX *ctx, qjs_webcrypto_alg_t type)
+qjs_set_rsa_padding(JSContext *cx, EVP_PKEY_CTX *ctx,
+    qjs_webcrypto_alg_t type, int64_t salt_length)
 {
     int      padding, rc;
-    int64_t  salt_length;
-    JSValue  value;
 
     if (type == QJS_ALGORITHM_ECDSA) {
         return 0;
@@ -4559,23 +4706,6 @@ qjs_set_rsa_padding(JSContext *cx, JSValue options, EVP_PKEY *pkey,
     }
 
     if (padding == RSA_PKCS1_PSS_PADDING) {
-        value = JS_GetPropertyStr(cx, options, "saltLength");
-        if (JS_IsException(value)) {
-            return -1;
-        }
-
-        if (JS_IsUndefined(value)) {
-            JS_ThrowTypeError(cx, "RSA-PSS algorithm.saltLength is not "
-                              "provided");
-            return -1;
-        }
-
-        rc = JS_ToInt64(cx, &salt_length, value);
-        JS_FreeValue(cx, value);
-        if (rc < 0) {
-            return -1;
-        }
-
         rc = EVP_PKEY_CTX_set_rsa_pss_saltlen(ctx, salt_length);
         if (rc <= 0) {
             qjs_webcrypto_error(cx,
@@ -4762,7 +4892,8 @@ qjs_webcrypto_sign(JSContext *cx, JSValueConst this_val, int argc,
     int                        rc;
     u_char                     *dst, *p, *p1363;
     size_t                     olen, outlen;
-    JSValue                    ret, options;
+    JSValue                    ret, options, value;
+    int64_t                    salt_length;
     unsigned                   mask, m_len;
     njs_str_t                  data, sig;
     EVP_MD_CTX                 *mctx;
@@ -4805,24 +4936,6 @@ qjs_webcrypto_sign(JSContext *cx, JSValueConst this_val, int argc,
         return JS_EXCEPTION;
     }
 
-    if (verify) {
-        ret = qjs_typed_array_data(cx, argv[2], &sig);
-        if (JS_IsException(ret)) {
-            return JS_EXCEPTION;
-        }
-
-        ret = qjs_typed_array_data(cx, argv[3], &data);
-        if (JS_IsException(ret)) {
-            return JS_EXCEPTION;
-        }
-
-    } else {
-        ret = qjs_typed_array_data(cx, argv[2], &data);
-        if (JS_IsException(ret)) {
-            return JS_EXCEPTION;
-        }
-    }
-
     md = NULL;
 
     if (alg->type == QJS_ALGORITHM_ECDSA) {
@@ -4836,6 +4949,42 @@ qjs_webcrypto_sign(JSContext *cx, JSValueConst this_val, int argc,
     } else if (alg->type != QJS_ALGORITHM_ED25519) {
         hash = key->hash;
         md = qjs_algorithm_hash_digest(hash);
+    }
+
+    salt_length = 0;
+
+    if (alg->type == QJS_ALGORITHM_RSA_PSS) {
+        value = JS_GetPropertyStr(cx, options, "saltLength");
+        if (JS_IsException(value)) {
+            return JS_EXCEPTION;
+        }
+
+        if (JS_IsUndefined(value)) {
+            return JS_ThrowTypeError(cx, "RSA-PSS algorithm.saltLength is not "
+                                     "provided");
+        }
+
+        rc = JS_ToInt64(cx, &salt_length, value);
+        JS_FreeValue(cx, value);
+        if (rc < 0) {
+            return JS_EXCEPTION;
+        }
+    }
+
+    if (verify) {
+        ret = qjs_webcrypto_buffer_source(cx, argv[2], &sig);
+        if (JS_IsException(ret)) {
+            return JS_EXCEPTION;
+        }
+
+        ret = qjs_webcrypto_buffer_source(cx, argv[3], &data);
+
+    } else {
+        ret = qjs_webcrypto_buffer_source(cx, argv[2], &data);
+    }
+
+    if (JS_IsException(ret)) {
+        return JS_EXCEPTION;
     }
 
     /* Clang complains about uninitialized rc. */
@@ -4989,7 +5138,7 @@ qjs_webcrypto_sign(JSContext *cx, JSValueConst this_val, int argc,
             }
         }
 
-        rc = qjs_set_rsa_padding(cx, options, key->u.a.pkey, pctx, alg->type);
+        rc = qjs_set_rsa_padding(cx, pctx, alg->type, salt_length);
         if (rc < 0) {
             goto fail;
         }
@@ -5151,8 +5300,9 @@ qjs_webcrypto_wrap_key(JSContext *cx, JSValueConst this_val, int argc,
     }
 
     if (fmt == QJS_KEY_FORMAT_JWK) {
-        JSValue       json;
-        const char    *str;
+        JSValue                        json;
+        const char                     *str;
+        qjs_webcrypto_cipher_params_t  params;
 
         json = JS_JSONStringify(cx, exported, JS_UNDEFINED, JS_UNDEFINED);
         JS_FreeValue(cx, exported);
@@ -5170,19 +5320,18 @@ qjs_webcrypto_wrap_key(JSContext *cx, JSValueConst this_val, int argc,
 
         data.start = (u_char *) str;
 
-        ret = qjs_webcrypto_cipher_core(cx, &data, wrapping_key, options,
-                                        alg, 1);
+        ret = qjs_webcrypto_cipher_params(cx, options, alg, &params);
+        if (!JS_IsException(ret)) {
+            ret = qjs_webcrypto_cipher_core(cx, &data, wrapping_key, &params,
+                                            alg, 1);
+        }
+
+        qjs_webcrypto_cipher_params_free(cx, &params);
         JS_FreeCString(cx, str);
 
     } else {
-        ret = qjs_typed_array_data(cx, exported, &data);
-        if (JS_IsException(ret)) {
-            JS_FreeValue(cx, exported);
-            goto fail;
-        }
-
-        ret = qjs_webcrypto_cipher_core(cx, &data, wrapping_key, options,
-                                        alg, 1);
+        ret = qjs_webcrypto_cipher_buffer_source(cx, exported, wrapping_key,
+                                                 options, alg, 1);
         JS_FreeValue(cx, exported);
     }
 
@@ -5204,7 +5353,7 @@ qjs_webcrypto_unwrap_key(JSContext *cx, JSValueConst this_val, int argc,
 {
     unsigned                    usage;
     JSValue                     options, ret, decrypted, key_value;
-    njs_str_t                   data, key_data;
+    njs_str_t                   key_data;
     const char                  *str;
     size_t                      len;
     JSValue                     json_str;
@@ -5215,11 +5364,6 @@ qjs_webcrypto_unwrap_key(JSContext *cx, JSValueConst this_val, int argc,
     fmt = qjs_key_format(cx, argv[0]);
     if (fmt == QJS_KEY_FORMAT_UNKNOWN) {
         goto fail;
-    }
-
-    ret = qjs_typed_array_data(cx, argv[1], &data);
-    if (JS_IsException(ret)) {
-        return JS_EXCEPTION;
     }
 
     wrapping_key = JS_GetOpaque2(cx, argv[2],
@@ -5257,8 +5401,8 @@ qjs_webcrypto_unwrap_key(JSContext *cx, JSValueConst this_val, int argc,
         goto fail;
     }
 
-    decrypted = qjs_webcrypto_cipher_core(cx, &data, wrapping_key, options,
-                                          alg, 0);
+    decrypted = qjs_webcrypto_cipher_buffer_source(cx, argv[1], wrapping_key,
+                                                   options, alg, 0);
     if (JS_IsException(decrypted)) {
         goto fail;
     }
