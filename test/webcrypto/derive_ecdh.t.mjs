@@ -228,6 +228,90 @@ async function testDerivedKeyType(params) {
     return "SUCCESS";
 }
 
+/* Error names other engines use for invalid derived key parameters. */
+const invalid = ["TypeError", "OperationError", "NotSupportedError",
+                 "DataError", "SyntaxError"];
+
+async function testDerivedKeyLength(params) {
+    let ecdh_pair = await load_key_pair('ec');
+    let peer = await load_key_pair('ec2');
+    let base;
+
+    if (params.base === "ECDH") {
+        base = { algorithm: { name: "ECDH", public: peer.publicKey },
+                 key: ecdh_pair.privateKey };
+
+    } else {
+        base = {
+            algorithm: { name: params.base, hash: "SHA-256",
+                         salt: new Uint8Array(16), info: new Uint8Array(0),
+                         iterations: 1 },
+            key: await crypto.subtle.importKey("raw", new Uint8Array(32),
+                                               params.base, false,
+                                               ["deriveKey"]),
+        };
+    }
+
+    let key;
+
+    try {
+        key = await crypto.subtle.deriveKey(base.algorithm, base.key,
+                                            params.derived, true,
+                                            params.usage);
+
+    } catch (e) {
+        if (params.error && params.error.indexOf(e.name) !== -1) {
+            return "SUCCESS";
+        }
+
+        throw e;
+    }
+
+    if (params.error) {
+        throw Error(`deriveKey accepted ${JSON.stringify(params.derived)}`);
+    }
+
+    let raw = await crypto.subtle.exportKey("raw", key);
+
+    if (raw.byteLength !== params.bytes) {
+        throw Error(`unexpected key length: ${raw.byteLength}`);
+    }
+
+    return "SUCCESS";
+}
+
+let derived_key_length_tsuite = {
+    name: "deriveKey length",
+    skip: () => (!has_buffer() || !has_webcrypto()),
+    T: testDerivedKeyLength,
+    opts: {
+        usage: ["sign"]
+    },
+    tests: [
+        { base: "ECDH", derived: { name: "AES-GCM", length: 129 },
+          usage: ["encrypt"],
+          error: invalid },
+        { base: "HKDF", derived: { name: "AES-GCM", length: 129 },
+          usage: ["encrypt"],
+          error: invalid },
+        { base: "PBKDF2", derived: { name: "AES-GCM", length: 129 },
+          usage: ["encrypt"],
+          error: invalid },
+        { base: "ECDH",
+          derived: { name: "HMAC", hash: "SHA-256", length: 7 },
+          error: invalid },
+        { base: "HKDF",
+          derived: { name: "HMAC", hash: "SHA-256", length: 0 },
+          error: invalid },
+        { base: "ECDH",
+          derived: { name: "HMAC", hash: "SHA-256", length: 8 },
+          bytes: 1 },
+        { base: "HKDF",
+          derived: { name: "ECDSA", namedCurve: "P-256", length: 256 },
+          error: invalid },
+    ]
+};
+
 let ecdh_key_type_tsuite = {
     name: "ECDH-DeriveKey type",
     skip: () => (!has_buffer() || !has_webcrypto()),
@@ -246,5 +330,6 @@ run([
     ecdh_bits_tsuite,
     ecdh_key_tsuite,
     ecdh_key_type_tsuite,
+    derived_key_length_tsuite,
 ])
 .then($DONE, $DONE);
