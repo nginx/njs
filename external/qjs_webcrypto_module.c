@@ -823,11 +823,15 @@ qjs_cipher_aes_gcm(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
 {
     int               len, outlen, dstlen;
     u_char            *dst, *p;
-    JSValue           ret, value;
+    JSValue           ret, value, iv_value, aad_value;
     int64_t           taglen;
     njs_str_t         iv, aad;
     EVP_CIPHER_CTX    *ctx;
     const EVP_CIPHER  *cipher;
+
+    ctx = NULL;
+    iv_value = JS_UNDEFINED;
+    aad_value = JS_UNDEFINED;
 
     switch (key->u.s.raw.length) {
     case 16:
@@ -857,25 +861,24 @@ qjs_cipher_aes_gcm(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
         return JS_EXCEPTION;
     }
 
-    ret = qjs_typed_array_data(cx, value, &iv);
-    if (JS_IsException(ret)) {
-        JS_FreeValue(cx, value);
-        return JS_EXCEPTION;
-    }
+    iv_value = value;
 
-    JS_FreeValue(cx, value);
+    ret = qjs_typed_array_data(cx, iv_value, &iv);
+    if (JS_IsException(ret)) {
+        goto fail;
+    }
 
     taglen = 128;
 
     value = JS_GetPropertyStr(cx, options, "tagLength");
     if (JS_IsException(value)) {
-        return JS_EXCEPTION;
+        goto fail;
     }
 
     if (!JS_IsUndefined(value)) {
         if (JS_ToInt64(cx, &taglen, value) < 0) {
             JS_FreeValue(cx, value);
-            return JS_EXCEPTION;
+            goto fail;
         }
     }
 
@@ -883,20 +886,20 @@ qjs_cipher_aes_gcm(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
         && taglen != 112 && taglen != 120 && taglen != 128)
     {
         JS_ThrowTypeError(cx, "AES-GCM invalid tagLength");
-        return JS_EXCEPTION;
+        goto fail;
     }
 
     taglen /= 8;
 
     if (!encrypt && data->length < (size_t) taglen) {
         JS_ThrowTypeError(cx, "AES-GCM data is too short");
-        return JS_EXCEPTION;
+        goto fail;
     }
 
     ctx = EVP_CIPHER_CTX_new();
     if (ctx == NULL) {
         qjs_webcrypto_error(cx, "EVP_CIPHER_CTX_new() failed");
-        return JS_EXCEPTION;
+        goto fail;
     }
 
     if (EVP_CipherInit_ex(ctx, cipher, NULL, NULL, NULL, encrypt) <= 0) {
@@ -929,20 +932,17 @@ qjs_cipher_aes_gcm(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
 
     aad.length = 0;
 
-    value = JS_GetPropertyStr(cx, options, "additionalData");
-    if (JS_IsException(value)) {
+    aad_value = JS_GetPropertyStr(cx, options, "additionalData");
+    if (JS_IsException(aad_value)) {
         goto fail;
     }
 
-    if (!JS_IsUndefined(value)) {
-        ret = qjs_typed_array_data(cx, value, &aad);
+    if (!JS_IsUndefined(aad_value)) {
+        ret = qjs_typed_array_data(cx, aad_value, &aad);
         if (JS_IsException(ret)) {
-            JS_FreeValue(cx, value);
             goto fail;
         }
     }
-
-    JS_FreeValue(cx, value);
 
     if (aad.length != 0) {
         if (EVP_CipherUpdate(ctx, NULL, &outlen, aad.start, aad.length) <= 0) {
@@ -998,11 +998,17 @@ qjs_cipher_aes_gcm(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
 
     EVP_CIPHER_CTX_free(ctx);
 
+    JS_FreeValue(cx, iv_value);
+    JS_FreeValue(cx, aad_value);
+
     return ret;
 
 fail:
 
     EVP_CIPHER_CTX_free(ctx);
+
+    JS_FreeValue(cx, iv_value);
+    JS_FreeValue(cx, aad_value);
 
     return JS_EXCEPTION;
 }
@@ -1120,7 +1126,7 @@ qjs_cipher_aes_ctr(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
     u_char            *dst;
     BIGNUM            *total, *blocks, *left, *ctr;
     size_t            size1;
-    JSValue           ret, value;
+    JSValue           ret, value, counter;
     int64_t           length;
     njs_str_t         iv;
     const EVP_CIPHER  *cipher;
@@ -1144,59 +1150,63 @@ qjs_cipher_aes_ctr(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
         return JS_EXCEPTION;
     }
 
-    value = JS_GetPropertyStr(cx, options, "counter");
-    if (JS_IsException(value)) {
+    counter = JS_GetPropertyStr(cx, options, "counter");
+    if (JS_IsException(counter)) {
         return JS_EXCEPTION;
     }
 
-    if (JS_IsUndefined(value)) {
+    if (JS_IsUndefined(counter)) {
         JS_ThrowTypeError(cx, "AES-CTR algorithm.counter is not provided");
         return JS_EXCEPTION;
     }
 
-    ret = qjs_typed_array_data(cx, value, &iv);
-    if (JS_IsException(ret)) {
-        JS_FreeValue(cx, value);
-        return JS_EXCEPTION;
-    }
+    total = NULL;
+    ctr = NULL;
+    blocks = NULL;
+    left = NULL;
 
-    JS_FreeValue(cx, value);
+    ret = qjs_typed_array_data(cx, counter, &iv);
+    if (JS_IsException(ret)) {
+        goto fail;
+    }
 
     if (iv.length != 16) {
         JS_ThrowTypeError(cx, "AES-CTR algorithm.counter must be 16 bytes "
                           "long");
-        return JS_EXCEPTION;
+        ret = JS_EXCEPTION;
+        goto fail;
     }
 
     value = JS_GetPropertyStr(cx, options, "length");
     if (JS_IsException(value)) {
-        return JS_EXCEPTION;
+        ret = JS_EXCEPTION;
+        goto fail;
     }
 
     if (JS_IsUndefined(value)) {
         JS_ThrowTypeError(cx, "AES-CTR algorithm.length is not provided");
-        return JS_EXCEPTION;
+        ret = JS_EXCEPTION;
+        goto fail;
     }
 
     if (JS_ToInt64(cx, &length, value) < 0) {
         JS_FreeValue(cx, value);
-        return JS_EXCEPTION;
+        ret = JS_EXCEPTION;
+        goto fail;
     }
 
     if (length == 0 || length > 128) {
         JS_ThrowTypeError(cx, "AES-CTR algorithm.length must be between "
                           "1 and 128");
-        return JS_EXCEPTION;
+        ret = JS_EXCEPTION;
+        goto fail;
     }
-
-    ctr = NULL;
-    blocks = NULL;
-    left = NULL;
 
     total = BN_new();
     if (total == NULL) {
         qjs_webcrypto_error(cx, "BN_new() failed");
-        return JS_EXCEPTION;
+        ret = JS_EXCEPTION;
+        goto fail;
     }
 
     if (BN_lshift(total, BN_value_one(), length) != 1) {
@@ -1322,6 +1332,8 @@ fail:
         BN_free(left);
     }
 
+    JS_FreeValue(cx, counter);
+
     return ret;
 }
 
@@ -1372,10 +1384,9 @@ qjs_cipher_aes_cbc(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
         return JS_EXCEPTION;
     }
 
-    JS_FreeValue(cx, value);
-
     if (iv.length != 16) {
         JS_ThrowTypeError(cx, "AES-CBC algorithm.iv must be 16 bytes long");
+        JS_FreeValue(cx, value);
         return JS_EXCEPTION;
     }
 
@@ -1389,11 +1400,14 @@ qjs_cipher_aes_cbc(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
     ctx = EVP_CIPHER_CTX_new();
     if (ctx == NULL) {
         qjs_webcrypto_error(cx, "EVP_CIPHER_CTX_new() failed");
+        JS_FreeValue(cx, value);
         return JS_EXCEPTION;
     }
 
     rc = EVP_CipherInit_ex(ctx, cipher, NULL, key->u.s.raw.start, iv.start,
                             encrypt);
+    JS_FreeValue(cx, value);
+
     if (rc <= 0) {
         qjs_webcrypto_error(cx, "EVP_%sInit_ex() failed",
                             encrypt ? "Encrypt" : "Decrypt");
@@ -2319,7 +2333,8 @@ qjs_webcrypto_derive(JSContext *cx, JSValueConst this_val, int argc,
     u_char                     *k;
     size_t                     olen;
     int64_t                    iterations, length;
-    JSValue                    ret, val, aobject, dobject, dkey_value;
+    JSValue                    ret, aobject, dobject, dkey_value, salt_value,
+                               info_value;
     unsigned                   usage, mask;
     njs_str_t                  salt, info;
     const EVP_MD               *md;
@@ -2415,6 +2430,8 @@ qjs_webcrypto_derive(JSContext *cx, JSValueConst this_val, int argc,
     dkey = NULL;
     length /= 8;
     dkey_value = JS_UNDEFINED;
+    salt_value = JS_UNDEFINED;
+    info_value = JS_UNDEFINED;
 
     if (derive_key) {
         ret = qjs_key_usage(cx, argv[4], &usage);
@@ -2451,13 +2468,12 @@ qjs_webcrypto_derive(JSContext *cx, JSValueConst this_val, int argc,
             goto fail;
         }
 
-        val = JS_GetPropertyStr(cx, aobject, "salt");
-        if (JS_IsException(val)) {
+        salt_value = JS_GetPropertyStr(cx, aobject, "salt");
+        if (JS_IsException(salt_value)) {
             goto fail;
         }
 
-        ret = qjs_typed_array_data(cx, val, &salt);
-        JS_FreeValue(cx, val);
+        ret = qjs_typed_array_data(cx, salt_value, &salt);
         if (JS_IsException(ret)) {
             goto fail;
         }
@@ -2504,24 +2520,22 @@ qjs_webcrypto_derive(JSContext *cx, JSValueConst this_val, int argc,
             goto fail;
         }
 
-        val = JS_GetPropertyStr(cx, aobject, "salt");
-        if (JS_IsException(val)) {
+        salt_value = JS_GetPropertyStr(cx, aobject, "salt");
+        if (JS_IsException(salt_value)) {
             goto fail;
         }
 
-        ret = qjs_typed_array_data(cx, val, &salt);
-        JS_FreeValue(cx, val);
+        ret = qjs_typed_array_data(cx, salt_value, &salt);
         if (JS_IsException(ret)) {
             goto fail;
         }
 
-        val = JS_GetPropertyStr(cx, aobject, "info");
-        if (JS_IsException(val)) {
+        info_value = JS_GetPropertyStr(cx, aobject, "info");
+        if (JS_IsException(info_value)) {
             goto fail;
         }
 
-        ret = qjs_typed_array_data(cx, val, &info);
-        JS_FreeValue(cx, val);
+        ret = qjs_typed_array_data(cx, info_value, &info);
         if (JS_IsException(ret)) {
             goto fail;
         }
@@ -2593,6 +2607,12 @@ free:
         goto fail;
     }
 
+    JS_FreeValue(cx, salt_value);
+    salt_value = JS_UNDEFINED;
+
+    JS_FreeValue(cx, info_value);
+    info_value = JS_UNDEFINED;
+
     if (derive_key) {
         if (dalg->type == QJS_ALGORITHM_HMAC) {
             ret = qjs_algorithm_hash(cx, dobject, &dkey->hash);
@@ -2619,6 +2639,8 @@ free:
 
 fail:
 
+    JS_FreeValue(cx, salt_value);
+    JS_FreeValue(cx, info_value);
     JS_FreeValue(cx, dkey_value);
 
     js_free(cx, k);

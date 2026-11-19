@@ -132,6 +132,15 @@ let concat_tsuite = {
     T: async (params) => {
         let r;
 
+        if (params.getters) {
+            /* Elements returned by getters are the only references. */
+            params.buffers = params.buffers.reduce((list, b, i) =>
+                Object.defineProperty(list, i, {
+                    enumerable: true,
+                    get() { return Buffer.from(b); },
+                }), []);
+        }
+
         if (params.length) {
             r = Buffer.concat(params.buffers, params.length);
 
@@ -154,6 +163,8 @@ let concat_tsuite = {
           expected: 'abcdef' },
         { buffers: [ Buffer.from(''), Buffer.from('abc'), Buffer.from('def') ],
           length: 4, expected: 'abcd' },
+        { buffers: [ Buffer.from('abc'), Buffer.from('def') ], getters: true,
+          expected: 'abcdef' },
     ],
 };
 
