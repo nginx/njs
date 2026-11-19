@@ -5467,6 +5467,8 @@ qjs_webcrypto_key_algorithm(JSContext *cx, JSValueConst this_val)
 
     case QJS_ALGORITHM_ED25519:
     case QJS_ALGORITHM_X25519:
+    case QJS_ALGORITHM_PBKDF2:
+    case QJS_ALGORITHM_HKDF:
         break;
 
     case QJS_ALGORITHM_HMAC:
