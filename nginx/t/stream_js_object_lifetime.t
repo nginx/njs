@@ -41,7 +41,7 @@ stream {
     js_var $test_value original;
     js_var $result;
     js_set $engine test.engine;
-    js_shared_dict_zone zone=scopes:32k;
+    js_shared_dict_zone zone=scopes:512k;
 
     server {
         listen      127.0.0.1:8081;
