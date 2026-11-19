@@ -118,6 +118,8 @@ static njs_int_t njs_cipher_aes_cbc(njs_vm_t *vm, njs_str_t *data,
 static njs_int_t njs_cipher_aes_kw(njs_vm_t *vm, njs_str_t *data,
     njs_webcrypto_key_t *key, njs_bool_t encrypt, njs_value_t *retval);
 #endif
+static njs_int_t njs_derive_key_length(njs_vm_t *vm,
+    njs_webcrypto_algorithm_t *dalg, int64_t length);
 static njs_int_t njs_ext_derive(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t derive_key, njs_value_t *retval);
 static njs_int_t njs_ext_digest(njs_vm_t *vm, njs_value_t *args,
@@ -1649,6 +1651,41 @@ fail:
 
 
 static njs_int_t
+njs_derive_key_length(njs_vm_t *vm, njs_webcrypto_algorithm_t *dalg,
+    int64_t length)
+{
+    switch (dalg->type) {
+    case NJS_ALGORITHM_AES_GCM:
+    case NJS_ALGORITHM_AES_CTR:
+    case NJS_ALGORITHM_AES_CBC:
+    case NJS_ALGORITHM_AES_KW:
+        if (length != 128 && length != 192 && length != 256) {
+            njs_vm_type_error(vm, "deriveKey \"%V\" length must be "
+                              "128, 192, or 256",
+                              njs_algorithm_string(dalg));
+            return NJS_ERROR;
+        }
+
+        break;
+
+    case NJS_ALGORITHM_HMAC:
+        if (length < 8) {
+            njs_vm_type_error(vm, "deriveKey \"HMAC\" length must be "
+                              "at least 8");
+            return NJS_ERROR;
+        }
+
+        break;
+
+    default:
+        break;
+    }
+
+    return NJS_OK;
+}
+
+
+static njs_int_t
 njs_ext_derive_ecdh(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     njs_index_t derive_key, njs_webcrypto_key_t *key, njs_value_t *retval)
 {
@@ -1694,6 +1731,13 @@ njs_ext_derive_ecdh(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     ret = njs_value_to_integer(vm, value, &length);
     if (njs_slow_path(ret != NJS_OK)) {
         goto fail;
+    }
+
+    if (derive_key) {
+        ret = njs_derive_key_length(vm, dalg, length);
+        if (njs_slow_path(ret != NJS_OK)) {
+            goto fail;
+        }
     }
 
     dkey = NULL;
@@ -1918,34 +1962,31 @@ njs_ext_derive(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         goto fail;
     }
 
-    dkey = NULL;
-    length /= 8;
-
     if (derive_key) {
         switch (dalg->type) {
         case NJS_ALGORITHM_AES_GCM:
         case NJS_ALGORITHM_AES_CTR:
         case NJS_ALGORITHM_AES_CBC:
         case NJS_ALGORITHM_AES_KW:
-
-            if (length != 16 && length != 24 && length != 32) {
-                njs_vm_type_error(vm, "deriveKey \"%V\" length must be "
-                                  "128, 192, or 256",
-                                  njs_algorithm_string(dalg));
-                goto fail;
-            }
-
-            break;
-
         case NJS_ALGORITHM_HMAC:
             break;
 
         default:
-            njs_vm_internal_error(vm, "not implemented deriveKey: \"%V\"",
-                                  njs_algorithm_string(dalg));
+            njs_vm_type_error(vm, "not implemented deriveKey: \"%V\"",
+                              njs_algorithm_string(dalg));
             goto fail;
         }
 
+        ret = njs_derive_key_length(vm, dalg, length);
+        if (njs_slow_path(ret != NJS_OK)) {
+            goto fail;
+        }
+    }
+
+    dkey = NULL;
+    length /= 8;
+
+    if (derive_key) {
         ret = njs_key_usage(vm, njs_arg(args, nargs, 5), &usage);
         if (njs_slow_path(ret != NJS_OK)) {
             goto fail;

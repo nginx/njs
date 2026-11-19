@@ -141,6 +141,8 @@ static JSValue qjs_cipher_aes_cbc(JSContext *cx, njs_str_t *data,
 static JSValue qjs_cipher_aes_kw(JSContext *cx, njs_str_t *data,
     qjs_webcrypto_key_t *key, int encrypt);
 #endif
+static int qjs_derive_key_length(JSContext *cx,
+    qjs_webcrypto_algorithm_t *dalg, int64_t length);
 static JSValue qjs_derive_ecdh(JSContext *cx, JSValueConst *argv, int argc,
     int derive_key, qjs_webcrypto_key_t *key);
 static JSValue qjs_webcrypto_derive(JSContext *cx, JSValueConst this_val,
@@ -2069,6 +2071,41 @@ qjs_export_raw_ec(JSContext *cx, qjs_webcrypto_key_t *key)
 }
 
 
+static int
+qjs_derive_key_length(JSContext *cx, qjs_webcrypto_algorithm_t *dalg,
+    int64_t length)
+{
+    switch (dalg->type) {
+    case QJS_ALGORITHM_AES_GCM:
+    case QJS_ALGORITHM_AES_CTR:
+    case QJS_ALGORITHM_AES_CBC:
+    case QJS_ALGORITHM_AES_KW:
+        if (length != 128 && length != 192 && length != 256) {
+            JS_ThrowTypeError(cx, "deriveKey \"%s\" length must be "
+                              "128, 192, or 256",
+                              qjs_algorithm_string(dalg));
+            return -1;
+        }
+
+        break;
+
+    case QJS_ALGORITHM_HMAC:
+        if (length < 8) {
+            JS_ThrowTypeError(cx, "deriveKey \"HMAC\" length must be "
+                              "at least 8");
+            return -1;
+        }
+
+        break;
+
+    default:
+        break;
+    }
+
+    return 0;
+}
+
+
 static JSValue
 qjs_derive_ecdh(JSContext *cx, JSValueConst *argv, int argc, int derive_key,
     qjs_webcrypto_key_t *key)
@@ -2121,6 +2158,10 @@ qjs_derive_ecdh(JSContext *cx, JSValueConst *argv, int argc, int derive_key,
     }
 
     JS_FreeValue(cx, value);
+
+    if (derive_key && qjs_derive_key_length(cx, dalg, length) < 0) {
+        goto fail;
+    }
 
     dkey = NULL;
     length /= 8;
@@ -2351,26 +2392,12 @@ qjs_webcrypto_derive(JSContext *cx, JSValueConst this_val, int argc,
 
     JS_FreeValue(cx, ret);
 
-    dkey = NULL;
-    length /= 8;
-    dkey_value = JS_UNDEFINED;
-
     if (derive_key) {
         switch (dalg->type) {
         case QJS_ALGORITHM_AES_GCM:
         case QJS_ALGORITHM_AES_CTR:
         case QJS_ALGORITHM_AES_CBC:
         case QJS_ALGORITHM_AES_KW:
-
-            if (length != 16 && length != 24 && length != 32) {
-                JS_ThrowTypeError(cx, "deriveKey \"%s\" length must be "
-                                  "128, 192, or 256",
-                                  qjs_algorithm_string(dalg));
-                return JS_EXCEPTION;
-            }
-
-            break;
-
         case QJS_ALGORITHM_HMAC:
             break;
 
@@ -2380,6 +2407,16 @@ qjs_webcrypto_derive(JSContext *cx, JSValueConst this_val, int argc,
             return JS_EXCEPTION;
         }
 
+        if (qjs_derive_key_length(cx, dalg, length) < 0) {
+            return JS_EXCEPTION;
+        }
+    }
+
+    dkey = NULL;
+    length /= 8;
+    dkey_value = JS_UNDEFINED;
+
+    if (derive_key) {
         ret = qjs_key_usage(cx, argv[4], &usage);
         if (JS_IsException(ret)) {
             return JS_EXCEPTION;
