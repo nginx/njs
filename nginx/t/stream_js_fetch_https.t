@@ -124,7 +124,6 @@ stream {
         listen  127.0.0.1:8085;
 
         js_access test.access_ok;
-        ssl_preread on;
 
         js_fetch_ciphers HIGH:!aNull:!MD5;
         js_fetch_protocols TLSv1.1 TLSv1.2;
@@ -137,7 +136,6 @@ stream {
         listen  127.0.0.1:8086;
 
         js_access test.access_nok;
-        ssl_preread on;
 
         js_fetch_ciphers HIGH:!aNull:!MD5;
         js_fetch_protocols TLSv1.1 TLSv1.2;
