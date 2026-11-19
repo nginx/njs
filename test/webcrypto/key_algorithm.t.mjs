@@ -9,7 +9,9 @@ async function test(params) {
                                             ['deriveBits']);
     let algorithm = key.algorithm;
 
-    if (algorithm.name !== params.name) {
+    if (Object.keys(algorithm).join() !== 'name'
+        || algorithm.name !== params.name)
+    {
         throw Error(`unexpected algorithm: ${JSON.stringify(algorithm)}`);
     }
 

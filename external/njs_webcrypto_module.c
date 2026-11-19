@@ -5519,6 +5519,8 @@ njs_key_ext_algorithm(njs_vm_t *vm, njs_object_prop_t *prop, uint32_t unused,
 
     case NJS_ALGORITHM_ED25519:
     case NJS_ALGORITHM_X25519:
+    case NJS_ALGORITHM_PBKDF2:
+    case NJS_ALGORITHM_HKDF:
         break;
 
     case NJS_ALGORITHM_HMAC:
