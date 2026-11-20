@@ -140,8 +140,8 @@ typedef struct {
 } njs_bytes_struct_t;
 
 
-typedef njs_int_t (*njs_file_tree_walk_cb_t)(const char *, const struct stat *,
-     njs_ftw_type_t);
+typedef njs_int_t (*njs_file_tree_walk_cb_t)(int, const char *,
+     const struct stat *, njs_ftw_type_t);
 
 
 static njs_int_t njs_fs_access(njs_vm_t *vm, njs_value_t *args,
@@ -3005,21 +3005,30 @@ struct njs_ftw_trace_s {
 
 
 static int
-njs_ftw(char *path, njs_file_tree_walk_cb_t cb, int fd_limit,
+njs_ftw(int dirfd, const char *name, njs_file_tree_walk_cb_t cb, int fd_limit,
     njs_ftw_flags_t flags, njs_ftw_trace_t *parent)
 {
-    int              type, ret, dfd;
+    int              type, ret, dfd, oflags;
     DIR              *d;
-    size_t           base, len, length;
+    size_t           length;
     const char       *d_name;
     struct stat      st;
     struct dirent    *entry;
     njs_ftw_trace_t  trace, *h;
 
-    ret = (flags & NJS_FTW_PHYS) ? lstat(path, &st) : stat(path, &st);
+    /*
+     * Entries are looked up relative to the already opened parent
+     * directory, so a path component replaced with a symlink while
+     * walking cannot redirect the walk outside of the tree.
+     */
+
+    ret = fstatat(dirfd, name, &st,
+                  (flags & NJS_FTW_PHYS) ? AT_SYMLINK_NOFOLLOW : 0);
 
     if (ret < 0) {
-        if (!(flags & NJS_FTW_PHYS) && errno == ENOENT && !lstat(path, &st)) {
+        if (!(flags & NJS_FTW_PHYS) && errno == ENOENT
+            && !fstatat(dirfd, name, &st, AT_SYMLINK_NOFOLLOW))
+        {
             type = NJS_FTW_SLN;
 
         } else if (errno != EACCES) {
@@ -3049,9 +3058,6 @@ njs_ftw(char *path, njs_file_tree_walk_cb_t cb, int fd_limit,
         }
     }
 
-    len = njs_strlen(path);
-    base = len && (path[len - 1] == '/') ? len - 1 : len;
-
     trace.chain = parent;
     trace.dev = st.st_dev;
     trace.ino = st.st_ino;
@@ -3060,7 +3066,13 @@ njs_ftw(char *path, njs_file_tree_walk_cb_t cb, int fd_limit,
     dfd = -1;
 
     if (type == NJS_FTW_D || type == NJS_FTW_DP) {
-        dfd = open(path, O_RDONLY);
+        oflags = O_RDONLY | O_DIRECTORY;
+
+        if (flags & NJS_FTW_PHYS) {
+            oflags |= O_NOFOLLOW;
+        }
+
+        dfd = openat(dirfd, name, oflags);
         if (dfd < 0) {
             if (errno != EACCES) {
                 return NJS_ERROR;
@@ -3071,7 +3083,7 @@ njs_ftw(char *path, njs_file_tree_walk_cb_t cb, int fd_limit,
     }
 
     if (!(flags & NJS_FTW_DEPTH)) {
-        ret = cb(path, &st, type);
+        ret = cb(dirfd, name, &st, type);
         if (njs_slow_path(ret != 0)) {
             goto done;
         }
@@ -3100,17 +3112,8 @@ njs_ftw(char *path, njs_file_tree_walk_cb_t cb, int fd_limit,
                 continue;
             }
 
-            if (njs_slow_path(length >= (NJS_MAX_PATH - len))) {
-                errno = ENAMETOOLONG;
-                ret = NJS_ERROR;
-                goto done;
-            }
-
-            path[base] = '/';
-            memcpy(&path[base + 1], d_name, length + njs_length("\0"));
-
             if (fd_limit != 0) {
-                ret = njs_ftw(path, cb, fd_limit - 1, flags, &trace);
+                ret = njs_ftw(dfd, d_name, cb, fd_limit - 1, flags, &trace);
                 if (njs_slow_path(ret != 0)) {
                     goto done;
                 }
@@ -3122,10 +3125,8 @@ njs_ftw(char *path, njs_file_tree_walk_cb_t cb, int fd_limit,
         dfd = -1;
     }
 
-    path[len] = '\0';
-
     if (flags & NJS_FTW_DEPTH) {
-        ret = cb(path, &st, type);
+        ret = cb(dirfd, name, &st, type);
         if (njs_slow_path(ret != 0)) {
             return ret;
         }
@@ -3151,27 +3152,21 @@ static njs_int_t
 njs_file_tree_walk(const char *path, njs_file_tree_walk_cb_t cb, int fd_limit,
     njs_ftw_flags_t flags)
 {
-    size_t  len;
-    char    pathbuf[NJS_MAX_PATH + 1];
-
-    len = njs_strlen(path);
-    if (njs_slow_path(len > NJS_MAX_PATH)) {
-        errno = ENAMETOOLONG;
-        return -1;
-    }
-
-    memcpy(pathbuf, path, len + 1);
-
-    return njs_ftw(pathbuf, cb, fd_limit, flags, NULL);
+    return njs_ftw(AT_FDCWD, path, cb, fd_limit, flags, NULL);
 }
 
 
 static njs_int_t
-njs_fs_rmtree_cb(const char *path, const struct stat *sb, njs_ftw_type_t type)
+njs_fs_rmtree_cb(int dirfd, const char *name, const struct stat *sb,
+    njs_ftw_type_t type)
 {
+    int        rflags;
     njs_int_t  ret;
 
-    ret = remove(path);
+    rflags = (type == NJS_FTW_DP || type == NJS_FTW_D || type == NJS_FTW_DNR)
+             ? AT_REMOVEDIR : 0;
+
+    ret = unlinkat(dirfd, name, rflags);
     if (ret != 0) {
         return NJS_ERROR;
     }
