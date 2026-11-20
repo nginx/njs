@@ -128,7 +128,7 @@ typedef struct {
 } qjs_fs_entry_t;
 
 
-typedef int (*qjs_file_tree_walk_cb_t)(const char *, const struct stat *,
+typedef int (*qjs_file_tree_walk_cb_t)(int, const char *, const struct stat *,
      qjs_ftw_type_t);
 
 
@@ -1429,21 +1429,30 @@ struct qjs_ftw_trace_s {
 
 
 static int
-qjs_ftw(char *path, qjs_file_tree_walk_cb_t cb, int fd_limit,
+qjs_ftw(int dirfd, const char *name, qjs_file_tree_walk_cb_t cb, int fd_limit,
     qjs_ftw_flags_t flags, qjs_ftw_trace_t *parent)
 {
-    int              type, ret, dfd;
+    int              type, ret, dfd, oflags;
     DIR              *d;
-    size_t           base, len, length;
+    size_t           length;
     const char       *d_name;
     struct stat      st;
     struct dirent    *entry;
     qjs_ftw_trace_t  trace, *h;
 
-    ret = (flags & QJS_FTW_PHYS) ? lstat(path, &st) : stat(path, &st);
+    /*
+     * Entries are looked up relative to the already opened parent
+     * directory, so a path component replaced with a symlink while
+     * walking cannot redirect the walk outside of the tree.
+     */
+
+    ret = fstatat(dirfd, name, &st,
+                  (flags & QJS_FTW_PHYS) ? AT_SYMLINK_NOFOLLOW : 0);
 
     if (ret < 0) {
-        if (!(flags & QJS_FTW_PHYS) && errno == ENOENT && !lstat(path, &st)) {
+        if (!(flags & QJS_FTW_PHYS) && errno == ENOENT
+            && !fstatat(dirfd, name, &st, AT_SYMLINK_NOFOLLOW))
+        {
             type = QJS_FTW_SLN;
 
         } else if (errno != EACCES) {
@@ -1473,9 +1482,6 @@ qjs_ftw(char *path, qjs_file_tree_walk_cb_t cb, int fd_limit,
         }
     }
 
-    len = strlen(path);
-    base = len && (path[len - 1] == '/') ? len - 1 : len;
-
     trace.chain = parent;
     trace.dev = st.st_dev;
     trace.ino = st.st_ino;
@@ -1484,7 +1490,13 @@ qjs_ftw(char *path, qjs_file_tree_walk_cb_t cb, int fd_limit,
     dfd = -1;
 
     if (type == QJS_FTW_D || type == QJS_FTW_DP) {
-        dfd = open(path, O_RDONLY);
+        oflags = O_RDONLY | O_DIRECTORY;
+
+        if (flags & QJS_FTW_PHYS) {
+            oflags |= O_NOFOLLOW;
+        }
+
+        dfd = openat(dirfd, name, oflags);
         if (dfd < 0) {
             if (errno != EACCES) {
                 return -1;
@@ -1495,7 +1507,7 @@ qjs_ftw(char *path, qjs_file_tree_walk_cb_t cb, int fd_limit,
     }
 
     if (!(flags & QJS_FTW_DEPTH)) {
-        ret = cb(path, &st, type);
+        ret = cb(dirfd, name, &st, type);
         if (ret != 0) {
             goto done;
         }
@@ -1524,17 +1536,8 @@ qjs_ftw(char *path, qjs_file_tree_walk_cb_t cb, int fd_limit,
                 continue;
             }
 
-            if (length >= (NJS_MAX_PATH - len)) {
-                errno = ENAMETOOLONG;
-                ret = -1;
-                goto done;
-            }
-
-            path[base] = '/';
-            memcpy(&path[base + 1], d_name, length + njs_length("\0"));
-
             if (fd_limit != 0) {
-                ret = qjs_ftw(path, cb, fd_limit - 1, flags, &trace);
+                ret = qjs_ftw(dfd, d_name, cb, fd_limit - 1, flags, &trace);
                 if (ret != 0) {
                     goto done;
                 }
@@ -1546,10 +1549,8 @@ qjs_ftw(char *path, qjs_file_tree_walk_cb_t cb, int fd_limit,
         dfd = -1;
     }
 
-    path[len] = '\0';
-
     if (flags & QJS_FTW_DEPTH) {
-        ret = cb(path, &st, type);
+        ret = cb(dirfd, name, &st, type);
         if (ret != 0) {
             return ret;
         }
@@ -1575,27 +1576,21 @@ static int
 qjs_file_tree_walk(const char *path, qjs_file_tree_walk_cb_t cb, int fd_limit,
     qjs_ftw_flags_t flags)
 {
-    size_t  len;
-    char    pathbuf[NJS_MAX_PATH + 1];
-
-    len = strlen(path);
-    if (len > NJS_MAX_PATH) {
-        errno = ENAMETOOLONG;
-        return -1;
-    }
-
-    memcpy(pathbuf, path, len + 1);
-
-    return qjs_ftw(pathbuf, cb, fd_limit, flags, NULL);
+    return qjs_ftw(AT_FDCWD, path, cb, fd_limit, flags, NULL);
 }
 
 
 static int
-qjs_fs_rmtree_cb(const char *path, const struct stat *sb, qjs_ftw_type_t type)
+qjs_fs_rmtree_cb(int dirfd, const char *name, const struct stat *sb,
+    qjs_ftw_type_t type)
 {
+    int        rflags;
     njs_int_t  ret;
 
-    ret = remove(path);
+    rflags = (type == QJS_FTW_DP || type == QJS_FTW_D || type == QJS_FTW_DNR)
+             ? AT_REMOVEDIR : 0;
+
+    ret = unlinkat(dirfd, name, rflags);
     if (ret != 0) {
         return NJS_ERROR;
     }
