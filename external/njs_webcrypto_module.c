@@ -1302,7 +1302,7 @@ njs_cipher_aes_ctr(njs_vm_t *vm, njs_str_t *data, njs_webcrypto_key_t *key,
         return NJS_ERROR;
     }
 
-    if (njs_slow_path(length == 0 || length > 128)) {
+    if (njs_slow_path(length < 1 || length > 128)) {
         njs_vm_type_error(vm, "AES-CTR algorithm.length must be between "
                           "1 and 128");
         return NJS_ERROR;
