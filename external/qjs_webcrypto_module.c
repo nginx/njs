@@ -2495,6 +2495,11 @@ qjs_webcrypto_derive(JSContext *cx, JSValueConst this_val, int argc,
 
         JS_FreeValue(cx, ret);
 
+        if (iterations < 1 || iterations > INT_MAX) {
+            JS_ThrowTypeError(cx, "PBKDF2 iterations is out of range");
+            goto fail;
+        }
+
         md = qjs_algorithm_hash_digest(hash);
 
         rc = PKCS5_PBKDF2_HMAC((char *) key->u.s.raw.start, key->u.s.raw.length,
