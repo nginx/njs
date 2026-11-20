@@ -188,5 +188,23 @@ let derive_length_tsuite = {
     ],
 };
 
-run([derive_tsuite, derive_length_tsuite])
+let derive_iterations_tsuite = {
+    name: "PBKDF2 iteration validation",
+    skip: () => (!has_buffer() || !has_webcrypto()),
+    T: testDeriveParameters,
+    opts: { name: "PBKDF2", length: 128, derive: "bits", reject: true },
+    tests: [
+        { iterations: 0 },
+        { iterations: -1 },
+        { iterations: 0x80000000 },
+        { iterations: 0x100000001 },
+        { iterations: -0xffffffff },
+        { iterations: NaN },
+        { iterations: Infinity },
+        { iterations: 0x100000001, derive: "key" },
+        { iterations: 1, reject: false, bytes: 16 },
+    ],
+};
+
+run([derive_tsuite, derive_length_tsuite, derive_iterations_tsuite])
 .then($DONE, $DONE);

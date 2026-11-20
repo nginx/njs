@@ -2061,6 +2061,11 @@ njs_ext_derive(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             goto fail;
         }
 
+        if (njs_slow_path(iterations < 1 || iterations > INT_MAX)) {
+            njs_vm_type_error(vm, "PBKDF2 iterations is out of range");
+            goto fail;
+        }
+
         md = njs_algorithm_hash_digest(hash);
 
         ret = PKCS5_PBKDF2_HMAC((char *) key->u.s.raw.start, key->u.s.raw.length,
