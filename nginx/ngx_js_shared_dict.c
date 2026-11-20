@@ -8,6 +8,7 @@
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include <math.h>
+#include <njs_dtoa.h>
 #include "ngx_js.h"
 #include "ngx_js_shared_dict.h"
 
@@ -2025,6 +2026,7 @@ ngx_js_render_string(njs_chb_t *chain, ngx_str_t *str)
 static ngx_int_t
 ngx_js_dict_render_json(ngx_js_dict_t *dict, njs_chb_t *chain)
 {
+    int                  flags;
     u_char              *p, *dst;
     size_t               len;
     ngx_uint_t           first;
@@ -2033,6 +2035,7 @@ ngx_js_dict_render_json(ngx_js_dict_t *dict, njs_chb_t *chain)
     ngx_rbtree_t        *rbtree;
     ngx_rbtree_node_t   *rn, *next;
     ngx_js_dict_node_t  *node;
+    JSDTOATempMem        tmp_mem;
 
     tp = ngx_timeofday();
     now = tp->sec * 1000 + tp->msec;
@@ -2047,6 +2050,7 @@ ngx_js_dict_render_json(ngx_js_dict_t *dict, njs_chb_t *chain)
     }
 
     first = 1;
+    flags = JS_DTOA_FORMAT_FREE | JS_DTOA_MINUS_ZERO;
 
     for (rn = ngx_rbtree_min(rbtree->root, rbtree->sentinel);
          rn != NULL;
@@ -2080,15 +2084,17 @@ ngx_js_dict_render_json(ngx_js_dict_t *dict, njs_chb_t *chain)
             }
 
         } else {
-            len = sizeof("\"value\":.") + 18 + 6;
+            njs_chb_append_literal(chain, "\"value\":");
+
+            len = njs_dtoa_max_len(node->value.number, 10, 0, flags);
             dst = njs_chb_reserve(chain, len);
             if (dst == NULL) {
                 return NGX_ERROR;
             }
 
-            p = njs_sprintf(dst, dst + len, "\"value\":%.6f",
-                            node->value.number);
-            njs_chb_written(chain, p - dst);
+            len = njs_dtoa2((char *) dst, node->value.number, 10, 0, flags,
+                            &tmp_mem);
+            njs_chb_written(chain, len);
         }
 
         if (dict->timeout) {
