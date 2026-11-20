@@ -2392,6 +2392,11 @@ qjs_webcrypto_derive(JSContext *cx, JSValueConst this_val, int argc,
 
     JS_FreeValue(cx, ret);
 
+    if (length < 0 || length > UINT32_MAX) {
+        JS_ThrowTypeError(cx, "length is out of range");
+        return JS_EXCEPTION;
+    }
+
     if (derive_key) {
         switch (dalg->type) {
         case QJS_ALGORITHM_AES_GCM:
@@ -2410,6 +2415,11 @@ qjs_webcrypto_derive(JSContext *cx, JSValueConst this_val, int argc,
         if (qjs_derive_key_length(cx, dalg, length) < 0) {
             return JS_EXCEPTION;
         }
+    }
+
+    if (length % 8 != 0) {
+        JS_ThrowTypeError(cx, "length must be a multiple of 8");
+        return JS_EXCEPTION;
     }
 
     dkey = NULL;
