@@ -1183,7 +1183,7 @@ qjs_cipher_aes_ctr(JSContext *cx, njs_str_t *data, qjs_webcrypto_key_t *key,
         return JS_EXCEPTION;
     }
 
-    if (length == 0 || length > 128) {
+    if (length < 1 || length > 128) {
         JS_ThrowTypeError(cx, "AES-CTR algorithm.length must be between "
                           "1 and 128");
         return JS_EXCEPTION;
