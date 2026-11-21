@@ -110,6 +110,7 @@ static njs_int_t njs_js_ext_shared_dict_type(njs_vm_t *vm,
     njs_value_t *setval, njs_value_t *retval);
 static ngx_js_dict_node_t *ngx_js_dict_lookup(ngx_js_dict_t *dict,
     ngx_str_t *key);
+static ngx_int_t ngx_js_dict_timeout(double value, ngx_msec_t *timeout);
 
 #define NGX_JS_DICT_FLAG_MUST_EXIST       1
 #define NGX_JS_DICT_FLAG_MUST_NOT_EXIST   2
@@ -969,10 +970,8 @@ njs_js_ext_shared_dict_incr(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             return NJS_ERROR;
         }
 
-        timeout = (ngx_msec_t) njs_value_number(timeo);
-
-        if (timeout < 1) {
-            njs_vm_type_error(vm, "timeout must be greater than or equal to 1");
+        if (ngx_js_dict_timeout(njs_value_number(timeo), &timeout) != NGX_OK) {
+            njs_vm_type_error(vm, "timeout is out of range");
             return NJS_ERROR;
         }
 
@@ -1206,10 +1205,8 @@ njs_js_ext_shared_dict_set(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             return NJS_ERROR;
         }
 
-        timeout = (ngx_msec_t) njs_value_number(timeo);
-
-        if (timeout < 1) {
-            njs_vm_type_error(vm, "timeout must be greater than or equal to 1");
+        if (ngx_js_dict_timeout(njs_value_number(timeo), &timeout) != NGX_OK) {
+            njs_vm_type_error(vm, "timeout is out of range");
             return NJS_ERROR;
         }
 
@@ -1486,6 +1483,24 @@ ngx_js_dict_lookup_write(ngx_js_dict_t *dict, ngx_str_t *key, ngx_msec_t now)
     }
 
     return node;
+}
+
+
+static ngx_int_t
+ngx_js_dict_timeout(double value, ngx_msec_t *timeout)
+{
+    if (!isfinite(value)) {
+        return NGX_ERROR;
+    }
+
+    value = trunc(value);
+    if (value < 1 || value > UINT32_MAX) {
+        return NGX_ERROR;
+    }
+
+    *timeout = (ngx_msec_t) value;
+
+    return NGX_OK;
 }
 
 
@@ -3596,9 +3611,9 @@ ngx_qjs_ext_shared_dict_incr(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv)
 {
     JSValue          ret;
-    double           delta, init;
-    uint32_t         timeout;
+    double           delta, init, number;
     ngx_str_t        key;
+    ngx_msec_t       timeout;
     ngx_js_dict_t   *dict;
     ngx_shm_zone_t  *shm_zone;
 
@@ -3632,9 +3647,9 @@ ngx_qjs_ext_shared_dict_incr(JSContext *cx, JSValueConst this_val,
         return JS_ThrowTypeError(cx, "init value is not finite");
     }
 
-    if (argc > 3) {
-        if (JS_ToUint32(cx, &timeout, argv[3]) < 0) {
-            return JS_EXCEPTION;
+    if (argc > 3 && !JS_IsUndefined(argv[3])) {
+        if (!JS_IsNumber(argv[3])) {
+            return JS_ThrowTypeError(cx, "timeout is not a number");
         }
 
         if (!dict->timeout) {
@@ -3642,9 +3657,12 @@ ngx_qjs_ext_shared_dict_incr(JSContext *cx, JSValueConst this_val,
                                   "shared dict must be declared with timeout");
         }
 
-        if (timeout < 1) {
-            return JS_ThrowRangeError(cx,
-                                 "timeout must be greater than or equal to 1");
+        if (JS_ToFloat64(cx, &number, argv[3]) < 0) {
+            return JS_EXCEPTION;
+        }
+
+        if (ngx_js_dict_timeout(number, &timeout) != NGX_OK) {
+            return JS_ThrowTypeError(cx, "timeout is out of range");
         }
 
     } else {
@@ -3913,8 +3931,8 @@ ngx_qjs_ext_shared_dict_set(JSContext *cx, JSValueConst this_val,
 {
     JSValue          ret;
     double           number;
-    uint32_t         timeout;
     ngx_str_t        key;
+    ngx_msec_t       timeout;
     ngx_js_dict_t   *dict;
     ngx_shm_zone_t  *shm_zone;
 
@@ -3954,13 +3972,12 @@ ngx_qjs_ext_shared_dict_set(JSContext *cx, JSValueConst this_val,
                                 "shared dict must be declared with timeout");
         }
 
-        if (JS_ToUint32(cx, &timeout, argv[2]) < 0) {
+        if (JS_ToFloat64(cx, &number, argv[2]) < 0) {
             return JS_EXCEPTION;
         }
 
-        if (timeout < 1) {
-            return JS_ThrowTypeError(cx,
-                                "timeout must be greater than or equal to 1");
+        if (ngx_js_dict_timeout(number, &timeout) != NGX_OK) {
+            return JS_ThrowTypeError(cx, "timeout is out of range");
         }
 
     } else {
