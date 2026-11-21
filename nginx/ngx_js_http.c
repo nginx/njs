@@ -316,7 +316,7 @@ ngx_js_http_connect(ngx_js_http_t *http)
     ngx_add_timer(c->write, http->conf->timeout);
 
 #if (NGX_SSL)
-    if (ngx_js_conf_proxy(http->conf) && http->ssl != NULL && c->ssl == NULL) {
+    if (ngx_js_http_proxy(http) && http->ssl != NULL && c->ssl == NULL) {
         http->proxy.pending = ngx_js_chain_to_buf(http->pool, &http->chain);
         if (http->proxy.pending == NULL) {
             ngx_js_http_error(http, "memory error");
@@ -330,14 +330,14 @@ ngx_js_http_connect(ngx_js_http_t *http)
         http->process = ngx_js_http_process_connect_response;
 
     } else {
-        if (ngx_js_conf_proxy(http->conf) && http->ssl != NULL && c->ssl != NULL) {
+        if (ngx_js_http_proxy(http) && http->ssl != NULL && c->ssl != NULL) {
             http->proxy.state = HTTP_STATE_PROXY_TUNNEL_READY;
         }
 
         http->process = ngx_js_http_process_status_line;
     }
 
-    if (http->ssl != NULL && c->ssl == NULL && !ngx_js_conf_proxy(http->conf)) {
+    if (http->ssl != NULL && c->ssl == NULL && !ngx_js_http_proxy(http)) {
         ngx_js_http_ssl_init_connection(http);
         return;
     }
@@ -654,7 +654,7 @@ ngx_js_http_write_handler(ngx_event_t *wev)
 
 #if (NGX_SSL)
     if (http->ssl != NULL && http->peer.connection->ssl == NULL
-        && !ngx_js_conf_proxy(http->conf))
+        && !ngx_js_http_proxy(http))
     {
         ngx_js_http_ssl_init_connection(http);
         return;

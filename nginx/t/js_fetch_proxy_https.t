@@ -72,6 +72,12 @@ http {
         location /https_no_proxy {
             js_content test.https_fetch;
         }
+
+        location /https_empty_variable_proxy {
+            set $proxy_url "";
+            js_fetch_proxy $proxy_url;
+            js_content test.https_fetch;
+        }
     }
 
     server {
@@ -192,7 +198,7 @@ foreach my $name ('example.com') {
 		. $t->read_file('intermediate.crt'));
 }
 
-$t->try_run('no js_fetch_proxy')->plan(9);
+$t->try_run('no js_fetch_proxy')->plan(10);
 
 $t->run_daemon(\&https_proxy_daemon, $p2, 1);
 $t->run_daemon(\&https_proxy_daemon, $p4, 0);
@@ -217,6 +223,9 @@ like(http_get('/https_via_proxy_no_auth?domain=example.com'), qr/ORIGIN/,
 
 like(http_get('/https_no_proxy?domain=example.com'), qr/ORIGIN/,
 	'https without proxy');
+
+like(http_get('/https_empty_variable_proxy?domain=example.com'), qr/ORIGIN/,
+	'https with empty variable proxy connects directly');
 
 like(http_get('/https_via_proxy?domain=nonexistent.dest.domain'),
 	qr/connect failed/, 'https through proxy nonexistent.dest.domain');
