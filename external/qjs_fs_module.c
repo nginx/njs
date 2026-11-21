@@ -1995,7 +1995,7 @@ qjs_fs_write(JSContext *cx, JSValueConst this_val, int argc,
             return JS_EXCEPTION;
         }
 
-        str.start = (u_char *) JS_ToCStringLen(cx, &str.length, buffer);
+        str.start = (u_char *) qjs_to_utf8(cx, &str.length, buffer);
         if (str.start == NULL) {
             return JS_EXCEPTION;
         }
@@ -2230,7 +2230,7 @@ qjs_fs_write_file(JSContext *cx, JSValueConst this_val, int argc,
     if (JS_IsException(v)) {
 decode:
 
-        str.start = (u_char *) JS_ToCStringLen(cx, &str.length, data);
+        str.start = (u_char *) qjs_to_utf8(cx, &str.length, data);
         if (str.start == NULL) {
             return JS_EXCEPTION;
         }

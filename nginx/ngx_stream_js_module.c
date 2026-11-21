@@ -2506,7 +2506,7 @@ ngx_stream_qjs_ext_send(JSContext *cx, JSValueConst this_val, int argc,
     } else {
 string:
 
-        str = JS_ToCStringLen(cx, &buffer.len, val);
+        str = qjs_to_utf8(cx, &buffer.len, val);
         if (str == NULL) {
             return JS_EXCEPTION;
         }

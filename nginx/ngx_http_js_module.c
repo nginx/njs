@@ -7317,7 +7317,7 @@ ngx_http_qjs_ext_send_buffer(JSContext *cx, JSValueConst this_val,
     } else {
 string:
 
-        str = JS_ToCStringLen(cx, &buffer.len, val);
+        str = qjs_to_utf8(cx, &buffer.len, val);
         if (str == NULL) {
             return JS_EXCEPTION;
         }

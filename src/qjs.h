@@ -154,6 +154,7 @@ qjs_is_typed_array(JSContext *cx, JSValue val)
 }
 
 
+const char *qjs_to_utf8(JSContext *cx, size_t *len, JSValueConst value);
 int qjs_to_bytes(JSContext *ctx, qjs_bytes_t *data, JSValueConst value);
 void qjs_bytes_free(JSContext *ctx, qjs_bytes_t *data);
 JSValue qjs_typed_array_data(JSContext *ctx, JSValueConst value,

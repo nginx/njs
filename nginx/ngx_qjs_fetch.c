@@ -1296,7 +1296,7 @@ ngx_qjs_fetch_response_ctor(JSContext *cx, JSValueConst new_target, int argc,
         } else {
 
 string:
-            str = JS_ToCStringLen(cx, &bd.len, body);
+            str = qjs_to_utf8(cx, &bd.len, body);
             if (str == NULL) {
                 goto failed;
             }

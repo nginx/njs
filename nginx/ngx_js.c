@@ -1744,7 +1744,7 @@ ngx_qjs_string(JSContext *cx, ngx_pool_t *pool, JSValueConst val,
 
 string:
 
-    str = JS_ToCStringLen(cx, &len, val);
+    str = qjs_to_utf8(cx, &len, val);
     if (str == NULL) {
         return NGX_ERROR;
     }
@@ -1834,7 +1834,7 @@ ngx_qjs_value_bytes_copy(JSContext *cx, JSValueConst value, ngx_str_t *str)
         }
     }
 
-    p = JS_ToCStringLen(cx, &source.len, value);
+    p = qjs_to_utf8(cx, &source.len, value);
     if (p == NULL) {
         return NGX_ERROR;
     }
