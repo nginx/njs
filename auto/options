@@ -7,6 +7,10 @@ NJS_CC_OPT=
 NJS_LD_OPT=
 NJS_LINK=
 NJS_PIC=-fPIC
+NJS_SHARED=NO
+NJS_PREFIX=/usr/local
+NJS_LIBDIR=
+NJS_INCLUDEDIR=
 
 NJS_DEBUG=NO
 NJS_DEBUG_MEMORY=NO
@@ -20,6 +24,7 @@ NJS_QUICKJS=NO
 NJS_TRY_QUICKJS=YES
 NJS_QUICKJS_LIB=
 NJS_QUICKJS_INCS=
+NJS_QUICKJS_PC=
 NJS_OPENSSL=YES
 NJS_LIBXML2=YES
 NJS_ZLIB=YES
@@ -46,6 +51,10 @@ do
         --ar=*)                          AR="$value"                         ;;
 
         --pic=*)                         NJS_PIC="$value"                    ;;
+        --with-shared)                   NJS_SHARED=YES                      ;;
+        --prefix=*)                      NJS_PREFIX="$value"                 ;;
+        --libdir=*)                      NJS_LIBDIR="$value"                 ;;
+        --includedir=*)                  NJS_INCLUDEDIR="$value"             ;;
 
         --build-dir=*)                   NJS_BUILD_DIR="$value"              ;;
         --no-root-makefile)              NJS_ROOT_MAKEFILE=NO                ;;
@@ -60,6 +69,7 @@ do
         --no-quickjs)                    NJS_TRY_QUICKJS=NO                  ;;
         --quickjs-lib=*)                 NJS_QUICKJS_LIB="$value"            ;;
         --quickjs-inc=*)                 NJS_QUICKJS_INCS="$value"           ;;
+        --quickjs-pc=*)                  NJS_QUICKJS_PC="$value"             ;;
         --no-openssl)                    NJS_OPENSSL=NO                      ;;
         --no-libxml2)                    NJS_LIBXML2=NO                      ;;
         --no-zlib)                       NJS_ZLIB=NO                         ;;
@@ -89,6 +99,25 @@ do
     NJS_CONFIGURE_OPTIONS="$NJS_CONFIGURE_OPTIONS $njs_opt"
 
 done
+
+NJS_LIBDIR=${NJS_LIBDIR:-$NJS_PREFIX/lib}
+NJS_INCLUDEDIR=${NJS_INCLUDEDIR:-$NJS_PREFIX/include}
+
+if [ -n "$NJS_QUICKJS_PC" ]; then
+    if [ -n "$NJS_QUICKJS_INCS" -o -n "$NJS_QUICKJS_LIB" ]; then
+        echo "$0: error: --quickjs-pc cannot be combined with --quickjs-inc or --quickjs-lib."
+        exit 1
+    fi
+
+    if ! pkg-config --exists "$NJS_QUICKJS_PC"; then
+        echo "$0: error: pkg-config cannot find $NJS_QUICKJS_PC."
+        exit 1
+    fi
+
+    NJS_QUICKJS_INCS=`pkg-config --cflags-only-I "$NJS_QUICKJS_PC" \
+                     | sed -e 's/-I//g'`
+    NJS_QUICKJS_LIB=`pkg-config --libs "$NJS_QUICKJS_PC"`
+fi
 
 if [ -n "$NJS_QUICKJS_INCS" ] && [ -z "$NJS_QUICKJS_LIB" ]; then
     echo

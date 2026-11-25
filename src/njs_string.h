@@ -108,61 +108,68 @@ typedef enum {
 } njs_trim_t;
 
 
-u_char *njs_string_alloc(njs_vm_t *vm, njs_value_t *value, uint64_t size,
-    uint64_t length);
-njs_int_t njs_string_new(njs_vm_t *vm, njs_value_t *value, const u_char *start,
-    uint32_t size, uint32_t length);
-njs_int_t njs_string_create(njs_vm_t *vm, njs_value_t *value, const u_char *src,
-    size_t size);
-njs_int_t njs_string_create_chb(njs_vm_t *vm, njs_value_t *value,
+NJS_EXPORT u_char *njs_string_alloc(njs_vm_t *vm, njs_value_t *value,
+    uint64_t size, uint64_t length);
+NJS_EXPORT njs_int_t njs_string_new(njs_vm_t *vm, njs_value_t *value,
+    const u_char *start, uint32_t size, uint32_t length);
+NJS_EXPORT njs_int_t njs_string_create(njs_vm_t *vm, njs_value_t *value,
+    const u_char *src, size_t size);
+NJS_EXPORT njs_int_t njs_string_create_chb(njs_vm_t *vm, njs_value_t *value,
     njs_chb_t *chain);
 
-size_t njs_string_prop(njs_vm_t *vm, njs_string_prop_t *string,
+NJS_EXPORT size_t njs_string_prop(njs_vm_t *vm, njs_string_prop_t *string,
     const njs_value_t *value);
 
-void njs_encode_hex(njs_str_t *dst, const njs_str_t *src);
-size_t njs_encode_hex_length(const njs_str_t *src, size_t *out_size);
-void njs_encode_base64(njs_str_t *dst, const njs_str_t *src);
-size_t njs_encode_base64_length(const njs_str_t *src, size_t *out_size);
+NJS_EXPORT void njs_encode_hex(njs_str_t *dst, const njs_str_t *src);
+NJS_EXPORT size_t njs_encode_hex_length(const njs_str_t *src, size_t *out_size);
+NJS_EXPORT void njs_encode_base64(njs_str_t *dst, const njs_str_t *src);
+NJS_EXPORT size_t njs_encode_base64_length(const njs_str_t *src,
+    size_t *out_size);
 
-void njs_decode_utf8(njs_str_t *dst, const njs_str_t *src);
-size_t njs_decode_utf8_length(const njs_str_t *src, size_t *out_size);
-void njs_decode_hex(njs_str_t *dst, const njs_str_t *src);
-size_t njs_decode_hex_length(const njs_str_t *src, size_t *out_size);
-void njs_decode_base64(njs_str_t *dst, const njs_str_t *src);
-size_t njs_decode_base64_length(const njs_str_t *src, size_t *out_size);
-void njs_decode_base64url(njs_str_t *dst, const njs_str_t *src);
-size_t njs_decode_base64url_length(const njs_str_t *src, size_t *out_size);
+NJS_EXPORT void njs_decode_utf8(njs_str_t *dst, const njs_str_t *src);
+NJS_EXPORT size_t njs_decode_utf8_length(const njs_str_t *src,
+    size_t *out_size);
+NJS_EXPORT void njs_decode_hex(njs_str_t *dst, const njs_str_t *src);
+NJS_EXPORT size_t njs_decode_hex_length(const njs_str_t *src, size_t *out_size);
+NJS_EXPORT void njs_decode_base64(njs_str_t *dst, const njs_str_t *src);
+NJS_EXPORT size_t njs_decode_base64_length(const njs_str_t *src,
+    size_t *out_size);
+NJS_EXPORT void njs_decode_base64url(njs_str_t *dst, const njs_str_t *src);
+NJS_EXPORT size_t njs_decode_base64url_length(const njs_str_t *src,
+    size_t *out_size);
 
-njs_int_t njs_string_hex(njs_vm_t *vm, njs_value_t *value,
+NJS_EXPORT njs_int_t njs_string_hex(njs_vm_t *vm, njs_value_t *value,
     const njs_str_t *src);
-njs_int_t njs_string_base64(njs_vm_t *vm, njs_value_t *value,
+NJS_EXPORT njs_int_t njs_string_base64(njs_vm_t *vm, njs_value_t *value,
     const njs_str_t *src);
-njs_int_t njs_string_base64url(njs_vm_t *vm, njs_value_t *value,
+NJS_EXPORT njs_int_t njs_string_base64url(njs_vm_t *vm, njs_value_t *value,
     const njs_str_t *src);
-njs_int_t njs_string_decode_utf8(njs_vm_t *vm, njs_value_t *value,
+NJS_EXPORT njs_int_t njs_string_decode_utf8(njs_vm_t *vm, njs_value_t *value,
     const njs_str_t *src);
-njs_int_t njs_string_decode_hex(njs_vm_t *vm, njs_value_t *value,
+NJS_EXPORT njs_int_t njs_string_decode_hex(njs_vm_t *vm, njs_value_t *value,
     const njs_str_t *src);
-njs_int_t njs_string_decode_base64(njs_vm_t *vm, njs_value_t *value,
+NJS_EXPORT njs_int_t njs_string_decode_base64(njs_vm_t *vm, njs_value_t *value,
     const njs_str_t *src);
-njs_int_t njs_string_decode_base64url(njs_vm_t *vm, njs_value_t *value,
-    const njs_str_t *src);
-void njs_string_truncate(njs_value_t *value, uint32_t size, uint32_t length);
-uint32_t njs_string_trim(njs_vm_t *vm, const njs_value_t *value,
+NJS_EXPORT njs_int_t njs_string_decode_base64url(njs_vm_t *vm,
+    njs_value_t *value, const njs_str_t *src);
+NJS_EXPORT void njs_string_truncate(njs_value_t *value, uint32_t size,
+    uint32_t length);
+NJS_EXPORT uint32_t njs_string_trim(njs_vm_t *vm, const njs_value_t *value,
     njs_string_prop_t *string, unsigned mode);
-void njs_string_copy(njs_value_t *dst, njs_value_t *src);
-njs_int_t njs_string_cmp(njs_vm_t *vm, const njs_value_t *val1,
+NJS_EXPORT void njs_string_copy(njs_value_t *dst, njs_value_t *src);
+NJS_EXPORT njs_int_t njs_string_cmp(njs_vm_t *vm, const njs_value_t *val1,
     const njs_value_t *val2);
-void njs_string_slice_string_prop(njs_string_prop_t *dst,
+NJS_EXPORT void njs_string_slice_string_prop(njs_string_prop_t *dst,
     const njs_string_prop_t *string, const njs_slice_prop_t *slice);
-njs_int_t njs_string_slice(njs_vm_t *vm, njs_value_t *dst,
+NJS_EXPORT njs_int_t njs_string_slice(njs_vm_t *vm, njs_value_t *dst,
     const njs_string_prop_t *string, const njs_slice_prop_t *slice);
-const u_char *njs_string_utf8_offset(const u_char *start, const u_char *end,
-    size_t index);
-uint32_t njs_string_index(njs_string_prop_t *string, uint32_t offset);
-void njs_string_utf8_offset_map_init(const u_char *start, size_t size);
-double njs_string_to_index(const njs_value_t *value);
+NJS_EXPORT const u_char *njs_string_utf8_offset(const u_char *start,
+    const u_char *end, size_t index);
+NJS_EXPORT uint32_t njs_string_index(njs_string_prop_t *string,
+    uint32_t offset);
+NJS_EXPORT void njs_string_utf8_offset_map_init(const u_char *start,
+    size_t size);
+NJS_EXPORT double njs_string_to_index(const njs_value_t *value);
 njs_int_t njs_string_encode_uri(njs_vm_t *vm, njs_value_t *args,
     njs_uint_t nargs, njs_index_t component, njs_value_t *retval);
 njs_int_t njs_string_decode_uri(njs_vm_t *vm, njs_value_t *args,
