@@ -7,6 +7,8 @@
 
 #include <ngx_config.h>
 #include <ngx_core.h>
+#include <math.h>
+#include <njs_dtoa.h>
 #include "ngx_js.h"
 #include "ngx_js_shared_dict.h"
 
@@ -108,6 +110,7 @@ static njs_int_t njs_js_ext_shared_dict_type(njs_vm_t *vm,
     njs_value_t *setval, njs_value_t *retval);
 static ngx_js_dict_node_t *ngx_js_dict_lookup(ngx_js_dict_t *dict,
     ngx_str_t *key);
+static ngx_int_t ngx_js_dict_timeout(double value, ngx_msec_t *timeout);
 
 #define NGX_JS_DICT_FLAG_MUST_EXIST       1
 #define NGX_JS_DICT_FLAG_MUST_NOT_EXIST   2
@@ -935,6 +938,11 @@ njs_js_ext_shared_dict_incr(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         return NJS_ERROR;
     }
 
+    if (!njs_value_is_valid_number(delta)) {
+        njs_vm_type_error(vm, "delta is not finite");
+        return NJS_ERROR;
+    }
+
     init = njs_lvalue_arg(njs_value_arg(&lvalue), args, nargs, 3);
     if (!njs_value_is_number(init) && !njs_value_is_undefined(init)) {
         njs_vm_type_error(vm, "init value is not a number");
@@ -943,6 +951,11 @@ njs_js_ext_shared_dict_incr(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
     if (njs_value_is_undefined(init)) {
         njs_value_number_set(init, 0);
+    }
+
+    if (!njs_value_is_valid_number(init)) {
+        njs_vm_type_error(vm, "init value is not finite");
+        return NJS_ERROR;
     }
 
     timeo = njs_arg(args, nargs, 4);
@@ -957,10 +970,8 @@ njs_js_ext_shared_dict_incr(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             return NJS_ERROR;
         }
 
-        timeout = (ngx_msec_t) njs_value_number(timeo);
-
-        if (timeout < 1) {
-            njs_vm_type_error(vm, "timeout must be greater than or equal to 1");
+        if (ngx_js_dict_timeout(njs_value_number(timeo), &timeout) != NGX_OK) {
+            njs_vm_type_error(vm, "timeout is out of range");
             return NJS_ERROR;
         }
 
@@ -971,7 +982,6 @@ njs_js_ext_shared_dict_incr(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
     rc = ngx_js_dict_incr(vm, shm_zone->data, &key, delta, init, &value,
                           timeout);
     if (rc == NGX_ERROR) {
-        njs_vm_error(vm, "failed to increment value in shared dict");
         return NJS_ERROR;
     }
 
@@ -1176,6 +1186,11 @@ njs_js_ext_shared_dict_set(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             njs_vm_type_error(vm, "number value is expected");
             return NJS_ERROR;
         }
+
+        if (!njs_value_is_valid_number(value)) {
+            njs_vm_type_error(vm, "number value is not finite");
+            return NJS_ERROR;
+        }
     }
 
     timeo = njs_arg(args, nargs, 3);
@@ -1190,10 +1205,8 @@ njs_js_ext_shared_dict_set(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
             return NJS_ERROR;
         }
 
-        timeout = (ngx_msec_t) njs_value_number(timeo);
-
-        if (timeout < 1) {
-            njs_vm_type_error(vm, "timeout must be greater than or equal to 1");
+        if (ngx_js_dict_timeout(njs_value_number(timeo), &timeout) != NGX_OK) {
+            njs_vm_type_error(vm, "timeout is out of range");
             return NJS_ERROR;
         }
 
@@ -1474,6 +1487,24 @@ ngx_js_dict_lookup_write(ngx_js_dict_t *dict, ngx_str_t *key, ngx_msec_t now)
 
 
 static ngx_int_t
+ngx_js_dict_timeout(double value, ngx_msec_t *timeout)
+{
+    if (!isfinite(value)) {
+        return NGX_ERROR;
+    }
+
+    value = trunc(value);
+    if (value < 1 || value > UINT32_MAX) {
+        return NGX_ERROR;
+    }
+
+    *timeout = (ngx_msec_t) value;
+
+    return NGX_OK;
+}
+
+
+static ngx_int_t
 ngx_js_dict_set(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_str_t *key,
     njs_value_t *value, ngx_msec_t timeout, unsigned flags)
 {
@@ -1740,22 +1771,27 @@ ngx_js_dict_incr(njs_vm_t *vm, ngx_js_dict_t *dict, ngx_str_t *key,
 
     node = ngx_js_dict_lookup_write(dict, key, now);
 
+    *value = (node == NULL ? njs_value_number(init) : node->value.number)
+             + njs_value_number(delta);
+
+    if (!isfinite(*value)) {
+        ngx_rwlock_unlock(&dict->sh->rwlock);
+        njs_vm_type_error(vm, "increment result is not finite");
+        return NGX_ERROR;
+    }
+
     if (node == NULL) {
-        njs_value_number_set(init, njs_value_number(init)
-                                   + njs_value_number(delta));
+        njs_value_number_set(init, *value);
         if (ngx_js_dict_add(vm, dict, key, init,
                             timeout ? timeout : dict->timeout, now)
             != NGX_OK)
         {
             ngx_rwlock_unlock(&dict->sh->rwlock);
+            njs_vm_error(vm, "failed to increment value in shared dict");
             return NGX_ERROR;
         }
-
-        *value = njs_value_number(init);
-
     } else {
-        node->value.number += njs_value_number(delta);
-        *value = node->value.number;
+        node->value.number = *value;
 
         if (dict->timeout && timeout) {
             ngx_rbtree_delete(&dict->sh->rbtree_expire, &node->expire);
@@ -2005,6 +2041,7 @@ ngx_js_render_string(njs_chb_t *chain, ngx_str_t *str)
 static ngx_int_t
 ngx_js_dict_render_json(ngx_js_dict_t *dict, njs_chb_t *chain)
 {
+    int                  flags;
     u_char              *p, *dst;
     size_t               len;
     ngx_uint_t           first;
@@ -2013,6 +2050,7 @@ ngx_js_dict_render_json(ngx_js_dict_t *dict, njs_chb_t *chain)
     ngx_rbtree_t        *rbtree;
     ngx_rbtree_node_t   *rn, *next;
     ngx_js_dict_node_t  *node;
+    JSDTOATempMem        tmp_mem;
 
     tp = ngx_timeofday();
     now = tp->sec * 1000 + tp->msec;
@@ -2027,6 +2065,7 @@ ngx_js_dict_render_json(ngx_js_dict_t *dict, njs_chb_t *chain)
     }
 
     first = 1;
+    flags = JS_DTOA_FORMAT_FREE | JS_DTOA_MINUS_ZERO;
 
     for (rn = ngx_rbtree_min(rbtree->root, rbtree->sentinel);
          rn != NULL;
@@ -2060,15 +2099,17 @@ ngx_js_dict_render_json(ngx_js_dict_t *dict, njs_chb_t *chain)
             }
 
         } else {
-            len = sizeof("\"value\":.") + 18 + 6;
+            njs_chb_append_literal(chain, "\"value\":");
+
+            len = njs_dtoa_max_len(node->value.number, 10, 0, flags);
             dst = njs_chb_reserve(chain, len);
             if (dst == NULL) {
                 return NGX_ERROR;
             }
 
-            p = njs_sprintf(dst, dst + len, "\"value\":%.6f",
-                            node->value.number);
-            njs_chb_written(chain, p - dst);
+            len = njs_dtoa2((char *) dst, node->value.number, 10, 0, flags,
+                            &tmp_mem);
+            njs_chb_written(chain, len);
         }
 
         if (dict->timeout) {
@@ -2430,6 +2471,11 @@ ngx_js_dict_parse_entry(ngx_js_dict_t *dict, ngx_pool_t *pool,
             if (key.len == 5 && ngx_strncmp(key.data, "value", 5) == 0) {
                 if (dict->type == NGX_JS_DICT_TYPE_STRING) {
                     *err = "expected number value";
+                    goto error;
+                }
+
+                if (!isfinite(number)) {
+                    *err = "number value is not finite";
                     goto error;
                 }
 
@@ -3565,9 +3611,9 @@ ngx_qjs_ext_shared_dict_incr(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv)
 {
     JSValue          ret;
-    double           delta, init;
-    uint32_t         timeout;
+    double           delta, init, number;
     ngx_str_t        key;
+    ngx_msec_t       timeout;
     ngx_js_dict_t   *dict;
     ngx_shm_zone_t  *shm_zone;
 
@@ -3586,6 +3632,10 @@ ngx_qjs_ext_shared_dict_incr(JSContext *cx, JSValueConst this_val,
         return JS_EXCEPTION;
     }
 
+    if (!isfinite(delta)) {
+        return JS_ThrowTypeError(cx, "delta is not finite");
+    }
+
     if (JS_IsUndefined(argv[2])) {
         init = 0;
 
@@ -3593,9 +3643,13 @@ ngx_qjs_ext_shared_dict_incr(JSContext *cx, JSValueConst this_val,
         return JS_EXCEPTION;
     }
 
-    if (argc > 3) {
-        if (JS_ToUint32(cx, &timeout, argv[3]) < 0) {
-            return JS_EXCEPTION;
+    if (!isfinite(init)) {
+        return JS_ThrowTypeError(cx, "init value is not finite");
+    }
+
+    if (argc > 3 && !JS_IsUndefined(argv[3])) {
+        if (!JS_IsNumber(argv[3])) {
+            return JS_ThrowTypeError(cx, "timeout is not a number");
         }
 
         if (!dict->timeout) {
@@ -3603,9 +3657,12 @@ ngx_qjs_ext_shared_dict_incr(JSContext *cx, JSValueConst this_val,
                                   "shared dict must be declared with timeout");
         }
 
-        if (timeout < 1) {
-            return JS_ThrowRangeError(cx,
-                                 "timeout must be greater than or equal to 1");
+        if (JS_ToFloat64(cx, &number, argv[3]) < 0) {
+            return JS_EXCEPTION;
+        }
+
+        if (ngx_js_dict_timeout(number, &timeout) != NGX_OK) {
+            return JS_ThrowTypeError(cx, "timeout is out of range");
         }
 
     } else {
@@ -3873,8 +3930,9 @@ ngx_qjs_ext_shared_dict_set(JSContext *cx, JSValueConst this_val,
     int argc, JSValueConst *argv, int flags)
 {
     JSValue          ret;
-    uint32_t         timeout;
+    double           number;
     ngx_str_t        key;
+    ngx_msec_t       timeout;
     ngx_js_dict_t   *dict;
     ngx_shm_zone_t  *shm_zone;
 
@@ -3894,6 +3952,14 @@ ngx_qjs_ext_shared_dict_set(JSContext *cx, JSValueConst this_val,
         if (!JS_IsNumber(argv[1])) {
             return JS_ThrowTypeError(cx, "number value is expected");
         }
+
+        if (JS_ToFloat64(cx, &number, argv[1]) < 0) {
+            return JS_EXCEPTION;
+        }
+
+        if (!isfinite(number)) {
+            return JS_ThrowTypeError(cx, "number value is not finite");
+        }
     }
 
     if (!JS_IsUndefined(argv[2])) {
@@ -3906,13 +3972,12 @@ ngx_qjs_ext_shared_dict_set(JSContext *cx, JSValueConst this_val,
                                 "shared dict must be declared with timeout");
         }
 
-        if (JS_ToUint32(cx, &timeout, argv[2]) < 0) {
+        if (JS_ToFloat64(cx, &number, argv[2]) < 0) {
             return JS_EXCEPTION;
         }
 
-        if (timeout < 1) {
-            return JS_ThrowTypeError(cx,
-                                "timeout must be greater than or equal to 1");
+        if (ngx_js_dict_timeout(number, &timeout) != NGX_OK) {
+            return JS_ThrowTypeError(cx, "timeout is out of range");
         }
 
     } else {
@@ -4233,6 +4298,7 @@ ngx_qjs_dict_incr(JSContext *cx, ngx_js_dict_t *dict, ngx_str_t *key,
     double delta, double init, ngx_msec_t timeout)
 {
     JSValue              value;
+    double               number;
     ngx_msec_t           now;
     ngx_time_t          *tp;
     ngx_js_dict_node_t  *node;
@@ -4244,8 +4310,14 @@ ngx_qjs_dict_incr(JSContext *cx, ngx_js_dict_t *dict, ngx_str_t *key,
 
     node = ngx_js_dict_lookup_write(dict, key, now);
 
+    number = (node == NULL ? init : node->value.number) + delta;
+    if (!isfinite(number)) {
+        ngx_rwlock_unlock(&dict->sh->rwlock);
+        return JS_ThrowTypeError(cx, "increment result is not finite");
+    }
+
     if (node == NULL) {
-        value = JS_NewFloat64(cx, init + delta);
+        value = JS_NewFloat64(cx, number);
         if (ngx_qjs_dict_add(cx, dict, key, value,
                               timeout ? timeout : dict->timeout, now)
             != NGX_OK)
@@ -4256,8 +4328,8 @@ ngx_qjs_dict_incr(JSContext *cx, ngx_js_dict_t *dict, ngx_str_t *key,
         }
 
     } else {
-        node->value.number += delta;
-        value = JS_NewFloat64(cx, node->value.number);
+        node->value.number = number;
+        value = JS_NewFloat64(cx, number);
 
         if (dict->timeout && timeout) {
             ngx_rbtree_delete(&dict->sh->rbtree_expire, &node->expire);

@@ -124,5 +124,87 @@ let derive_tsuite = {
           expected: "e089c7491711306c69e077aa19fae6bfd2d4a6d240b0d37317d50472d7291a3e" },
 ]};
 
-run([derive_tsuite])
+async function testDeriveParameters(params) {
+    let algorithm = { name: params.name, hash: "SHA-256",
+                      salt: new Uint8Array(16), info: new Uint8Array(0),
+                      iterations: params.iterations };
+    let base = await crypto.subtle.importKey("raw", new Uint8Array(32),
+                                             params.name, false,
+                                             ["deriveBits", "deriveKey"]);
+    let result;
+
+    try {
+        if (params.derive === "key") {
+            let key = await crypto.subtle.deriveKey(algorithm, base,
+                { name: "HMAC", hash: "SHA-256", length: params.length },
+                true, ["sign"]);
+            result = await crypto.subtle.exportKey("raw", key);
+
+        } else {
+            result = await crypto.subtle.deriveBits(algorithm, base,
+                                                    params.length);
+        }
+
+    } catch (e) {
+        if (params.reject
+            && (e.name === "TypeError" || e.name === "OperationError"
+                || (params.derive === "key"
+                    && e.name === "NotSupportedError")))
+        {
+            return "SUCCESS";
+        }
+
+        throw e;
+    }
+
+    if (params.reject) {
+        throw Error("accepted invalid derivation parameters: "
+                    + JSON.stringify(params));
+    }
+
+    if (result.byteLength !== params.bytes) {
+        throw Error(`unexpected derived length: ${result.byteLength}`);
+    }
+
+    return "SUCCESS";
+}
+
+let derive_length_tsuite = {
+    name: "derive length validation",
+    skip: () => (!has_buffer() || !has_webcrypto()),
+    T: testDeriveParameters,
+    opts: { name: "PBKDF2", iterations: 1, derive: "bits", reject: true },
+    tests: [
+        { length: 1 },
+        { length: 9 },
+        { length: -8 },
+        { length: 9, derive: "key" },
+        { length: 8, reject: false, bytes: 1 },
+        { name: "HKDF", length: 1 },
+        { name: "HKDF", length: 9 },
+        { name: "HKDF", length: -8 },
+        { name: "HKDF", length: 9, derive: "key" },
+        { name: "HKDF", length: 8, derive: "key", reject: false, bytes: 1 },
+    ],
+};
+
+let derive_iterations_tsuite = {
+    name: "PBKDF2 iteration validation",
+    skip: () => (!has_buffer() || !has_webcrypto()),
+    T: testDeriveParameters,
+    opts: { name: "PBKDF2", length: 128, derive: "bits", reject: true },
+    tests: [
+        { iterations: 0 },
+        { iterations: -1 },
+        { iterations: 0x80000000 },
+        { iterations: 0x100000001 },
+        { iterations: -0xffffffff },
+        { iterations: NaN },
+        { iterations: Infinity },
+        { iterations: 0x100000001, derive: "key" },
+        { iterations: 1, reject: false, bytes: 16 },
+    ],
+};
+
+run([derive_tsuite, derive_length_tsuite, derive_iterations_tsuite])
 .then($DONE, $DONE);

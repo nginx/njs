@@ -1962,6 +1962,11 @@ njs_ext_derive(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         goto fail;
     }
 
+    if (njs_slow_path(length < 0 || length > UINT32_MAX)) {
+        njs_vm_type_error(vm, "length is out of range");
+        goto fail;
+    }
+
     if (derive_key) {
         switch (dalg->type) {
         case NJS_ALGORITHM_AES_GCM:
@@ -1981,6 +1986,11 @@ njs_ext_derive(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
         if (njs_slow_path(ret != NJS_OK)) {
             goto fail;
         }
+    }
+
+    if (njs_slow_path(length % 8 != 0)) {
+        njs_vm_type_error(vm, "length must be a multiple of 8");
+        goto fail;
     }
 
     dkey = NULL;
@@ -2048,6 +2058,11 @@ njs_ext_derive(njs_vm_t *vm, njs_value_t *args, njs_uint_t nargs,
 
         ret = njs_value_to_integer(vm, value, &iterations);
         if (njs_slow_path(ret != NJS_OK)) {
+            goto fail;
+        }
+
+        if (njs_slow_path(iterations < 1 || iterations > INT_MAX)) {
+            njs_vm_type_error(vm, "PBKDF2 iterations is out of range");
             goto fail;
         }
 
